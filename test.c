@@ -17,7 +17,10 @@ test_bar_cb(evhtp_request_t * req, void * arg) {
 
 static void
 test_default_cb(evhtp_request_t * req, void * arg) {
-    printf("%s\n", (char *)arg);
+    struct evbuffer * buf = evbuffer_new();
+
+    evbuffer_add(buf, "derp", 4);
+    evhtp_send_reply(req, 200, "OK", buf);
 }
 
 static evhtp_res
@@ -68,10 +71,12 @@ main(int argc, char ** argv) {
     evbase = event_base_new();
     htp    = evhtp_new(evbase);
 
+#if 0
     evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
     evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
+#endif
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
-    evhtp_set_post_accept_cb(htp, set_my_handlers, NULL);
+    /* evhtp_set_post_accept_cb(htp, set_my_handlers, NULL); */
 
     evhtp_bind_socket(htp, "0.0.0.0", 8080);
 

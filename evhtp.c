@@ -56,6 +56,7 @@ struct evhtp_callbacks {
 
 struct evhtp_conn {
     evhtp_t         * htp;
+    evbev_t         * bev;
     evhtp_hooks_t   * hooks;
     evhtp_request_t * request;
     http_parser     * parser;
@@ -122,7 +123,7 @@ static int
 _htp_start_cb(http_parser * p) {
     evhtp_conn_t * conn = p->data;
 
-    conn->request = evhtp_request_new();
+    conn->request = evhtp_request_new(conn);
     return 0;
 }
 
@@ -207,6 +208,30 @@ _htp_header_val_cb(http_parser * p, const char * buf, size_t len) {
     }
 
     return 0;
+}
+
+static int
+_htp_hdr_copy(evhtp_hdr_t * hdr, void * arg) {
+    evhtp_hdrs_t * hdrs = (evhtp_hdrs_t *)arg;
+    evhtp_hdr_t  * nhdr = NULL;
+
+    if (hdrs == NULL) {
+        return -1;
+    }
+
+    nhdr = evhtp_hdr_new(hdr->key, hdr->val);
+    TAILQ_INSERT_TAIL(hdrs, nhdr, next);
+
+    return 0;
+}
+
+static int
+_htp_hdrs_copy(evhtp_hdrs_t * dst, evhtp_hdrs_t * src) {
+    if (dst == NULL || src == NULL) {
+        return -1;
+    }
+
+    return evhtp_hdrs_for_each(dst, _htp_hdr_copy, (void *)src);
 }
 
 static int
@@ -360,7 +385,7 @@ _htp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb) {
 }
 
 static evhtp_conn_t *
-_htp_conn_new(evhtp_t * htp) {
+_htp_conn_new(evhtp_t * htp, evbev_t * bev) {
     evhtp_conn_t * conn = NULL;
 
     if (!(conn = calloc(sizeof(evhtp_conn_t), sizeof(char)))) {
@@ -368,6 +393,7 @@ _htp_conn_new(evhtp_t * htp) {
     }
 
     conn->htp          = htp;
+    conn->bev          = bev;
     conn->parser       = malloc(sizeof(http_parser));
     conn->parser->data = conn;
 
@@ -390,6 +416,22 @@ _htp_recv_cb(evbev_t * bev, void * arg) {
     evbuffer_drain(ibuf, nread);
 }
 
+static int
+_htp_hdr_output(evhtp_hdr_t * hdr, void * arg) {
+    struct evbuffer * buf = (struct evbuffer *)arg;
+
+    evbuffer_add(buf, hdr->key, strlen(hdr->key));
+    evbuffer_add(buf, ": ", 2);
+    evbuffer_add(buf, hdr->val, strlen(hdr->val));
+    evbuffer_add(buf, "\r\n", 2);
+    return 0;
+}
+
+static void
+_htp_close(evbev_t * bev, void * arg) {
+    bufferevent_free(bev);
+}
+
 static void
 _htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg) {
     evhtp_t      * htp  = NULL;
@@ -407,7 +449,7 @@ _htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg)
 
     base = evconnlistener_get_base(serv);
     bev  = bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
-    conn = _htp_conn_new(htp);
+    conn = _htp_conn_new(htp, bev);
 
     if (htp->post_accept_cb) {
         if (htp->post_accept_cb(conn, htp->post_accept_cbarg) != EVHTP_RES_OK) {
@@ -419,6 +461,57 @@ _htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg)
     bufferevent_setcb(bev, _htp_recv_cb, NULL, NULL, conn);
     bufferevent_enable(bev, EV_READ);
 }
+
+void
+evhtp_send_reply(evhtp_request_t * req, int code, const char * r, struct evbuffer * b) {
+    evbev_t      * bev    = NULL;
+    evhtp_conn_t * conn   = NULL;
+    int            kalive = 0;
+    char           respln[64];
+    evhtp_hdrs_t   hdrs;
+
+    conn   = req->conn;
+    bev    = conn->bev;
+    kalive = http_should_keep_alive(conn->parser);
+
+    TAILQ_INIT(&hdrs);
+
+    _htp_hdrs_copy(&hdrs, &req->headers_out);
+
+    if (req->major == 1) {
+        if (req->minor == 0 && kalive) {
+            evhtp_hdr_add(&hdrs, evhtp_hdr_new("Connection", "keep-alive"));
+        }
+    }
+
+    if (b && evbuffer_get_length(b)) {
+        if (!evhtp_hdr_find(&hdrs, "Content-Length")) {
+            char len[32];
+            snprintf(len, sizeof(len), "%ld", evbuffer_get_length(b));
+            evhtp_hdr_add(&hdrs, evhtp_hdr_new("Content-Length", len));
+        }
+
+        if (!evhtp_hdr_find(&hdrs, "Content-Type")) {
+            evhtp_hdr_add(&hdrs, evhtp_hdr_new("Content-Type", "txt/xml"));
+        }
+    }
+
+    snprintf(respln, sizeof(respln), "HTTP/%d.%d %d %s\r\n", req->major, req->minor, code, r);
+    bufferevent_write(bev, respln, strlen(respln));
+    evhtp_hdrs_for_each(&hdrs, _htp_hdr_output, (void *)bufferevent_get_output(bev));
+
+    if (b && evbuffer_get_length(b)) {
+        bufferevent_write_buffer(bev, b);
+    }
+
+    bufferevent_write(bev, "\r\n", 2);
+
+    if (kalive != 1) {
+        bufferevent_disable(bev, EV_READ);
+        bufferevent_setwatermark(bev, EV_WRITE, 1, 0);
+        bufferevent_setcb(bev, NULL, _htp_close, NULL, conn);
+    }
+} /* evhtp_send_reply */
 
 int
 evhtp_set_hook(evhtp_conn_t * conn, evhtp_hook_type type, void * cb, void * cbarg) {
@@ -503,16 +596,67 @@ evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept cb, void * cbarg) {
     htp->post_accept_cbarg = cbarg;
 }
 
+int
+evhtp_hdrs_for_each(evhtp_hdrs_t * hdrs, evhtp_hdrs_iter_cb cb, void * arg) {
+    evhtp_hdr_t * hdr = NULL;
+
+    if (hdrs == NULL || cb == NULL) {
+        return -1;
+    }
+
+    TAILQ_FOREACH(hdr, hdrs, next) {
+        int res;
+
+        if ((res = cb(hdr, arg))) {
+            return res;
+        }
+    }
+
+    return 0;
+}
+
+void
+evhtp_hdr_add(evhtp_hdrs_t * hdrs, evhtp_hdr_t * hdr) {
+    TAILQ_INSERT_TAIL(hdrs, hdr, next);
+}
+
+const char *
+evhtp_hdr_find(evhtp_hdrs_t * hdrs, const char * key) {
+    evhtp_hdr_t * hdr = NULL;
+
+    TAILQ_FOREACH(hdr, hdrs, next) {
+        if (!strcasecmp(hdr->key, key)) {
+            return hdr->val;
+        }
+    }
+
+    return NULL;
+}
+
+evhtp_hdr_t *
+evhtp_hdr_new(const char * key, const char * val) {
+    evhtp_hdr_t * hdr = NULL;
+
+    hdr      = malloc(sizeof(evhtp_hdr_t));
+    hdr->key = key ? strdup(key) : NULL;
+    hdr->val = val ? strdup(val) : NULL;
+
+    return hdr;
+}
+
 evhtp_request_t *
-evhtp_request_new(void) {
+evhtp_request_new(evhtp_conn_t * conn) {
     evhtp_request_t * request;
 
     if (!(request = calloc(sizeof(evhtp_request_t), sizeof(char)))) {
         return NULL;
     }
 
-    TAILQ_INIT(&request->headers_in);
+    request->conn = conn;
+
     TAILQ_INIT(&request->headers_out);
+    TAILQ_INIT(&request->headers_in);
+
     return request;
 }
 
@@ -540,19 +684,4 @@ evhtp_new(evbase_t * evbase) {
 
     return htp;
 }
-
-#if 0
-int
-main(int argc, char ** argv) {
-    evbase_t * evbase = event_base_new();
-    evhtp_t  * htp    = evhtp_new(evbase);
-
-    evhtp_set_cb(htp, "/test", test_interop_cb, NULL);
-    evhtp_set_cb(htp, "/derp", derp_interop_cb, NULL);
-    evhtp_set_gencb(htp, fallback_cb, NULL);
-
-    evhtp_bind_socket(htp, "0.0.0.0", 8080);
-}
-
-#endif
 

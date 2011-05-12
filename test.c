@@ -21,6 +21,7 @@ test_default_cb(evhtp_request_t * req, void * arg) {
 
     evbuffer_add(buf, "derp", 4);
     evhtp_send_reply(req, 200, "OK", buf);
+    evbuffer_free(buf);
 }
 
 static evhtp_res

@@ -429,6 +429,9 @@ _htp_hdr_output(evhtp_hdr_t * hdr, void * arg) {
 
 static void
 _htp_close(evbev_t * bev, void * arg) {
+    evhtp_conn_t * conn = (evhtp_conn_t *)arg;
+
+    evhtp_conn_free(conn);
     bufferevent_free(bev);
 }
 
@@ -511,6 +514,9 @@ evhtp_send_reply(evhtp_request_t * req, int code, const char * r, struct evbuffe
         bufferevent_setwatermark(bev, EV_WRITE, 1, 0);
         bufferevent_setcb(bev, NULL, _htp_close, NULL, conn);
     }
+
+    evhtp_hdrs_free(&hdrs);
+    return evhtp_request_free(req);
 } /* evhtp_send_reply */
 
 int
@@ -631,6 +637,76 @@ evhtp_hdr_find(evhtp_hdrs_t * hdrs, const char * key) {
     }
 
     return NULL;
+}
+
+void
+evhtp_request_free(evhtp_request_t * req) {
+    if (req == NULL) {
+        return;
+    }
+
+    if (req->path) {
+        free(req->path);
+    }
+
+    if (req->uri) {
+        free(req->uri);
+    }
+
+    evhtp_hdrs_free(&req->headers_in);
+    evhtp_hdrs_free(&req->headers_out);
+
+    free(req);
+}
+
+void
+evhtp_conn_free(evhtp_conn_t * conn) {
+    if (conn == NULL) {
+        return;
+    }
+
+    if (conn->hooks) {
+        free(conn->hooks);
+    }
+
+    if (conn->parser) {
+        free(conn->parser);
+    }
+
+    free(conn);
+}
+
+void
+evhtp_hdr_free(evhtp_hdr_t * hdr) {
+    if (hdr == NULL) {
+        return;
+    }
+
+    if (hdr->key) {
+        free(hdr->key);
+    }
+
+    if (hdr->val) {
+        free(hdr->val);
+    }
+
+    free(hdr);
+}
+
+void
+evhtp_hdrs_free(evhtp_hdrs_t * hdrs) {
+    evhtp_hdr_t * hdr;
+    evhtp_hdr_t * save;
+
+    if (hdrs == NULL) {
+        return;
+    }
+
+    for (hdr = TAILQ_FIRST(hdrs); hdr != NULL; hdr = save) {
+        save = TAILQ_NEXT(hdr, next);
+        TAILQ_REMOVE(hdrs, hdr, next);
+        evhtp_hdr_free(hdr);
+    }
 }
 
 evhtp_hdr_t *

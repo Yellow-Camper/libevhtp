@@ -83,13 +83,17 @@ void              evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * cb
 void              evhtp_bind_socket(evhtp_t *, const char *, uint16_t);
 void              evhtp_set_pre_accept_cb(evhtp_t *, evhtp_pre_accept, void *);
 void              evhtp_set_post_accept_cb(evhtp_t *, evhtp_post_accept, void *);
-void evhtp_send_reply(evhtp_request_t *, int, const char *, struct evbuffer *);
+void              evhtp_send_reply(evhtp_request_t *, int, const char *, struct evbuffer *);
 
 evhtp_hdr_t     * evhtp_hdr_new(const char *, const char *);
 const char      * evhtp_hdr_find(evhtp_hdrs_t *, const char *);
 void              evhtp_hdr_add(evhtp_hdrs_t *, evhtp_hdr_t *);
 int               evhtp_hdrs_for_each(evhtp_hdrs_t *, evhtp_hdrs_iter_cb, void *);
 
+void              evhtp_request_free(evhtp_request_t *);
+void              evhtp_conn_free(evhtp_conn_t *);
+void              evhtp_hdrs_free(evhtp_hdrs_t *);
+void              evhtp_hdr_free(evhtp_hdr_t *);
 
 #endif /* __EVHTP_H__ */
 

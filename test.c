@@ -5,70 +5,75 @@
 #include <errno.h>
 #include <evhtp.h>
 
-static int
-dump_hdrs_cb(evhtp_header_t * header, void * arg) {
-    printf("key = '%s', val = '%s'\n", header->key, header->val);
-    return 0;
+static void
+test_foo_cb(evhtp_request_t * req, void * arg) {
+    printf("%s\n", (char *)arg);
+}
+
+static void
+test_bar_cb(evhtp_request_t * req, void * arg) {
+    printf("%s\n", (char *)arg);
+}
+
+static void
+test_default_cb(evhtp_request_t * req, void * arg) {
+    printf("%s\n", (char *)arg);
 }
 
 static evhtp_res
-test_post_headers_cb(evhtp_connection_t * conn, evhtp_headers_t * hdrs, void * arg) {
-    printf("test_post_headers_cb()\n");
-
-    evhtp_headers_for_each(hdrs, dump_hdrs_cb, NULL);
+print_kv(evhtp_request_t * req, evhtp_hdr_t * hdr, void * arg) {
+    printf("%s/%s %s\n", hdr->key, hdr->val, (char *)arg);
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
-test_single_header_cb(evhtp_connection_t * conn, evhtp_header_t * hdr, void * arg) {
-    printf("test_single_header_cb()\n");
-    printf("key = '%s', val='%s'\n", hdr->key, hdr->val);
+print_kvs(evhtp_request_t * req, evhtp_hdrs_t * hdrs, void * arg) {
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
-test_on_path_cb(evhtp_connection_t * conn, const char * uri) {
-    printf("test_on_path_cb()\n");
-    printf("uri = '%s'\n", uri);
+print_path(evhtp_request_t * req, const char * path, void * arg) {
+    printf("%s %s\n", path, (char *)arg);
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
-test_complete_cb(evhtp_connection_t * conn, evhtp_request_t * req, void * arg) {
-    printf("test_complete_cb()\n");
-    printf("method: %d\n", req->method);
-    printf("uri:    %s\n", req->uri);
-    printf("vmajor: %d\n", req->major);
-    printf("vminor: %d\n", req->minor);
-
+print_uri(evhtp_request_t * req, const char * uri, void * arg) {
+    printf("%s %s\n", uri, (char *)arg);
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
-test_post_accept_cb(evhtp_connection_t * conn, void * arg) {
-    printf("test_post_accept_cb()\n");
+print_data(evhtp_request_t * req, const char * data, size_t len, void * arg) {
+    printf("%.*s %s\n", len, data, (char *)arg);
+    return EVHTP_RES_OK;
+}
 
-    evhtp_conn_hook(conn, EVHTP_HOOK_SINGLE_HEADER, test_single_header_cb);
-    evhtp_conn_hook(conn, EVHTP_HOOK_POST_HEADERS, test_post_headers_cb);
-    evhtp_conn_hook(conn, EVHTP_HOOK_ON_PATH, test_on_path_cb);
-    evhtp_conn_hook(conn, EVHTP_HOOK_COMPLETE, test_complete_cb);
+static evhtp_res
+set_my_handlers(evhtp_conn_t * conn, void * arg) {
+    evhtp_set_hook(conn, EVHTP_HOOK_HDR_READ, print_kv, "foo");
+    evhtp_set_hook(conn, EVHTP_HOOK_HDRS_READ, print_kvs, "bar");
+    evhtp_set_hook(conn, EVHTP_HOOK_PATH_READ, print_path, "baz");
+    evhtp_set_hook(conn, EVHTP_HOOK_URI_READ, print_uri, "herp");
+    evhtp_set_hook(conn, EVHTP_HOOK_READ, print_data, "derp");
+
     return EVHTP_RES_OK;
 }
 
 int
 main(int argc, char ** argv) {
-    int        res    = 0;
     evbase_t * evbase = NULL;
     evhtp_t  * htp    = NULL;
-    evhtp_cfg  cfg    = {
-        .base_uri  = "/",
-        .bind_addr = "0.0.0.0",
-        .bind_port = 8080
-    };
 
     evbase = event_base_new();
-    htp    = evhtp_new(evbase, &cfg, NULL);
-    res    = evhtp_set_post_accept_cb(htp, test_post_accept_cb);
+    htp    = evhtp_new(evbase);
+
+    evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
+    evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
+    evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
+    evhtp_set_post_accept_cb(htp, set_my_handlers, NULL);
+
+    evhtp_bind_socket(htp, "0.0.0.0", 8080);
 
     event_base_loop(evbase, 0);
     return 0;

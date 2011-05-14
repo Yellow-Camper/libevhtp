@@ -17,16 +17,15 @@ test_bar_cb(evhtp_request_t * req, void * arg) {
 
 static void
 test_default_cb(evhtp_request_t * req, void * arg) {
-    struct evbuffer * buf = evbuffer_new();
+    struct evbuffer * b = evbuffer_new();
 
-    evbuffer_add(buf, "derp", 4);
-    evhtp_send_reply(req, 200, "OK", buf);
-    evbuffer_free(buf);
+    evbuffer_add(b, "derp", 4);
+    evhtp_send_reply(req, 200, "Everything is fine", b);
+    evbuffer_free(b);
 }
 
 static evhtp_res
 print_kv(evhtp_request_t * req, evhtp_hdr_t * hdr, void * arg) {
-    printf("%s/%s %s\n", hdr->key, hdr->val, (char *)arg);
     return EVHTP_RES_OK;
 }
 
@@ -37,19 +36,20 @@ print_kvs(evhtp_request_t * req, evhtp_hdrs_t * hdrs, void * arg) {
 
 static evhtp_res
 print_path(evhtp_request_t * req, const char * path, void * arg) {
-    printf("%s %s\n", path, (char *)arg);
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
 print_uri(evhtp_request_t * req, const char * uri, void * arg) {
-    printf("%s %s\n", uri, (char *)arg);
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
 print_data(evhtp_request_t * req, const char * data, size_t len, void * arg) {
-    printf("%.*s %s\n", len, data, (char *)arg);
+    if (len) {
+        printf("Draining %u bytes\n", len);
+        evbuffer_drain(req->input_buffer, len);
+    }
     return EVHTP_RES_OK;
 }
 
@@ -72,14 +72,12 @@ main(int argc, char ** argv) {
     evbase = event_base_new();
     htp    = evhtp_new(evbase);
 
-#if 0
     evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
     evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
-#endif
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
-    /* evhtp_set_post_accept_cb(htp, set_my_handlers, NULL); */
+    evhtp_set_post_accept_cb(htp, set_my_handlers, NULL);
 
-    evhtp_bind_socket(htp, "0.0.0.0", 8080);
+    evhtp_bind_socket(htp, "0.0.0.0", 8081);
 
     event_base_loop(evbase, 0);
     return 0;

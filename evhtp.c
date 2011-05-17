@@ -226,10 +226,8 @@ _htp_query_str_cb(http_parser * p, const char * buf, size_t len) {
 
 static int
 _htp_uri_cb(http_parser * p, const char * buf, size_t len) {
-    evhtp_conn_t    * conn    = NULL;
-    evhtp_request_t * request = NULL;
-
-    /* printf("on_url %llu\n", len); */
+    evhtp_conn_t    * conn;
+    evhtp_request_t * request;
 
     conn              = p->data;
     request           = conn->request;
@@ -256,8 +254,8 @@ _htp_fragment_cb(http_parser * p, const char * buf, size_t len) {
 
 static int
 _htp_header_key_cb(http_parser * p, const char * buf, size_t len) {
-    evhtp_hdr_t  * hdr  = NULL;
-    evhtp_conn_t * conn = NULL;
+    evhtp_hdr_t  * hdr;
+    evhtp_conn_t * conn;
 
     /* printf("on_header_field %llu\n", len); */
 

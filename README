@@ -6,3 +6,53 @@ Building:
 4. cmake ..
 5. make
 
+Stats: httperf 200 concurrent connections, 400 requests each for /ref
+
+Libevent bench_http:
+Total: connections 200 requests 80000 replies 80000 test-duration 2.134 s
+
+Connection rate: 93.7 conn/s (10.7 ms/conn, <=1 concurrent connections)
+Connection time [ms]: min 10.4 avg 10.7 max 12.2 median 10.5 stddev 0.2
+Connection time [ms]: connect 0.0
+Connection length [replies/conn]: 400.000
+
+Request rate: 37487.7 req/s (0.0 ms/req)
+Request size [B]: 65.0
+
+Reply rate [replies/s]: min 0.0 avg 0.0 max 0.0 stddev 0.0 (0 samples)
+Reply time [ms]: response 0.0 transfer 0.0
+Reply size [B]: header 136.0 content 4.0 footer 0.0 (total 140.0)
+Reply status: 1xx=0 2xx=80000 3xx=0 4xx=0 5xx=0
+
+CPU time [s]: user 0.48 system 1.65 (user 22.5% system 77.3% total 99.8%)
+Net I/O: 7504.9 KB/s (61.5*10^6 bps)
+
+Errors: total 0 client-timo 0 socket-timo 0 connrefused 0 connreset 0
+Errors: fd-unavail 0 addrunavail 0 ftab-full 0 other 0
+
+------
+
+Evhtp test.c (backwards compat mode):
+Total: connections 200 requests 80000 replies 80000 test-duration 1.470 s
+
+Connection rate: 136.1 conn/s (7.3 ms/conn, <=1 concurrent connections)
+Connection time [ms]: min 7.1 avg 7.3 max 16.1 median 7.5 stddev 0.8
+Connection time [ms]: connect 0.0
+Connection length [replies/conn]: 400.000
+
+Request rate: 54438.2 req/s (0.0 ms/req)
+Request size [B]: 65.0
+
+Reply rate [replies/s]: min 0.0 avg 0.0 max 0.0 stddev 0.0 (0 samples)
+Reply time [ms]: response 0.0 transfer 0.0
+Reply size [B]: header 99.0 content 4.0 footer 0.0 (total 103.0)
+Reply status: 1xx=0 2xx=80000 3xx=0 4xx=0 5xx=0
+
+CPU time [s]: user 0.28 system 1.19 (user 19.1% system 81.0% total 100.0%)
+Net I/O: 8931.3 KB/s (73.2*10^6 bps)
+
+Errors: total 0 client-timo 0 socket-timo 0 connrefused 0 connreset 0
+Errors: fd-unavail 0 addrunavail 0 ftab-full 0 other 0
+
+------
+

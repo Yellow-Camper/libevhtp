@@ -149,6 +149,7 @@ struct evhtp_request {
 evhtp_t         * evhtp_new(evbase_t *);
 evhtp_request_t * evhtp_request_new(evhtp_conn_t *);
 
+int               evhtp_set_server_name(evhtp_t *, const char *);
 int               evhtp_set_cb(evhtp_t *, const char *, evhtp_callback_cb, void *);
 void              evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * cbarg);
 void              evhtp_bind_socket(evhtp_t *, const char *, uint16_t);

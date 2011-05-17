@@ -23,6 +23,7 @@ struct evhtp {
     void               * default_cbarg;
     void               * pre_accept_cbarg;
     void               * post_accept_cbarg;
+    char               * server_name;
     evhtp_callback_cb    default_cb;
     evhtp_pre_accept     pre_accept_cb;
     evhtp_post_accept    post_accept_cb;
@@ -750,6 +751,7 @@ evhtp_send_reply(evhtp_request_t * req, evhtp_status code, const char * r, evbuf
     }
 
     evbuffer_add_printf(conn->obuf, "HTTP/%d.%d %d %s\r\n", req->major, req->minor, code, r);
+    evhtp_hdr_add(&req->headers_out, evhtp_hdr_new("Server", conn->htp->server_name));
     evhtp_hdrs_for_each(&req->headers_out, _htp_hdr_output, (void *)conn->obuf);
     evbuffer_add(conn->obuf, "\r\n", 2);
 
@@ -1037,6 +1039,16 @@ evhtp_hdrs_free(evhtp_hdrs_t * hdrs) {
     }
 }
 
+int
+evhtp_set_server_name(evhtp_t * htp, const char * n) {
+    if (htp == NULL || n == NULL) {
+        return -1;
+    }
+
+    htp->server_name = strdup(n);
+    return 0;
+}
+
 evhtp_hdr_t *
 evhtp_hdr_new(char * key, char * val) {
     evhtp_hdr_t * hdr;
@@ -1075,6 +1087,7 @@ evhtp_new(evbase_t * evbase) {
         return NULL;
     }
 
+    htp->server_name               = "lhtp";
     htp->psets.on_message_begin    = _htp_start_cb;
     htp->psets.on_path             = _htp_path_cb;
     htp->psets.on_query_string     = _htp_query_str_cb;

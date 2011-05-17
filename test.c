@@ -98,6 +98,7 @@ main(int argc, char ** argv) {
     evbase = event_base_new();
     htp    = evhtp_new(evbase);
 
+    evhtp_set_server_name(htp, "Hi there!");
     evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
     evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
     evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");

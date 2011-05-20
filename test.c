@@ -58,7 +58,8 @@ print_uri(evhtp_request_t * req, const char * uri, void * arg) {
 static evhtp_res
 print_data(evhtp_request_t * req, const char * data, size_t len, void * arg) {
     if (len) {
-        evbuffer_drain(req->input_buffer, len);
+        /* printf("%.*s\n", len, data); */
+        evbuffer_drain(req->buffer_in, len);
     }
     return EVHTP_RES_OK;
 }

@@ -14,7 +14,7 @@ struct evhtp_conn;
 typedef unsigned             evhtp_status;
 typedef unsigned char        evhtp_cflags;
 typedef struct evbuffer      evbuf_t;
-typedef struct event         ev_t;
+typedef struct event         event_t;
 typedef struct event_base    evbase_t;
 typedef struct evhtp         evhtp_t;
 typedef struct evhtp_request evhtp_request_t;
@@ -26,6 +26,7 @@ typedef struct evhtp_hdrs    evhtp_hdrs_t;
 typedef enum evhtp_res       evhtp_res;
 typedef enum evhtp_hook_type evhtp_hook_type;
 typedef enum http_method     evhtp_method;
+typedef enum evhtp_proto     evhtp_proto;
 
 typedef int (*evhtp_hdrs_iter_cb)(evhtp_hdr_t * hdr, void * arg);
 typedef void (*evhtp_callback_cb)(evhtp_request_t *, void *);
@@ -42,8 +43,8 @@ typedef evhtp_status (*evhtp_hook_on_expect)(evhtp_request_t *, const char *, vo
 enum evhtp_res {
     EVHTP_RES_OK = 0,
     EVHTP_RES_ERROR,
-    EVHTP_RES_CONTINUE,
-    EVHTP_RES_DISCONNECT
+    EVHTP_RES_MORE,
+    EVHTP_RES_DONE
 };
 
 #define EVHTP_CLOSE_ON_EXPECT_ERR (1 << 1)
@@ -121,6 +122,12 @@ enum evhtp_hook_type {
     EVHTP_HOOK_COMPLETE
 };
 
+enum evhtp_proto {
+    EVHTP_PROTO_INVALID,
+    EVHTP_PROTO_1_0,
+    EVHTP_PROTO_1_1
+};
+
 struct evhtp_hdr {
     char   k_heaped;
     char   v_heaped;
@@ -135,21 +142,24 @@ TAILQ_HEAD(evhtp_hdrs, evhtp_hdr);
 struct evhtp_request {
     char            * path;
     char            * uri;
+    int               keepalive;
     evhtp_hdrs_t      headers_in;
     evhtp_hdrs_t      headers_out;
     evhtp_method      method;
+    evhtp_proto       proto;
     char              major;
     char              minor;
     evhtp_callback_cb cb;
     void            * cbarg;
     evhtp_conn_t    * conn;
-    evbuf_t         * input_buffer;
+    evbuf_t         * buffer_in;
+    evbuf_t         * buffer_out;
 };
 
 evhtp_t         * evhtp_new(evbase_t *);
 evhtp_request_t * evhtp_request_new(evhtp_conn_t *);
 
-int               evhtp_set_server_name(evhtp_t *, const char *);
+int               evhtp_set_server_name(evhtp_t *, char *);
 int               evhtp_set_cb(evhtp_t *, const char *, evhtp_callback_cb, void *);
 void              evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * cbarg);
 void              evhtp_bind_socket(evhtp_t *, const char *, uint16_t);
@@ -158,6 +168,14 @@ int               evhtp_set_close_on(evhtp_conn_t *, evhtp_cflags);
 int               evhtp_reset_close_on(evhtp_conn_t *);
 int               evhtp_unset_close_on(evhtp_conn_t *, evhtp_cflags flag);
 
+evbase_t        * evhtp_request_get_evbase(evhtp_request_t *);
+event_t         * evhtp_request_get_listener(evhtp_request_t *);
+int               evhtp_request_get_sock(evhtp_request_t *);
+
+evbase_t        * evhtp_get_evbase(evhtp_t *);
+event_t         * evhtp_get_listener(evhtp_t *);
+char            * evhtp_get_server_name(evhtp_t *);
+
 int               evhtp_set_hook(evhtp_conn_t *, evhtp_hook_type, void * cb, void * arg);
 void              evhtp_set_pre_accept_cb(evhtp_t *, evhtp_pre_accept, void *);
 void              evhtp_set_post_accept_cb(evhtp_t *, evhtp_post_accept, void *);
@@ -165,13 +183,16 @@ void              evhtp_send_reply(evhtp_request_t *, evhtp_status, const char *
 
 evhtp_hdr_t     * evhtp_hdr_new(char *, char *);
 const char      * evhtp_hdr_find(evhtp_hdrs_t *, const char *);
+const char      * evhtp_hdr_get_key(evhtp_hdr_t *);
+const char      * evhtp_hdr_get_val(evhtp_hdr_t *);
 void              evhtp_hdr_add(evhtp_hdrs_t *, evhtp_hdr_t *);
 int               evhtp_hdrs_for_each(evhtp_hdrs_t *, evhtp_hdrs_iter_cb, void *);
 
+void              evhtp_free(evhtp_t *);
 void              evhtp_request_free(evhtp_request_t *);
-void              evhtp_conn_free(evhtp_conn_t *);
 void              evhtp_hdrs_free(evhtp_hdrs_t *);
 void              evhtp_hdr_free(evhtp_hdr_t *);
+
 
 #endif /* __EVHTP_H__ */
 

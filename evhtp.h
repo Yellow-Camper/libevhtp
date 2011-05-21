@@ -40,6 +40,8 @@ typedef evhtp_res (*evhtp_hook_uri)(evhtp_request_t *, const char *, void *);
 typedef evhtp_res (*evhtp_hook_read)(evhtp_request_t *, const char *, size_t, void *);
 typedef evhtp_status (*evhtp_hook_on_expect)(evhtp_request_t *, const char *, void *);
 
+typedef evhtp_res (*evhtp_stream_cb)(evhtp_request_t *, void *);
+
 enum evhtp_res {
     EVHTP_RES_OK = 0,
     EVHTP_RES_ERROR,
@@ -149,8 +151,11 @@ struct evhtp_request {
     evhtp_proto       proto;
     char              major;
     char              minor;
+    char              chunked;
     evhtp_callback_cb cb;
+    evhtp_stream_cb   stream_cb;
     void            * cbarg;
+    void            * stream_cbarg;
     evhtp_conn_t    * conn;
     evbuf_t         * buffer_in;
     evbuf_t         * buffer_out;
@@ -180,6 +185,8 @@ int               evhtp_set_hook(evhtp_conn_t *, evhtp_hook_type, void * cb, voi
 void              evhtp_set_pre_accept_cb(evhtp_t *, evhtp_pre_accept, void *);
 void              evhtp_set_post_accept_cb(evhtp_t *, evhtp_post_accept, void *);
 void              evhtp_send_reply(evhtp_request_t *, evhtp_status, const char *, evbuf_t *);
+void              evhtp_send_reply_stream(evhtp_request_t *, evhtp_status, evhtp_stream_cb, void *);
+void              evhtp_request_make_chunk(evhtp_request_t *, void *, size_t);
 
 evhtp_hdr_t     * evhtp_hdr_new(char *, char *);
 const char      * evhtp_hdr_find(evhtp_hdrs_t *, const char *);

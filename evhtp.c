@@ -76,7 +76,6 @@ struct evhtp_conn {
     evhtp_request_t * request;
     http_parser     * parser;
     int               sock;
-    char              should_close;
     evhtp_cflags      close_flags;
     event_t         * read_ev;
     event_t         * write_ev;
@@ -609,10 +608,6 @@ _htp_recv_cb(int sock, short which, void * arg) {
     int            bytes_read;
     size_t         nread;
 
-    if (conn->should_close == 1) {
-        return _htp_conn_free(conn);
-    }
-
     if (ioctl(sock, FIONREAD, &data_avail) < 0) {
         return _htp_conn_free(conn);
     }
@@ -896,12 +891,12 @@ _htp_write_cb(int sock, short which, void * arg) {
     free(writer);
 }
 
-static int
+static void
 _htp_conn_write(evhtp_conn_t * conn, evbuf_t * buf, htp_conn_write_fini_cb cb, void * arg) {
     evhtp_conn_writer_t * writer;
 
     if (!(writer = _htp_conn_writer_new(conn, buf, cb, arg))) {
-        return -1;
+        return;
     }
 
     event_del(conn->read_ev);
@@ -910,8 +905,6 @@ _htp_conn_write(evhtp_conn_t * conn, evbuf_t * buf, htp_conn_write_fini_cb cb, v
         conn->sock, EV_WRITE, _htp_write_cb, (void *)writer);
 
     event_add(conn->write_ev, NULL);
-
-    return 0;
 }
 
 static void
@@ -930,6 +923,37 @@ _htp_resp_fini_cb(evhtp_conn_t * conn, void * arg) {
     } else {
         return _htp_conn_free(conn);
     }
+}
+
+static void
+_htp_create_chunk(evbuf_t * buf) {
+    char lstr[128];
+
+
+    snprintf(lstr, sizeof(lstr), "%x\r\n", evbuffer_get_length(buf));
+    evbuffer_prepend(buf, lstr, strlen(lstr));
+    evbuffer_add(buf, "\r\n", 2);
+}
+
+static void
+_htp_resp_stream_cb(evhtp_conn_t * conn, void * arg) {
+    evhtp_request_t * request;
+    evhtp_res         res;
+
+    request = (evhtp_request_t *)arg;
+
+    switch (request->stream_cb(request, request->stream_cbarg)) {
+        case EVHTP_RES_OK:
+            return _htp_conn_write(request->conn, request->buffer_out, _htp_resp_stream_cb, arg);
+        case EVHTP_RES_DONE:
+            if (request->chunked) {
+                evbuffer_add(request->buffer_out, "0\r\n\r\n", 5);
+                return _htp_conn_write(request->conn, request->buffer_out, _htp_resp_fini_cb, arg);
+            }
+            return _htp_resp_fini_cb(conn, arg);
+    }
+
+    return _htp_resp_fini_cb(conn, arg);
 }
 
 void
@@ -961,6 +985,49 @@ evhtp_send_reply(evhtp_request_t * req, evhtp_status code, const char * r, evbuf
 
     _htp_conn_write(conn, req->buffer_out, _htp_resp_fini_cb, (void *)req);
 } /* evhtp_send_reply */
+
+void
+evhtp_send_reply_stream(evhtp_request_t * req, evhtp_status code, evhtp_stream_cb cb, void * arg) {
+    evhtp_conn_t * conn;
+
+    conn           = req->conn;
+    req->keepalive = _htp_should_keep_alive(req, code);
+
+    if (req->buffer_out == NULL) {
+        req->buffer_out = evbuffer_new();
+    }
+
+    if (req->proto == EVHTP_PROTO_1_1) {
+        if (!evhtp_hdr_find(&req->headers_out, _HTP_TRANSENC)) {
+            evhtp_hdr_add(&req->headers_out, evhtp_hdr_new(_HTP_TRANSENC, _HTP_DEFCHUNKED));
+        }
+
+        req->chunked = 1;
+    }
+
+    if (!evhtp_hdr_find(&req->headers_out, _HTP_CONTYPE)) {
+        evhtp_hdr_add(&req->headers_out, evhtp_hdr_new(_HTP_CONTYPE, _HTP_DEFCONTYPE));
+    }
+
+    _htp_set_kalive_hdr(&req->headers_out, req->proto, req->keepalive);
+    _htp_set_server_hdr(&req->headers_out, evhtp_get_server_name(conn->htp));
+
+    _htp_set_status_buf(req->buffer_out, req->major, req->minor, code);
+    _htp_set_header_buf(req->buffer_out, &req->headers_out);
+    _htp_set_crlf_buf(req->buffer_out);
+
+    req->stream_cb    = cb;
+    req->stream_cbarg = arg;
+
+    _htp_conn_write(conn, req->buffer_out, _htp_resp_stream_cb, (void *)req);
+}
+
+void
+evhtp_request_make_chunk(evhtp_request_t * req, void * data, size_t len) {
+    evbuffer_add_printf(req->buffer_out, "%x\r\n", len);
+    evbuffer_add(req->buffer_out, data, len);
+    evbuffer_add_printf(req->buffer_out, "\r\n", 2);
+}
 
 int
 evhtp_unset_close_on(evhtp_conn_t * conn, evhtp_cflags flag) {

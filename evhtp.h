@@ -5,6 +5,8 @@
 #include <http_parser.h>
 #include <event.h>
 
+#define EVHTP_VERSION "0.3.0"
+
 struct evhtp;
 struct evhtp_hdrs;
 struct evhtp_hdr;
@@ -200,6 +202,7 @@ void              evhtp_request_free(evhtp_request_t *);
 void              evhtp_hdrs_free(evhtp_hdrs_t *);
 void              evhtp_hdr_free(evhtp_hdr_t *);
 
+const char      * evhtp_version(void);
 
 #endif /* __EVHTP_H__ */
 

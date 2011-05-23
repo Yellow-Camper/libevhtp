@@ -926,19 +926,8 @@ _htp_resp_fini_cb(evhtp_conn_t * conn, void * arg) {
 }
 
 static void
-_htp_create_chunk(evbuf_t * buf) {
-    char lstr[128];
-
-
-    snprintf(lstr, sizeof(lstr), "%x\r\n", evbuffer_get_length(buf));
-    evbuffer_prepend(buf, lstr, strlen(lstr));
-    evbuffer_add(buf, "\r\n", 2);
-}
-
-static void
 _htp_resp_stream_cb(evhtp_conn_t * conn, void * arg) {
     evhtp_request_t * request;
-    evhtp_res         res;
 
     request = (evhtp_request_t *)arg;
 
@@ -951,6 +940,8 @@ _htp_resp_stream_cb(evhtp_conn_t * conn, void * arg) {
                 return _htp_conn_write(request->conn, request->buffer_out, _htp_resp_fini_cb, arg);
             }
             return _htp_resp_fini_cb(conn, arg);
+        default:
+            return;
     }
 
     return _htp_resp_fini_cb(conn, arg);
@@ -1024,9 +1015,9 @@ evhtp_send_reply_stream(evhtp_request_t * req, evhtp_status code, evhtp_stream_c
 
 void
 evhtp_request_make_chunk(evhtp_request_t * req, void * data, size_t len) {
-    evbuffer_add_printf(req->buffer_out, "%x\r\n", len);
+    evbuffer_add_printf(req->buffer_out, "%" PRIxMAX "\r\n", len);
     evbuffer_add(req->buffer_out, data, len);
-    evbuffer_add_printf(req->buffer_out, "\r\n", 2);
+    evbuffer_add(req->buffer_out, "\r\n", 2);
 }
 
 int
@@ -1385,5 +1376,10 @@ evhtp_new(evbase_t * evbase) {
     evhtp_log_debug("created new instance");
 
     return htp;
+}
+
+const char *
+evhtp_version(void) {
+    return EVHTP_VERSION;
 }
 

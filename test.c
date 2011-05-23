@@ -5,6 +5,36 @@
 #include <errno.h>
 #include <evhtp.h>
 
+static char * chunks[] = {
+    "foo\n",
+    "bar\n",
+    "baz\n",
+    NULL
+};
+
+
+static evhtp_res
+_send_chunk(evhtp_request_t * req, void * arg) {
+    int * idx = (int *)arg;
+
+    if (chunks[*idx] == NULL) {
+        return EVHTP_RES_DONE;
+    }
+
+    evhtp_request_make_chunk(req, chunks[*idx], strlen(chunks[*idx]));
+
+    (*idx)++;
+
+    return EVHTP_RES_OK;
+}
+
+static void
+test_streaming(evhtp_request_t * req, void * arg) {
+    int * index = calloc(sizeof(int), 1);
+
+    evhtp_send_reply_stream(req, EVHTP_CODE_OK, _send_chunk, index);
+}
+
 static void
 test_foo_cb(evhtp_request_t * req, void * arg) {
     printf("%s\n", (char *)arg);
@@ -58,7 +88,8 @@ print_uri(evhtp_request_t * req, const char * uri, void * arg) {
 static evhtp_res
 print_data(evhtp_request_t * req, const char * data, size_t len, void * arg) {
     if (len) {
-        evbuffer_drain(req->input_buffer, len);
+        /* printf("%.*s\n", len, data); */
+        evbuffer_drain(req->buffer_in, len);
     }
     return EVHTP_RES_OK;
 }
@@ -103,6 +134,7 @@ main(int argc, char ** argv) {
     evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
     evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
     evhtp_set_cb(htp, "/500", test_500_cb, "500");
+    evhtp_set_cb(htp, "/stream", test_streaming, NULL);
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
     evhtp_set_post_accept_cb(htp, set_my_handlers, NULL);
 

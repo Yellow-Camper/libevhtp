@@ -8,6 +8,8 @@ set(PROJECT_PATCH_VERSION 0)
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 
+OPTION(DISABLE_EVTHR "Disable evthread support" OFF)
+
 include(BaseConfig)
 
 message("Build Type: ${CMAKE_BUILD_TYPE}")
@@ -29,7 +31,12 @@ set(LIBEVHTP_EXTERNAL_LIBS
 	${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/build
 )
-set(LIBEVHTP_SOURCES evthr/evthr.c http_parser/http_parser.c evhtp.c)
+
+if (DISABLE_EVTHR)
+	set(LIBEVHTP_SOURCES http_parser/http_parser.c evhtp.c)
+else()
+	set(LIBEVHTP_SOURCES evthr/evthr.c http_parser/http_parser.c evhtp.c)
+endif(DISABLE_EVTHR)
 
 add_library(libevhtp STATIC ${LIBEVHTP_SOURCES})
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")

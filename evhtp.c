@@ -31,6 +31,11 @@ struct evhtp {
     evhtp_pre_accept     pre_accept_cb;
     evhtp_post_accept    post_accept_cb;
     http_parser_settings psets;
+#ifndef DISABLE_EVTHR
+    evthr_pool_t * pool;
+#else
+    void * pool;
+#endif
 };
 
 struct evhtp_hooks {
@@ -76,9 +81,13 @@ struct evhtp_conn {
     evhtp_request_t * request;
     http_parser     * parser;
     int               sock;
-    evhtp_cflags      close_flags;
+    evhtp_cflags      flags;
+    evbase_t        * evbase;
     event_t         * read_ev;
     event_t         * write_ev;
+#ifndef DISABLE_EVTHR
+    evthr_t * thr;
+#endif
 };
 
 #define _HTP_CONN       "Connection"
@@ -532,6 +541,12 @@ _htp_conn_free(evhtp_conn_t * conn) {
         evhtp_request_free(conn->request);
     }
 
+#ifndef DISABLE_EVTHR
+    if (conn->thr) {
+        evthr_dec_backlog(conn->thr);
+    }
+#endif
+
     free(conn);
 }
 
@@ -584,7 +599,7 @@ _htp_conn_get_evbase(evhtp_conn_t * conn) {
         return NULL;
     }
 
-    return evhtp_get_evbase(conn->htp);
+    return conn->evbase;
 }
 
 static int
@@ -633,6 +648,28 @@ _htp_hdr_output(evhtp_hdr_t * hdr, void * arg) {
     return 0;
 }
 
+#ifndef DISABLE_EVTHR
+static void
+_htp_exec_in_thr(evthr_t * thr, void * arg, void * shared) {
+    evhtp_t      * htp;
+    evhtp_conn_t * conn;
+    evbase_t     * evbase;
+
+    evbase         = evthr_get_base(thr);
+    htp            = (evhtp_t *)shared;
+    conn           = (evhtp_conn_t *)arg;
+    conn->evbase   = evbase;
+    conn->thr      = thr;
+
+    conn->read_ev  = event_new(evbase, conn->sock, EV_READ | EV_PERSIST, _htp_recv_cb, conn);
+    conn->write_ev = event_new(evbase, -1, 0, NULL, NULL);
+
+    event_add(conn->read_ev, NULL);
+    evthr_inc_backlog(conn->thr);
+}
+
+#endif
+
 static void
 _htp_accept_cb(int fd, short what, void * arg) {
     evhtp_t          * htp;
@@ -640,24 +677,42 @@ _htp_accept_cb(int fd, short what, void * arg) {
     struct sockaddr_in addr;
     socklen_t          addrlen;
     int                csock;
+    int                defer;
 
-    htp            = (evhtp_t *)arg;
+    htp          = (evhtp_t *)arg;
 
-    addrlen        = sizeof(struct sockaddr);
-    csock          = accept(fd, (struct sockaddr *)&addr, &addrlen);
+    addrlen      = sizeof(struct sockaddr);
+    csock        = accept(fd, (struct sockaddr *)&addr, &addrlen);
 
-    conn           = _htp_conn_new(htp);
-    conn->read_ev  = event_new(htp->evbase, csock, EV_READ | EV_PERSIST, _htp_recv_cb, conn);
-    conn->write_ev = event_new(htp->evbase, -1, 0, NULL, NULL);
-    conn->sock     = csock;
+    conn         = _htp_conn_new(htp);
+    conn->evbase = evhtp_get_evbase(htp);
+    conn->sock   = csock;
 
     evutil_make_socket_nonblocking(csock);
-    event_add(conn->read_ev, NULL);
+
+#ifndef DISABLE_EVTHR
+    if (htp->pool != NULL) {
+        defer = 1;
+    } else
+#endif
+    {
+        defer          = 0;
+        conn->read_ev  = event_new(htp->evbase, csock, EV_READ | EV_PERSIST, _htp_recv_cb, conn);
+        conn->write_ev = event_new(htp->evbase, -1, 0, NULL, NULL);
+
+        event_add(conn->read_ev, NULL);
+    }
 
     if (htp->post_accept_cb) {
         htp->post_accept_cb(conn, htp->post_accept_cbarg);
     }
-}
+
+#ifndef DISABLE_EVTHR
+    if (defer == 1) {
+        evthr_pool_defer(htp->pool, _htp_exec_in_thr, conn);
+    }
+#endif
+} /* _htp_accept_cb */
 
 static void
 _htp_set_kalive_hdr(evhtp_hdrs_t * hdrs, evhtp_proto proto, int kalive) {
@@ -777,7 +832,7 @@ _htp_should_keep_alive(evhtp_request_t * req, evhtp_status code) {
         return 0;
     }
 
-    if (_htp_should_close_based_on_cflags(conn->close_flags, code)) {
+    if (_htp_should_close_based_on_cflags(conn->flags, code)) {
         /* one of the user-set flags has informed us to close, thus
          * do not keep alive */
         return 0;
@@ -901,7 +956,7 @@ _htp_conn_write(evhtp_conn_t * conn, evbuf_t * buf, htp_conn_write_fini_cb cb, v
 
     event_del(conn->read_ev);
 
-    event_assign(conn->write_ev, evhtp_get_evbase(conn->htp),
+    event_assign(conn->write_ev, _htp_conn_get_evbase(conn),
         conn->sock, EV_WRITE, _htp_write_cb, (void *)writer);
 
     event_add(conn->write_ev, NULL);
@@ -1021,32 +1076,8 @@ evhtp_request_make_chunk(evhtp_request_t * req, void * data, size_t len) {
 }
 
 int
-evhtp_unset_close_on(evhtp_conn_t * conn, evhtp_cflags flag) {
-    if (conn == NULL) {
-        return -1;
-    }
-
-    if (!flag) {
-        conn->close_flags = 0;
-    } else {
-        conn->close_flags &= ~flag;
-    }
-
-    return 0;
-}
-
-int
-evhtp_reset_close_on(evhtp_conn_t * conn) {
-    return evhtp_unset_close_on(conn, 0);
-}
-
-int
-evhtp_set_close_on(evhtp_conn_t * conn, evhtp_cflags flags) {
-    if (conn == NULL) {
-        return -1;
-    }
-
-    conn->close_flags |= flags;
+evhtp_conn_set_flags(evhtp_conn_t * conn, evhtp_cflags flags) {
+    conn->flags |= flags;
     return 0;
 }
 
@@ -1350,6 +1381,19 @@ event_t *
 evhtp_get_listener(evhtp_t * htp) {
     return htp ? htp->listener : NULL;
 }
+
+#ifndef DISABLE_EVTHR
+int
+evhtp_use_threads(evhtp_t * htp, int nthreads) {
+    if (!(htp->pool = evthr_pool_new(nthreads, htp))) {
+        return -1;
+    }
+
+    evthr_pool_start(htp->pool);
+    return 0;
+}
+
+#endif
 
 evhtp_t *
 evhtp_new(evbase_t * evbase) {

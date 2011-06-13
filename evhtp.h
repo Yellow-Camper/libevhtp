@@ -1,6 +1,10 @@
 #ifndef __EVHTP_H__
 #define __EVHTP_H__
 
+#ifndef DISABLE_EVTHR
+#include <evthr.h>
+#endif
+
 #include <sys/queue.h>
 #include <http_parser.h>
 #include <event.h>
@@ -17,7 +21,9 @@ typedef unsigned             evhtp_status;
 typedef unsigned char        evhtp_cflags;
 typedef struct evbuffer      evbuf_t;
 typedef struct event         event_t;
+#ifdef DISABLE_EVTHR
 typedef struct event_base    evbase_t;
+#endif
 typedef struct evhtp         evhtp_t;
 typedef struct evhtp_request evhtp_request_t;
 typedef struct evhtp_conn    evhtp_conn_t;

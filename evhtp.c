@@ -15,13 +15,12 @@
 
 typedef struct evhtp_callback    evhtp_callback_t;
 typedef struct evhtp_callbacks   evhtp_callbacks_t;
-typedef struct evhtp_conn_writer evhtp_conn_writer_t;
 
 typedef void (*htp_conn_write_fini_cb)(evhtp_conn_t * conn, void * args);
 
 struct evhtp {
     evbase_t           * evbase;
-    event_t            * listener;
+    evserv_t           * listener;
     evhtp_callbacks_t  * callbacks;
     void               * default_cbarg;
     void               * pre_accept_cbarg;
@@ -68,13 +67,6 @@ struct evhtp_callbacks {
     unsigned int        buckets;
 };
 
-struct evhtp_conn_writer {
-    evhtp_conn_t         * conn;
-    evbuf_t              * buf;
-    void                 * cbargs;
-    htp_conn_write_fini_cb fini_cb;
-};
-
 struct evhtp_conn {
     evhtp_t         * htp;
     evhtp_hooks_t   * hooks;
@@ -83,8 +75,7 @@ struct evhtp_conn {
     int               sock;
     evhtp_cflags      flags;
     evbase_t        * evbase;
-    event_t         * read_ev;
-    event_t         * write_ev;
+    evbev_t         * bev;
 #ifndef DISABLE_EVTHR
     evthr_t * thr;
 #endif
@@ -124,43 +115,11 @@ struct evhtp_conn {
         _htp_conn_hook_cbarg(c, n) = a;     \
 } while (0)
 
-static evhtp_conn_t      * _htp_conn_new(evhtp_t * htp);
-static void                _htp_recv_cb(int sock, short which, void * arg);
-static void                _htp_accept_cb(int fd, short what, void * arg);
 
-static evhtp_status        _htp_run_on_expect_hook(evhtp_conn_t *, const char *);
-static evhtp_res           _htp_run_hdr_hook(evhtp_conn_t * conn, evhtp_hdr_t * hdr);
-static evhtp_res           _htp_run_hdrs_hook(evhtp_conn_t * conn, evhtp_hdrs_t * hdrs);
-static evhtp_res           _htp_run_path_hook(evhtp_conn_t * conn, const char * path);
-static evhtp_res           _htp_run_uri_hook(evhtp_conn_t * conn, const char * uri);
-static evhtp_res           _htp_run_read_hook(evhtp_conn_t * conn, const char * data, size_t sz);
-
-static int                 _htp_start_cb(http_parser * p);
-static int                 _htp_end_cb(http_parser * p);
-static int                 _htp_query_str_cb(http_parser * p, const char * buf, size_t len);
-static int                 _htp_uri_cb(http_parser * p, const char * buf, size_t len);
-static int                 _htp_fragment_cb(http_parser * p, const char * buf, size_t len);
-static int                 _htp_path_cb(http_parser * p, const char * buf, size_t len);
-static int                 _htp_body_cb(http_parser * p, const char * buf, size_t len);
-static int                 _htp_header_key_cb(http_parser * p, const char * buf, size_t len);
-static int                 _htp_header_val_cb(http_parser * p, const char * buf, size_t len);
-static int                 _htp_headers_complete_cb(http_parser * p);
-
-static unsigned int        _htp_thash(const char * key);
-static evhtp_callback_t  * _htp_callback_new(const char * uri, evhtp_callback_cb cb, void * cbarg);
-static evhtp_callbacks_t * _htp_callbacks_new(unsigned int buckets);
-static evhtp_callback_t  * _htp_callbacks_find_callback(evhtp_callbacks_t * cbs, const char * uri);
-static int                 _htp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb);
-
-static evhtp_status        _htp_code_parent(evhtp_status code);
-static int                 _htp_resp_can_have_content(evhtp_status code);
-static int                 _htp_hdr_output(evhtp_hdr_t * hdr, void * arg);
-static int                 _htp_should_close_based_on_cflags(evhtp_cflags flags, evhtp_status code);
-static int                 _htp_should_keep_alive(evhtp_request_t * req, evhtp_status code);
-
-static void                _htp_reply_set_content_hdrs(evhtp_request_t * req, size_t len);
-
-static evhtp_proto         _htp_proto(char major, char minor);
+static evhtp_proto        _htp_proto(char major, char minor);
+static evhtp_callback_t * _htp_callbacks_find_callback(evhtp_callbacks_t *, const char *);
+static void               _htp_recv_cb(evbev_t * bev, void * arg);
+static void               _htp_err_cb(evbev_t * bev, short events, void * arg);
 
 static evhtp_status
 _htp_run_on_expect_hook(evhtp_conn_t * conn, const char * expt_val) {
@@ -515,18 +474,8 @@ _htp_conn_free(evhtp_conn_t * conn) {
         return;
     }
 
-    if (conn->sock > 0) {
-        evutil_closesocket(conn->sock);
-    }
-
-    if (conn->read_ev) {
-        event_del(conn->read_ev);
-        event_free(conn->read_ev);
-    }
-
-    if (conn->write_ev) {
-        event_del(conn->write_ev);
-        event_free(conn->write_ev);
+    if (conn->bev) {
+        bufferevent_free(conn->bev);
     }
 
     if (conn->hooks) {
@@ -568,11 +517,14 @@ _htp_conn_new(evhtp_t * htp) {
 
 static void
 _htp_conn_reset(evhtp_conn_t * conn) {
-    event_del(conn->write_ev);
-    event_add(conn->read_ev, NULL);
     http_parser_init(conn->parser, HTTP_REQUEST);
 
+    evhtp_request_free(conn->request);
     conn->request = NULL;
+
+    bufferevent_setwatermark(conn->bev, EV_READ | EV_WRITE, 0, 0);
+    bufferevent_setcb(conn->bev, _htp_recv_cb, NULL, _htp_err_cb, conn);
+    bufferevent_enable(conn->bev, EV_READ | EV_WRITE);
 }
 
 static int
@@ -584,7 +536,7 @@ _htp_conn_get_sock(evhtp_conn_t * conn) {
     return conn->sock;
 }
 
-static event_t *
+static evserv_t *
 _htp_conn_get_listener(evhtp_conn_t * conn) {
     if (conn == NULL) {
         return NULL;
@@ -613,27 +565,30 @@ _htp_resp_can_have_content(evhtp_status code) {
     return 0;
 }
 
-#define MAX_READ 1024
+static void
+_htp_recv_cb(evbev_t * bev, void * arg) {
+    evbuf_t      * ibuf;
+    evhtp_conn_t * conn;
+    char         * read_buf;
+    size_t         nread;
+    size_t         avail;
+
+    conn     = (evhtp_conn_t *)arg;
+    ibuf     = bufferevent_get_input(bev);
+    avail    = evbuffer_get_length(ibuf);
+    read_buf = (char *)evbuffer_pullup(ibuf, avail);
+
+    nread    = http_parser_execute(conn->parser, &conn->htp->psets, read_buf, avail);
+    evbuffer_drain(ibuf, nread);
+}
 
 static void
-_htp_recv_cb(int sock, short which, void * arg) {
-    int            data_avail = MAX_READ;
-    evhtp_conn_t * conn       = arg;
-    char         * read_buf;
-    int            bytes_read;
-    size_t         nread;
+_htp_err_cb(evbev_t * bev, short events, void * arg) {
+    evhtp_conn_t * conn;
 
-    if (ioctl(sock, FIONREAD, &data_avail) < 0) {
-        return _htp_conn_free(conn);
-    }
+    conn = (evhtp_conn_t *)arg;
 
-    read_buf = alloca(data_avail);
-
-    if ((bytes_read = recv(sock, read_buf, data_avail, 0)) <= 0) {
-        return _htp_conn_free(conn);
-    }
-
-    nread = http_parser_execute(conn->parser, &conn->htp->psets, read_buf, bytes_read);
+    _htp_conn_free(conn);
 }
 
 static int
@@ -653,66 +608,60 @@ static void
 _htp_exec_in_thr(evthr_t * thr, void * arg, void * shared) {
     evhtp_t      * htp;
     evhtp_conn_t * conn;
-    evbase_t     * evbase;
 
-    evbase         = evthr_get_base(thr);
-    htp            = (evhtp_t *)shared;
-    conn           = (evhtp_conn_t *)arg;
-    conn->evbase   = evbase;
-    conn->thr      = thr;
+    htp          = (evhtp_t *)shared;
+    conn         = (evhtp_conn_t *)arg;
 
-    conn->read_ev  = event_new(evbase, conn->sock, EV_READ | EV_PERSIST, _htp_recv_cb, conn);
-    conn->write_ev = event_new(evbase, -1, 0, NULL, NULL);
+    conn->evbase = evthr_get_base(thr);
+    conn->thr    = thr;
+    conn->bev    = bufferevent_socket_new(conn->evbase, conn->sock,
+	    BEV_OPT_CLOSE_ON_FREE);
 
-    event_add(conn->read_ev, NULL);
+    bufferevent_setcb(conn->bev, _htp_recv_cb, NULL, _htp_err_cb, conn);
+    bufferevent_enable(conn->bev, EV_READ | EV_WRITE);
+
+    if (htp->post_accept_cb) {
+        htp->post_accept_cb(conn, htp->post_accept_cbarg);
+    }
+
     evthr_inc_backlog(conn->thr);
 }
 
 #endif
 
 static void
-_htp_accept_cb(int fd, short what, void * arg) {
-    evhtp_t          * htp;
-    evhtp_conn_t     * conn;
-    struct sockaddr_in addr;
-    socklen_t          addrlen;
-    int                csock;
-    int                defer;
+_htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg) {
+    evhtp_t      * htp;
+    evhtp_conn_t * conn;
 
     htp          = (evhtp_t *)arg;
 
-    addrlen      = sizeof(struct sockaddr);
-    csock        = accept(fd, (struct sockaddr *)&addr, &addrlen);
+    evutil_make_socket_nonblocking(fd);
 
     conn         = _htp_conn_new(htp);
-    conn->evbase = evhtp_get_evbase(htp);
-    conn->sock   = csock;
+    conn->evbase = htp->evbase;
+    conn->sock   = fd;
 
-    evutil_make_socket_nonblocking(csock);
-
-#ifndef DISABLE_EVTHR
-    if (htp->pool != NULL) {
-        defer = 1;
-    } else
-#endif
-    {
-        defer          = 0;
-        conn->read_ev  = event_new(htp->evbase, csock, EV_READ | EV_PERSIST, _htp_recv_cb, conn);
-        conn->write_ev = event_new(htp->evbase, -1, 0, NULL, NULL);
-
-        event_add(conn->read_ev, NULL);
-    }
 
     if (htp->post_accept_cb) {
         htp->post_accept_cb(conn, htp->post_accept_cbarg);
     }
 
 #ifndef DISABLE_EVTHR
-    if (defer == 1) {
+    if (htp->pool != NULL) {
         evthr_pool_defer(htp->pool, _htp_exec_in_thr, conn);
+        return;
     }
 #endif
-} /* _htp_accept_cb */
+
+    conn->bev = bufferevent_socket_new(conn->evbase, fd, BEV_OPT_CLOSE_ON_FREE);
+    bufferevent_setcb(conn->bev, _htp_recv_cb, NULL, NULL, conn);
+    bufferevent_enable(conn->bev, EV_READ | EV_WRITE);
+
+    if (htp->post_accept_cb) {
+        htp->post_accept_cb(conn, htp->post_accept_cbarg);
+    }
+}
 
 static void
 _htp_set_kalive_hdr(evhtp_hdrs_t * hdrs, evhtp_proto proto, int kalive) {
@@ -905,78 +854,33 @@ _htp_set_body_buf(evbuf_t * dst, evbuf_t * src) {
     }
 }
 
-static evhtp_conn_writer_t *
-_htp_conn_writer_new(evhtp_conn_t * conn, evbuf_t * buf, htp_conn_write_fini_cb cb, void * cbarg) {
-    evhtp_conn_writer_t * writer;
-
-    if (!(writer = calloc(sizeof(evhtp_conn_writer_t), sizeof(char)))) {
-        return NULL;
-    }
-
-    writer->conn    = conn;
-    writer->buf     = buf;
-    writer->fini_cb = cb;
-    writer->cbargs  = cbarg;
-
-    return writer;
-}
-
 static void
-_htp_write_cb(int sock, short which, void * arg) {
-    evhtp_conn_writer_t * writer;
-
-    writer = (evhtp_conn_writer_t *)arg;
-
-    if (evbuffer_get_length(writer->buf)) {
-        evbuffer_write(writer->buf, sock);
-    }
-
-    if (evbuffer_get_length(writer->buf)) {
-        event_add(writer->conn->write_ev, NULL);
-        return;
-    }
-
-    event_add(writer->conn->read_ev, NULL);
-    event_del(writer->conn->write_ev);
-
-    if (writer->fini_cb) {
-        writer->fini_cb(writer->conn, writer->cbargs);
-    }
-
-    free(writer);
-}
-
-static void
-_htp_conn_write(evhtp_conn_t * conn, evbuf_t * buf, htp_conn_write_fini_cb cb, void * arg) {
-    evhtp_conn_writer_t * writer;
-
-    if (!(writer = _htp_conn_writer_new(conn, buf, cb, arg))) {
-        return;
-    }
-
-    event_del(conn->read_ev);
-
-    event_assign(conn->write_ev, _htp_conn_get_evbase(conn),
-        conn->sock, EV_WRITE, _htp_write_cb, (void *)writer);
-
-    event_add(conn->write_ev, NULL);
-}
-
-static void
-_htp_resp_fini_cb(evhtp_conn_t * conn, void * arg) {
-    evhtp_request_t * request;
+_htp_resp_fini_cb(evbev_t * bev, void * arg) {
+    evhtp_request_t * req;
+    evhtp_conn_t    * conn;
     int               keepalive;
 
-    request   = (evhtp_request_t *)arg;
-    keepalive = request->keepalive;
-
-    evhtp_request_free(request);
-    conn->request = NULL;
+    req       = (evhtp_request_t *)arg;
+    keepalive = req->keepalive;
+    conn      = req->conn;
 
     if (keepalive) {
         return _htp_conn_reset(conn);
     } else {
         return _htp_conn_free(conn);
+    }
+}
+
+static void
+_htp_resp_err_cb(evbev_t * bev, short events, void * arg) {
+    evhtp_request_t * req;
+    evhtp_conn_t    * conn;
+
+    req  = (evhtp_request_t *)arg;
+    conn = req->conn;
+
+    return _htp_conn_free(conn);
+    if (events & BEV_EVENT_ERROR) {
     }
 }
 
@@ -988,18 +892,19 @@ _htp_resp_stream_cb(evhtp_conn_t * conn, void * arg) {
 
     switch (request->stream_cb(request, request->stream_cbarg)) {
         case EVHTP_RES_OK:
-            return _htp_conn_write(request->conn, request->buffer_out, _htp_resp_stream_cb, arg);
+            bufferevent_write_buffer(conn->bev, request->buffer_out);
+            return;
         case EVHTP_RES_DONE:
             if (request->chunked) {
                 evbuffer_add(request->buffer_out, "0\r\n\r\n", 5);
-                return _htp_conn_write(request->conn, request->buffer_out, _htp_resp_fini_cb, arg);
+                bufferevent_write_buffer(conn->bev, request->buffer_out);
             }
-            return _htp_resp_fini_cb(conn, arg);
+            return;
         default:
             return;
     }
 
-    return _htp_resp_fini_cb(conn, arg);
+    return _htp_resp_fini_cb(conn->bev, arg);
 }
 
 void
@@ -1029,7 +934,11 @@ evhtp_send_reply(evhtp_request_t * req, evhtp_status code, const char * r, evbuf
     _htp_set_crlf_buf(req->buffer_out);
     _htp_set_body_buf(req->buffer_out, b);
 
-    _htp_conn_write(conn, req->buffer_out, _htp_resp_fini_cb, (void *)req);
+    bufferevent_write_buffer(conn->bev, req->buffer_out);
+
+    bufferevent_disable(conn->bev, EV_READ);
+    bufferevent_setwatermark(conn->bev, EV_WRITE, 1, 0);
+    bufferevent_setcb(conn->bev, NULL, _htp_resp_fini_cb, _htp_resp_err_cb, req);
 } /* evhtp_send_reply */
 
 void
@@ -1065,7 +974,7 @@ evhtp_send_reply_stream(evhtp_request_t * req, evhtp_status code, evhtp_stream_c
     req->stream_cb    = cb;
     req->stream_cbarg = arg;
 
-    _htp_conn_write(conn, req->buffer_out, _htp_resp_stream_cb, (void *)req);
+    /* _htp_conn_write(conn, req->buffer_out, _htp_resp_stream_cb, (void *)req); */
 }
 
 void
@@ -1154,30 +1063,9 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port) {
     sin.sin_port        = htons(port);
     sin.sin_addr.s_addr = inet_addr(baddr);
 
-    if ((fd = socket(PF_INET, SOCK_STREAM, 0)) <= 0) {
-        return;
-    }
-
-    if (evutil_make_socket_nonblocking(fd) < 0) {
-        evutil_closesocket(fd);
-        return;
-    }
-
-    setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&n, sizeof(n));
-    evutil_make_listen_socket_reuseable(fd);
-
-    if (bind(fd, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
-        evutil_closesocket(fd);
-        return;
-    }
-
-    if (listen(fd, 1024) < 0) {
-        evutil_closesocket(fd);
-        return;
-    }
-
-    htp->listener = event_new(htp->evbase, fd, EV_READ | EV_PERSIST, _htp_accept_cb, htp);
-    event_add(htp->listener, NULL);
+    htp->listener       = evconnlistener_new_bind(htp->evbase,
+        _htp_accept_cb, htp, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, 1024,
+        (struct sockaddr *)&sin, sizeof(sin));
 }
 
 void
@@ -1328,7 +1216,7 @@ evhtp_request_get_sock(evhtp_request_t * request) {
     return _htp_conn_get_sock(request->conn);
 }
 
-event_t *
+evserv_t *
 evhtp_request_get_listener(evhtp_request_t * request) {
     if (request == NULL) {
         return NULL;
@@ -1377,7 +1265,7 @@ evhtp_get_server_name(evhtp_t * htp) {
     return htp ? htp->server_name : NULL;
 }
 
-event_t *
+evserv_t *
 evhtp_get_listener(evhtp_t * htp) {
     return htp ? htp->listener : NULL;
 }

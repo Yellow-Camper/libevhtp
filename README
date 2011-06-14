@@ -6,53 +6,64 @@ Building:
 4. cmake ..
 5. make
 
-Stats: httperf 200 concurrent connections, 400 requests each for /ref
+The following test-cases I use ./perftest.sh. A generic wrapper
+around httperf's --wsess argument.
 
-Libevent bench_http:
-Total: connections 200 requests 80000 replies 80000 test-duration 2.134 s
+In these test cases I create 400 concurrent connections to the servers,
+each making 100 requests. These tests show a huge performance increase 
+with the same functionality. 
 
-Connection rate: 93.7 conn/s (10.7 ms/conn, <=1 concurrent connections)
-Connection time [ms]: min 10.4 avg 10.7 max 12.2 median 10.5 stddev 0.2
-Connection time [ms]: connect 0.0
-Connection length [replies/conn]: 400.000
+Libevent: 47885 requests/s processed. 
+Libevhtp: 88807 requests/s processed.
 
-Request rate: 37487.7 req/s (0.0 ms/req)
+########## Using libevhtp (no threads, test.c) #####################
+Running (400 connections | 100 requests each)
+httperf --client=0/1 --server=localhost --port=8081 --uri=/ref --rate=1e+06 --send-buffer=4096 --recv-buffer=16384 --wsess=400,100,0.000
+Maximum connect burst length: 1
+
+Total: connections 400 requests 40000 replies 40000 test-duration 0.450 s
+
+Connection rate: 888.1 conn/s (1.1 ms/conn, <=400 concurrent connections)
+Connection time [ms]: min 341.1 avg 398.2 max 449.0 median 399.5 stddev 25.0
+Connection time [ms]: connect 15.6
+Connection length [replies/conn]: 100.000
+
+Request rate: 88807.2 req/s (0.0 ms/req)
 Request size [B]: 65.0
 
 Reply rate [replies/s]: min 0.0 avg 0.0 max 0.0 stddev 0.0 (0 samples)
-Reply time [ms]: response 0.0 transfer 0.0
-Reply size [B]: header 136.0 content 4.0 footer 0.0 (total 140.0)
-Reply status: 1xx=0 2xx=80000 3xx=0 4xx=0 5xx=0
+Reply time [ms]: response 2.4 transfer 0.0
+Reply size [B]: header 85.0 content 4.0 footer 0.0 (total 89.0)
+Reply status: 1xx=0 2xx=40000 3xx=0 4xx=0 5xx=0
 
-CPU time [s]: user 0.48 system 1.65 (user 22.5% system 77.3% total 99.8%)
-Net I/O: 7504.9 KB/s (61.5*10^6 bps)
+CPU time [s]: user 0.06 system 0.38 (user 13.3% system 84.4% total 97.7%)
+Net I/O: 13355.8 KB/s (109.4*10^6 bps)
 
 Errors: total 0 client-timo 0 socket-timo 0 connrefused 0 connreset 0
 Errors: fd-unavail 0 addrunavail 0 ftab-full 0 other 0
 
-------
+########## Using libevent http API (bench_http) #####################
+Running (400 connections | 100 requests each)
+httperf --client=0/1 --server=localhost --port=8080 --uri=/ref --rate=1e+06 --send-buffer=4096 --recv-buffer=16384 --wsess=400,100,0.000
+Maximum connect burst length: 1
 
-Evhtp test.c (backwards compat mode):
-Total: connections 200 requests 80000 replies 80000 test-duration 1.470 s
+Total: connections 400 requests 40000 replies 40000 test-duration 0.835 s
 
-Connection rate: 136.1 conn/s (7.3 ms/conn, <=1 concurrent connections)
-Connection time [ms]: min 7.1 avg 7.3 max 16.1 median 7.5 stddev 0.8
-Connection time [ms]: connect 0.0
-Connection length [replies/conn]: 400.000
+Connection rate: 478.9 conn/s (2.1 ms/conn, <=400 concurrent connections)
+Connection time [ms]: min 824.0 avg 829.2 max 833.9 median 828.5 stddev 2.9
+Connection time [ms]: connect 13.8
+Connection length [replies/conn]: 100.000
 
-Request rate: 54438.2 req/s (0.0 ms/req)
+Request rate: 47885.6 req/s (0.0 ms/req)
 Request size [B]: 65.0
 
 Reply rate [replies/s]: min 0.0 avg 0.0 max 0.0 stddev 0.0 (0 samples)
-Reply time [ms]: response 0.0 transfer 0.0
-Reply size [B]: header 99.0 content 4.0 footer 0.0 (total 103.0)
-Reply status: 1xx=0 2xx=80000 3xx=0 4xx=0 5xx=0
+Reply time [ms]: response 6.8 transfer 0.0
+Reply size [B]: header 136.0 content 0.0 footer 0.0 (total 136.0)
+Reply status: 1xx=0 2xx=40000 3xx=0 4xx=0 5xx=0
 
-CPU time [s]: user 0.28 system 1.19 (user 19.1% system 81.0% total 100.0%)
-Net I/O: 8931.3 KB/s (73.2*10^6 bps)
+CPU time [s]: user 0.07 system 0.76 (user 8.4% system 91.0% total 99.4%)
+Net I/O: 9399.4 KB/s (77.0*10^6 bps)
 
 Errors: total 0 client-timo 0 socket-timo 0 connrefused 0 connreset 0
 Errors: fd-unavail 0 addrunavail 0 ftab-full 0 other 0
-
-------
-

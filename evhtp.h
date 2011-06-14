@@ -9,7 +9,7 @@
 #include <http_parser.h>
 #include <event.h>
 
-#define EVHTP_VERSION "0.3.0"
+#define EVHTP_VERSION "0.3.1"
 
 struct evhtp;
 struct evhtp_hdrs;

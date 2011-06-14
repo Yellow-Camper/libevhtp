@@ -177,9 +177,7 @@ int               evhtp_set_cb(evhtp_t *, const char *, evhtp_callback_cb, void 
 void              evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * cbarg);
 void              evhtp_bind_socket(evhtp_t *, const char *, uint16_t);
 
-int               evhtp_set_close_on(evhtp_conn_t *, evhtp_cflags);
-int               evhtp_reset_close_on(evhtp_conn_t *);
-int               evhtp_unset_close_on(evhtp_conn_t *, evhtp_cflags flag);
+int               evhtp_conn_set_flags(evhtp_conn_t *, evhtp_cflags);
 
 evbase_t        * evhtp_request_get_evbase(evhtp_request_t *);
 event_t         * evhtp_request_get_listener(evhtp_request_t *);
@@ -209,6 +207,10 @@ void              evhtp_hdrs_free(evhtp_hdrs_t *);
 void              evhtp_hdr_free(evhtp_hdr_t *);
 
 const char      * evhtp_version(void);
+
+#ifndef DISABLE_EVTHR
+int evhtp_use_threads(evhtp_t *, int);
+#endif
 
 #endif /* __EVHTP_H__ */
 

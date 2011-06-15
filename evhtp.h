@@ -196,7 +196,8 @@ void              evhtp_set_pre_accept_cb(evhtp_t *, evhtp_pre_accept, void *);
 void              evhtp_set_post_accept_cb(evhtp_t *, evhtp_post_accept, void *);
 void              evhtp_send_reply(evhtp_request_t *, evhtp_status, const char *, evbuf_t *);
 void              evhtp_send_reply_stream(evhtp_request_t *, evhtp_status, evhtp_stream_cb, void *);
-void              evhtp_request_make_chunk(evhtp_request_t *, void *, size_t);
+void              evhtp_send_stream(evhtp_request_t *, evbuf_t *);
+void              evhtp_request_make_chunk(evhtp_request_t *, evbuf_t *);
 
 evhtp_hdr_t     * evhtp_hdr_new(char *, char *);
 const char      * evhtp_hdr_find(evhtp_hdrs_t *, const char *);

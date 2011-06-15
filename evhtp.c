@@ -13,8 +13,8 @@
 
 #include "evhtp.h"
 
-typedef struct evhtp_callback    evhtp_callback_t;
-typedef struct evhtp_callbacks   evhtp_callbacks_t;
+typedef struct evhtp_callback  evhtp_callback_t;
+typedef struct evhtp_callbacks evhtp_callbacks_t;
 
 typedef void (*htp_conn_write_fini_cb)(evhtp_conn_t * conn, void * args);
 
@@ -115,6 +115,7 @@ struct evhtp_conn {
         _htp_conn_hook_cbarg(c, n) = a;     \
 } while (0)
 
+#define CRLF "\r\n"
 
 static evhtp_proto        _htp_proto(char major, char minor);
 static evhtp_callback_t * _htp_callbacks_find_callback(evhtp_callbacks_t *, const char *);
@@ -378,7 +379,7 @@ _htp_body_cb(http_parser * p, const char * buf, size_t len) {
     return 0;
 }
 
-static unsigned int
+static inline unsigned int
 _htp_thash(const char * key) {
     unsigned int h = 0;
 
@@ -597,9 +598,9 @@ _htp_hdr_output(evhtp_hdr_t * hdr, void * arg) {
 
 
     evbuffer_add(buf, hdr->key, strlen(hdr->key));
-    evbuffer_add(buf, ": ", 2);
+    evbuffer_add_reference(buf, ": ", 2, NULL, NULL);
     evbuffer_add(buf, hdr->val, strlen(hdr->val));
-    evbuffer_add(buf, "\r\n", 2);
+    evbuffer_add_reference(buf, CRLF, 2, NULL, NULL);
     return 0;
 }
 
@@ -614,8 +615,7 @@ _htp_exec_in_thr(evthr_t * thr, void * arg, void * shared) {
 
     conn->evbase = evthr_get_base(thr);
     conn->thr    = thr;
-    conn->bev    = bufferevent_socket_new(conn->evbase, conn->sock,
-	    BEV_OPT_CLOSE_ON_FREE);
+    conn->bev    = bufferevent_socket_new(conn->evbase, conn->sock, BEV_OPT_CLOSE_ON_FREE);
 
     bufferevent_setcb(conn->bev, _htp_recv_cb, NULL, _htp_err_cb, conn);
     bufferevent_enable(conn->bev, EV_READ | EV_WRITE);
@@ -634,7 +634,7 @@ _htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg)
     evhtp_t      * htp;
     evhtp_conn_t * conn;
 
-    htp          = (evhtp_t *)arg;
+    htp = (evhtp_t *)arg;
 
     evutil_make_socket_nonblocking(fd);
 
@@ -792,7 +792,7 @@ _htp_should_keep_alive(evhtp_request_t * req, evhtp_status code) {
     return 1;
 }
 
-static int
+static inline int
 _htp_is_http_1_1x(char major, char minor) {
     if (major >= 1 && minor >= 1) {
         return 1;
@@ -801,7 +801,7 @@ _htp_is_http_1_1x(char major, char minor) {
     return 0;
 }
 
-static int
+static inline int
 _htp_is_http_1_0x(char major, char minor) {
     if (major >= 1 && minor <= 0) {
         return 1;
@@ -823,24 +823,24 @@ _htp_proto(char major, char minor) {
     return EVHTP_PROTO_INVALID;
 }
 
-void
+static inline void
 _htp_set_status_buf(evbuf_t * buf, char major, char minor, evhtp_status code) {
     evbuffer_add_printf(buf, "HTTP/%d.%d %d DERP\r\n", major, minor, code);
 }
 
-void
+static inline void
 _htp_set_header_buf(evbuf_t * buf, evhtp_hdrs_t * hdrs) {
     evhtp_hdrs_for_each(hdrs, _htp_hdr_output, buf);
 }
 
-void
+static inline void
 _htp_set_server_hdr(evhtp_hdrs_t * hdrs, char * name) {
     evhtp_hdr_add(hdrs, evhtp_hdr_new(_HTP_SERVER, name));
 }
 
-void
+static inline void
 _htp_set_crlf_buf(evbuf_t * buf) {
-    evbuffer_add(buf, "\r\n", 2);
+    evbuffer_add_reference(buf, CRLF, 2, NULL, NULL);
 }
 
 void
@@ -880,28 +880,31 @@ _htp_resp_err_cb(evbev_t * bev, short events, void * arg) {
     conn = req->conn;
 
     return _htp_conn_free(conn);
-    if (events & BEV_EVENT_ERROR) {
-    }
 }
 
 static void
-_htp_resp_stream_cb(evhtp_conn_t * conn, void * arg) {
-    evhtp_request_t * request;
+_htp_stream_fini_cb(evbev_t * bev, void * arg) {
+    evhtp_request_t * req;
+    evhtp_conn_t    * conn;
 
-    request = (evhtp_request_t *)arg;
+    req  = (evhtp_request_t *)arg;
+    conn = req->conn;
 
-    switch (request->stream_cb(request, request->stream_cbarg)) {
+    switch (req->stream_cb(req, req->stream_cbarg)) {
         case EVHTP_RES_OK:
-            bufferevent_write_buffer(conn->bev, request->buffer_out);
+            bufferevent_write_buffer(conn->bev, req->buffer_out);
             return;
         case EVHTP_RES_DONE:
-            if (request->chunked) {
-                evbuffer_add(request->buffer_out, "0\r\n\r\n", 5);
-                bufferevent_write_buffer(conn->bev, request->buffer_out);
+            if (req->chunked) {
+                evbuffer_add_reference(req->buffer_out, "0\r\n\r\n", 5, NULL, NULL);
+                bufferevent_write_buffer(conn->bev, req->buffer_out);
+                bufferevent_setcb(conn->bev, NULL, _htp_resp_fini_cb, _htp_resp_err_cb, req);
+                return;
             }
-            return;
+            break;
         default:
-            return;
+            req->keepalive = 0;
+            break;
     }
 
     return _htp_resp_fini_cb(conn->bev, arg);
@@ -945,19 +948,22 @@ void
 evhtp_send_reply_stream(evhtp_request_t * req, evhtp_status code, evhtp_stream_cb cb, void * arg) {
     evhtp_conn_t * conn;
 
-    conn           = req->conn;
-    req->keepalive = _htp_should_keep_alive(req, code);
+    conn = req->conn;
 
     if (req->buffer_out == NULL) {
         req->buffer_out = evbuffer_new();
     }
 
     if (req->proto == EVHTP_PROTO_1_1) {
+        req->keepalive = _htp_should_keep_alive(req, code);
+
         if (!evhtp_hdr_find(&req->headers_out, _HTP_TRANSENC)) {
             evhtp_hdr_add(&req->headers_out, evhtp_hdr_new(_HTP_TRANSENC, _HTP_DEFCHUNKED));
         }
 
         req->chunked = 1;
+    } else {
+        req->keepalive = 0;
     }
 
     if (!evhtp_hdr_find(&req->headers_out, _HTP_CONTYPE)) {
@@ -974,14 +980,32 @@ evhtp_send_reply_stream(evhtp_request_t * req, evhtp_status code, evhtp_stream_c
     req->stream_cb    = cb;
     req->stream_cbarg = arg;
 
-    /* _htp_conn_write(conn, req->buffer_out, _htp_resp_stream_cb, (void *)req); */
+    bufferevent_write_buffer(conn->bev, req->buffer_out);
+
+    bufferevent_disable(conn->bev, EV_READ);
+    bufferevent_setwatermark(conn->bev, EV_WRITE, 1, 0);
+    bufferevent_setcb(conn->bev, NULL, _htp_stream_fini_cb, _htp_resp_err_cb, req);
+} /* evhtp_send_reply_stream */
+
+void
+evhtp_request_make_chunk(evhtp_request_t * req, evbuf_t * buf) {
+    evbuffer_add_printf(req->buffer_out, "%" PRIxMAX "\r\n", evbuffer_get_length(buf));
+    evbuffer_add_buffer(req->buffer_out, buf);
+    evbuffer_add_reference(req->buffer_out, CRLF, 2, NULL, NULL);
 }
 
 void
-evhtp_request_make_chunk(evhtp_request_t * req, void * data, size_t len) {
-    evbuffer_add_printf(req->buffer_out, "%" PRIxMAX "\r\n", len);
-    evbuffer_add(req->buffer_out, data, len);
-    evbuffer_add(req->buffer_out, "\r\n", 2);
+evhtp_send_stream(evhtp_request_t * req, evbuf_t * buf) {
+    switch (req->proto) {
+        case EVHTP_PROTO_1_1:
+            return evhtp_request_make_chunk(req, buf);
+        case EVHTP_PROTO_1_0:
+            evbuffer_add_buffer(req->buffer_out, buf);
+            req->keepalive = 0;
+            break;
+        default:
+            return _htp_conn_free(req->conn);
+    }
 }
 
 int
@@ -1056,8 +1080,6 @@ evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * cbarg) {
 void
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port) {
     struct sockaddr_in sin = { 0 };
-    int                fd;
-    int                n   = 1;
 
     sin.sin_family      = AF_INET;
     sin.sin_port        = htons(port);

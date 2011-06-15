@@ -148,7 +148,7 @@ set_my_handlers(evhtp_conn_t * conn, void * arg) {
 
 const char * optstr = "htn:a:p:r:s:c:";
 
-const char * help =
+const char * help   =
     "Options: \n"
     "  -h       : This help text\n"
 #ifndef DISABLE_EVTHR
@@ -192,12 +192,12 @@ parse_args(int argc, char ** argv) {
                 break;
 #endif
 #ifndef DISABLE_SSL
-	    case 's':
-		ssl_pem = strdup(optarg);
-		break;
-	    case 'c':
-		ssl_ca = strdup(optarg);
-		break;
+            case 's':
+                ssl_pem = strdup(optarg);
+                break;
+            case 'c':
+                ssl_ca = strdup(optarg);
+                break;
 #endif
             default:
                 printf("Unknown opt %s\n", optarg);
@@ -212,7 +212,7 @@ parse_args(int argc, char ** argv) {
 #endif
 
     return 0;
-}
+} /* parse_args */
 
 int
 main(int argc, char ** argv) {
@@ -249,7 +249,7 @@ main(int argc, char ** argv) {
 
 #ifndef DISABLE_SSL
     if (ssl_pem != NULL) {
-	evhtp_use_ssl(htp, ssl_pem, ssl_ca, NULL, 1);
+        evhtp_use_ssl(htp, ssl_pem, ssl_ca, NULL, 1);
     }
 #endif
 
@@ -257,5 +257,5 @@ main(int argc, char ** argv) {
 
     event_base_loop(evbase, 0);
     return 0;
-}
+} /* main */
 

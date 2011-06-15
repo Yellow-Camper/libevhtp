@@ -497,7 +497,7 @@ _htp_conn_free(evhtp_conn_t * conn) {
     }
 
     if (conn->bev) {
-	close(conn->sock);
+        close(conn->sock);
         bufferevent_free(conn->bev);
     }
 
@@ -646,7 +646,7 @@ _htp_exec_in_thr(evthr_t * thr, void * arg, void * shared) {
 #ifndef DISABLE_EVTHR
         conn->ssl = SSL_new(htp->ssl->ctx);
         conn->bev = bufferevent_openssl_socket_new(conn->evbase,
-            conn->sock, conn->ssl, BUFFEREVENT_SSL_ACCEPTING, 
+            conn->sock, conn->ssl, BUFFEREVENT_SSL_ACCEPTING,
             BEV_OPT_CLOSE_ON_FREE);
 #else
         fprintf(stderr, "SSL requested but not enabled\n");
@@ -1383,6 +1383,7 @@ evhtp_use_ssl(evhtp_t * htp, char * pemfile, char * cafile, char * ciphers, char
 
     return 0;
 }
+
 #endif
 
 
@@ -1396,6 +1397,7 @@ evhtp_use_threads(evhtp_t * htp, int nthreads) {
     evthr_pool_start(htp->pool);
     return 0;
 }
+
 #endif
 
 evhtp_t *

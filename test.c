@@ -20,27 +20,37 @@ int      num_threads = 0;
 char   * bind_addr   = "0.0.0.0";
 uint16_t bind_port   = 8081;
 
+struct _chunkarg {
+    uint8_t           idx;
+    struct evbuffer * buf;
+};
 
 static evhtp_res
 _send_chunk(evhtp_request_t * req, void * arg) {
-    int * idx = (int *)arg;
+    struct _chunkarg * carg = arg;
 
-    if (chunks[*idx] == NULL) {
+    if (chunks[carg->idx] == NULL) {
+        evbuffer_free(carg->buf);
+        free(carg);
         return EVHTP_RES_DONE;
     }
 
-    evhtp_request_make_chunk(req, chunks[*idx], strlen(chunks[*idx]));
+    evbuffer_add_reference(carg->buf, chunks[carg->idx], strlen(chunks[carg->idx]), NULL, NULL);
+    evhtp_send_stream(req, carg->buf);
 
-    (*idx)++;
+    carg->idx++;
 
     return EVHTP_RES_OK;
 }
 
 static void
 test_streaming(evhtp_request_t * req, void * arg) {
-    int * index = calloc(sizeof(int), 1);
+    struct _chunkarg * carg = malloc(sizeof(struct _chunkarg));
 
-    evhtp_send_reply_stream(req, EVHTP_CODE_OK, _send_chunk, index);
+    carg->idx = 0;
+    carg->buf = evbuffer_new();
+
+    evhtp_send_reply_stream(req, EVHTP_CODE_OK, _send_chunk, carg);
 }
 
 static void
@@ -62,7 +72,7 @@ static void
 test_default_cb(evhtp_request_t * req, void * arg) {
     struct evbuffer * b = evbuffer_new();
 
-    evbuffer_add(b, "derp", 4);
+    evbuffer_add_reference(b, "derp", 4, NULL, NULL);
     evhtp_send_reply(req, EVHTP_CODE_OK, "Everything is fine", b);
     evbuffer_free(b);
 }

@@ -8,6 +8,7 @@
 #include <sys/queue.h>
 #include <http_parser.h>
 #include <event.h>
+#include <event2/listener.h>
 
 #define EVHTP_VERSION "0.3.1"
 
@@ -17,24 +18,27 @@ struct evhtp_hdr;
 struct evhtp_hooks;
 struct evhtp_conn;
 
-typedef unsigned             evhtp_status;
-typedef unsigned char        evhtp_cflags;
-typedef struct evbuffer      evbuf_t;
-typedef struct event         event_t;
+typedef unsigned              evhtp_status;
+typedef unsigned char         evhtp_cflags;
+typedef struct evbuffer       evbuf_t;
+typedef struct event          event_t;
+typedef struct evconnlistener evserv_t;
+typedef struct bufferevent    evbev_t;
 #ifdef DISABLE_EVTHR
-typedef struct event_base    evbase_t;
+typedef struct event_base     evbase_t;
 #endif
-typedef struct evhtp         evhtp_t;
-typedef struct evhtp_request evhtp_request_t;
-typedef struct evhtp_conn    evhtp_conn_t;
-typedef struct evhtp_hooks   evhtp_hooks_t;
-typedef struct evhtp_hdr     evhtp_hdr_t;
-typedef struct evhtp_hdrs    evhtp_hdrs_t;
+typedef struct evhtp          evhtp_t;
+typedef struct evhtp_request  evhtp_request_t;
+typedef struct evhtp_conn     evhtp_conn_t;
+typedef struct evhtp_hooks    evhtp_hooks_t;
+typedef struct evhtp_hdr      evhtp_hdr_t;
+typedef struct evhtp_hdrs     evhtp_hdrs_t;
 
-typedef enum evhtp_res       evhtp_res;
-typedef enum evhtp_hook_type evhtp_hook_type;
-typedef enum http_method     evhtp_method;
-typedef enum evhtp_proto     evhtp_proto;
+
+typedef enum evhtp_res        evhtp_res;
+typedef enum evhtp_hook_type  evhtp_hook_type;
+typedef enum http_method      evhtp_method;
+typedef enum evhtp_proto      evhtp_proto;
 
 typedef int (*evhtp_hdrs_iter_cb)(evhtp_hdr_t * hdr, void * arg);
 typedef void (*evhtp_callback_cb)(evhtp_request_t *, void *);
@@ -180,11 +184,11 @@ void              evhtp_bind_socket(evhtp_t *, const char *, uint16_t);
 int               evhtp_conn_set_flags(evhtp_conn_t *, evhtp_cflags);
 
 evbase_t        * evhtp_request_get_evbase(evhtp_request_t *);
-event_t         * evhtp_request_get_listener(evhtp_request_t *);
+evserv_t        * evhtp_request_get_listener(evhtp_request_t *);
 int               evhtp_request_get_sock(evhtp_request_t *);
 
 evbase_t        * evhtp_get_evbase(evhtp_t *);
-event_t         * evhtp_get_listener(evhtp_t *);
+evserv_t        * evhtp_get_listener(evhtp_t *);
 char            * evhtp_get_server_name(evhtp_t *);
 
 int               evhtp_set_hook(evhtp_conn_t *, evhtp_hook_type, void * cb, void * arg);
@@ -192,7 +196,8 @@ void              evhtp_set_pre_accept_cb(evhtp_t *, evhtp_pre_accept, void *);
 void              evhtp_set_post_accept_cb(evhtp_t *, evhtp_post_accept, void *);
 void              evhtp_send_reply(evhtp_request_t *, evhtp_status, const char *, evbuf_t *);
 void              evhtp_send_reply_stream(evhtp_request_t *, evhtp_status, evhtp_stream_cb, void *);
-void              evhtp_request_make_chunk(evhtp_request_t *, void *, size_t);
+void              evhtp_send_stream(evhtp_request_t *, evbuf_t *);
+void              evhtp_request_make_chunk(evhtp_request_t *, evbuf_t *);
 
 evhtp_hdr_t     * evhtp_hdr_new(char *, char *);
 const char      * evhtp_hdr_find(evhtp_hdrs_t *, const char *);

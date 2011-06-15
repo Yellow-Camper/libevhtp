@@ -19,6 +19,8 @@ int      num_threads = 0;
 #endif
 char   * bind_addr   = "0.0.0.0";
 uint16_t bind_port   = 8081;
+char   * ssl_pem     = NULL;
+char   * ssl_ca      = NULL;
 
 struct _chunkarg {
     uint8_t           idx;
@@ -144,11 +146,7 @@ set_my_handlers(evhtp_conn_t * conn, void * arg) {
     return EVHTP_RES_OK;
 }
 
-#ifndef DISABLE_EVTHR
-const char * optstr = "htn:a:p:r:";
-#else
-const char * optstr = "ha:p:r:";
-#endif
+const char * optstr = "htn:a:p:r:s:c:";
 
 const char * help =
     "Options: \n"
@@ -156,6 +154,10 @@ const char * help =
 #ifndef DISABLE_EVTHR
     "  -t       : Run requests in a thread (default: off)\n"
     "  -n <int> : Number of threads        (default: 0 if -t is off, 4 if -t is on)\n"
+#endif
+#ifndef DISABLE_SSL
+    "  -s <pem> : Enable SSL and PEM       (default: NULL)\n"
+    "  -c <ca>  : CA cert file             (default: NULL\n"
 #endif
     "  -r <str> : Document root            (default: .)\n"
     "  -a <str> : Bind Address             (default: 0.0.0.0)\n"
@@ -188,6 +190,14 @@ parse_args(int argc, char ** argv) {
             case 'n':
                 num_threads = atoi(optarg);
                 break;
+#endif
+#ifndef DISABLE_SSL
+	    case 's':
+		ssl_pem = strdup(optarg);
+		break;
+	    case 'c':
+		ssl_ca = strdup(optarg);
+		break;
 #endif
             default:
                 printf("Unknown opt %s\n", optarg);
@@ -236,6 +246,12 @@ main(int argc, char ** argv) {
     evhtp_set_cb(htp, "/stream", test_streaming, NULL);
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
     evhtp_set_post_accept_cb(htp, set_my_handlers, NULL);
+
+#ifndef DISABLE_SSL
+    if (ssl_pem != NULL) {
+	evhtp_use_ssl(htp, ssl_pem, ssl_ca, NULL, 1);
+    }
+#endif
 
     evhtp_bind_socket(htp, bind_addr, bind_port);
 

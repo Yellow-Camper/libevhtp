@@ -10,6 +10,13 @@
 #include <event.h>
 #include <event2/listener.h>
 
+#ifndef DISABLE_SSL
+#include <event2/bufferevent_ssl.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rand.h>
+#endif
+
 #define EVHTP_VERSION "0.3.2"
 
 struct evhtp;

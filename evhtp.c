@@ -16,7 +16,24 @@
 typedef struct evhtp_callback  evhtp_callback_t;
 typedef struct evhtp_callbacks evhtp_callbacks_t;
 
+#ifndef DISABLE_SSL
+typedef struct evhtp_ssl       evhtp_ssl_t;
+#else
+typedef void                   evhtp_ssl_t;
+#endif
+
 typedef void (*htp_conn_write_fini_cb)(evhtp_conn_t * conn, void * args);
+
+#ifndef DISABLE_SSL
+struct evhtp_ssl {
+    char   enable_v2;
+    char * pem;
+    char * ca;
+    char * ciphers;
+
+    SSL_CTX * ctx;
+};
+#endif
 
 struct evhtp {
     evbase_t           * evbase;
@@ -30,6 +47,7 @@ struct evhtp {
     evhtp_pre_accept     pre_accept_cb;
     evhtp_post_accept    post_accept_cb;
     http_parser_settings psets;
+    evhtp_ssl_t        * ssl;
 #ifndef DISABLE_EVTHR
     evthr_pool_t * pool;
 #else
@@ -76,6 +94,9 @@ struct evhtp_conn {
     evhtp_cflags      flags;
     evbase_t        * evbase;
     evbev_t         * bev;
+#ifndef DISABLE_SSL
+    SSL * ssl;
+#endif
 #ifndef DISABLE_EVTHR
     evthr_t * thr;
 #endif
@@ -476,6 +497,7 @@ _htp_conn_free(evhtp_conn_t * conn) {
     }
 
     if (conn->bev) {
+	close(conn->sock);
         bufferevent_free(conn->bev);
     }
 
@@ -617,7 +639,20 @@ _htp_exec_in_thr(evthr_t * thr, void * arg, void * shared) {
 
     conn->evbase = evthr_get_base(thr);
     conn->thr    = thr;
-    conn->bev    = bufferevent_socket_new(conn->evbase, conn->sock, BEV_OPT_CLOSE_ON_FREE);
+
+    if (htp->ssl == NULL) {
+        conn->bev = bufferevent_socket_new(conn->evbase, conn->sock, BEV_OPT_CLOSE_ON_FREE);
+    } else {
+#ifndef DISABLE_EVTHR
+        conn->ssl = SSL_new(htp->ssl->ctx);
+        conn->bev = bufferevent_openssl_socket_new(conn->evbase,
+            conn->sock, conn->ssl, BUFFEREVENT_SSL_ACCEPTING, 
+            BEV_OPT_CLOSE_ON_FREE);
+#else
+        fprintf(stderr, "SSL requested but not enabled\n");
+        abort();
+#endif
+    }
 
     bufferevent_setcb(conn->bev, _htp_recv_cb, NULL, _htp_err_cb, conn);
     bufferevent_enable(conn->bev, EV_READ | EV_WRITE);
@@ -656,14 +691,27 @@ _htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg)
     }
 #endif
 
-    conn->bev = bufferevent_socket_new(conn->evbase, fd, BEV_OPT_CLOSE_ON_FREE);
+    if (htp->ssl == NULL) {
+        conn->bev = bufferevent_socket_new(conn->evbase, conn->sock, BEV_OPT_CLOSE_ON_FREE);
+    } else {
+#ifndef DISABLE_SSL
+        conn->ssl = SSL_new(htp->ssl->ctx);
+        conn->bev = bufferevent_openssl_socket_new(conn->evbase,
+            conn->sock, conn->ssl, BUFFEREVENT_SSL_ACCEPTING,
+            BEV_OPT_CLOSE_ON_FREE);
+#else
+        fprintf(stderr, "SSL requested but not enabled\n");
+        abort();
+#endif
+    }
+
     bufferevent_setcb(conn->bev, _htp_recv_cb, NULL, NULL, conn);
     bufferevent_enable(conn->bev, EV_READ | EV_WRITE);
 
     if (htp->post_accept_cb) {
         htp->post_accept_cb(conn, htp->post_accept_cbarg);
     }
-}
+} /* _htp_accept_cb */
 
 static void
 _htp_set_kalive_hdr(evhtp_hdrs_t * hdrs, evhtp_proto proto, int kalive) {
@@ -858,6 +906,8 @@ _htp_resp_fini_cb(evbev_t * bev, void * arg) {
     evhtp_conn_t    * conn;
     int               keepalive;
 
+    printf("Hello?\n");
+
     req       = (evhtp_request_t *)arg;
     keepalive = req->keepalive;
     conn      = req->conn;
@@ -876,6 +926,8 @@ _htp_resp_err_cb(evbev_t * bev, short events, void * arg) {
 
     req  = (evhtp_request_t *)arg;
     conn = req->conn;
+
+    printf("hi\n");
 
     return _htp_conn_free(conn);
 }
@@ -920,7 +972,7 @@ evhtp_send_reply(evhtp_request_t * req, evhtp_status code, const char * r, evbuf
     }
 
     if (_htp_resp_can_have_content(code)) {
-        _htp_reply_set_content_hdrs(req, evbuffer_get_length(b));
+        _htp_reply_set_content_hdrs(req, b ? evbuffer_get_length(b) : 0);
     } else {
         if ((b != NULL) && evbuffer_get_length(b) > 0) {
             evbuffer_drain(b, -1);
@@ -935,11 +987,11 @@ evhtp_send_reply(evhtp_request_t * req, evhtp_status code, const char * r, evbuf
     _htp_set_crlf_buf(req->buffer_out);
     _htp_set_body_buf(req->buffer_out, b);
 
-    bufferevent_write_buffer(conn->bev, req->buffer_out);
 
     bufferevent_disable(conn->bev, EV_READ);
     bufferevent_setwatermark(conn->bev, EV_WRITE, 1, 0);
     bufferevent_setcb(conn->bev, NULL, _htp_resp_fini_cb, _htp_resp_err_cb, req);
+    bufferevent_write_buffer(conn->bev, req->buffer_out);
 } /* evhtp_send_reply */
 
 void
@@ -1290,6 +1342,50 @@ evhtp_get_listener(evhtp_t * htp) {
     return htp ? htp->listener : NULL;
 }
 
+#ifndef DISABLE_SSL
+int
+evhtp_use_ssl(evhtp_t * htp, char * pemfile, char * cafile, char * ciphers, char use_v2) {
+    evhtp_ssl_t * ssl;
+
+    if (!pemfile || !htp) {
+        return -1;
+    }
+
+    SSL_load_error_strings();
+    SSL_library_init();
+    RAND_status();
+
+    ssl            = calloc(sizeof(evhtp_ssl_t), 1);
+    ssl->pem       = pemfile;
+    ssl->ca        = cafile;
+    ssl->ciphers   = ciphers;
+    ssl->enable_v2 = use_v2;
+    ssl->ctx       = SSL_CTX_new(SSLv23_server_method());
+
+    if (!use_v2) {
+        SSL_CTX_set_options(ssl->ctx, SSL_OP_NO_SSLv2);
+    }
+
+    if (ciphers) {
+        SSL_CTX_set_cipher_list(ssl->ctx, ciphers);
+    }
+
+    if (cafile) {
+        SSL_CTX_load_verify_locations(ssl->ctx, cafile, NULL);
+    }
+
+    SSL_CTX_use_certificate_file(ssl->ctx, pemfile, SSL_FILETYPE_PEM);
+    SSL_CTX_use_PrivateKey_file(ssl->ctx, pemfile, SSL_FILETYPE_PEM);
+
+    htp->ssl = ssl;
+
+    printf("%s\n", ERR_error_string(ERR_get_error(), NULL));
+
+    return 0;
+}
+#endif
+
+
 #ifndef DISABLE_EVTHR
 int
 evhtp_use_threads(evhtp_t * htp, int nthreads) {
@@ -1300,7 +1396,6 @@ evhtp_use_threads(evhtp_t * htp, int nthreads) {
     evthr_pool_start(htp->pool);
     return 0;
 }
-
 #endif
 
 evhtp_t *

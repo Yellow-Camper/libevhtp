@@ -257,7 +257,7 @@ _htp_header_key_cb(http_parser * p, const char * buf, size_t len) {
     evhtp_log_debug("len = %" PRIdMAX, len);
 
     conn          = p->data;
-    hdr           = calloc(sizeof(evhtp_hdr_t), sizeof(char));
+    hdr           = malloc(sizeof(evhtp_hdr_t));
     hdr->k_heaped = 1;
     hdr->key      = malloc(len + 1);
     hdr->key[len] = '\0';
@@ -598,9 +598,11 @@ _htp_hdr_output(evhtp_hdr_t * hdr, void * arg) {
 
 
     evbuffer_add(buf, hdr->key, strlen(hdr->key));
-    evbuffer_add_reference(buf, ": ", 2, NULL, NULL);
+    /* evbuffer_add_reference(buf, ": ", 2, NULL, NULL); */
+    evbuffer_add(buf, ": ", 2);
     evbuffer_add(buf, hdr->val, strlen(hdr->val));
-    evbuffer_add_reference(buf, CRLF, 2, NULL, NULL);
+    evbuffer_add(buf, CRLF, 2);
+    /* evbuffer_add_reference(buf, CRLF, 2, NULL, NULL); */
     return 0;
 }
 
@@ -823,25 +825,21 @@ _htp_proto(char major, char minor) {
     return EVHTP_PROTO_INVALID;
 }
 
-static inline void
-_htp_set_status_buf(evbuf_t * buf, char major, char minor, evhtp_status code) {
-    evbuffer_add_printf(buf, "HTTP/%d.%d %d DERP\r\n", major, minor, code);
-}
+#define _htp_set_status_buf(buf, major, minor, code) do {                       \
+        evbuffer_add_printf(buf, "HTTP/%d.%d %d DERP\r\n", major, minor, code); \
+} while (0)
 
-static inline void
-_htp_set_header_buf(evbuf_t * buf, evhtp_hdrs_t * hdrs) {
-    evhtp_hdrs_for_each(hdrs, _htp_hdr_output, buf);
-}
+#define _htp_set_header_buf(buf, hdrs)               do { \
+        evhtp_hdrs_for_each(hdrs, _htp_hdr_output, buf);  \
+} while (0)
 
-static inline void
-_htp_set_server_hdr(evhtp_hdrs_t * hdrs, char * name) {
-    evhtp_hdr_add(hdrs, evhtp_hdr_new(_HTP_SERVER, name));
-}
+#define _htp_set_server_hdr(hdrs, name)              do {      \
+        evhtp_hdr_add(hdrs, evhtp_hdr_new(_HTP_SERVER, name)); \
+} while (0)
 
-static inline void
-_htp_set_crlf_buf(evbuf_t * buf) {
-    evbuffer_add_reference(buf, CRLF, 2, NULL, NULL);
-}
+#define _htp_set_crlf_buf(buf)                       do { \
+        evbuffer_add_reference(buf, CRLF, 2, NULL, NULL); \
+} while (0)
 
 void
 _htp_set_body_buf(evbuf_t * dst, evbuf_t * src) {

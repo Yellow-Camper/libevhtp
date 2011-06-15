@@ -10,7 +10,7 @@
 #include <event.h>
 #include <event2/listener.h>
 
-#define EVHTP_VERSION "0.3.1"
+#define EVHTP_VERSION "0.3.2"
 
 struct evhtp;
 struct evhtp_hdrs;

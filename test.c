@@ -146,6 +146,27 @@ set_my_handlers(evhtp_conn_t * conn, void * arg) {
     return EVHTP_RES_OK;
 }
 
+#ifndef DISABLE_SSL
+static int
+_new_cache(evhtp_conn_t * conn, unsigned char * id, int id_len, evhtp_ssl_session_t * sess) {
+    printf("new cache!\n");
+    return 0;
+}
+
+static evhtp_ssl_session_t *
+_get_cache(evhtp_conn_t * conn, unsigned char * id, int id_len) {
+    printf("get_cache\n");
+    return NULL;
+}
+
+static void
+_del_cache(evhtp_t * htp, unsigned char * id, unsigned int id_len) {
+    printf("del_cache\n");
+}
+
+#endif
+
+
 const char * optstr = "htn:a:p:r:s:c:";
 
 const char * help   =
@@ -249,7 +270,21 @@ main(int argc, char ** argv) {
 
 #ifndef DISABLE_SSL
     if (ssl_pem != NULL) {
-        evhtp_use_ssl(htp, ssl_pem, ssl_ca, NULL, 1);
+        evhtp_ssl_cfg scfg = {
+            .pemfile        = ssl_pem,
+            .privfile       = ssl_pem,
+            .cafile         = ssl_ca,
+            .ciphers        = "RC4+RSA:HIGH:+MEDIUM:+LOW",
+            .ssl_opts       = SSL_OP_NO_SSLv2,
+            .enable_scache  = 1,
+            .scache_timeout = 1024,
+            .scache_new     = _new_cache,
+            .scache_get     = _get_cache,
+            .scache_del     = _del_cache,
+            .args           = NULL
+        };
+
+        evhtp_use_ssl(htp, &scfg);
     }
 #endif
 

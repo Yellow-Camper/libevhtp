@@ -224,5 +224,9 @@ const char      * evhtp_version(void);
 int evhtp_use_threads(evhtp_t *, int);
 #endif
 
+#ifndef DISABLE_SSL
+int evhtp_use_ssl(evhtp_t *, char *, char *, char *, char);
+#endif
+
 #endif /* __EVHTP_H__ */
 

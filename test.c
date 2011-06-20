@@ -148,12 +148,12 @@ set_my_handlers(evhtp_conn_t * conn, void * arg) {
 
 #ifndef DISABLE_SSL
 static int
-_new_cache(evhtp_conn_t * conn, unsigned char * id, int id_len, evhtp_ssl_session_t * sess) {
-    printf("new cache!\n");
+_new_cache(evhtp_conn_t * conn, unsigned char * id, int id_len, evhtp_ssl_sess_t * sess) {
+    printf("new cache %d!\n", id_len);
     return 0;
 }
 
-static evhtp_ssl_session_t *
+static evhtp_ssl_sess_t *
 _get_cache(evhtp_conn_t * conn, unsigned char * id, int id_len) {
     printf("get_cache\n");
     return NULL;
@@ -162,6 +162,12 @@ _get_cache(evhtp_conn_t * conn, unsigned char * id, int id_len) {
 static void
 _del_cache(evhtp_t * htp, unsigned char * id, unsigned int id_len) {
     printf("del_cache\n");
+}
+
+static void *
+_init_cache(evhtp_t * htp) {
+    printf("init_cache\n");
+    return (void *)malloc(5);
 }
 
 #endif
@@ -278,10 +284,10 @@ main(int argc, char ** argv) {
             .ssl_opts       = SSL_OP_NO_SSLv2,
             .enable_scache  = 1,
             .scache_timeout = 1024,
-            .scache_new     = _new_cache,
-            .scache_get     = _get_cache,
+            .scache_init    = evhtp_ssl_scache_builtin_init,
+            .scache_add     = evhtp_ssl_scache_builtin_add,
+            .scache_get     = evhtp_ssl_scache_builtin_get,
             .scache_del     = _del_cache,
-            .args           = NULL
         };
 
         evhtp_use_ssl(htp, &scfg);

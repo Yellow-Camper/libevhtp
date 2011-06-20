@@ -1424,58 +1424,160 @@ evhtp_get_listener(evhtp_t * htp) {
 }
 
 #ifndef DISABLE_SSL
+typedef struct htp_scache     htp_scache_t;
+typedef struct htp_scache_ent htp_scache_ent_t;
+
+static int s_server_session_id_context = 1;
+
+struct htp_scache_ent {
+    unsigned long      hash;
+    unsigned char    * id;
+    unsigned char    * der;
+    int                id_len;
+    int                der_len;
+    evhtp_ssl_sess_t * sess;
+
+    TAILQ_ENTRY(htp_scache_ent) next;
+};
+
+TAILQ_HEAD(htp_scache, htp_scache_ent);
+
+evhtp_ssl_cfg *
+evhtp_get_ssl_cfg(evhtp_t * htp) {
+    return htp->ssl_cfg;
+}
+
+evhtp_ssl_cfg *
+evhtp_conn_get_ssl_cfg(evhtp_conn_t * conn) {
+    return evhtp_get_ssl_cfg(conn->htp);
+}
+
+int
+evhtp_ssl_scache_builtin_add(evhtp_conn_t * conn, unsigned char * id, int len, evhtp_ssl_sess_t * sess) {
+    evhtp_ssl_cfg    * scfg;
+    htp_scache_ent_t * cache_ent;
+    htp_scache_t     * scache;
+    unsigned char    * p;
+
+    printf("Adding %p %d\n", id, len);
+    if (!(scfg = evhtp_conn_get_ssl_cfg(conn))) {
+        return 0;
+    }
+
+    if (!(scache = (htp_scache_t *)scfg->args)) {
+        return 0;
+    }
+
+    if (!(cache_ent = calloc(sizeof(htp_scache_ent_t), sizeof(char)))) {
+        return 0;
+    }
+
+
+    cache_ent->id_len  = len;
+    cache_ent->der_len = i2d_SSL_SESSION(sess, NULL);
+    cache_ent->id      = malloc(len);
+    cache_ent->der     = malloc(cache_ent->der_len);
+    p = cache_ent->der;
+
+    memcpy(cache_ent->id, id, len);
+    i2d_SSL_SESSION(sess, &p);
+
+    TAILQ_INSERT_TAIL(scache, cache_ent, next);
+    return 1;
+}
+
+evhtp_ssl_sess_t *
+evhtp_ssl_scache_builtin_get(evhtp_conn_t * conn, unsigned char * id, int len) {
+    evhtp_ssl_cfg    * scfg;
+    htp_scache_t     * scache;
+    htp_scache_ent_t * ent;
+
+    scfg   = evhtp_conn_get_ssl_cfg(conn);
+    scache = (htp_scache_t *)scfg->args;
+
+    printf("Finding in cache..\n");
+    TAILQ_FOREACH(ent, scache, next) {
+        printf("hi.\n");
+        if (len == ent->id_len && !memcmp(ent->id, id, len)) {
+            const unsigned char * p = ent->der;
+
+            printf("Cache hit..\n");
+            return d2i_SSL_SESSION(NULL, &p, ent->der_len);
+        }
+    }
+
+    return NULL;
+}
+
+void *
+evhtp_ssl_scache_builtin_init(evhtp_t * htp) {
+    htp_scache_t * scache;
+
+    printf("hi.\n");
+
+    scache = malloc(sizeof(htp_scache_t));
+
+    TAILQ_INIT(scache);
+
+    return (void *)scache;
+}
 
 static int
-_htp_ssl_new_scache_ent(evhtp_ssl_t * ssl, evhtp_ssl_session_t * sess) {
+_htp_ssl_add_scache_ent(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess) {
     evhtp_conn_t  * conn;
-    evhtp_t       * htp;
     evhtp_ssl_cfg * scfg;
     int             slen;
     unsigned char * sid;
 
+    printf("Here.\n");
+
     conn = (evhtp_conn_t *)SSL_get_app_data(ssl);
-    htp  = conn->htp;
-    scfg = htp->ssl_cfg;
+    scfg = evhtp_conn_get_ssl_cfg(conn);
 
     if (!scfg) {
         return 0;
     }
 
-    sid  = sess->session_id; /* SSL_SESSION_get_session_id(sess); */
-    slen = sess->session_id_length; /* SSL_SESSION_get_session_id_length(sess); */
+    sid  = sess->session_id;
+    slen = sess->session_id_length;
+
+    printf("%p\n", sid);
 
     SSL_set_timeout(sess, scfg->scache_timeout);
 
-    if (scfg->scache_new) {
-        return (scfg->scache_new)(conn, sid, slen, sess);
+    if (scfg->scache_add) {
+        return (scfg->scache_add)(conn, sid, slen, sess);
     }
 
     return 0;
 }
 
-static evhtp_ssl_session_t *
+static evhtp_ssl_sess_t *
 _htp_ssl_get_scache_ent(evhtp_ssl_t * ssl, unsigned char * sid, int sid_len, int * copy) {
-    evhtp_conn_t        * conn;
-    evhtp_t             * htp;
-    evhtp_ssl_cfg       * scfg;
-    evhtp_ssl_session_t * sess;
+    evhtp_conn_t     * conn;
+    evhtp_t          * htp;
+    evhtp_ssl_cfg    * scfg;
+    evhtp_ssl_sess_t * sess;
+
+    printf("gettingn");
 
     conn = (evhtp_conn_t *)SSL_get_app_data(ssl);
     htp  = conn->htp;
     scfg = htp->ssl_cfg;
     sess = NULL;
 
+
     if (scfg->scache_get) {
         sess = (scfg->scache_get)(conn, sid, sid_len);
     }
 
-    *copy = 0;
+    /* *copy = 0; */
 
     return sess;
 }
 
 static void
-_htp_ssl_del_scache_ent(evhtp_ssl_ctx_t * ctx, evhtp_ssl_session_t * sess) {
+_htp_ssl_del_scache_ent(evhtp_ssl_ctx_t * ctx, evhtp_ssl_sess_t * sess) {
     evhtp_t       * htp;
     evhtp_ssl_cfg * scfg;
     unsigned char * sid;
@@ -1510,7 +1612,7 @@ evhtp_use_ssl(evhtp_t * htp, evhtp_ssl_cfg * cfg) {
     SSL_CTX_set_options(htp->ssl_ctx, cfg->ssl_opts);
 
     if (cfg->ciphers) {
-        SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers);
+        /* SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers); */
     }
 
     if (cfg->cafile) {
@@ -1518,7 +1620,8 @@ evhtp_use_ssl(evhtp_t * htp, evhtp_ssl_cfg * cfg) {
     }
 
     if (cfg->enable_scache) {
-        cache_mode = SSL_SESS_CACHE_SERVER | SSL_SESS_CACHE_NO_INTERNAL;
+        cache_mode = SSL_SESS_CACHE_SERVER | SSL_SESS_CACHE_NO_INTERNAL |
+                     SSL_SESS_CACHE_NO_INTERNAL_LOOKUP;
     } else {
         cache_mode = SSL_SESS_CACHE_OFF;
     }
@@ -1526,11 +1629,17 @@ evhtp_use_ssl(evhtp_t * htp, evhtp_ssl_cfg * cfg) {
     SSL_CTX_use_certificate_file(htp->ssl_ctx, cfg->pemfile, SSL_FILETYPE_PEM);
     SSL_CTX_use_PrivateKey_file(htp->ssl_ctx, cfg->privfile ? : cfg->pemfile, SSL_FILETYPE_PEM);
     SSL_CTX_set_session_cache_mode(htp->ssl_ctx, cache_mode);
+    SSL_CTX_set_session_id_context(htp->ssl_ctx, (void*)&s_server_session_id_context,
+        sizeof s_server_session_id_context);
 
-    SSL_CTX_sess_set_new_cb(htp->ssl_ctx, _htp_ssl_new_scache_ent);
+    SSL_CTX_sess_set_new_cb(htp->ssl_ctx, _htp_ssl_add_scache_ent);
     SSL_CTX_sess_set_get_cb(htp->ssl_ctx, _htp_ssl_get_scache_ent);
     SSL_CTX_sess_set_remove_cb(htp->ssl_ctx, _htp_ssl_del_scache_ent);
     SSL_CTX_set_app_data(htp->ssl_ctx, htp);
+
+    if (cfg->scache_init) {
+        cfg->args = (cfg->scache_init)(htp);
+    }
 
     return 0;
 } /* evhtp_use_ssl */

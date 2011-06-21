@@ -259,12 +259,6 @@ main(int argc, char ** argv) {
     evbase = event_base_new();
     htp    = evhtp_new(evbase);
 
-#ifndef DISABLE_EVTHR
-    if (use_threads) {
-        evhtp_use_threads(htp, num_threads);
-    }
-#endif
-
     evhtp_set_server_name(htp, "Hi there!");
     evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
     evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
@@ -291,6 +285,12 @@ main(int argc, char ** argv) {
         };
 
         evhtp_use_ssl(htp, &scfg);
+    }
+#endif
+
+#ifndef DISABLE_EVTHR
+    if (use_threads) {
+        evhtp_use_threads(htp, num_threads);
     }
 #endif
 

@@ -233,7 +233,6 @@ _htp_end_cb(http_parser * p) {
         request->cb(request, request->cbarg);
     }
 
-    /* evbuffer_drain(bufferevent_get_input(conn->bev), p->nread); */
     return 0;
 }
 
@@ -1608,7 +1607,7 @@ evhtp_use_ssl(evhtp_t * htp, evhtp_ssl_cfg * cfg) {
     SSL_CTX_set_options(htp->ssl_ctx, cfg->ssl_opts);
 
     if (cfg->ciphers) {
-        /* SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers); */
+        SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers);
     }
 
     if (cfg->cafile) {

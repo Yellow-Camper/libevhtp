@@ -277,7 +277,7 @@ main(int argc, char ** argv) {
             .ciphers        = "RC4+RSA:HIGH:+MEDIUM:+LOW",
             .ssl_opts       = SSL_OP_NO_SSLv2,
             .enable_scache  = 1,
-            .scache_timeout = 1024,
+            .scache_timeout = 10,
             .scache_init    = evhtp_ssl_scache_builtin_init,
             .scache_add     = evhtp_ssl_scache_builtin_add,
             .scache_get     = evhtp_ssl_scache_builtin_get,

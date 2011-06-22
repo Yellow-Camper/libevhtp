@@ -521,18 +521,6 @@ _htp_conn_free(evhtp_conn_t * conn) {
         evhtp_request_free(conn->request);
     }
 
-#ifndef DISABLE_SSL
-    if (conn->ssl != NULL) {
-        evhtp_ssl_sess_t * sess;
-
-        sess = conn->ssl->session;
-
-        if (sess != NULL) {
-            SSL_SESSION_free(sess);
-        }
-    }
-#endif
-
 #ifndef DISABLE_EVTHR
     if (conn->thr) {
         evthr_dec_backlog(conn->thr);

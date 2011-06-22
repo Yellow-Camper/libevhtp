@@ -17,7 +17,7 @@
 #include <openssl/rand.h>
 #endif
 
-#define EVHTP_VERSION "0.3.2"
+#define EVHTP_VERSION "0.3.3"
 
 struct evhtp;
 struct evhtp_hdrs;

@@ -3,7 +3,7 @@ project(reason)
 
 set(PROJECT_MAJOR_VERSION 0)
 set(PROJECT_MINOR_VERSION 3)
-set(PROJECT_PATCH_VERSION 2)
+set(PROJECT_PATCH_VERSION 3)
 
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
@@ -25,12 +25,15 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/http_parser
 )
 
-set(LIBEVHTP_EXTERNAL_LIBS 
-	${LIBEVENT_LIBRARY}
-  ${LIBEVENT_PTHREADS_LIBRARY}
-	${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/build
-)
+set(LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARY} ${LIBEVENT_PTHREADS_LIBRARY} ${LIBEVENT_OPENSSL_LIBRARY})
+
+if (NOT ${LIBEVENT_PTHREADS_FOUND}) 
+	set(DISABLE_EVTHR 1)
+endif(NOT ${LIBEVENT_PTHREADS_FOUND})
+
+if (NOT ${LIBEVENT_OPENSSL_FOUND}) 
+	set (DISABLE_SSL 1)
+endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
 if (DISABLE_EVTHR)
 	set(LIBEVHTP_SOURCES http_parser/http_parser.c evhtp.c)
@@ -40,7 +43,7 @@ endif(DISABLE_EVTHR)
 
 add_library(libevhtp STATIC ${LIBEVHTP_SOURCES})
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
-target_link_libraries(libevhtp ${LIVEVHTP_EXTERNAL_LIBS})
+#target_link_libraries(libevhtp ${LIVEVHTP_EXTERNAL_LIBS})
 
 add_executable(test test.c)
-target_link_libraries(test libevhtp event event_pthreads)
+target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS})

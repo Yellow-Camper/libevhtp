@@ -10,6 +10,13 @@
 #include <event.h>
 #include <event2/listener.h>
 
+#ifndef DISABLE_SSL
+#include <event2/bufferevent_ssl.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rand.h>
+#endif
+
 #define EVHTP_VERSION "0.3.2"
 
 struct evhtp;
@@ -33,7 +40,6 @@ typedef struct evhtp_conn     evhtp_conn_t;
 typedef struct evhtp_hooks    evhtp_hooks_t;
 typedef struct evhtp_hdr      evhtp_hdr_t;
 typedef struct evhtp_hdrs     evhtp_hdrs_t;
-
 
 typedef enum evhtp_res        evhtp_res;
 typedef enum evhtp_hook_type  evhtp_hook_type;
@@ -173,6 +179,34 @@ struct evhtp_request {
     evbuf_t         * buffer_out;
 };
 
+#ifndef DISABLE_SSL
+typedef SSL_SESSION          evhtp_ssl_sess_t;
+typedef SSL                  evhtp_ssl_t;
+typedef SSL_CTX              evhtp_ssl_ctx_t;
+
+typedef int (*evhtp_ssl_scache_add_cb)(evhtp_conn_t *, unsigned char *, int, evhtp_ssl_sess_t *);
+typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get_cb)(evhtp_conn_t *, unsigned char * id, int len);
+typedef void (*evhtp_ssl_scache_del_cb)(evhtp_t *, unsigned char *, unsigned int len);
+typedef void * (*evhtp_ssl_scache_init_cb)(evhtp_t *);
+
+typedef struct evhtp_ssl_cfg evhtp_ssl_cfg;
+
+struct evhtp_ssl_cfg {
+    char                   * pemfile;
+    char                   * privfile;
+    char                   * cafile;
+    char                   * ciphers;
+    long                     ssl_opts;
+    char                     enable_scache;
+    long                     scache_timeout;
+    evhtp_ssl_scache_init_cb scache_init;
+    evhtp_ssl_scache_add_cb  scache_add;
+    evhtp_ssl_scache_get_cb  scache_get;
+    evhtp_ssl_scache_del_cb  scache_del;
+    void                   * args;
+};
+#endif
+
 evhtp_t         * evhtp_new(evbase_t *);
 evhtp_request_t * evhtp_request_new(evhtp_conn_t *);
 
@@ -215,6 +249,14 @@ const char      * evhtp_version(void);
 
 #ifndef DISABLE_EVTHR
 int evhtp_use_threads(evhtp_t *, int);
+#endif
+
+#ifndef DISABLE_SSL
+int                evhtp_use_ssl(evhtp_t *, evhtp_ssl_cfg *);
+
+void             * evhtp_ssl_scache_builtin_init(evhtp_t *);
+int                evhtp_ssl_scache_builtin_add(evhtp_conn_t *, unsigned char *, int, evhtp_ssl_sess_t *);
+evhtp_ssl_sess_t * evhtp_ssl_scache_builtin_get(evhtp_conn_t *, unsigned char *, int);
 #endif
 
 #endif /* __EVHTP_H__ */

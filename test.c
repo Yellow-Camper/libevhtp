@@ -19,6 +19,8 @@ int      num_threads = 0;
 #endif
 char   * bind_addr   = "0.0.0.0";
 uint16_t bind_port   = 8081;
+char   * ssl_pem     = NULL;
+char   * ssl_ca      = NULL;
 
 struct _chunkarg {
     uint8_t           idx;
@@ -144,18 +146,45 @@ set_my_handlers(evhtp_conn_t * conn, void * arg) {
     return EVHTP_RES_OK;
 }
 
-#ifndef DISABLE_EVTHR
-const char * optstr = "htn:a:p:r:";
-#else
-const char * optstr = "ha:p:r:";
+#ifndef DISABLE_SSL
+static int
+_new_cache(evhtp_conn_t * conn, unsigned char * id, int id_len, evhtp_ssl_sess_t * sess) {
+    printf("new cache %d!\n", id_len);
+    return 0;
+}
+
+static evhtp_ssl_sess_t *
+_get_cache(evhtp_conn_t * conn, unsigned char * id, int id_len) {
+    printf("get_cache\n");
+    return NULL;
+}
+
+static void
+_del_cache(evhtp_t * htp, unsigned char * id, unsigned int id_len) {
+    printf("del_cache\n");
+}
+
+static void *
+_init_cache(evhtp_t * htp) {
+    printf("init_cache\n");
+    return (void *)malloc(5);
+}
+
 #endif
 
-const char * help =
+
+const char * optstr = "htn:a:p:r:s:c:";
+
+const char * help   =
     "Options: \n"
     "  -h       : This help text\n"
 #ifndef DISABLE_EVTHR
     "  -t       : Run requests in a thread (default: off)\n"
     "  -n <int> : Number of threads        (default: 0 if -t is off, 4 if -t is on)\n"
+#endif
+#ifndef DISABLE_SSL
+    "  -s <pem> : Enable SSL and PEM       (default: NULL)\n"
+    "  -c <ca>  : CA cert file             (default: NULL\n"
 #endif
     "  -r <str> : Document root            (default: .)\n"
     "  -a <str> : Bind Address             (default: 0.0.0.0)\n"
@@ -189,6 +218,14 @@ parse_args(int argc, char ** argv) {
                 num_threads = atoi(optarg);
                 break;
 #endif
+#ifndef DISABLE_SSL
+            case 's':
+                ssl_pem = strdup(optarg);
+                break;
+            case 'c':
+                ssl_ca = strdup(optarg);
+                break;
+#endif
             default:
                 printf("Unknown opt %s\n", optarg);
                 return -1;
@@ -202,7 +239,7 @@ parse_args(int argc, char ** argv) {
 #endif
 
     return 0;
-}
+} /* parse_args */
 
 int
 main(int argc, char ** argv) {
@@ -222,12 +259,6 @@ main(int argc, char ** argv) {
     evbase = event_base_new();
     htp    = evhtp_new(evbase);
 
-#ifndef DISABLE_EVTHR
-    if (use_threads) {
-        evhtp_use_threads(htp, num_threads);
-    }
-#endif
-
     evhtp_set_server_name(htp, "Hi there!");
     evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
     evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
@@ -237,9 +268,35 @@ main(int argc, char ** argv) {
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
     evhtp_set_post_accept_cb(htp, set_my_handlers, NULL);
 
+#ifndef DISABLE_SSL
+    if (ssl_pem != NULL) {
+        evhtp_ssl_cfg scfg = {
+            .pemfile        = ssl_pem,
+            .privfile       = ssl_pem,
+            .cafile         = ssl_ca,
+            .ciphers        = "RC4+RSA:HIGH:+MEDIUM:+LOW",
+            .ssl_opts       = SSL_OP_NO_SSLv2,
+            .enable_scache  = 1,
+            .scache_timeout = 1024,
+            .scache_init    = evhtp_ssl_scache_builtin_init,
+            .scache_add     = evhtp_ssl_scache_builtin_add,
+            .scache_get     = evhtp_ssl_scache_builtin_get,
+            .scache_del     = _del_cache,
+        };
+
+        evhtp_use_ssl(htp, &scfg);
+    }
+#endif
+
+#ifndef DISABLE_EVTHR
+    if (use_threads) {
+        evhtp_use_threads(htp, num_threads);
+    }
+#endif
+
     evhtp_bind_socket(htp, bind_addr, bind_port);
 
     event_base_loop(evbase, 0);
     return 0;
-}
+} /* main */
 

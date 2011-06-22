@@ -19,7 +19,6 @@ typedef struct evhtp_callbacks evhtp_callbacks_t;
 
 typedef void (*htp_conn_write_fini_cb)(evhtp_conn_t * conn, void * args);
 
-
 struct evhtp {
     evbase_t           * evbase;
     evserv_t           * listener;
@@ -522,6 +521,18 @@ _htp_conn_free(evhtp_conn_t * conn) {
         evhtp_request_free(conn->request);
     }
 
+#ifndef DISABLE_SSL
+    if (conn->ssl != NULL) {
+        evhtp_ssl_sess_t * sess;
+
+        sess = conn->ssl->session;
+
+        if (sess != NULL) {
+            SSL_SESSION_free(sess);
+        }
+    }
+#endif
+
 #ifndef DISABLE_EVTHR
     if (conn->thr) {
         evthr_dec_backlog(conn->thr);
@@ -534,7 +545,7 @@ _htp_conn_free(evhtp_conn_t * conn) {
 
 
     free(conn);
-}
+} /* _htp_conn_free */
 
 static evhtp_conn_t *
 _htp_conn_new(evhtp_t * htp) {
@@ -1437,12 +1448,14 @@ typedef struct htp_scache_ent htp_scache_ent_t;
 static int s_server_session_id_context = 1;
 
 struct htp_scache_ent {
+    htp_scache_t     * scache;
     unsigned long      hash;
     unsigned char    * id;
     unsigned char    * der;
     int                id_len;
     int                der_len;
     evhtp_ssl_sess_t * sess;
+    event_t          * timeout_ev;
 
     TAILQ_ENTRY(htp_scache_ent) next;
 };
@@ -1459,12 +1472,34 @@ evhtp_conn_get_ssl_cfg(evhtp_conn_t * conn) {
     return evhtp_get_ssl_cfg(conn->htp);
 }
 
+static void
+_htp_ssl_scache_builtin_expire(int fd, short what, void * arg) {
+    htp_scache_ent_t * ent;
+    htp_scache_t     * scache;
+
+    printf("expire cache ent\n");
+
+    ent    = (htp_scache_ent_t *)arg;
+    scache = ent->scache;
+
+    TAILQ_REMOVE(scache, ent, next);
+
+    event_free(ent->timeout_ev);
+
+    free(ent->id);
+    free(ent->der);
+    free(ent->sess);
+
+    free(ent);
+}
+
 int
 evhtp_ssl_scache_builtin_add(evhtp_conn_t * conn, unsigned char * id, int len, evhtp_ssl_sess_t * sess) {
     evhtp_ssl_cfg    * scfg;
     htp_scache_ent_t * cache_ent;
     htp_scache_t     * scache;
-    unsigned char    * p;
+    unsigned char    * der_ptr;
+    struct timeval     tv;
 
     if (!(scfg = evhtp_conn_get_ssl_cfg(conn))) {
         return 0;
@@ -1482,14 +1517,26 @@ evhtp_ssl_scache_builtin_add(evhtp_conn_t * conn, unsigned char * id, int len, e
     cache_ent->der_len = i2d_SSL_SESSION(sess, NULL);
     cache_ent->id      = malloc(len);
     cache_ent->der     = malloc(cache_ent->der_len);
-    p = cache_ent->der;
+    cache_ent->scache  = scache;
+
+    der_ptr = cache_ent->der;
 
     memcpy(cache_ent->id, id, len);
-    i2d_SSL_SESSION(sess, &p);
+    i2d_SSL_SESSION(sess, &der_ptr);
+
+    /* set expire timeout event, XXX: abstract the timeout API allowing the API
+     * to create the proper timeout events instead of the user */
+    tv.tv_sec  = scfg->scache_timeout;
+    tv.tv_usec = 0;
+
+    cache_ent->timeout_ev = evtimer_new(_htp_conn_get_evbase(conn),
+        _htp_ssl_scache_builtin_expire, (void *)cache_ent);
+
+    evtimer_add(cache_ent->timeout_ev, &tv);
 
     TAILQ_INSERT_TAIL(scache, cache_ent, next);
     return 1;
-}
+} /* evhtp_ssl_scache_builtin_add */
 
 evhtp_ssl_sess_t *
 evhtp_ssl_scache_builtin_get(evhtp_conn_t * conn, unsigned char * id, int len) {
@@ -1585,7 +1632,7 @@ _htp_ssl_del_scache_ent(evhtp_ssl_ctx_t * ctx, evhtp_ssl_sess_t * sess) {
     slen = sess->session_id_length;
 
     if (scfg->scache_del) {
-        return (scfg->scache_del)(htp, sid, slen);
+        scfg->scache_del(htp, sid, slen);
     }
 }
 

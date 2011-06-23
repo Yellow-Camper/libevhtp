@@ -56,6 +56,12 @@ test_streaming(evhtp_request_t * req, void * arg) {
 }
 
 static void
+test_regex(evhtp_request_t * req, void * arg) {
+    printf("matched anything regex\n");
+    evhtp_send_reply(req, EVHTP_CODE_OK, "REGEXOK", NULL);
+}
+
+static void
 test_foo_cb(evhtp_request_t * req, void * arg) {
     evhtp_send_reply(req, EVHTP_CODE_OK, "OK", NULL);
 }
@@ -145,33 +151,6 @@ set_my_handlers(evhtp_conn_t * conn, void * arg) {
 
     return EVHTP_RES_OK;
 }
-
-#ifndef DISABLE_SSL
-static int
-_new_cache(evhtp_conn_t * conn, unsigned char * id, int id_len, evhtp_ssl_sess_t * sess) {
-    printf("new cache %d!\n", id_len);
-    return 0;
-}
-
-static evhtp_ssl_sess_t *
-_get_cache(evhtp_conn_t * conn, unsigned char * id, int id_len) {
-    printf("get_cache\n");
-    return NULL;
-}
-
-static void
-_del_cache(evhtp_t * htp, unsigned char * id, unsigned int id_len) {
-    printf("del_cache\n");
-}
-
-static void *
-_init_cache(evhtp_t * htp) {
-    printf("init_cache\n");
-    return (void *)malloc(5);
-}
-
-#endif
-
 
 const char * optstr = "htn:a:p:r:s:c:";
 
@@ -265,6 +244,9 @@ main(int argc, char ** argv) {
     evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
     evhtp_set_cb(htp, "/500", test_500_cb, "500");
     evhtp_set_cb(htp, "/stream", test_streaming, NULL);
+    evhtp_set_regex_cb(htp, "^/anything/.*", test_regex, NULL);
+
+
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
     evhtp_set_post_accept_cb(htp, set_my_handlers, NULL);
 
@@ -281,7 +263,7 @@ main(int argc, char ** argv) {
             .scache_init    = evhtp_ssl_scache_builtin_init,
             .scache_add     = evhtp_ssl_scache_builtin_add,
             .scache_get     = evhtp_ssl_scache_builtin_get,
-            .scache_del     = _del_cache,
+            .scache_del     = NULL,
         };
 
         evhtp_use_ssl(htp, &scfg);

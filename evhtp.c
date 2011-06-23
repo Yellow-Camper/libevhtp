@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <regex.h>
 
 #include "evhtp.h"
 
@@ -18,6 +19,27 @@ typedef struct evhtp_callback  evhtp_callback_t;
 typedef struct evhtp_callbacks evhtp_callbacks_t;
 
 typedef void (*htp_conn_write_fini_cb)(evhtp_conn_t * conn, void * args);
+
+#ifdef DISABLE_EVTHR
+#define pthread_self()                 0
+#define pthread_mutex_lock(a)          0
+#define pthread_mutex_unlock(a)        0
+#define pthread_mutex_init(a, b)       0
+#define evthr_pool_new(a, b)           NULL
+#define evthr_pool_start(a)            0
+#define evthr_pool_defer(a, b, c)      0
+#define evthr_get_base(a)              0
+#define evthr_inc_backlog(a)           0
+#define evthr_dec_backlog(a)           0
+#endif
+
+#ifdef DISABLE_SSL
+#define CRYPTO_set_id_callback(a)      0
+#define CRYPTO_set_locking_callback(a) 0
+#define CRYPTO_num_locks()             0
+#define CRYPTO_LOCK 0
+#endif
+
 
 struct evhtp {
     evbase_t           * evbase;
@@ -31,15 +53,9 @@ struct evhtp {
     evhtp_pre_accept     pre_accept_cb;
     evhtp_post_accept    post_accept_cb;
     http_parser_settings psets;
-#ifndef DISABLE_SSL
-    evhtp_ssl_ctx_t * ssl_ctx;
-    evhtp_ssl_cfg   * ssl_cfg;
-#endif
-#ifndef DISABLE_EVTHR
-    evthr_pool_t * pool;
-#else
-    void * pool;
-#endif
+    evhtp_ssl_ctx_t    * ssl_ctx;
+    evhtp_ssl_cfg      * ssl_cfg;
+    evthr_pool_t       * pool;
 };
 
 struct evhtp_hooks {
@@ -58,16 +74,27 @@ struct evhtp_hooks {
     void * _on_expect_cbargs;
 };
 
+typedef enum {
+    callback_type_uri,
+    callback_type_regex,
+} callback_type_t;
+
 struct evhtp_callback {
-    char             * uri;
+    callback_type_t    type;
     void             * cbarg;
     unsigned int       hash;
     evhtp_callback_cb  cb;
     evhtp_callback_t * next;
+
+    union {
+        char    * uri;
+        regex_t * regex;
+    } val;
 };
 
 struct evhtp_callbacks {
     evhtp_callback_t ** callbacks;
+    evhtp_callback_t  * regex_callbacks;
     unsigned int        count;
     unsigned int        buckets;
 };
@@ -81,12 +108,8 @@ struct evhtp_conn {
     evhtp_cflags      flags;
     evbase_t        * evbase;
     evbev_t         * bev;
-#ifndef DISABLE_SSL
-    evhtp_ssl_t * ssl;
-#endif
-#ifndef DISABLE_EVTHR
-    evthr_t * thr;
-#endif
+    evhtp_ssl_t     * ssl;
+    evthr_t         * thr;
 };
 
 #define _HTP_CONN       "Connection"
@@ -130,12 +153,8 @@ static evhtp_proto        _htp_proto(char major, char minor);
 static evhtp_callback_t * _htp_callbacks_find_callback(evhtp_callbacks_t *, const char *);
 static void               _htp_recv_cb(evbev_t * bev, void * arg);
 static void               _htp_err_cb(evbev_t * bev, short events, void * arg);
-#ifndef DISABLE_OPENSSL
-#ifndef DISABLE_EVTHR
 static int                ssl_num_locks;
-static pthread_mutex_t ** ssl_locks;
-#endif
-#endif
+static evhtp_mutex_t   ** ssl_locks;
 
 static evhtp_status
 _htp_run_on_expect_hook(evhtp_conn_t * conn, const char * expt_val) {
@@ -419,18 +438,36 @@ _htp_thash(const char * key) {
 }
 
 static evhtp_callback_t *
-_htp_callback_new(const char * uri, evhtp_callback_cb cb, void * cbarg) {
+_htp_callback_new(const void * uri, callback_type_t type, evhtp_callback_cb cb, void * cbarg) {
     evhtp_callback_t * htp_cb;
 
     evhtp_log_debug("enter");
+
     if (!(htp_cb = calloc(sizeof(evhtp_callback_t), sizeof(char)))) {
         return NULL;
     }
 
-    htp_cb->hash  = _htp_thash(uri);
+    htp_cb->type = type;
+
+    switch (type) {
+        case callback_type_uri:
+            htp_cb->hash    = _htp_thash(uri);
+            htp_cb->val.uri = strdup((const char *)uri);
+            break;
+        case callback_type_regex:
+            htp_cb->val.regex = (regex_t *)malloc(sizeof(regex_t));
+
+            if (regcomp(htp_cb->val.regex, (char *)uri, REG_EXTENDED | REG_NOSUB) != 0) {
+                free(htp_cb->val.regex);
+                free(htp_cb);
+                return NULL;
+            }
+
+            break;
+    }
+
     htp_cb->cb    = cb;
     htp_cb->cbarg = cbarg;
-    htp_cb->uri   = strdup(uri);
 
     return htp_cb;
 }
@@ -440,6 +477,7 @@ _htp_callbacks_new(unsigned int buckets) {
     evhtp_callbacks_t * htp_cbs;
 
     evhtp_log_debug("enter");
+
     if (!(htp_cbs = calloc(sizeof(evhtp_callbacks_t), sizeof(char)))) {
         return NULL;
     }
@@ -461,6 +499,7 @@ _htp_callbacks_find_callback(evhtp_callbacks_t * cbs, const char * uri) {
     unsigned int       hash;
 
     evhtp_log_debug("enter");
+
     if (cbs == NULL) {
         return NULL;
     }
@@ -468,12 +507,20 @@ _htp_callbacks_find_callback(evhtp_callbacks_t * cbs, const char * uri) {
     hash = _htp_thash(uri);
     cb   = cbs->callbacks[hash & (cbs->buckets - 1)];
 
-    if (cb == NULL) {
-        return NULL;
+    while (cb != NULL) {
+        if (cb->hash == hash && !strcmp(cb->val.uri, uri)) {
+            return cb;
+        }
+
+        cb = cb->next;
     }
 
+
+    /* check regex patterns */
+    cb = cbs->regex_callbacks;
+
     while (cb != NULL) {
-        if (cb->hash == hash && !strcmp(cb->uri, uri)) {
+        if (regexec(cb->val.regex, uri, 0, NULL, 0) == 0) {
             return cb;
         }
 
@@ -488,15 +535,24 @@ _htp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb) {
     unsigned int hkey;
 
     evhtp_log_debug("enter");
-    hkey = cb->hash % cbs->buckets;
 
-    if (cbs->callbacks[hkey] == NULL) {
-        cbs->callbacks[hkey] = cb;
-        return 0;
+    switch (cb->type) {
+        case callback_type_uri:
+            hkey = cb->hash % cbs->buckets;
+
+            if (cbs->callbacks[hkey] == NULL) {
+                cbs->callbacks[hkey] = cb;
+                return 0;
+            }
+
+            cb->next = cbs->callbacks[hkey];
+            cbs->callbacks[hkey] = cb;
+            break;
+        case callback_type_regex:
+            cb->next = cbs->regex_callbacks;
+            cbs->regex_callbacks = cb;
+            break;
     }
-
-    cb->next = cbs->callbacks[hkey];
-    cbs->callbacks[hkey] = cb;
 
     return 0;
 }
@@ -521,11 +577,9 @@ _htp_conn_free(evhtp_conn_t * conn) {
         evhtp_request_free(conn->request);
     }
 
-#ifndef DISABLE_EVTHR
     if (conn->thr) {
         evthr_dec_backlog(conn->thr);
     }
-#endif
 
     if (conn->bev) {
         bufferevent_free(conn->bev);
@@ -626,9 +680,14 @@ _htp_recv_cb(evbev_t * bev, void * arg) {
     read_buf = (char *)evbuffer_pullup(ibuf, avail);
 
     nread    = http_parser_execute(conn->parser, &conn->htp->psets, read_buf, avail);
-    evbuffer_drain(ibuf, nread);
 
-    evhtp_log_debug("nread = %d", nread);
+    evhtp_log_debug("nread = %zu", nread);
+
+    if (nread <= evbuffer_get_length(ibuf)) {
+        evbuffer_drain(ibuf, nread);
+    } else {
+        evbuffer_drain(ibuf, -1);
+    }
 }
 
 static void
@@ -652,15 +711,12 @@ _htp_hdr_output(evhtp_hdr_t * hdr, void * arg) {
 
     evhtp_log_debug("enter");
     evbuffer_add(buf, hdr->key, strlen(hdr->key));
-    /* evbuffer_add_reference(buf, ": ", 2, NULL, NULL); */
     evbuffer_add(buf, ": ", 2);
     evbuffer_add(buf, hdr->val, strlen(hdr->val));
     evbuffer_add(buf, CRLF, 2);
-    /* evbuffer_add_reference(buf, CRLF, 2, NULL, NULL); */
     return 0;
 }
 
-#ifndef DISABLE_EVTHR
 static void
 _htp_exec_in_thr(evthr_t * thr, void * arg, void * shared) {
     evhtp_t      * htp;
@@ -676,16 +732,13 @@ _htp_exec_in_thr(evthr_t * thr, void * arg, void * shared) {
     if (htp->ssl_ctx == NULL) {
         conn->bev = bufferevent_socket_new(conn->evbase, conn->sock, BEV_OPT_CLOSE_ON_FREE);
     } else {
-#ifndef DISABLE_EVTHR
+#ifndef DISABLE_SSL
         conn->ssl = SSL_new(htp->ssl_ctx);
         conn->bev = bufferevent_openssl_socket_new(conn->evbase,
             conn->sock, conn->ssl, BUFFEREVENT_SSL_ACCEPTING,
             BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
 
         SSL_set_app_data(conn->ssl, conn);
-#else
-        fprintf(stderr, "SSL requested but not enabled\n");
-        abort();
 #endif
     }
 
@@ -700,33 +753,26 @@ _htp_exec_in_thr(evthr_t * thr, void * arg, void * shared) {
     evthr_inc_backlog(conn->thr);
 }
 
-#endif
-
 static void
 _htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg) {
     evhtp_t      * htp;
     evhtp_conn_t * conn;
 
     evhtp_log_debug("enter");
-    htp = (evhtp_t *)arg;
-
-    evutil_make_socket_nonblocking(fd);
+    htp          = (evhtp_t *)arg;
 
     conn         = _htp_conn_new(htp);
     conn->evbase = htp->evbase;
     conn->sock   = fd;
 
-
     if (htp->post_accept_cb) {
         htp->post_accept_cb(conn, htp->post_accept_cbarg);
     }
 
-#ifndef DISABLE_EVTHR
     if (htp->pool != NULL) {
         evthr_pool_defer(htp->pool, _htp_exec_in_thr, conn);
         return;
     }
-#endif
 
     if (htp->ssl_ctx == NULL) {
         conn->bev = bufferevent_socket_new(conn->evbase, conn->sock, BEV_OPT_CLOSE_ON_FREE);
@@ -739,14 +785,12 @@ _htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg)
 
         SSL_set_app_data(conn->ssl, conn);
 #else
-        fprintf(stderr, "SSL requested but not enabled\n");
         abort();
 #endif
     }
 
     bufferevent_disable(conn->bev, EV_WRITE);
     bufferevent_enable(conn->bev, EV_READ);
-
     bufferevent_setcb(conn->bev, _htp_recv_cb, NULL, _htp_err_cb, conn);
 
     if (htp->post_accept_cb) {
@@ -1160,6 +1204,7 @@ evhtp_set_cb(evhtp_t * htp, const char * uri, evhtp_callback_cb cb, void * cbarg
     evhtp_callback_t * htp_cb;
 
     evhtp_log_debug("enter");
+
     if (htp->callbacks == NULL) {
         htp->callbacks = _htp_callbacks_new(1024);
     } else {
@@ -1168,7 +1213,24 @@ evhtp_set_cb(evhtp_t * htp, const char * uri, evhtp_callback_cb cb, void * cbarg
         }
     }
 
-    if (!(htp_cb = _htp_callback_new(uri, cb, cbarg))) {
+    if (!(htp_cb = _htp_callback_new(uri, callback_type_uri, cb, cbarg))) {
+        return -1;
+    }
+
+    if (!_htp_callbacks_add_callback(htp->callbacks, htp_cb)) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int
+evhtp_set_regex_cb(evhtp_t * htp, const char * pat, evhtp_callback_cb cb, void * arg) {
+    evhtp_callback_t * htp_cb;
+
+    evhtp_log_debug("enter");
+
+    if (!(htp_cb = _htp_callback_new(pat, callback_type_regex, cb, arg))) {
         return -1;
     }
 
@@ -1677,9 +1739,6 @@ evhtp_use_ssl(evhtp_t * htp, evhtp_ssl_cfg * cfg) {
 #endif
 
 
-#ifndef DISABLE_EVTHR
-
-#ifndef DISABLE_SSL
 static unsigned long
 _htp_ssl_get_thr_id(void) {
     return (unsigned long)pthread_self();
@@ -1696,28 +1755,24 @@ _htp_ssl_thr_lock(int mode, int type, const char * file, int line) {
     }
 }
 
-#endif
-
 int
 evhtp_use_threads(evhtp_t * htp, int nthreads) {
     evhtp_log_debug("enter");
 
-#ifndef DISABLE_SSL
     if (htp->ssl_ctx != NULL) {
         int i;
 
         ssl_num_locks = CRYPTO_num_locks();
-        ssl_locks     = malloc(ssl_num_locks * sizeof(pthread_mutex_t *));
+        ssl_locks     = malloc(ssl_num_locks * sizeof(evhtp_mutex_t *));
 
         for (i = 0; i < ssl_num_locks; i++) {
-            ssl_locks[i] = malloc(sizeof(pthread_mutex_t));
+            ssl_locks[i] = malloc(sizeof(evhtp_mutex_t));
             pthread_mutex_init(ssl_locks[i], NULL);
         }
 
         CRYPTO_set_id_callback(_htp_ssl_get_thr_id);
         CRYPTO_set_locking_callback(_htp_ssl_thr_lock);
     }
-#endif
 
     if (!(htp->pool = evthr_pool_new(nthreads, htp))) {
         return -1;
@@ -1726,8 +1781,6 @@ evhtp_use_threads(evhtp_t * htp, int nthreads) {
     evthr_pool_start(htp->pool);
     return 0;
 }
-
-#endif
 
 evhtp_t *
 evhtp_new(evbase_t * evbase) {

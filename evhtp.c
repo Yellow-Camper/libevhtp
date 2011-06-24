@@ -11,8 +11,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <regex.h>
 
+#include "onigposix.h" 
 #include "evhtp.h"
 
 typedef struct evhtp_callback  evhtp_callback_t;

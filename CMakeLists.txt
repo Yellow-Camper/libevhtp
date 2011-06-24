@@ -120,9 +120,13 @@ else()
 endif(DISABLE_EVTHR)
 
 
-add_library(libevhtp STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
-
+#add_library(libevhtp STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
+add_library(libevhtp SHARED ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
+install (TARGETS libevhtp DESTINATION lib)
+install (FILES evhtp.h DESTINATION include)
+install (FILES evthr/evthr.h DESTINATION include)
+install (FILES http_parser/http_parser.h DESTINATION include)
 
 add_executable(test test.c)
 target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS})

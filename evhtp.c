@@ -12,6 +12,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "http_parser.h"
 #include "onigposix.h" 
 #include "evhtp.h"
 
@@ -1145,6 +1146,7 @@ evhtp_request_make_chunk(evhtp_request_t * req, evbuf_t * buf) {
 void
 evhtp_send_stream(evhtp_request_t * req, evbuf_t * buf) {
     evhtp_log_debug("enter");
+
     switch (req->proto) {
         case EVHTP_PROTO_1_1:
             return evhtp_request_make_chunk(req, buf);

@@ -57,7 +57,6 @@ test_streaming(evhtp_request_t * req, void * arg) {
 
 static void
 test_regex(evhtp_request_t * req, void * arg) {
-    printf("matched anything regex\n");
     evhtp_send_reply(req, EVHTP_CODE_OK, "REGEXOK", NULL);
 }
 

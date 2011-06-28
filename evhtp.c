@@ -1232,6 +1232,10 @@ evhtp_set_regex_cb(evhtp_t * htp, const char * pat, evhtp_callback_cb cb, void *
 
     evhtp_log_debug("enter");
 
+    if (htp->callbacks == NULL) {
+	htp->callbacks = _htp_callbacks_new(1024);
+    }
+
     if (!(htp_cb = _htp_callback_new(pat, callback_type_regex, cb, arg))) {
         return -1;
     }

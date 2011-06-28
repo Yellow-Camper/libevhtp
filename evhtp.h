@@ -178,6 +178,8 @@ TAILQ_HEAD(evhtp_hdrs, evhtp_hdr);
 struct evhtp_request {
     char            * path;
     char            * uri;
+    int               matched_soff;
+    int               matched_eoff;
     int               keepalive;
     evhtp_hdrs_t      headers_in;
     evhtp_hdrs_t      headers_out;

@@ -245,7 +245,6 @@ main(int argc, char ** argv) {
     evhtp_set_cb(htp, "/stream", test_streaming, NULL);
     evhtp_set_regex_cb(htp, "^/anything/.*", test_regex, NULL);
 
-
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
     evhtp_set_post_accept_cb(htp, set_my_handlers, NULL);
 

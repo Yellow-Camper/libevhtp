@@ -24,6 +24,7 @@ struct evhtp_hdrs;
 struct evhtp_hdr;
 struct evhtp_hooks;
 struct evhtp_conn;
+struct evhtp_request;
 
 typedef unsigned              evhtp_status;
 typedef unsigned char         evhtp_cflags;
@@ -63,7 +64,6 @@ typedef evhtp_res (*evhtp_hook_path)(evhtp_request_t *, const char *, void *);
 typedef evhtp_res (*evhtp_hook_uri)(evhtp_request_t *, const char *, void *);
 typedef evhtp_res (*evhtp_hook_read)(evhtp_request_t *, const char *, size_t, void *);
 typedef evhtp_status (*evhtp_hook_on_expect)(evhtp_request_t *, const char *, void *);
-
 typedef evhtp_res (*evhtp_stream_cb)(evhtp_request_t *, void *);
 
 enum evhtp_res {
@@ -175,28 +175,6 @@ struct evhtp_hdr {
 
 TAILQ_HEAD(evhtp_hdrs, evhtp_hdr);
 
-struct evhtp_request {
-    char            * path;
-    char            * uri;
-    int               matched_soff;
-    int               matched_eoff;
-    int               keepalive;
-    evhtp_hdrs_t      headers_in;
-    evhtp_hdrs_t      headers_out;
-    evhtp_method      method;
-    evhtp_proto       proto;
-    char              major;
-    char              minor;
-    char              chunked;
-    evhtp_callback_cb cb;
-    evhtp_stream_cb   stream_cb;
-    void            * cbarg;
-    void            * stream_cbarg;
-    evhtp_conn_t    * conn;
-    evbuf_t         * buffer_in;
-    evbuf_t         * buffer_out;
-};
-
 typedef int (*evhtp_ssl_scache_add_cb)(evhtp_conn_t *, unsigned char *, int, evhtp_ssl_sess_t *);
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get_cb)(evhtp_conn_t *, unsigned char * id, int len);
 typedef void (*evhtp_ssl_scache_del_cb)(evhtp_t *, unsigned char *, unsigned int len);
@@ -220,7 +198,6 @@ struct evhtp_ssl_cfg {
 };
 
 evhtp_t          * evhtp_new(evbase_t *);
-evhtp_request_t  * evhtp_request_new(evhtp_conn_t *);
 
 int                evhtp_set_server_name(evhtp_t *, char *);
 int                evhtp_set_cb(evhtp_t *, const char *, evhtp_callback_cb, void *);
@@ -230,6 +207,8 @@ void               evhtp_bind_socket(evhtp_t *, const char *, uint16_t);
 
 int                evhtp_conn_set_flags(evhtp_conn_t *, evhtp_cflags);
 
+evbuf_t          * evhtp_request_get_input(evhtp_request_t *);
+evbuf_t          * evhtp_request_get_output(evhtp_request_t *);
 evbase_t         * evhtp_request_get_evbase(evhtp_request_t *);
 evserv_t         * evhtp_request_get_listener(evhtp_request_t *);
 int                evhtp_request_get_sock(evhtp_request_t *);

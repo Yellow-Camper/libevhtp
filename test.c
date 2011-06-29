@@ -113,7 +113,7 @@ print_uri(evhtp_request_t * req, const char * uri, void * arg) {
 static evhtp_res
 print_data(evhtp_request_t * req, const char * data, size_t len, void * arg) {
     if (len) {
-        evbuf_t * buf = req->buffer_in;
+        evbuf_t * buf = evhtp_request_get_input(req);
         evbuffer_drain(buf, len);
     }
 

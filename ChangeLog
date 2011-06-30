@@ -1,0 +1,50 @@
+v0.3.3
+ - Added optional OpenSSL support (with optional threading abstractions).
+   * In order to properly enable SSL for your server two things must happen:
+     evhtp_ssl_cfg structure must be filled with your settings:
+
+         evhtp_ssl_cfg scfg = {
+             .pemfile        = ssl_pem,
+             .privfile       = ssl_pem,
+             .cafile         = ssl_ca,
+             .ciphers        = "RC4+RSA:HIGH:+MEDIUM:+LOW",
+             .ssl_opts       = <SSL SPECIFIC FLAGS>,
+             .enable_scache  = 1,
+             .scache_timeout = 1024,
+             .scache_init    = evhtp_ssl_scache_builtin_init,
+             .scache_add     = evhtp_ssl_scache_builtin_add,
+             .scache_get     = evhtp_ssl_scache_builtin_get,
+             .scache_del     = NULL,
+         };
+   * please note that .scache_init, .scache_add, .scache_get, and .scace_del
+     are function points to allow for a user to define their own session cache
+     mechanism. Libevhtp has a few default built-in cache functions:
+      evhtp_ssl_scache_builtin_init,
+      evhtp_ssl_scache_builtin_add,
+      evhtp_ssl_scache_builtin_get,
+      evhtp_ssl_scache_builtin_del
+
+     Another side note here is that currently the builtin functions do not expire,
+     this will be fixed in the next beta-release.
+
+   * The second step is to enable the use of the SSL backend by calling
+     evhtp_use_ssl(evhtp_t *, evhtp_ssl_cfg *);
+
+ - Regular expression based path callback functions added:
+     evhtp_set_regex_cb(evhtp_t *, "^(/path_w_regex/).*", callback, args);
+
+     Using the case above, any path/uri in the request with /path_w_regex/*, the API
+     will execute your defined callback function. The output of which is the same as
+     any other defined callback.
+
+ - Added _htp_callbacks_find_callback_woffsets(), which (if regex) will set 2 integer
+   variables in the evhtp_rquest_t structure defining the beginning and end of a matched
+   URI/path.
+
+ - _htp_callback_new() has been modified to create regex based evhtp_callback_t's
+
+ - Made the evhtp_request_t structure private, various get/set functions have been added
+   to deal with the internals.
+
+ - Modified compile to support libonigurmura, a BSD licensed cross-platform regular expression
+   library. Currently this is only used to support posix regex functionality.

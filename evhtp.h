@@ -17,13 +17,14 @@
 #include <openssl/rand.h>
 #endif
 
-#define EVHTP_VERSION "0.3.3"
+#define EVHTP_VERSION "0.3.4"
 
 struct evhtp;
 struct evhtp_hdrs;
 struct evhtp_hdr;
 struct evhtp_hooks;
 struct evhtp_conn;
+struct evhtp_request;
 
 typedef unsigned              evhtp_status;
 typedef unsigned char         evhtp_cflags;
@@ -33,7 +34,13 @@ typedef struct evconnlistener evserv_t;
 typedef struct bufferevent    evbev_t;
 #ifdef DISABLE_EVTHR
 typedef struct event_base     evbase_t;
+typedef void                  evthr_t;
+typedef void                  evthr_pool_t;
+typedef void                  evhtp_mutex_t;
+#else
+typedef pthread_mutex_t       evhtp_mutex_t;
 #endif
+
 typedef struct evhtp          evhtp_t;
 typedef struct evhtp_request  evhtp_request_t;
 typedef struct evhtp_conn     evhtp_conn_t;
@@ -57,7 +64,6 @@ typedef evhtp_res (*evhtp_hook_path)(evhtp_request_t *, const char *, void *);
 typedef evhtp_res (*evhtp_hook_uri)(evhtp_request_t *, const char *, void *);
 typedef evhtp_res (*evhtp_hook_read)(evhtp_request_t *, const char *, size_t, void *);
 typedef evhtp_status (*evhtp_hook_on_expect)(evhtp_request_t *, const char *, void *);
-
 typedef evhtp_res (*evhtp_stream_cb)(evhtp_request_t *, void *);
 
 enum evhtp_res {
@@ -132,6 +138,16 @@ enum evhtp_res {
 #define EVHTP_CODE_VERNSUPPORT    505
 #define EVHTP_CODE_BWEXEED        509
 
+#ifndef DISABLE_SSL
+typedef SSL_SESSION evhtp_ssl_sess_t;
+typedef SSL         evhtp_ssl_t;
+typedef SSL_CTX     evhtp_ssl_ctx_t;
+#else
+typedef void        evhtp_ssl_sess_t;
+typedef void        evhtp_ssl_t;
+typedef void        evhtp_ssl_ctx_t;
+#endif
+
 enum evhtp_hook_type {
     EVHTP_HOOK_HDRS_READ = 1,
     EVHTP_HOOK_HDR_READ,
@@ -159,31 +175,6 @@ struct evhtp_hdr {
 
 TAILQ_HEAD(evhtp_hdrs, evhtp_hdr);
 
-struct evhtp_request {
-    char            * path;
-    char            * uri;
-    int               keepalive;
-    evhtp_hdrs_t      headers_in;
-    evhtp_hdrs_t      headers_out;
-    evhtp_method      method;
-    evhtp_proto       proto;
-    char              major;
-    char              minor;
-    char              chunked;
-    evhtp_callback_cb cb;
-    evhtp_stream_cb   stream_cb;
-    void            * cbarg;
-    void            * stream_cbarg;
-    evhtp_conn_t    * conn;
-    evbuf_t         * buffer_in;
-    evbuf_t         * buffer_out;
-};
-
-#ifndef DISABLE_SSL
-typedef SSL_SESSION          evhtp_ssl_sess_t;
-typedef SSL                  evhtp_ssl_t;
-typedef SSL_CTX              evhtp_ssl_ctx_t;
-
 typedef int (*evhtp_ssl_scache_add_cb)(evhtp_conn_t *, unsigned char *, int, evhtp_ssl_sess_t *);
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get_cb)(evhtp_conn_t *, unsigned char * id, int len);
 typedef void (*evhtp_ssl_scache_del_cb)(evhtp_t *, unsigned char *, unsigned int len);
@@ -205,55 +196,58 @@ struct evhtp_ssl_cfg {
     evhtp_ssl_scache_del_cb  scache_del;
     void                   * args;
 };
-#endif
 
-evhtp_t         * evhtp_new(evbase_t *);
-evhtp_request_t * evhtp_request_new(evhtp_conn_t *);
+evhtp_t          * evhtp_new(evbase_t *);
 
-int               evhtp_set_server_name(evhtp_t *, char *);
-int               evhtp_set_cb(evhtp_t *, const char *, evhtp_callback_cb, void *);
-void              evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * cbarg);
-void              evhtp_bind_socket(evhtp_t *, const char *, uint16_t);
+int                evhtp_set_server_name(evhtp_t *, char *);
+int                evhtp_set_cb(evhtp_t *, const char *, evhtp_callback_cb, void *);
+int                evhtp_set_regex_cb(evhtp_t *, const char *, evhtp_callback_cb, void *);
+void               evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * cbarg);
+void               evhtp_bind_socket(evhtp_t *, const char *, uint16_t);
 
-int               evhtp_conn_set_flags(evhtp_conn_t *, evhtp_cflags);
+int                evhtp_conn_set_flags(evhtp_conn_t *, evhtp_cflags);
 
-evbase_t        * evhtp_request_get_evbase(evhtp_request_t *);
-evserv_t        * evhtp_request_get_listener(evhtp_request_t *);
-int               evhtp_request_get_sock(evhtp_request_t *);
+evbuf_t          * evhtp_request_get_input(evhtp_request_t *);
+evbuf_t          * evhtp_request_get_output(evhtp_request_t *);
+evbase_t         * evhtp_request_get_evbase(evhtp_request_t *);
+evserv_t         * evhtp_request_get_listener(evhtp_request_t *);
+int                evhtp_request_get_sock(evhtp_request_t *);
 
-evbase_t        * evhtp_get_evbase(evhtp_t *);
-evserv_t        * evhtp_get_listener(evhtp_t *);
-char            * evhtp_get_server_name(evhtp_t *);
+evbase_t         * evhtp_get_evbase(evhtp_t *);
+evserv_t         * evhtp_get_listener(evhtp_t *);
+char             * evhtp_get_server_name(evhtp_t *);
 
-int               evhtp_set_hook(evhtp_conn_t *, evhtp_hook_type, void * cb, void * arg);
-void              evhtp_set_pre_accept_cb(evhtp_t *, evhtp_pre_accept, void *);
-void              evhtp_set_post_accept_cb(evhtp_t *, evhtp_post_accept, void *);
-void              evhtp_send_reply(evhtp_request_t *, evhtp_status, const char *, evbuf_t *);
-void              evhtp_send_reply_stream(evhtp_request_t *, evhtp_status, evhtp_stream_cb, void *);
-void              evhtp_send_stream(evhtp_request_t *, evbuf_t *);
-void              evhtp_request_make_chunk(evhtp_request_t *, evbuf_t *);
+int                evhtp_set_hook(evhtp_conn_t *, evhtp_hook_type, void * cb, void * arg);
+void               evhtp_set_pre_accept_cb(evhtp_t *, evhtp_pre_accept, void *);
+void               evhtp_set_post_accept_cb(evhtp_t *, evhtp_post_accept, void *);
+void               evhtp_send_reply(evhtp_request_t *, evhtp_status, const char *, evbuf_t *);
+void               evhtp_send_reply_stream(evhtp_request_t *, evhtp_status, evhtp_stream_cb, void *);
+void               evhtp_send_stream(evhtp_request_t *, evbuf_t *);
+void               evhtp_request_make_chunk(evhtp_request_t *, evbuf_t *);
 
-evhtp_hdr_t     * evhtp_hdr_new(char *, char *);
-const char      * evhtp_hdr_find(evhtp_hdrs_t *, const char *);
-const char      * evhtp_hdr_get_key(evhtp_hdr_t *);
-const char      * evhtp_hdr_get_val(evhtp_hdr_t *);
-void              evhtp_hdr_add(evhtp_hdrs_t *, evhtp_hdr_t *);
-int               evhtp_hdrs_for_each(evhtp_hdrs_t *, evhtp_hdrs_iter_cb, void *);
+evhtp_hdr_t      * evhtp_hdr_new(char *, char *);
+const char       * evhtp_hdr_find(evhtp_hdrs_t *, const char *);
+const char       * evhtp_hdr_get_key(evhtp_hdr_t *);
+const char       * evhtp_hdr_get_val(evhtp_hdr_t *);
+void               evhtp_hdr_add(evhtp_hdrs_t *, evhtp_hdr_t *);
+int                evhtp_hdrs_for_each(evhtp_hdrs_t *, evhtp_hdrs_iter_cb, void *);
 
-void              evhtp_free(evhtp_t *);
-void              evhtp_request_free(evhtp_request_t *);
-void              evhtp_hdrs_free(evhtp_hdrs_t *);
-void              evhtp_hdr_free(evhtp_hdr_t *);
+void               evhtp_free(evhtp_t *);
+void               evhtp_request_free(evhtp_request_t *);
+void               evhtp_hdrs_free(evhtp_hdrs_t *);
+void               evhtp_hdr_free(evhtp_hdr_t *);
 
-const char      * evhtp_version(void);
+const char       * evhtp_version(void);
 
-#ifndef DISABLE_EVTHR
-int evhtp_use_threads(evhtp_t *, int);
-#endif
+int                evhtp_use_threads(evhtp_t *, int);
+
+int                evhtp_use_ssl(evhtp_t *, evhtp_ssl_cfg *);
+void             * evhtp_ssl_scache_builtin_init(evhtp_t *);
+int                evhtp_ssl_scache_builtin_add(evhtp_conn_t *, unsigned char *, int, evhtp_ssl_sess_t *);
+evhtp_ssl_sess_t * evhtp_ssl_scache_builtin_get(evhtp_conn_t *, unsigned char *, int);
 
 #ifndef DISABLE_SSL
 int                evhtp_use_ssl(evhtp_t *, evhtp_ssl_cfg *);
-
 void             * evhtp_ssl_scache_builtin_init(evhtp_t *);
 int                evhtp_ssl_scache_builtin_add(evhtp_conn_t *, unsigned char *, int, evhtp_ssl_sess_t *);
 evhtp_ssl_sess_t * evhtp_ssl_scache_builtin_get(evhtp_conn_t *, unsigned char *, int);

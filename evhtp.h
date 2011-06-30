@@ -17,7 +17,7 @@
 #include <openssl/rand.h>
 #endif
 
-#define EVHTP_VERSION "0.3.3"
+#define EVHTP_VERSION "0.3.4"
 
 struct evhtp;
 struct evhtp_hdrs;
@@ -245,6 +245,13 @@ int                evhtp_use_ssl(evhtp_t *, evhtp_ssl_cfg *);
 void             * evhtp_ssl_scache_builtin_init(evhtp_t *);
 int                evhtp_ssl_scache_builtin_add(evhtp_conn_t *, unsigned char *, int, evhtp_ssl_sess_t *);
 evhtp_ssl_sess_t * evhtp_ssl_scache_builtin_get(evhtp_conn_t *, unsigned char *, int);
+
+#ifndef DISABLE_SSL
+int                evhtp_use_ssl(evhtp_t *, evhtp_ssl_cfg *);
+void             * evhtp_ssl_scache_builtin_init(evhtp_t *);
+int                evhtp_ssl_scache_builtin_add(evhtp_conn_t *, unsigned char *, int, evhtp_ssl_sess_t *);
+evhtp_ssl_sess_t * evhtp_ssl_scache_builtin_get(evhtp_conn_t *, unsigned char *, int);
+#endif
 
 #endif /* __EVHTP_H__ */
 

@@ -445,7 +445,6 @@ _htp_body_cb(http_parser * p, const char * buf, size_t len) {
     evhtp_conn_t * conn = p->data;
 
     evhtp_log_debug("enter");
-
     evbuffer_add(conn->request->buffer_in, buf, len);
 
     if (_htp_run_read_hook(conn, buf, len) != EVHTP_RES_OK) {
@@ -530,6 +529,7 @@ _htp_callbacks_find_callback_woffsets(evhtp_callbacks_t * cbs,
     evhtp_callback_t * cb;
     unsigned int       hash;
 
+    evhtp_log_debug("enter");
     if (cbs == NULL) {
         return NULL;
     }
@@ -781,7 +781,6 @@ _htp_err_cb(evbev_t * bev, short events, void * arg) {
     if (events & (BEV_EVENT_ERROR | BEV_EVENT_EOF)) {
         conn = (evhtp_conn_t *)arg;
 
-        evhtp_log_debug("leaving....");
         return _htp_conn_free(conn);
     }
 }
@@ -1524,6 +1523,7 @@ evhtp_request_get_sock(evhtp_request_t * request) {
 evserv_t *
 evhtp_request_get_listener(evhtp_request_t * request) {
     evhtp_log_debug("enter");
+
     if (request == NULL) {
         return NULL;
     }
@@ -1536,6 +1536,7 @@ evhtp_hdr_new(char * key, char * val) {
     evhtp_hdr_t * hdr;
 
     evhtp_log_debug("enter");
+
     hdr           = malloc(sizeof(evhtp_hdr_t));
     hdr->key      = key;
     hdr->val      = val;
@@ -1704,8 +1705,6 @@ void *
 evhtp_ssl_scache_builtin_init(evhtp_t * htp) {
     htp_scache_t * scache;
 
-    printf("hi.\n");
-
     scache = malloc(sizeof(htp_scache_t));
 
     TAILQ_INIT(scache);
@@ -1829,7 +1828,6 @@ evhtp_use_ssl(evhtp_t * htp, evhtp_ssl_cfg * cfg) {
 } /* evhtp_use_ssl */
 
 #endif
-
 
 static unsigned long
 _htp_ssl_get_thr_id(void) {

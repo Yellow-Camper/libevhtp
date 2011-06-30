@@ -1,4 +1,4 @@
-v0.3.3
+v0.3.4
  - Added optional OpenSSL support (with optional threading abstractions).
    * In order to properly enable SSL for your server two things must happen:
      evhtp_ssl_cfg structure must be filled with your settings:

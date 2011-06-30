@@ -658,11 +658,6 @@ _htp_conn_free(evhtp_conn_t * conn) {
     }
 
 
-    if (conn->bev) {
-        bufferevent_free(conn->bev);
-    }
-
-
     free(conn);
 } /* _htp_conn_free */
 
@@ -825,9 +820,6 @@ _htp_exec_in_thr(evthr_t * thr, void * arg, void * shared) {
             BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
 
         SSL_set_app_data(conn->ssl, conn);
-#else
-        fprintf(stderr, "SSL requested but not enabled\n");
-        abort();
 #endif
     }
 
@@ -878,6 +870,8 @@ _htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg)
 #endif
     }
 
+    bufferevent_disable(conn->bev, EV_WRITE);
+    bufferevent_enable(conn->bev, EV_READ);
     bufferevent_setcb(conn->bev, _htp_recv_cb, NULL, _htp_err_cb, conn);
 
     if (htp->post_accept_cb) {

@@ -211,7 +211,16 @@ evbuf_t          * evhtp_request_get_input(evhtp_request_t *);
 evbuf_t          * evhtp_request_get_output(evhtp_request_t *);
 evbase_t         * evhtp_request_get_evbase(evhtp_request_t *);
 evserv_t         * evhtp_request_get_listener(evhtp_request_t *);
+evhtp_method       evhtp_request_get_method(evhtp_request_t *);
+evhtp_proto        evhtp_request_get_proto(evhtp_request_t *);
+evhtp_conn_t     * evhtp_request_get_conn(evhtp_request_t *);
+evhtp_hdrs_t     * evhtp_request_get_headers_in(evhtp_request_t *);
+evhtp_hdrs_t     * evhtp_request_get_headers_out(evhtp_request_t *);
 int                evhtp_request_get_sock(evhtp_request_t *);
+const char       * evhtp_request_get_path(evhtp_request_t *);
+const char       * evhtp_request_get_uri(evhtp_request_t *);
+int                evhtp_request_get_matched_soff(evhtp_request_t *);
+int                evhtp_request_get_matched_eoff(evhtp_request_t *);
 
 evbase_t         * evhtp_get_evbase(evhtp_t *);
 evserv_t         * evhtp_get_listener(evhtp_t *);

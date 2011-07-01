@@ -216,11 +216,15 @@ evhtp_proto        evhtp_request_get_proto(evhtp_request_t *);
 evhtp_conn_t     * evhtp_request_get_conn(evhtp_request_t *);
 evhtp_hdrs_t     * evhtp_request_get_headers_in(evhtp_request_t *);
 evhtp_hdrs_t     * evhtp_request_get_headers_out(evhtp_request_t *);
+evhtp_callback_cb  evhtp_request_get_cb(evhtp_request_t *);
+void             * evhtp_request_get_cbarg(evhtp_request_t *);
 int                evhtp_request_get_sock(evhtp_request_t *);
 const char       * evhtp_request_get_path(evhtp_request_t *);
 const char       * evhtp_request_get_uri(evhtp_request_t *);
+const char       * evhtp_request_method_str(evhtp_request_t *);
 int                evhtp_request_get_matched_soff(evhtp_request_t *);
 int                evhtp_request_get_matched_eoff(evhtp_request_t *);
+int64_t            evhtp_request_get_content_length(evhtp_request_t *);
 
 evbase_t         * evhtp_get_evbase(evhtp_t *);
 evserv_t         * evhtp_get_listener(evhtp_t *);
@@ -247,6 +251,7 @@ void               evhtp_hdrs_free(evhtp_hdrs_t *);
 void               evhtp_hdr_free(evhtp_hdr_t *);
 
 const char       * evhtp_version(void);
+const char       * evhtp_method_str(evhtp_method);
 
 int                evhtp_use_threads(evhtp_t *, int);
 int                evhtp_use_ssl(evhtp_t *, evhtp_ssl_cfg *);

@@ -524,9 +524,9 @@ htp_callbacks_new(unsigned int buckets) {
 
 static evhtp_callback_t *
 htp_callbacks_find_callback_woffsets(evhtp_callbacks_t * cbs,
-                                      const char        * uri,
-                                      int               * start_offset,
-                                      int               * end_offset) {
+                                     const char        * uri,
+                                     int               * start_offset,
+                                     int               * end_offset) {
     evhtp_callback_t * cb;
     unsigned int       hash;
 
@@ -1357,7 +1357,7 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port) {
 
     htp->listener = evconnlistener_new_bind(htp->evbase,
                                             htp_accept_cb, htp,
-					    LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, 1024,
+                                            LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, 1024,
                                             (struct sockaddr *)&sin, sizeof(sin));
 }
 
@@ -1553,6 +1553,31 @@ evhtp_request_get_input(evhtp_request_t * request) {
 evbuf_t *
 evhtp_request_get_output(evhtp_request_t * request) {
     return request->buffer_out;
+}
+
+evhtp_callback_cb
+evhtp_request_get_cb(evhtp_request_t * request) {
+    return request->cb;
+}
+
+void *
+evhtp_request_get_cbarg(evhtp_request_t * request) {
+    return request->cbarg;
+}
+
+const char *
+evhtp_request_method_str(evhtp_request_t * request) {
+    return evhtp_method_str(request->method);
+}
+
+int64_t
+evhtp_request_content_length(evhtp_request_t * request) {
+    return request->conn->parser->content_length;
+}
+
+const char *
+evhtp_method_str(evhtp_method method) {
+    return http_method_str(method);
 }
 
 evbase_t *

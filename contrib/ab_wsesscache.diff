@@ -1,0 +1,66 @@
+--- support/ab.c	2010-07-12 05:26:29.000000000 -0400
++++ support/ab.c	2011-06-21 15:29:21.961972191 -0400
+@@ -340,6 +340,7 @@
+ char *ssl_cipher = NULL;
+ char *ssl_info = NULL;
+ BIO *bio_out,*bio_err;
++char * sess_in = NULL;
+ #endif
+
+ apr_time_t start, lasttime, stoptime;
+@@ -1195,6 +1196,28 @@
+             ERR_print_errors(bio_err);
+             exit(1);
+         }
++
++	if (sess_in != NULL) {
++	    SSL_SESSION * sess;
++	    BIO * sidfile;
++
++	    if (!(sidfile = BIO_new_file(sess_in, "r"))) {
++		fprintf(stderr, "error opening session file %s\n", sess_in);
++		ERR_print_errors_fp(stderr);
++		exit(1);
++	    }
++
++	    if (!(sess = PEM_read_bio_SSL_SESSION(sidfile, NULL, 0, NULL))) {
++		fprintf(stderr, "error reading session file %s\n", sess_in);
++		ERR_print_errors_fp(stderr);
++		exit(1);
++	    }
++
++	    BIO_free(sidfile);
++	    SSL_set_session(c->ssl, sess);
++	    SSL_SESSION_free(sess);
++	}
++
+         ssl_rand_seed();
+         apr_os_sock_get(&fd, c->aprsock);
+         bio = BIO_new_socket(fd, BIO_NOCLOSE);
+@@ -1875,6 +1898,7 @@
+ #ifdef USE_SSL
+     fprintf(stderr, "    -Z ciphersuite  Specify SSL/TLS cipher suite (See openssl ciphers)\n");
+     fprintf(stderr, "    -f protocol     Specify SSL/TLS protocol (SSL2, SSL3, TLS1, or ALL)\n");
++    fprintf(stderr, "    -I in_file      Specify file to read SSL session from\n");
+ #endif
+     exit(EINVAL);
+ }
+@@ -2040,7 +2064,7 @@
+     apr_getopt_init(&opt, cntxt, argc, argv);
+     while ((status = apr_getopt(opt, "n:c:t:b:T:p:u:v:rkVhwix:y:z:C:H:P:A:g:X:de:Sq"
+ #ifdef USE_SSL
+-            "Z:f:"
++            "Z:f:I:"
+ #endif
+             ,&c, &optarg)) == APR_SUCCESS) {
+         switch (c) {
+@@ -2215,6 +2239,9 @@
+                     meth = TLSv1_client_method();
+                 }
+                 break;
++	    case 'I':
++		sess_in = strdup(optarg);
++		break;
+ #endif
+         }
+     }

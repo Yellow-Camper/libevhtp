@@ -421,7 +421,6 @@ htp_path_cb(http_parser * p, const char * buf, size_t len) {
                                               request->path,
                                               &request->matched_soff,
                                               &request->matched_eoff);
-
     if (cb == NULL) {
         if (conn->htp->default_cb == NULL) {
             return -1;
@@ -842,8 +841,8 @@ htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg) 
     evhtp_conn_t * conn;
 
     evhtp_log_debug("enter");
-    htp          = (evhtp_t *)arg;
 
+    htp          = (evhtp_t *)arg;
     conn         = htp_conn_new(htp);
     conn->evbase = htp->evbase;
     conn->sock   = fd;
@@ -883,11 +882,12 @@ htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg) 
 
 static void
 htp_set_kalive_hdr(evhtp_hdrs_t * hdrs, evhtp_proto proto, int kalive) {
+    evhtp_log_debug("enter");
+
     if (hdrs == NULL) {
         return;
     }
 
-    evhtp_log_debug("enter");
     if (kalive && proto == EVHTP_PROTO_1_0) {
         return evhtp_hdr_add(hdrs, evhtp_hdr_new(_HTP_CONN, _HTP_DEFKALIVE));
     }
@@ -1356,7 +1356,8 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port) {
     signal(SIGPIPE, SIG_IGN);
 
     htp->listener = evconnlistener_new_bind(htp->evbase,
-                                            htp_accept_cb, htp, LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, 1024,
+                                            htp_accept_cb, htp,
+					    LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, 1024,
                                             (struct sockaddr *)&sin, sizeof(sin));
 }
 
@@ -1578,6 +1579,7 @@ evhtp_request_get_sock(evhtp_request_t * request) {
 evserv_t *
 evhtp_request_get_listener(evhtp_request_t * request) {
     evhtp_log_debug("enter");
+
     if (request == NULL) {
         return NULL;
     }
@@ -1590,6 +1592,7 @@ evhtp_hdr_new(char * key, char * val) {
     evhtp_hdr_t * hdr;
 
     evhtp_log_debug("enter");
+
     hdr           = malloc(sizeof(evhtp_hdr_t));
     hdr->key      = key;
     hdr->val      = val;
@@ -1758,8 +1761,6 @@ void *
 evhtp_ssl_scache_builtin_init(evhtp_t * htp) {
     htp_scache_t * scache;
 
-    printf("hi.\n");
-
     scache = malloc(sizeof(htp_scache_t));
 
     TAILQ_INIT(scache);
@@ -1883,7 +1884,6 @@ evhtp_use_ssl(evhtp_t * htp, evhtp_ssl_cfg * cfg) {
 } /* evhtp_use_ssl */
 
 #endif
-
 
 static unsigned long
 htp_ssl_get_thr_id(void) {

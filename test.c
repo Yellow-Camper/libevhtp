@@ -52,27 +52,27 @@ test_streaming(evhtp_request_t * req, void * arg) {
     carg->idx = 0;
     carg->buf = evbuffer_new();
 
-    evhtp_send_reply_stream(req, EVHTP_CODE_OK, _send_chunk, carg);
+    evhtp_send_reply_stream(req, EVHTP_RES_OK, _send_chunk, carg);
 }
 
 static void
 test_regex(evhtp_request_t * req, void * arg) {
-    evhtp_send_reply(req, EVHTP_CODE_OK, "REGEXOK", NULL);
+    evhtp_send_reply(req, EVHTP_RES_OK, "REGEXOK", NULL);
 }
 
 static void
 test_foo_cb(evhtp_request_t * req, void * arg) {
-    evhtp_send_reply(req, EVHTP_CODE_OK, "OK", NULL);
+    evhtp_send_reply(req, EVHTP_RES_OK, "OK", NULL);
 }
 
 static void
 test_500_cb(evhtp_request_t * req, void * arg) {
-    evhtp_send_reply(req, EVHTP_CODE_SERVERR, "no", NULL);
+    evhtp_send_reply(req, EVHTP_RES_SERVERR, "no", NULL);
 }
 
 static void
 test_bar_cb(evhtp_request_t * req, void * arg) {
-    evhtp_send_reply(req, EVHTP_CODE_OK, "OK", NULL);
+    evhtp_send_reply(req, EVHTP_RES_OK, "OK", NULL);
 }
 
 static void
@@ -80,7 +80,7 @@ test_default_cb(evhtp_request_t * req, void * arg) {
     struct evbuffer * b = evbuffer_new();
 
     evbuffer_add_reference(b, "derp", 4, NULL, NULL);
-    evhtp_send_reply(req, EVHTP_CODE_OK, "Everything is fine", b);
+    evhtp_send_reply(req, EVHTP_RES_OK, "Everything is fine", b);
     evbuffer_free(b);
 }
 
@@ -120,14 +120,14 @@ print_data(evhtp_request_t * req, const char * data, size_t len, void * arg) {
     return EVHTP_RES_OK;
 }
 
-static evhtp_status
+static evhtp_res
 inspect_expect(evhtp_request_t * req, const char * expct_str, void * arg) {
     if (strcmp(expct_str, "100-continue")) {
         printf("Inspecting expect failed!\n");
-        return EVHTP_CODE_EXPECTFAIL;
+        return EVHTP_RES_EXPECTFAIL;
     }
 
-    return EVHTP_CODE_CONTINUE;
+    return EVHTP_RES_CONTINUE;
 }
 
 static evhtp_res

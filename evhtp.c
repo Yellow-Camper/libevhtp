@@ -1592,6 +1592,11 @@ evhtp_request_content_length(evhtp_request_t * request) {
     return request->conn->parser->content_length;
 }
 
+int
+evhtp_request_is_ssl(evhtp_request_t * request) {
+    return evhtp_conn_is_ssl(evhtp_request_get_conn(request));
+}
+
 const char *
 evhtp_method_str(evhtp_method method) {
     return http_method_str(method);
@@ -1627,6 +1632,11 @@ evhtp_request_get_listener(evhtp_request_t * request) {
     }
 
     return htp_conn_get_listener(request->conn);
+}
+
+evhtp_ssl_t *
+evhtp_request_get_ssl(evhtp_request_t * request) {
+    return evhtp_conn_get_ssl(evhtp_request_get_conn(request));
 }
 
 evhtp_hdr_t *
@@ -1680,6 +1690,26 @@ evserv_t *
 evhtp_get_listener(evhtp_t * htp) {
     evhtp_log_debug("enter");
     return htp ? htp->listener : NULL;
+}
+
+int
+evhtp_conn_is_ssl(evhtp_conn_t * conn) {
+    return evhtp_is_ssl(evhtp_conn_get_htp(conn));
+}
+
+evhtp_t *
+evhtp_conn_get_htp(evhtp_conn_t * conn) {
+    return conn->htp;
+}
+
+evhtp_ssl_t *
+evhtp_conn_get_ssl(evhtp_conn_t * conn) {
+    return conn->ssl;
+}
+
+int
+evhtp_is_ssl(evhtp_t * htp) {
+    return htp->ssl_ctx ? 1 : 0;
 }
 
 #ifndef DISABLE_SSL

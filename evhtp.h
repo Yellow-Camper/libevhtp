@@ -240,6 +240,9 @@ void               evhtp_send_reply_stream(evhtp_request_t *, evhtp_res, evhtp_s
 void               evhtp_send_stream(evhtp_request_t *, evbuf_t *);
 void               evhtp_request_make_chunk(evhtp_request_t *, evbuf_t *);
 
+evhtp_hdrs_t     * evhtp_hdrs_new(void);
+evhtp_hdrs_t     * evhtp_hdrs_copy(evhtp_hdrs_t *);
+evhtp_hdr_t      * evhtp_hdr_copy(evhtp_hdr_t *);
 evhtp_hdr_t      * evhtp_hdr_new(char *, char *);
 const char       * evhtp_hdr_find(evhtp_hdrs_t *, const char *);
 const char       * evhtp_hdr_get_key(evhtp_hdr_t *);

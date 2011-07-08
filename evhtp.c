@@ -744,18 +744,6 @@ htp_conn_get_evbase(evhtp_conn_t * conn) {
     return conn->evbase;
 }
 
-static int
-htp_resp_can_have_content(evhtp_res code) {
-    evhtp_log_debug("enter");
-    if (code >= 100) {
-        if (code < 300) {
-            return 1;
-        }
-        return 0;
-    }
-    return 0;
-}
-
 static void
 htp_recv_cb(evbev_t * bev, void * arg) {
     evbuf_t      * ibuf;
@@ -1169,14 +1157,7 @@ evhtp_send_reply(evhtp_request_t * req, evhtp_res code, const char * r, evbuf_t 
 
     assert(obuf != NULL);
 
-    if (htp_resp_can_have_content(code)) {
-        htp_reply_set_content_hdrs(req, b ? evbuffer_get_length(b) : 0);
-    } else {
-        if ((b != NULL) && evbuffer_get_length(b) > 0) {
-            evbuffer_drain(b, -1);
-        }
-    }
-
+    htp_reply_set_content_hdrs(req, b ? evbuffer_get_length(b) : 0);
     htp_set_kalive_hdr(&req->headers_out, req->proto, req->keepalive);
     htp_set_server_hdr(&req->headers_out, evhtp_get_server_name(conn->htp));
 
@@ -1504,6 +1485,77 @@ evhtp_hdrs_free(evhtp_hdrs_t * hdrs) {
         TAILQ_REMOVE(hdrs, hdr, next);
         evhtp_hdr_free(hdr);
     }
+}
+
+evhtp_hdrs_t *
+evhtp_hdrs_new(void) {
+    evhtp_hdrs_t * hdrs;
+
+    if (!(hdrs = malloc(sizeof(evhtp_hdrs_t)))) {
+        return NULL;
+    }
+
+    TAILQ_INIT(hdrs);
+    return hdrs;
+}
+
+evhtp_hdr_t *
+evhtp_hdr_copy(evhtp_hdr_t * hdr) {
+    evhtp_hdr_t * copy;
+    char        * key;
+    char        * val;
+    char          kheaped;
+    char          vheaped;
+
+    kheaped = hdr->k_heaped;
+    vheaped = hdr->v_heaped;
+    key     = (char *)evhtp_hdr_get_key(hdr);
+    val     = (char *)evhtp_hdr_get_val(hdr);
+
+    key     = kheaped ? strdup(key) : key;
+    val     = vheaped ? strdup(val) : val;
+
+    if (!(copy = evhtp_hdr_new(key, val))) {
+        return NULL;
+    }
+
+    copy->k_heaped = kheaped;
+    copy->v_heaped = vheaped;
+
+    return copy;
+}
+
+static int
+htp_copy_hdrs_iter(evhtp_hdr_t * hdr, void * arg) {
+    evhtp_hdrs_t * hdrs = (evhtp_hdrs_t *)arg;
+    evhtp_hdr_t  * hdr_copy;
+
+    if (!(hdr_copy = evhtp_hdr_copy(hdr))) {
+        return -1;
+    }
+
+    evhtp_hdr_add(hdrs, hdr_copy);
+    return 0;
+}
+
+evhtp_hdrs_t *
+evhtp_hdrs_copy(evhtp_hdrs_t * hdrs) {
+    evhtp_hdrs_t * copy;
+
+    if (hdrs == NULL) {
+        return NULL;
+    }
+
+    if (!(copy = evhtp_hdrs_new())) {
+        return NULL;
+    }
+
+    if (evhtp_hdrs_for_each(hdrs, htp_copy_hdrs_iter, (void *)copy)) {
+        evhtp_hdrs_free(copy);
+        return NULL;
+    }
+
+    return copy;
 }
 
 int
@@ -2000,6 +2052,25 @@ evhtp_use_threads(evhtp_t * htp, int nthreads) {
     return 0;
 }
 
+static const char * four_oh_four =
+    "<html>\n"
+    "<head><title>404 Not Found</title></head>\n"
+    "<body bgcolor=\"white\">\n"
+    "<center><h1>404 Not Found</h1></center>\n"
+    "<hr><center>%s</center>\n"
+    "</body>\n"
+    "</html>\n";
+
+static void
+htp_default_404(evhtp_request_t * req, void * arg) {
+    evhtp_t * htp = (evhtp_t *)arg;
+    evbuf_t * buf = evbuffer_new();
+
+    evbuffer_add_printf(buf, four_oh_four, evhtp_get_server_name(htp));
+    evhtp_send_reply(req, EVHTP_RES_NOTFOUND, "derp", buf);
+    evbuffer_free(buf);
+}
+
 evhtp_t *
 evhtp_new(evbase_t * evbase) {
     evhtp_t * htp;
@@ -2024,6 +2095,7 @@ evhtp_new(evbase_t * evbase) {
 
     htp->evbase = evbase ? : event_base_new();
 
+    evhtp_set_gencb(htp, htp_default_404, htp);
     evhtp_log_debug("created new instance");
 
     return htp;

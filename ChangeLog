@@ -1,3 +1,13 @@
+v0.3.6
+ - Removed submodule dependencies 
+ - Added various evhtp_hdr functions
+    * evhtp_hdrs_new(): creates a new evhtp_hdrs_t struct
+    * evhtp_hdr_copy(): creates a copy of a evhtp_hdr_t struct
+    * evhtp_hdrs_copy(): creates a copy of a evhtp_hdrs_t struct
+ - Added a default request callback if the user has not defined one.
+ - Added some informational SSL accessor functions
+
+
 v0.3.5
  - Added evhtp_request_t accessors
 

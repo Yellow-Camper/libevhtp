@@ -131,22 +131,29 @@ inspect_expect(evhtp_request_t * req, const char * expct_str, void * arg) {
 }
 
 static evhtp_res
-set_my_handlers(evhtp_conn_t * conn, void * arg) {
+test_regex_hdrs_cb(evhtp_request_t * req, evhtp_hdrs_t * hdrs, void * arg) {
+    printf("Hi I'm here!\n");
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
+set_my_connection_handlers(evhtp_conn_t * conn, void * arg) {
     evhtp_cflags flags;
 
-    evhtp_set_hook(conn, EVHTP_HOOK_HDR_READ, print_kv, "foo");
-    evhtp_set_hook(conn, EVHTP_HOOK_HDRS_READ, print_kvs, "bar");
-    evhtp_set_hook(conn, EVHTP_HOOK_PATH_READ, print_path, "baz");
-    evhtp_set_hook(conn, EVHTP_HOOK_URI_READ, print_uri, "herp");
-    evhtp_set_hook(conn, EVHTP_HOOK_READ, print_data, "derp");
-    evhtp_set_hook(conn, EVHTP_HOOK_ON_EXPECT, inspect_expect, "bloop");
+    evhtp_set_connection_hook(conn, EVHTP_HOOK_HDR_READ, print_kv, "foo");
+    evhtp_set_connection_hook(conn, EVHTP_HOOK_HDRS_READ, print_kvs, "bar");
+    evhtp_set_connection_hook(conn, EVHTP_HOOK_PATH_READ, print_path, "baz");
+    evhtp_set_connection_hook(conn, EVHTP_HOOK_URI_READ, print_uri, "herp");
+    evhtp_set_connection_hook(conn, EVHTP_HOOK_READ, print_data, "derp");
+    evhtp_set_connection_hook(conn, EVHTP_HOOK_ON_EXPECT, inspect_expect, "bloop");
 
     flags =
         EVHTP_CLOSE_ON_400 |
         EVHTP_CLOSE_ON_500 |
         EVHTP_CLOSE_ON_EXPECT_ERR;
 
-    evhtp_conn_set_flags(conn, flags);
+    evhtp_set_connection_flags(conn, flags);
 
     return EVHTP_RES_OK;
 }
@@ -221,8 +228,14 @@ parse_args(int argc, char ** argv) {
 
 int
 main(int argc, char ** argv) {
-    evbase_t * evbase = NULL;
-    evhtp_t  * htp    = NULL;
+    evbase_t         * evbase = NULL;
+    evhtp_t          * htp    = NULL;
+    evhtp_callback_t * cb_1   = NULL;
+    evhtp_callback_t * cb_2   = NULL;
+    evhtp_callback_t * cb_3   = NULL;
+    evhtp_callback_t * cb_4   = NULL;
+    evhtp_callback_t * cb_5   = NULL;
+    evhtp_callback_t * cb_6   = NULL;
 
     if (parse_args(argc, argv) < 0) {
         exit(1);
@@ -238,15 +251,24 @@ main(int argc, char ** argv) {
     htp    = evhtp_new(evbase);
 
     evhtp_set_server_name(htp, "Hi there!");
-    evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
-    evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
-    evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
-    evhtp_set_cb(htp, "/500", test_500_cb, "500");
-    evhtp_set_cb(htp, "/stream", test_streaming, NULL);
-    evhtp_set_regex_cb(htp, "^/anything/.*", test_regex, NULL);
 
+    cb_1 = evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
+    cb_2 = evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
+    cb_3 = evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
+    cb_4 = evhtp_set_cb(htp, "/500", test_500_cb, "500");
+    cb_5 = evhtp_set_cb(htp, "/stream", test_streaming, NULL);
+    cb_6 = evhtp_set_regex_cb(htp, "^/anything/.*", test_regex, NULL);
+
+    /* set a callback to set hooks specifically for the cb_6 callback */
+    evhtp_set_callback_hook(cb_6, EVHTP_HOOK_HDRS_READ, test_regex_hdrs_cb, NULL);
+    // evhtp_set_callback_hook(cb_t, EVHTP_HOOK_READ, test_regex_read_cb, NULL);
+
+
+    /* set a default request handler */
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
-    evhtp_set_post_accept_cb(htp, set_my_handlers, NULL);
+
+    /* set a callback to set per-connection hooks */
+    evhtp_set_connection_hooks(htp, set_my_connection_handlers, NULL);
 
 #ifndef DISABLE_SSL
     if (ssl_pem != NULL) {

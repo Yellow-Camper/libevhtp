@@ -25,6 +25,7 @@ struct evhtp_hdr;
 struct evhtp_hooks;
 struct evhtp_conn;
 struct evhtp_request;
+struct evhtp_callback;
 
 typedef unsigned char         evhtp_cflags;
 typedef struct evbuffer       evbuf_t;
@@ -46,6 +47,7 @@ typedef struct evhtp_conn     evhtp_conn_t;
 typedef struct evhtp_hooks    evhtp_hooks_t;
 typedef struct evhtp_hdr      evhtp_hdr_t;
 typedef struct evhtp_hdrs     evhtp_hdrs_t;
+typedef struct evhtp_callback evhtp_callback_t;
 
 typedef uint16_t              evhtp_res;
 typedef enum evhtp_hook_type  evhtp_hook_type;
@@ -196,12 +198,12 @@ struct evhtp_ssl_cfg {
 evhtp_t          * evhtp_new(evbase_t *);
 
 int                evhtp_set_server_name(evhtp_t *, char *);
-int                evhtp_set_cb(evhtp_t *, const char *, evhtp_callback_cb, void *);
-int                evhtp_set_regex_cb(evhtp_t *, const char *, evhtp_callback_cb, void *);
+evhtp_callback_t * evhtp_set_cb(evhtp_t *, const char *, evhtp_callback_cb, void *);
+evhtp_callback_t * evhtp_set_regex_cb(evhtp_t *, const char *, evhtp_callback_cb, void *);
 void               evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * cbarg);
 void               evhtp_bind_socket(evhtp_t *, const char *, uint16_t);
 
-int                evhtp_conn_set_flags(evhtp_conn_t *, evhtp_cflags);
+int                evhtp_set_connection_flags(evhtp_conn_t *, evhtp_cflags);
 evhtp_t          * evhtp_conn_get_htp(evhtp_conn_t *);
 evhtp_ssl_t      * evhtp_conn_get_ssl(evhtp_conn_t *);
 int                evhtp_conn_is_ssl(evhtp_conn_t *);
@@ -232,9 +234,10 @@ evserv_t         * evhtp_get_listener(evhtp_t *);
 char             * evhtp_get_server_name(evhtp_t *);
 int                evhtp_is_ssl(evhtp_t *);
 
-int                evhtp_set_hook(evhtp_conn_t *, evhtp_hook_type, void * cb, void * arg);
+int                evhtp_set_callback_hook(evhtp_callback_t *, evhtp_hook_type, void *, void *);
+int                evhtp_set_connection_hook(evhtp_conn_t *, evhtp_hook_type, void * cb, void * arg);
+void               evhtp_set_connection_hooks(evhtp_t *, evhtp_post_accept, void *);
 void               evhtp_set_pre_accept_cb(evhtp_t *, evhtp_pre_accept, void *);
-void               evhtp_set_post_accept_cb(evhtp_t *, evhtp_post_accept, void *);
 void               evhtp_send_reply(evhtp_request_t *, evhtp_res, const char *, evbuf_t *);
 void               evhtp_send_reply_stream(evhtp_request_t *, evhtp_res, evhtp_stream_cb, void *);
 void               evhtp_send_stream(evhtp_request_t *, evbuf_t *);

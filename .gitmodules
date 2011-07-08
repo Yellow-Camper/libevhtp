@@ -1,9 +1,0 @@
-[submodule "http_parser"]
-	path = http_parser
-	url = https://github.com/ry/http-parser.git
-[submodule "evthr"]
-	path = evthr
-	url = https://github.com/ellzey/libevthr.git
-[submodule "oniguruma"]
-	path = oniguruma
-	url = git://github.com/ellzey/oniguruma.git

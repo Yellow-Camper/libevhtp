@@ -1,4 +1,5 @@
 #!/bin/bash
+# This shouldn't be used by anyone but me...kthx
 
 rm -rf http_parser/
 rm -rf evthr/
@@ -23,3 +24,6 @@ mv $httparser_dirname http_parser
 mv $libevthr_dirname evthr
 mv $oniguruma_dirname oniguruma
 
+rm -rf build/http-parser-latest*
+rm -rf build/libevthr-latest*
+rm -rf build/oniguruma-latest*

@@ -788,7 +788,7 @@ htp_recv_cb(evbev_t * bev, void * arg) {
 
     nread    = http_parser_execute(conn->parser, &conn->htp->psets, (char *)read_buf, avail);
 
-    if (conn->err != 0) {
+    if (conn->err != 0 || nread == 0) {
         return htp_conn_free(conn);
     }
 

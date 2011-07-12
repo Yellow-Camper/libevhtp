@@ -1027,8 +1027,8 @@ htp_should_close_based_on_cflags(evhtp_cflags flags, evhtp_res code) {
     return res ? 1 : 0;
 }
 
-static int
-htp_should_keep_alive(evhtp_request_t * req, evhtp_res code) {
+int
+evhtp_request_keepalive(evhtp_request_t * req, evhtp_res code) {
     evhtp_conn_t * conn = req->conn;
 
     evhtp_log_debug("enter");
@@ -1173,6 +1173,14 @@ htp_stream_fini_cb(evbev_t * bev, void * arg) {
 }
 
 void
+evhtp_completed_reply(evhtp_request_t * req, evhtp_res code) {
+    /* this function is called whenever the user has sent their own
+     * reply, subverting normal evhtp_send_* functions */
+    req->keepalive = evhtp_request_keepalive(req, code);
+    htp_resp_fini_cb(evhtp_request_get_bev(req), req);
+}
+
+void
 evhtp_send_reply(evhtp_request_t * req, evhtp_res code, const char * r, evbuf_t * b) {
     evhtp_conn_t * conn;
     evbuf_t      * obuf;
@@ -1181,7 +1189,7 @@ evhtp_send_reply(evhtp_request_t * req, evhtp_res code, const char * r, evbuf_t 
 
     conn           = req->conn;
     obuf           = evhtp_request_get_output(req);
-    req->keepalive = htp_should_keep_alive(req, code);
+    req->keepalive = evhtp_request_keepalive(req, code);
 
     assert(obuf != NULL);
 
@@ -1215,7 +1223,7 @@ evhtp_send_reply_stream(evhtp_request_t * req, evhtp_res code, evhtp_stream_cb c
     assert(obuf != NULL);
 
     if (req->proto == EVHTP_PROTO_1_1) {
-        req->keepalive = htp_should_keep_alive(req, code);
+        req->keepalive = evhtp_request_keepalive(req, code);
 
         if (!evhtp_hdr_find(&req->headers_out, _HTP_TRANSENC)) {
             evhtp_hdr_add(&req->headers_out, evhtp_hdr_new(_HTP_TRANSENC, _HTP_DEFCHUNKED));
@@ -1629,6 +1637,21 @@ evhtp_set_server_name(evhtp_t * htp, char * n) {
     return 0;
 }
 
+char
+evhtp_request_get_major(evhtp_request_t * request) {
+    return request->major;
+}
+
+char
+evhtp_request_get_minor(evhtp_request_t * request) {
+    return request->minor;
+}
+
+evbev_t *
+evhtp_request_get_bev(evhtp_request_t * request) {
+    return evhtp_conn_get_bev(request->conn);
+}
+
 const char *
 evhtp_request_get_path(evhtp_request_t * request) {
     return (const char *)request->path;
@@ -1817,6 +1840,11 @@ evhtp_conn_get_htp(evhtp_conn_t * conn) {
 evhtp_ssl_t *
 evhtp_conn_get_ssl(evhtp_conn_t * conn) {
     return conn->ssl;
+}
+
+evbev_t *
+evhtp_conn_get_bev(evhtp_conn_t * conn) {
+    return conn->bev;
 }
 
 int

@@ -206,8 +206,10 @@ void               evhtp_bind_socket(evhtp_t *, const char *, uint16_t);
 int                evhtp_set_connection_flags(evhtp_conn_t *, evhtp_cflags);
 evhtp_t          * evhtp_conn_get_htp(evhtp_conn_t *);
 evhtp_ssl_t      * evhtp_conn_get_ssl(evhtp_conn_t *);
+evbev_t          * evhtp_conn_get_bev(evhtp_conn_t *);
 int                evhtp_conn_is_ssl(evhtp_conn_t *);
 
+evbev_t          * evhtp_request_get_bev(evhtp_request_t *);
 evbuf_t          * evhtp_request_get_input(evhtp_request_t *);
 evbuf_t          * evhtp_request_get_output(evhtp_request_t *);
 evbase_t         * evhtp_request_get_evbase(evhtp_request_t *);
@@ -224,10 +226,12 @@ int                evhtp_request_get_sock(evhtp_request_t *);
 const char       * evhtp_request_get_path(evhtp_request_t *);
 const char       * evhtp_request_get_uri(evhtp_request_t *);
 const char       * evhtp_request_method_str(evhtp_request_t *);
+int64_t            evhtp_request_content_length(evhtp_request_t *);
 int                evhtp_request_get_matched_soff(evhtp_request_t *);
 int                evhtp_request_get_matched_eoff(evhtp_request_t *);
-int64_t            evhtp_request_get_content_length(evhtp_request_t *);
 int                evhtp_request_is_ssl(evhtp_request_t *);
+char               evhtp_request_get_major(evhtp_request_t *);
+char               evhtp_request_get_minor(evhtp_request_t *);
 
 evbase_t         * evhtp_get_evbase(evhtp_t *);
 evserv_t         * evhtp_get_listener(evhtp_t *);

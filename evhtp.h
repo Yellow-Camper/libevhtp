@@ -65,6 +65,7 @@ typedef evhtp_res (*evhtp_hook_path)(evhtp_request_t *, const char *, void *);
 typedef evhtp_res (*evhtp_hook_uri)(evhtp_request_t *, const char *, void *);
 typedef evhtp_res (*evhtp_hook_read)(evhtp_request_t *, const char *, size_t, void *);
 typedef evhtp_res (*evhtp_hook_on_expect)(evhtp_request_t *, const char *, void *);
+typedef evhtp_res (*evhtp_hook_finished)(evhtp_request_t *, void *);
 typedef evhtp_res (*evhtp_stream_cb)(evhtp_request_t *, void *);
 
 #define EVHTP_CLOSE_ON_EXPECT_ERR (1 << 1)
@@ -256,6 +257,8 @@ const char       * evhtp_hdr_get_key(evhtp_hdr_t *);
 const char       * evhtp_hdr_get_val(evhtp_hdr_t *);
 void               evhtp_hdr_add(evhtp_hdrs_t *, evhtp_hdr_t *);
 int                evhtp_hdrs_for_each(evhtp_hdrs_t *, evhtp_hdrs_iter_cb, void *);
+evhtp_hdr_t      * evhtp_hdr_key_add(evhtp_hdrs_t *, const char *, size_t);
+evhtp_hdr_t      * evhtp_hdr_val_add(evhtp_hdrs_t *, const char *, size_t);
 
 void               evhtp_free(evhtp_t *);
 void               evhtp_request_free(evhtp_request_t *);

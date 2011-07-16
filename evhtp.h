@@ -223,6 +223,7 @@ evhtp_hdrs_t     * evhtp_request_get_headers_in(evhtp_request_t *);
 evhtp_hdrs_t     * evhtp_request_get_headers_out(evhtp_request_t *);
 evhtp_callback_cb  evhtp_request_get_cb(evhtp_request_t *);
 void             * evhtp_request_get_cbarg(evhtp_request_t *);
+void               evhtp_request_set_cbarg(evhtp_request_t *, void *);
 int                evhtp_request_get_sock(evhtp_request_t *);
 const char       * evhtp_request_get_path(evhtp_request_t *);
 const char       * evhtp_request_get_uri(evhtp_request_t *);

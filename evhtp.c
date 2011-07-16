@@ -1760,6 +1760,11 @@ evhtp_request_get_cb(evhtp_request_t * request) {
     return request->cb;
 }
 
+void
+evhtp_request_set_cbarg(evhtp_request_t * request, void * arg) {
+    request->cbarg = arg;
+}
+
 void *
 evhtp_request_get_cbarg(evhtp_request_t * request) {
     return request->cbarg;

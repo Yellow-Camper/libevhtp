@@ -9,7 +9,6 @@ set(PROJECT_PATCH_VERSION 6)
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 
-
 INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFiles)
 INCLUDE (CheckTypeSize)
@@ -85,6 +84,7 @@ set(ONIG_SOURCES
 OPTION(DISABLE_SSL "Disable ssl support" OFF)
 OPTION(DISABLE_EVTHR "Disable evthread support" OFF)
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
+SET(EXPAND_HTTP_PARSER_MACROS OFF)
 
 include(BaseConfig)
 
@@ -113,16 +113,32 @@ if (NOT ${LIBEVENT_OPENSSL_FOUND})
 	set (DISABLE_SSL 1)
 endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
-if (DISABLE_EVTHR)
-	set(LIBEVHTP_SOURCES http_parser/http_parser.c evhtp.c)
+if (EXPAND_HTTP_PARSER_MACROS AND CMAKE_COMPILER_IS_GNUCC)
+  ADD_CUSTOM_COMMAND(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hp.c
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/http_parser/http_parser.c ${CMAKE_CURRENT_BINARY_DIR}/hp.c
+    COMMAND ${CMAKE_C_COMPILER} -E ${CMAKE_CURRENT_BINARY_DIR}/hp.c | grep -v \\\# >> ${CMAKE_CURRENT_BINARY_DIR}/hp.i
+		COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_CURRENT_BINARY_DIR}/hp.i ${CMAKE_CURRENT_BINARY_DIR}/hp.c
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/http_parser/http_parser.c
+	)
 else()
-	set(LIBEVHTP_SOURCES evthr/evthr.c http_parser/http_parser.c evhtp.c)
+	add_custom_command(
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hp.c
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/http_parser/http_parser.c ${CMAKE_CURRENT_BINARY_DIR}/hp.c
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/http_parser/http_parser.c
+	)
+endif(EXPAND_HTTP_PARSER_MACROS AND CMAKE_COMPILER_IS_GNUCC)
+
+if (DISABLE_EVTHR)
+	set(LIBEVHTP_SOURCES evhtp.c hp.c)
+else()
+	set(LIBEVHTP_SOURCES evthr/evthr.c evhtp.c hp.c)
 endif(DISABLE_EVTHR)
 
-
-#add_library(libevhtp STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 add_library(libevhtp SHARED ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
+
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
+
 install (TARGETS libevhtp DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)

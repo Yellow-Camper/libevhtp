@@ -85,7 +85,9 @@ test_pause_hdr_cb(evhtp_request_t * req, evhtp_hdr_t * hdr, void * arg) {
         timer_ev = evtimer_new(evhtp_request_get_evbase(req), test_resume_stuff, req);
     }
 
-    printf("test_pause_hdr_cb()\n");
+    printf("test_pause_hdr_cb() key = %s, val = %s\n",
+	    evhtp_hdr_get_key(hdr), evhtp_hdr_get_val(hdr));
+
 
     tv.tv_sec  = 1;
     tv.tv_usec = 0;

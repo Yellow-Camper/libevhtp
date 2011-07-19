@@ -234,6 +234,8 @@ static evhtp_res
 htp_run_hdr_hook(evhtp_conn_t * conn, evhtp_hdr_t * hdr) {
     evhtp_log_debug("enter");
 
+    evhtp_log_debug("key = %s, val = %s", hdr->key, hdr->val);
+
     if (htp_conn_callback_has_hook(conn, _hdr)) {
         return htp_conn_callback_hook_call(conn, _hdr, hdr);
     }
@@ -389,6 +391,8 @@ evhtp_hdr_key_add(evhtp_hdrs_t * hdrs, const char * k, size_t len) {
 
     memcpy(hdr->key, k, len);
 
+    evhtp_log_debug("val = %s", hdr->key);
+
     TAILQ_INSERT_TAIL(hdrs, hdr, next);
     return hdr;
 }
@@ -417,6 +421,8 @@ evhtp_hdr_val_add(evhtp_hdrs_t * hdrs, const char * v, size_t len) {
 
     memcpy(hdr->val, v, len);
 
+    evhtp_log_debug("val = %s", hdr->val);
+
     return hdr;
 }
 
@@ -431,7 +437,7 @@ htp_header_val_cb(http_parser * p, const char * buf, size_t len) {
     conn = p->data;
     req  = conn->request;
 
-    evhtp_hdr_val_add(&req->headers_in, buf, len);
+    hdr = evhtp_hdr_val_add(&req->headers_in, buf, len);
 
     if ((conn->status = htp_run_hdr_hook(conn, hdr)) != EVHTP_RES_OK) {
         return -1;
@@ -874,7 +880,8 @@ htp_recv_cb(evbev_t * bev, void * arg) {
         case EVHTP_RES_OK:
             break;
         case EVHTP_RES_PAUSE:
-            evbuffer_drain(ibuf, nread);
+            //evbuffer_drain(ibuf, nread);
+	    //conn->parser->nread += nread;
             return htp_conn_suspend(conn);
         case EVHTP_RES_ERROR:
         case EVHTP_RES_SCREWEDUP:

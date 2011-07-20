@@ -61,6 +61,8 @@ test_regex(evhtp_request_t * req, void * arg) {
     evhtp_send_reply(req, EVHTP_RES_OK, "REGEXOK", NULL);
 }
 
+int pause_count = 0;
+
 static void
 test_pause_cb(evhtp_request_t * req, void * arg) {
     printf("test_pause_cb()\n");
@@ -92,9 +94,12 @@ test_pause_hdr_cb(evhtp_request_t * req, evhtp_hdr_t * hdr, void * arg) {
     tv.tv_sec  = 1;
     tv.tv_usec = 0;
 
-    evtimer_add(timer_ev, &tv);
+    if (pause_count++ <= 3) {
+    	evtimer_add(timer_ev, &tv);
+    	return EVHTP_RES_PAUSE;
+    }
 
-    return EVHTP_RES_PAUSE;
+    return EVHTP_RES_OK;
 }
 
 static void
@@ -182,6 +187,7 @@ test_pre_accept(int fd, struct sockaddr * sin, int sl, void * arg) {
         return EVHTP_RES_ERROR;
     }
 
+    printf("%d\n", port);
     return EVHTP_RES_OK;
 }
 

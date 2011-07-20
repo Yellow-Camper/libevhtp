@@ -159,16 +159,22 @@ struct evhtp_conn {
 #define _HTP_DEFCHUNKED "chunked"
 
 #ifdef HTP_DEBUG
-#define __QUOTE(x)                             # x
-#define  _QUOTE(x)                             __QUOTE(x)
+#define __QUOTE(x)                        # x
+#define  _QUOTE(x)                        __QUOTE(x)
+#define evhtp_debug_strlen(x)             strlen(x)
 
-#define evhtp_log_debug(fmt, ...)              do {            \
-        fprintf(stdout, __FILE__ "[" _QUOTE(__LINE__) "] %s: " \
-                fmt "\n", __func__, ## __VA_ARGS__);           \
-        fflush(stdout);                                        \
+#define evhtp_log_debug(fmt, ...)         do {                                            \
+        time_t      t  = time(NULL);                                                      \
+        struct tm * dm = localtime(&t);                                                   \
+                                                                                          \
+        fprintf(stdout, "[%02d:%02d:%02d] " __FILE__ "[" _QUOTE(__LINE__) "]\t%-26s: "    \
+                fmt "\n", dm->tm_hour, dm->tm_min, dm->tm_sec, __func__, ## __VA_ARGS__); \
+        fflush(stdout);                                                                   \
 } while (0)
+
 #else
-#define evhtp_log_debug(fmt, ...)              do {} while (0)
+#define evhtp_debug_strlen(x)             0
+#define evhtp_log_debug(fmt, ...)         do {} while (0)
 #endif
 
 /*
@@ -177,31 +183,52 @@ struct evhtp_conn {
  *  - connection / callback hooks need to be standardized to reduce
  *    code-duplication.
  */
-#define htp_conn_hook(c)                       (c)->hooks
-#define htp_conn_has_hook(c, n)                (htp_conn_hook(c) && htp_conn_hook(c)->n)
-#define htp_conn_hook_cbarg(c, n)              htp_conn_hook(c)->n ## _cbargs
-#define htp_conn_hook_call(c, n, ...)          htp_conn_hook(c)->n(c->request, __VA_ARGS__, htp_conn_hook_cbarg(c, n))
-#define htp_conn_hook_calln(c, n)              htp_conn_hook(c)->n(c->request, htp_conn_hook_cbarg(c, n))
-#define htp_conn_hook_set(c, n, f, a)          do { \
-        htp_conn_hook(c)->n       = f;              \
-        htp_conn_hook_cbarg(c, n) = a;              \
+#define htp_conn_hook(c)                  (c)->hooks
+#define htp_conn_has_hook(c, n)           (htp_conn_hook(c) && htp_conn_hook(c)->n)
+#define htp_conn_hook_cbarg(c, n)         htp_conn_hook(c)->n ## _cbargs
+
+#define htp_conn_hook_call(c, n, ...)     htp_conn_hook(c)->n(c->request, __VA_ARGS__, \
+                                                              htp_conn_hook_cbarg(c, n))
+
+#define htp_conn_hook_calln(c, n)         htp_conn_hook(c)->n(c->request, \
+                                                              htp_conn_hook_cbarg(c, n))
+#define htp_conn_hook_set(c, n, f, a)     do { \
+        htp_conn_hook(c)->n       = f;         \
+        htp_conn_hook_cbarg(c, n) = a;         \
 } while (0)
 
-#define htp_callback_hook(c)                   (c)->hooks
-#define htp_callback_hook_cbarg(c, n)          htp_callback_hook(c)->n ## _cbargs
-#define htp_callback_hook_set(c, n, f, a)      do { \
-        htp_callback_hook(c)->n       = f;          \
-        htp_callback_hook_cbarg(c, n) = a;          \
+#define htp_callback_hook(c)              (c)->hooks
+#define htp_callback_hook_cbarg(c, n)     htp_callback_hook(c)->n ## _cbargs
+
+#define htp_callback_hook_set(c, n, f, a) do { \
+        htp_callback_hook(c)->n       = f;     \
+        htp_callback_hook_cbarg(c, n) = a;     \
 } while (0)
 
 
-#define htp_conn_callback_hook(c)              ((c)->request)->cb_hooks
-#define htp_conn_callback_has_hook(c, n)       (htp_conn_callback_hook(c) && htp_conn_callback_hook(c)->n)
-#define htp_conn_callback_hook_cbarg(c, n)     htp_conn_callback_hook(c)->n ## _cbargs
-#define htp_conn_callback_hook_call(c, n, ...) htp_conn_callback_hook(c)->n(c->request, __VA_ARGS__, htp_conn_callback_hook_cbarg(c, n))
-#define htp_conn_callback_hook_calln(c, n)     htp_conn_callback_hook(c)->n(c->request, htp_conn_callback_hook_cbarg(c, n))
+#define htp_conn_callback_hook(c)         ((c)->request)->cb_hooks
+#define htp_conn_callback_has_hook(c, n)  (htp_conn_callback_hook(c) && \
+                                           htp_conn_callback_hook(c)->n)
 
-#define CRLF "\r\n"
+#define htp_conn_callback_hook_cbarg(c, n) \
+    htp_conn_callback_hook(c)->n ## _cbargs
+
+#define htp_conn_callback_hook_call(c, n, ...)            \
+    htp_conn_callback_hook(c)->n(c->request, __VA_ARGS__, \
+                                 htp_conn_callback_hook_cbarg(c, n))
+
+#define htp_conn_callback_hook_calln(c, n)   \
+    htp_conn_callback_hook(c)->n(c->request, \
+                                 htp_conn_callback_hook_cbarg(c, n))
+
+#define CRLF       "\r\n"
+
+#if (__GNUC__ > 2 || ( __GNUC__ == 2 && __GNUC__MINOR__ > 4)) && (!defined(__STRICT_ANSI__) || __STRICT_ANSI__ == 0)
+#define __unused__ __attribute__((unused))
+#else
+#define __unused__
+#endif
+
 
 static evhtp_proto        htp_proto(char major, char minor);
 static evhtp_callback_t * htp_callbacks_find_callback_woffsets(evhtp_callbacks_t *, const char *, int *, int *);
@@ -234,7 +261,15 @@ static evhtp_res
 htp_run_hdr_hook(evhtp_conn_t * conn, evhtp_hdr_t * hdr) {
     evhtp_log_debug("enter");
 
-    evhtp_log_debug("key = %s, val = %s", hdr->key, hdr->val);
+    evhtp_log_debug("klen = %zu 3B=[%c%c%c], vlen = %zu 3B=[%c%c%c]",
+                    evhtp_debug_strlen(hdr->key),
+                    (evhtp_debug_strlen(hdr->key) > 0) ? hdr->key[0] : '0',
+                    (evhtp_debug_strlen(hdr->key) > 1) ? hdr->key[1] : '0',
+                    (evhtp_debug_strlen(hdr->key) > 2) ? hdr->key[2] : '0',
+                    evhtp_debug_strlen(hdr->val),
+                    (evhtp_debug_strlen(hdr->val) > 0) ? hdr->val[0] : '0',
+                    (evhtp_debug_strlen(hdr->val) > 1) ? hdr->val[1] : '0',
+                    (evhtp_debug_strlen(hdr->val) > 2) ? hdr->val[2] : '0');
 
     if (htp_conn_callback_has_hook(conn, _hdr)) {
         return htp_conn_callback_hook_call(conn, _hdr, hdr);
@@ -264,15 +299,13 @@ htp_run_hdrs_hook(evhtp_conn_t * conn, evhtp_hdrs_t * hdrs) {
 
 static evhtp_res
 htp_run_path_hook(evhtp_conn_t * conn, const char * path) {
-    evhtp_res res = EVHTP_RES_OK;
-
     evhtp_log_debug("enter");
 
     if (htp_conn_has_hook(conn, _path)) {
-        res = htp_conn_hook_call(conn, _path, path);
+        return htp_conn_hook_call(conn, _path, path);
     }
 
-    return res;
+    return EVHTP_RES_OK;
 }
 
 static evhtp_res
@@ -343,7 +376,7 @@ htp_end_cb(http_parser * p) {
 }
 
 static int
-htp_query_str_cb(http_parser * p, const char * buf, size_t len) {
+htp_query_str_cb(http_parser * p __unused__, const char * buf, size_t len) {
     /* evhtp_conn_t * conn = p->data; */
 
     evhtp_log_debug("len = %" PRIoMAX " buf = '%.*s'", len, (int)len, buf);
@@ -365,8 +398,7 @@ htp_uri_cb(http_parser * p, const char * buf, size_t len) {
 
     memcpy(request->uri, buf, len);
 
-    if ((conn->status = htp_run_uri_hook(conn,
-                                         request->uri)) != EVHTP_RES_OK) {
+    if ((conn->status = htp_run_uri_hook(conn, request->uri)) != EVHTP_RES_OK) {
         return -1;
     }
 
@@ -374,7 +406,7 @@ htp_uri_cb(http_parser * p, const char * buf, size_t len) {
 }
 
 static int
-htp_fragment_cb(http_parser * p, const char * buf, size_t len) {
+htp_fragment_cb(http_parser * p __unused__, const char * buf, size_t len) {
     evhtp_log_debug("len = %" PRIoMAX " buf = '%.*s", len, (int)len, buf);
 
     return 0;
@@ -391,7 +423,12 @@ evhtp_hdr_key_add(evhtp_hdrs_t * hdrs, const char * k, size_t len) {
 
     memcpy(hdr->key, k, len);
 
-    evhtp_log_debug("val = %s", hdr->key);
+    evhtp_log_debug("key len = %zu 3B=[%c%c%c]",
+                    evhtp_debug_strlen(hdr->key),
+                    (len > 0) ? hdr->key[0] : '0',
+                    (len > 1) ? hdr->key[1] : '0',
+                    (len > 2) ? hdr->key[2] : '0');
+
 
     TAILQ_INSERT_TAIL(hdrs, hdr, next);
     return hdr;
@@ -421,7 +458,11 @@ evhtp_hdr_val_add(evhtp_hdrs_t * hdrs, const char * v, size_t len) {
 
     memcpy(hdr->val, v, len);
 
-    evhtp_log_debug("val = %s", hdr->val);
+    evhtp_log_debug("val len = %zu 3B=[%c%c%c]",
+                    evhtp_debug_strlen(hdr->val),
+                    (len > 0) ? hdr->val[0] : '0',
+                    (len > 1) ? hdr->val[1] : '0',
+                    (len > 2) ? hdr->val[2] : '0');
 
     return hdr;
 }
@@ -437,9 +478,10 @@ htp_header_val_cb(http_parser * p, const char * buf, size_t len) {
     conn = p->data;
     req  = conn->request;
 
-    hdr = evhtp_hdr_val_add(&req->headers_in, buf, len);
+    hdr  = evhtp_hdr_val_add(&req->headers_in, buf, len);
 
     if ((conn->status = htp_run_hdr_hook(conn, hdr)) != EVHTP_RES_OK) {
+        evhtp_log_debug("status = %d\n", conn->status);
         return -1;
     }
 
@@ -516,13 +558,24 @@ htp_path_cb(http_parser * p, const char * buf, size_t len) {
         request->cb_hooks = cb->hooks;
     }
 
-    if ((conn->status = htp_run_path_hook(conn,
-                                          conn->request->path)) != EVHTP_RES_OK) {
+    conn->status = htp_run_path_hook(conn, conn->request->path);
+
+    evhtp_log_debug("status %d", conn->status);
+
+    if (conn->status != EVHTP_RES_OK) {
+        evhtp_log_debug("non-ok res...");
         return -1;
     }
+#if 0
+    if ((conn->status = htp_run_path_hook(conn, conn->request->path)) != EVHTP_RES_OK) {
+        return -1;
+    }
+#endif
 
+
+    evhtp_log_debug("return 0");
     return 0;
-}
+} /* htp_path_cb */
 
 static int
 htp_body_cb(http_parser * p, const char * buf, size_t len) {
@@ -650,7 +703,8 @@ htp_callbacks_find_callback_woffsets(evhtp_callbacks_t * cbs,
 }
 
 #if 0
-static evhtp_callback_t *
+/* XXX eventually just rename htp_callbacks_find_callback_woffsets to this */
+static evhtp_callback_t * __unused__
 htp_callbacks_find_callback(evhtp_callbacks_t * cbs, const char * uri) {
     evhtp_callback_t * cb;
     unsigned int       hash;
@@ -822,7 +876,7 @@ htp_conn_get_evbase(evhtp_conn_t * conn) {
 }
 
 static void
-htp_connection_resume_cb(int fd, short events, void * arg) {
+htp_connection_resume_cb(int fd __unused__, short events __unused__, void * arg) {
     evhtp_conn_t * conn = arg;
 
     if (conn->htp->suspend_enabled == 0 || conn->resume_ev == NULL) {
@@ -837,21 +891,21 @@ htp_connection_resume_cb(int fd, short events, void * arg) {
 
 static void
 htp_conn_resume(evhtp_conn_t * conn) {
+    evhtp_log_debug("enter");
     if (conn->htp->suspend_enabled == 0 || conn->resume_ev == NULL) {
         return;
     }
 
-    evhtp_log_debug("enter");
     event_active(conn->resume_ev, EV_WRITE, 1);
 }
 
 static void
 htp_conn_suspend(evhtp_conn_t * conn) {
+    evhtp_log_debug("enter");
     if (conn->htp->suspend_enabled == 0 || conn->resume_ev == NULL) {
         return;
     }
 
-    evhtp_log_debug("enter");
     event_add(conn->resume_ev, NULL);
 }
 
@@ -880,8 +934,9 @@ htp_recv_cb(evbev_t * bev, void * arg) {
         case EVHTP_RES_OK:
             break;
         case EVHTP_RES_PAUSE:
-            //evbuffer_drain(ibuf, nread);
-	    //conn->parser->nread += nread;
+            /* evbuffer_drain(ibuf, nread); */
+            /* evhtp_log_debug("Pausing...\n"); */
+            /* conn->parser->nread += nread; */
             return htp_conn_suspend(conn);
         case EVHTP_RES_ERROR:
         case EVHTP_RES_SCREWEDUP:
@@ -906,7 +961,7 @@ htp_recv_cb(evbev_t * bev, void * arg) {
 } /* htp_recv_cb */
 
 static void
-htp_err_cb(evbev_t * bev, short events, void * arg) {
+htp_err_cb(evbev_t * bev __unused__, short events, void * arg) {
     evhtp_conn_t * conn;
 
     evhtp_log_debug("events = %x", events);
@@ -999,7 +1054,7 @@ htp_run_post_accept(evhtp_t * htp, evhtp_conn_t * conn) {
 }
 
 static void
-htp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg) {
+htp_accept_cb(evserv_t * serv __unused__, int fd, struct sockaddr * s, int sl, void * arg) {
     evhtp_t      * htp;
     evhtp_conn_t * conn;
 
@@ -1264,7 +1319,7 @@ htp_set_body_buf(evbuf_t * dst, evbuf_t * src) {
 }
 
 static void
-htp_resp_fini_cb(evbev_t * bev, void * arg) {
+htp_resp_fini_cb(evbev_t * bev __unused__, void * arg) {
     evhtp_request_t * req;
     evhtp_conn_t    * conn;
     int               keepalive;
@@ -1285,7 +1340,7 @@ htp_resp_fini_cb(evbev_t * bev, void * arg) {
 }
 
 static void
-htp_resp_err_cb(evbev_t * bev, short events, void * arg) {
+htp_resp_err_cb(evbev_t * bev __unused__, short events, void * arg) {
     evhtp_request_t * req;
     evhtp_conn_t    * conn;
 
@@ -1298,7 +1353,7 @@ htp_resp_err_cb(evbev_t * bev, short events, void * arg) {
 }
 
 static void
-htp_stream_fini_cb(evbev_t * bev, void * arg) {
+htp_stream_fini_cb(evbev_t * bev __unused__, void * arg) {
     evhtp_request_t * req;
     evhtp_conn_t    * conn;
     evbuf_t         * buf;
@@ -1338,7 +1393,7 @@ evhtp_completed_reply(evhtp_request_t * req, evhtp_res code) {
 }
 
 void
-evhtp_send_reply(evhtp_request_t * req, evhtp_res code, const char * r, evbuf_t * b) {
+evhtp_send_reply(evhtp_request_t * req, evhtp_res code, const char * r __unused__, evbuf_t * b) {
     evhtp_conn_t * conn;
     evbuf_t      * obuf;
 
@@ -1565,9 +1620,12 @@ evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * cbarg) {
 
 void
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port) {
-    struct sockaddr_in sin = { 0 };
+    struct sockaddr_in sin;
 
     evhtp_log_debug("enter");
+
+    memset(&sin, 0, sizeof(sin));
+
     sin.sin_family      = AF_INET;
     sin.sin_port        = htons(port);
     sin.sin_addr.s_addr = inet_addr(baddr);
@@ -2050,7 +2108,7 @@ evhtp_conn_get_ssl_cfg(evhtp_conn_t * conn) {
 }
 
 static void
-htp_ssl_scache_builtin_expire(int fd, short what, void * arg) {
+htp_ssl_scache_builtin_expire(int fd __unused__, short what __unused__, void * arg) {
     htp_scache_ent_t * ent;
     htp_scache_t     * scache;
 
@@ -2136,7 +2194,7 @@ evhtp_ssl_scache_builtin_get(evhtp_conn_t * conn, unsigned char * id, int len) {
 }
 
 void *
-evhtp_ssl_scache_builtin_init(evhtp_t * htp) {
+evhtp_ssl_scache_builtin_init(evhtp_t * htp __unused__) {
     htp_scache_t * scache;
 
     scache = malloc(sizeof(htp_scache_t));
@@ -2269,7 +2327,7 @@ htp_ssl_get_thr_id(void) {
 }
 
 static void
-htp_ssl_thr_lock(int mode, int type, const char * file, int line) {
+htp_ssl_thr_lock(int mode, int type, const char * file __unused__, int line __unused__) {
     if (type < ssl_num_locks) {
         if (mode & CRYPTO_LOCK) {
             pthread_mutex_lock(ssl_locks[type]);

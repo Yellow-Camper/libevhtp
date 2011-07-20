@@ -1,8 +1,8 @@
-SRC      = evthr.c 
+SRC      = evthr.c
 OUT      = libevthr.a
 OBJ      = $(SRC:.c=.o)
 INCLUDES = -I.
-CFLAGS   += -Wall -ggdb
+CFLAGS   += -Wall -Wextra -ggdb
 LDFLAGS  += -ggdb
 CC       = gcc
 

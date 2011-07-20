@@ -19,6 +19,12 @@
 
 #include "evthr.h"
 
+#if (__GNUC__ > 2 || ( __GNUC__ == 2 && __GNUC__MINOR__ > 4)) && (!defined(__STRICT_ANSI__) || __STRICT_ANSI__ == 0)
+#define __unused__   __attribute__((unused))
+#else
+#define __unused__
+#endif
+
 #define _EVTHR_MAGIC 0x4d52
 
 typedef struct evthr_cmd        evthr_cmd_t;
@@ -72,7 +78,7 @@ evthr_get_backlog(evthr_t * evthr) {
 }
 
 static void
-_evthr_read_cmd(int sock, short which, void * args) {
+_evthr_read_cmd(int sock, short __unused__ which, void * args) {
     evthr_t   * thread;
     evthr_cmd_t cmd;
     int         avail = 0;
@@ -166,7 +172,7 @@ _evthr_loop(void * args) {
 
     thread->evbase = event_base_new();
     thread->event  = event_new(thread->evbase, thread->rdr,
-        EV_READ | EV_PERSIST, _evthr_read_cmd, args);
+                               EV_READ | EV_PERSIST, _evthr_read_cmd, args);
 
     event_add(thread->event, NULL);
     event_base_loop(thread->evbase, 0);
@@ -182,7 +188,7 @@ _evthr_loop(void * args) {
 evthr_res
 evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
     int         cur_backlog;
-    evthr_cmd_t cmd = { 0 };
+    evthr_cmd_t cmd;
 
     cur_backlog = evthr_get_backlog(thread);
 
@@ -211,7 +217,7 @@ evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
 
 evthr_res
 evthr_stop(evthr_t * thread) {
-    evthr_cmd_t cmd = { 0 };
+    evthr_cmd_t cmd;
 
     cmd.magic = _EVTHR_MAGIC;
     cmd.cb    = NULL;

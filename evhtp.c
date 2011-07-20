@@ -223,13 +223,6 @@ struct evhtp_conn {
 
 #define CRLF       "\r\n"
 
-#if (__GNUC__ > 2 || ( __GNUC__ == 2 && __GNUC__MINOR__ > 4)) && (!defined(__STRICT_ANSI__) || __STRICT_ANSI__ == 0)
-#define __unused__ __attribute__((unused))
-#else
-#define __unused__
-#endif
-
-
 static evhtp_proto        htp_proto(char major, char minor);
 static evhtp_callback_t * htp_callbacks_find_callback_woffsets(evhtp_callbacks_t *, const char *, int *, int *);
 static void               htp_recv_cb(evbev_t * bev, void * arg);

@@ -98,11 +98,11 @@ message("Rel CFLAGS: ${CMAKE_C_FLAGS_RELEASE}")
 find_package(LibEvent)
 
 include_directories(
+	${CMAKE_CURRENT_SOURCE_DIR}/libhtparse
 	${CMAKE_CURRENT_BINARY_DIR}/oniguruma
 	${CMAKE_CURRENT_SOURCE_DIR}/oniguruma
 	${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/evthr
-	${CMAKE_CURRENT_SOURCE_DIR}/http_parser
 )
 
 set(LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARY} ${LIBEVENT_PTHREADS_LIBRARY} ${LIBEVENT_OPENSSL_LIBRARY})
@@ -115,26 +115,10 @@ if (NOT ${LIBEVENT_OPENSSL_FOUND})
 	set (DISABLE_SSL 1)
 endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
-if (EXPAND_HTTP_PARSER_MACROS AND CMAKE_COMPILER_IS_GNUCC)
-  ADD_CUSTOM_COMMAND(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hp.c
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/http_parser/http_parser.c ${CMAKE_CURRENT_BINARY_DIR}/hp.c
-    COMMAND ${CMAKE_C_COMPILER} -E ${CMAKE_CURRENT_BINARY_DIR}/hp.c | egrep -v '^\\\#' >> ${CMAKE_CURRENT_BINARY_DIR}/hp.i
-		COMMAND ${CMAKE_COMMAND} -E rename ${CMAKE_CURRENT_BINARY_DIR}/hp.i ${CMAKE_CURRENT_BINARY_DIR}/hp.c
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/http_parser/http_parser.c
-	)
-else()
-	add_custom_command(
-		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/hp.c
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/http_parser/http_parser.c ${CMAKE_CURRENT_BINARY_DIR}/hp.c
-		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/http_parser/http_parser.c
-	)
-endif(EXPAND_HTTP_PARSER_MACROS AND CMAKE_COMPILER_IS_GNUCC)
-
 if (DISABLE_EVTHR)
-	set(LIBEVHTP_SOURCES evhtp.c hp.c)
+	set(LIBEVHTP_SOURCES evhtp.c libhtparse/htparse.c)
 else()
-	set(LIBEVHTP_SOURCES evthr/evthr.c evhtp.c hp.c)
+	set(LIBEVHTP_SOURCES evthr/evthr.c evhtp.c libhtparse/htparse.c)
 endif(DISABLE_EVTHR)
 
 add_library(libevhtp SHARED ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
@@ -143,21 +127,9 @@ set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
 
 install (TARGETS libevhtp DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
+install (FILES libhtparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
-install (FILES http_parser/http_parser.h DESTINATION include)
 
 add_executable(test test.c)
 target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
 
-#add_executable(oniguruma_test_posix ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/posix.c)
-#add_executable(oniguruma_test_listcap ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/listcap.c)
-#add_executable(oniguruma_test_names ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/names.c)
-#add_executable(oniguruma_test_simple ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/simple.c)
-#add_executable(oniguruma_test_sql ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/sql.c)
-#add_executable(oniguruma_test_syntax ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/syntax.c)
-#target_link_libraries(oniguruma_test_posix libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
-#target_link_libraries(oniguruma_test_listcap libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
-#target_link_libraries(oniguruma_test_names libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
-#target_link_libraries(oniguruma_test_simple libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
-#target_link_libraries(oniguruma_test_sql libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
-#target_link_libraries(oniguruma_test_syntax libevhtp ${LIBEVHTP_EXTERNAL_LIBS})

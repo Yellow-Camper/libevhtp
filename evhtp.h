@@ -6,7 +6,7 @@
 #endif
 
 #include <sys/queue.h>
-#include <http_parser.h>
+#include <htparse.h>
 #include <event.h>
 #include <event2/listener.h>
 
@@ -20,7 +20,7 @@
 #define EVHTP_VERSION "0.3.6"
 
 #if (__GNUC__ > 2 || ( __GNUC__ == 2 && __GNUC__MINOR__ > 4)) && (!defined(__STRICT_ANSI__) || __STRICT_ANSI__ == 0)
-#define __unused__ __attribute__((unused))
+#define __unused__    __attribute__((unused))
 #else
 #define __unused__
 #endif
@@ -57,7 +57,7 @@ typedef struct evhtp_callback evhtp_callback_t;
 
 typedef uint16_t              evhtp_res;
 typedef enum evhtp_hook_type  evhtp_hook_type;
-typedef enum http_method      evhtp_method;
+typedef enum htp_method      evhtp_method;
 typedef enum evhtp_proto      evhtp_proto;
 
 typedef int (*evhtp_hdrs_iter_cb)(evhtp_hdr_t * hdr, void * arg);
@@ -239,7 +239,7 @@ int                evhtp_request_get_sock(evhtp_request_t *);
 const char       * evhtp_request_get_path(evhtp_request_t *);
 const char       * evhtp_request_get_uri(evhtp_request_t *);
 const char       * evhtp_request_method_str(evhtp_request_t *);
-int64_t            evhtp_request_content_length(evhtp_request_t *);
+uint64_t           evhtp_request_content_length(evhtp_request_t *);
 int                evhtp_request_get_matched_soff(evhtp_request_t *);
 int                evhtp_request_get_matched_eoff(evhtp_request_t *);
 int                evhtp_request_is_ssl(evhtp_request_t *);

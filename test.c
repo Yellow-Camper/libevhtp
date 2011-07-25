@@ -14,14 +14,15 @@ static char * chunks[] = {
 };
 
 #ifndef DISABLE_EVTHR
-int       use_threads = 0;
-int       num_threads = 0;
+int                use_threads = 0;
+int                num_threads = 0;
 #endif
-char    * bind_addr   = "0.0.0.0";
-uint16_t  bind_port   = 8081;
-char    * ssl_pem     = NULL;
-char    * ssl_ca      = NULL;
-event_t * timer_ev    = NULL;
+char             * bind_addr   = "0.0.0.0";
+uint16_t           bind_port   = 8081;
+char             * ssl_pem     = NULL;
+char             * ssl_ca      = NULL;
+__thread event_t * timer_ev    = NULL;
+__thread int       pause_count = 0;
 
 struct _chunkarg {
     uint8_t           idx;
@@ -58,10 +59,9 @@ test_streaming(evhtp_request_t * req, void * arg __unused__) {
 
 static void
 test_regex(evhtp_request_t * req, void * arg __unused__) {
+    printf("Derp.\n");
     evhtp_send_reply(req, EVHTP_RES_OK, "REGEXOK", NULL);
 }
-
-int pause_count = 0;
 
 static void
 test_pause_cb(evhtp_request_t * req, void * arg __unused__) {
@@ -69,8 +69,11 @@ test_pause_cb(evhtp_request_t * req, void * arg __unused__) {
 
     printf("test_pause_cb()\n");
     evbuffer_add(b, "pause!\n", 7);
+    //event_free(timer_ev);
     evhtp_send_reply(req, EVHTP_RES_OK, "HErP", b);
     evbuffer_free(b);
+    pause_count = 0;
+    timer_ev = NULL;
 }
 
 static void
@@ -98,9 +101,11 @@ test_pause_hdr_cb(evhtp_request_t * req, evhtp_hdr_t * hdr, void * arg __unused_
     tv.tv_sec  = 1;
     tv.tv_usec = 0;
 
-    if (pause_count++ <= 3) {
+    if (pause_count++ <= 2) {
         evtimer_add(timer_ev, &tv);
         return EVHTP_RES_PAUSE;
+    } else {
+        printf("test_pause_hdr_cb() got enoug...\n");
     }
 
     return EVHTP_RES_OK;
@@ -125,7 +130,6 @@ static void
 test_default_cb(evhtp_request_t * req, void * arg __unused__) {
     struct evbuffer * b = evbuffer_new();
 
-    printf("test_default_cb\n");
     evbuffer_add_reference(b, "derp", 4, NULL, NULL);
     evhtp_send_reply(req, EVHTP_RES_OK, "Everything is fine", b);
     evbuffer_free(b);
@@ -160,9 +164,7 @@ print_uri(evhtp_request_t * req __unused__, const char * uri __unused__, void * 
 static evhtp_res
 print_data(evhtp_request_t * req, const char * data __unused__, size_t len, void * arg __unused__) {
     if (len) {
-        printf("%zu %.*s\n", len, len, data);
-        evbuf_t * buf = evhtp_request_get_input(req);
-        evbuffer_drain(buf, len);
+        printf("%zu\n", len);
     }
 
     return EVHTP_RES_OK;
@@ -175,13 +177,11 @@ inspect_expect(evhtp_request_t * req __unused__, const char * expct_str, void * 
         return EVHTP_RES_EXPECTFAIL;
     }
 
-    return EVHTP_RES_CONTINUE;
+    return EVHTP_RES_OK;
 }
 
 static evhtp_res
 test_regex_hdrs_cb(evhtp_request_t * req __unused__, evhtp_hdrs_t * hdrs __unused__, void * arg __unused__) {
-    printf("Hi I'm here!\n");
-
     return EVHTP_RES_OK;
 }
 
@@ -193,7 +193,6 @@ test_pre_accept(int fd __unused__, struct sockaddr * sin __unused__, int sl __un
         return EVHTP_RES_ERROR;
     }
 
-    printf("%d\n", port);
     return EVHTP_RES_OK;
 }
 

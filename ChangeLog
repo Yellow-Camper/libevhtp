@@ -1,3 +1,77 @@
+v0.3.7
+ - Due to various problems http-parser (ry/http-parser) I have written my own
+   parser (derived and ispired from various nginx functions) (./libhtparse).
+
+ - Re-introduced the pre_accept_cb and post_accept_cb which deprecates the 
+      evhtp_set_connection_hooks (which would call a defined function immediately
+      after a connection was accepted, so it was confusing I think).
+
+      The new functions to set the pre/post accepts are:
+       * evhtp_set_pre_accept_cb(evhtp_t *, evhtp_pre_accept cb, void * arg);
+       * evhtp_set_post_accept_cb(evhtp_t *, evhtp_post_accept cb, void * arg);
+         - evhtp_pre_accept functions have the following attributes:
+           * int fd            : (the allocated file descriptor)
+           * struct sockaddr * : self-explanitory
+           * int slen          : size of sockaddr
+           * void * arg        : argument passed to evhtp_set_pre_accept_cb
+         - evhtp_post_accept functions have the following attributes:
+           * evhtp_conn_t *    : self explanitory
+           * void * arg        : argument passed to evhtp_set_post_accept_cb
+
+
+ - libevhtp now properly honors all return evhtp_res's from defined request hooks.
+   Meaning if you return something other than EVHTP_RES_OK, the proper error
+   handling is done with the exception of EVHTP_RES_PAUSE (see notes on pausing)
+
+ - Added [currently only half-working] methods to allow for suspending and
+   resuming parser execution and connection handling.
+
+   A hook which returns an evhtp_res value can now return "EVHTP_RES_PAUSE" which
+   informs libevhtp to stop all request processing on a connection. Alternatively
+   you can use the functions evhtp_request_pause(evhtp_request_t *);
+
+   You may also get a copy of the suspend/resume event timer directly via the
+   function evhtp_request_get_resume_ev()
+
+   To resume execution/processing one must call the function
+   evhtp_request_resume(evhtp_request_t *);
+
+    To completely disable this functionality you may call the function
+    evhtp_disable_pausing(evhtp_t *) before dropping into your event loop
+
+ - Removed unnecessary bufferevent_[enable|disable] calls, it was too tedious
+   to work with as it could cause shitty race-like conditions if the client
+   bufferevent was needed outside of the library.
+
+ - EVHTP_CLOSE_* flags have been renamed to EVHTP_FLAG_CLOSE_* and length
+   extended to 16 bits.
+
+ - added functionality to both set and get user-set htp_request args:
+   evhtp_request_set_cbargs()
+   evhtp_request_get_cbargs()
+
+ - added a hook which is called just prior to a evhtp_request_t being free()'d
+
+ - Added the ability to define per-callback hooks. Much like per-connection hooks, 
+   you can set various hooks which are called when a uri|regex (defined by the 
+   set_cb functions) was matched.
+
+   In order to do this properly, set_cb functions now return a evhtp_callback_t which
+   can be passed to the evhtp_set_callback_hook() functions.
+
+   For example:
+   evhtp_callback_t * cb = evhtp_set_cb(htp, "/derp", derp_cb, NULL);
+   evhtp_set_callback_hook(cb, EVHTP_HOOK_HDRS_READ, derp_hdrs_cb, NULL); 
+
+   In the case above once evhtp has found that the incoming request is destined
+   for the "/derp" specific callback, it will call "derp_hdrs_cb" after all
+   headers have been read.
+
+   These act just like normal per-connection hooks, but it should be noted that
+   if a per-callback hook has been enabled, the per-connection hook will be ignored
+   for that hook.
+
+ 
 v0.3.6
  - Removed submodule dependencies 
  - Added various evhtp_hdr functions

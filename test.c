@@ -65,8 +65,12 @@ int pause_count = 0;
 
 static void
 test_pause_cb(evhtp_request_t * req, void * arg __unused__) {
+    struct evbuffer * b = evbuffer_new();
+
     printf("test_pause_cb()\n");
-    evhtp_send_reply(req, EVHTP_RES_OK, NULL, NULL);
+    evbuffer_add(b, "pause!\n", 7);
+    evhtp_send_reply(req, EVHTP_RES_OK, "HErP", b);
+    evbuffer_free(b);
 }
 
 static void
@@ -121,6 +125,7 @@ static void
 test_default_cb(evhtp_request_t * req, void * arg __unused__) {
     struct evbuffer * b = evbuffer_new();
 
+    printf("test_default_cb\n");
     evbuffer_add_reference(b, "derp", 4, NULL, NULL);
     evhtp_send_reply(req, EVHTP_RES_OK, "Everything is fine", b);
     evbuffer_free(b);
@@ -155,6 +160,7 @@ print_uri(evhtp_request_t * req __unused__, const char * uri __unused__, void * 
 static evhtp_res
 print_data(evhtp_request_t * req, const char * data __unused__, size_t len, void * arg __unused__) {
     if (len) {
+        printf("%zu %.*s\n", len, len, data);
         evbuf_t * buf = evhtp_request_get_input(req);
         evbuffer_drain(buf, len);
     }

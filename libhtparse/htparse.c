@@ -13,13 +13,13 @@
 #define  _QUOTE(x)                  __QUOTE(x)
 #define htparse_debug_strlen(x)     strlen(x)
 
-#define htparse_log_debug(fmt, ...) do {                                                           \
-        time_t      t  = time(NULL);                                                               \
-        struct tm * dm = localtime(&t);                                                            \
-                                                                                                   \
-        fprintf(stdout, "[%02d:%02d:%02d] htparse.c" _QUOTE(__LINE__) "]\t                %-26s: " \
-                fmt "\n", dm->tm_hour, dm->tm_min, dm->tm_sec, __func__, ## __VA_ARGS__);          \
-        fflush(stdout);                                                                            \
+#define htparse_log_debug(fmt, ...) do {                                                             \
+        time_t      t  = time(NULL);                                                                 \
+        struct tm * dm = localtime(&t);                                                              \
+                                                                                                     \
+        fprintf(stdout, "[%02d:%02d:%02d] htparse.c:[" _QUOTE(__LINE__) "]\t                %-26s: " \
+                fmt "\n", dm->tm_hour, dm->tm_min, dm->tm_sec, __func__, ## __VA_ARGS__);            \
+        fflush(stdout);                                                                              \
 } while (0)
 
 #else
@@ -380,6 +380,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
     size_t        i;
 
     htparse_log_debug("enter");
+    htparse_log_debug("p == %p", p);
 
     p->error = htparse_error_none;
 
@@ -389,7 +390,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
         ch = data[i];
 
-        htparse_log_debug("data[%d] = %c (%x)", i, isprint(ch) ? ch : ' ', ch);
+        htparse_log_debug("[%p] data[%d] = %c (%x)", p, i, isprint(ch) ? ch : ' ', ch);
 
         if (p->buf_idx >= sizeof(p->buf)) {
             p->error = htparse_error_too_big;
@@ -398,7 +399,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
         switch (p->state) {
             case s_reqline_start:
-                htparse_log_debug("s_reqline_start");
+                htparse_log_debug("[%p] s_reqline_start", p);
 
                 p->flags = 0;
 
@@ -427,7 +428,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 break;
 
             case s_reqline_method:
-                htparse_log_debug("s_reqline_method");
+                htparse_log_debug("[%p] s_reqline_method", p);
 
                 if (ch == ' ') {
                     char * m = p->buf;
@@ -537,7 +538,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 break;
             case s_reqline_spaces_before_uri:
-                htparse_log_debug("s_reqline_spaces_before_uri");
+                htparse_log_debug("[%p] s_reqline_spaces_before_uri", p);
 
                 switch (ch) {
                     case ' ':
@@ -566,7 +567,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 break;
             case s_reqline_schema:
-                htparse_log_debug("s_reqline_schema");
+                htparse_log_debug("[%p] s_reqline_schema", p);
 
                 c = (unsigned char)(ch | 0x20);
 
@@ -627,7 +628,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 break;
             case s_reqline_schema_slash:
-                htparse_log_debug("s_reqline_schema_slash");
+                htparse_log_debug("[%p] s_reqline_schema_slash", p);
 
                 switch (ch) {
                     case '/':
@@ -642,7 +643,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 }
                 break;
             case s_reqline_schema_slash_slash:
-                htparse_log_debug("s_reqline_schema_slash_slash");
+                htparse_log_debug("[%p] s_reqline_schema_slash_slash", p);
 
                 switch (ch) {
                     case '/':
@@ -741,7 +742,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 break;
             case s_reqline_after_slash_in_uri:
-                htparse_log_debug("s_reqline_after_slash_in_uri");
+                htparse_log_debug("[%p] s_reqline_after_slash_in_uri", p);
 
                 res = 0;
 
@@ -808,7 +809,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 break;
 
             case s_reqline_check_uri:
-                htparse_log_debug("s_reqline_check_uri");
+                htparse_log_debug("[%p] s_reqline_check_uri", p);
 
                 res = 0;
 
@@ -877,7 +878,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 break;
 
             case s_reqline_uri:
-                htparse_log_debug("s_reqline_uri");
+                htparse_log_debug("[%p] s_reqline_uri", p);
 
                 res = 0;
 
@@ -933,7 +934,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 break;
 
             case s_reqline_http_09:
-                htparse_log_debug("s_reqline_http_09");
+                htparse_log_debug("[%p] s_reqline_http_09", p);
 
                 switch (ch) {
                     case ' ':
@@ -959,7 +960,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 break;
             case s_reqline_http_H:
-                htparse_log_debug("s_reqline_http_09");
+                htparse_log_debug("[%p] s_reqline_http_09", p);
 
                 switch (ch) {
                     case 'T':
@@ -1092,7 +1093,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 break;
 hdrline_start:
             case s_hdrline_start:
-                htparse_log_debug("s_hdrline_start");
+                htparse_log_debug("[%p] s_hdrline_start", p);
 
                 p->buf_idx = 0;
 
@@ -1113,7 +1114,7 @@ hdrline_start:
 
                 break;
             case s_hdrline_hdr_key:
-                htparse_log_debug("s_hdrline_hdr_key");
+                htparse_log_debug("[%p] s_hdrline_hdr_key", p);
 
                 res = 0;
                 switch (ch) {
@@ -1169,7 +1170,7 @@ hdrline_start:
 
                 break;
             case s_hdrline_hdr_space_before_val:
-                htparse_log_debug("s_hdrline_hdr_space_before_val");
+                htparse_log_debug("[%p] s_hdrline_hdr_space_before_val", p);
 
                 switch (ch) {
                     case ' ':
@@ -1187,7 +1188,7 @@ hdrline_start:
                 }
                 break;
             case s_hdrline_hdr_val:
-                htparse_log_debug("s_hdrline_hdr_val");
+                htparse_log_debug("[%p] s_hdrline_hdr_val", p);
                 err = 0;
                 res = 0;
 
@@ -1254,7 +1255,7 @@ hdrline_start:
 
                 break;
             case s_hdrline_hdr_almost_done:
-                htparse_log_debug("s_hdrline_hdr_almost_done");
+                htparse_log_debug("[%p] s_hdrline_hdr_almost_done", p);
 
                 res = 0;
                 switch (ch) {
@@ -1279,7 +1280,7 @@ hdrline_start:
 
                 break;
             case s_hdrline_hdr_done:
-                htparse_log_debug("s_hdrline_hdr_done");
+                htparse_log_debug("[%p] s_hdrline_hdr_done", p);
 
                 switch (ch) {
                     case CR:
@@ -1298,43 +1299,38 @@ hdrline_start:
                 }
                 break;
             case s_hdrline_almost_done:
-                htparse_log_debug("s_hdrline_almost_done");
+                htparse_log_debug("[%p] s_hdrline_almost_done", p);
 
                 res = 0;
 
                 switch (ch) {
                     case LF:
                         p->buf_idx = 0;
+			htparse_log_debug("[%p] HERE", p);
 
-                        res        = hook_on_hdrs_complete_run(p, hooks);
+                        res = hook_on_hdrs_complete_run(p, hooks);
 
                         if (!res) {
                             if (p->flags & parser_flag_trailing) {
                                 res      = hook_on_msg_complete_run(p, hooks);
                                 p->state = s_reqline_start;
-                                break;
-                            }
-
-
-                            if (p->flags & parser_flag_chunked) {
+                            } else if (p->flags & parser_flag_chunked) {
                                 p->state = s_chunk_size_start;
-                                break;
-                            }
-
-                            if (p->content_len > 0) {
+                            } else if (p->content_len > 0) {
                                 res      = hook_on_new_chunk_run(p, hooks);
                                 p->state = s_body_read;
-                                break;
-                            }
-
-                            if (p->content_len <= 0) {
+                            } else if (p->content_len == 0) {
                                 res      = hook_on_msg_complete_run(p, hooks);
                                 p->state = s_reqline_start;
-                                break;
                             }
+                        } else {
+                            p->state = s_hdrline_done;
                         }
 
-                        p->state = s_hdrline_done;
+                        if (res) {
+                            p->error = htparse_error_user;
+                            return i + 1;
+                        }
                         break;
                     default:
                         p->error = htparse_error_inval_hdr;
@@ -1346,6 +1342,27 @@ hdrline_start:
                     return i + 1;
                 }
 
+                break;
+            case s_hdrline_done:
+                htparse_log_debug("[%p] s_hdrline_done", p);
+                res = 0;
+                if (p->flags & parser_flag_trailing) {
+                    res      = hook_on_msg_complete_run(p, hooks);
+                    p->state = s_reqline_start;
+                    break;
+                } else if (p->flags & parser_flag_chunked) {
+                    p->state = s_chunk_size_start;
+                } else if (p->content_len > 0) {
+                    res      = hook_on_new_chunk_run(p, hooks);
+                    p->state = s_body_read;
+                } else if (p->content_len == 0) {
+                    res      = hook_on_msg_complete_run(p, hooks);
+                    p->state = s_reqline_start;
+                }
+                if (res) {
+                    p->error = htparse_error_user;
+                    return i + 1;
+                }
                 break;
 
             case s_chunk_size_start:
@@ -1453,7 +1470,7 @@ hdrline_start:
                     const char * pe      = (const char *)(data + len);
                     size_t       to_read = _MIN_READ(pe - pp, p->content_len);
 
-                    htparse_log_debug("%zu", to_read);
+                    htparse_log_debug("[%p] s_body_read %zu", p, to_read);
 
                     if (to_read > 0) {
                         res = hook_body_run(p, hooks, pp, to_read);
@@ -1480,7 +1497,8 @@ hdrline_start:
                 break;
 
             default:
-                printf("This is a silly state....\n");
+                htparse_log_debug("[%p] This is a silly state....", p);
+                abort();
                 p->error = htparse_error_inval_state;
                 return i + 1;
         } /* switch */

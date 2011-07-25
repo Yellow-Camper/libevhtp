@@ -17,7 +17,7 @@
 #include <openssl/rand.h>
 #endif
 
-#define EVHTP_VERSION "0.3.6"
+#define EVHTP_VERSION "0.3.7"
 
 #if (__GNUC__ > 2 || ( __GNUC__ == 2 && __GNUC__MINOR__ > 4)) && (!defined(__STRICT_ANSI__) || __STRICT_ANSI__ == 0)
 #define __unused__    __attribute__((unused))

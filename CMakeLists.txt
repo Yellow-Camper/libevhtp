@@ -4,11 +4,10 @@ project(reason)
 
 set(PROJECT_MAJOR_VERSION 0)
 set(PROJECT_MINOR_VERSION 3)
-set(PROJECT_PATCH_VERSION 6)
+set(PROJECT_PATCH_VERSION 7)
 
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
-
 
 INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFiles)
@@ -84,7 +83,10 @@ set(ONIG_SOURCES
 
 OPTION(DISABLE_SSL "Disable ssl support" OFF)
 OPTION(DISABLE_EVTHR "Disable evthread support" OFF)
+OPTION(EXPAND_HTTP_PARSER_MACROS "Enable pre-processor expansion" OFF)
+
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
+SET(EXPAND_HTTP_PARSER_MACROS ON)
 
 include(BaseConfig)
 
@@ -96,11 +98,11 @@ message("Rel CFLAGS: ${CMAKE_C_FLAGS_RELEASE}")
 find_package(LibEvent)
 
 include_directories(
+	${CMAKE_CURRENT_SOURCE_DIR}/libhtparse
 	${CMAKE_CURRENT_BINARY_DIR}/oniguruma
 	${CMAKE_CURRENT_SOURCE_DIR}/oniguruma
 	${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/evthr
-	${CMAKE_CURRENT_SOURCE_DIR}/http_parser
 )
 
 set(LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARY} ${LIBEVENT_PTHREADS_LIBRARY} ${LIBEVENT_OPENSSL_LIBRARY})
@@ -114,32 +116,20 @@ if (NOT ${LIBEVENT_OPENSSL_FOUND})
 endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
 if (DISABLE_EVTHR)
-	set(LIBEVHTP_SOURCES http_parser/http_parser.c evhtp.c)
+	set(LIBEVHTP_SOURCES evhtp.c libhtparse/htparse.c)
 else()
-	set(LIBEVHTP_SOURCES evthr/evthr.c http_parser/http_parser.c evhtp.c)
+	set(LIBEVHTP_SOURCES evthr/evthr.c evhtp.c libhtparse/htparse.c)
 endif(DISABLE_EVTHR)
 
-
-#add_library(libevhtp STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 add_library(libevhtp SHARED ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
+
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
+
 install (TARGETS libevhtp DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
+install (FILES libhtparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
-install (FILES http_parser/http_parser.h DESTINATION include)
 
 add_executable(test test.c)
 target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
 
-add_executable(oniguruma_test_posix ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/posix.c)
-add_executable(oniguruma_test_listcap ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/listcap.c)
-add_executable(oniguruma_test_names ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/names.c)
-add_executable(oniguruma_test_simple ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/simple.c)
-add_executable(oniguruma_test_sql ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/sql.c)
-add_executable(oniguruma_test_syntax ${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/sample/syntax.c)
-target_link_libraries(oniguruma_test_posix libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
-target_link_libraries(oniguruma_test_listcap libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
-target_link_libraries(oniguruma_test_names libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
-target_link_libraries(oniguruma_test_simple libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
-target_link_libraries(oniguruma_test_sql libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
-target_link_libraries(oniguruma_test_syntax libevhtp ${LIBEVHTP_EXTERNAL_LIBS})

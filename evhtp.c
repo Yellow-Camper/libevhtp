@@ -264,7 +264,7 @@ htp_run_on_expect_hook(evhtp_conn_t * conn, const char * expt_val) {
         return htp_conn_hook_call(conn, _on_expect, expt_val);
     }
 
-    return EVHTP_RES_CONTINUE;
+    return EVHTP_RES_OK;
 }
 
 static evhtp_res
@@ -550,7 +550,7 @@ htp_headers_complete_cb(htparser * p) {
             return 0;
         }
 
-        if ((status = htp_run_on_expect_hook(conn, expt_val)) != EVHTP_RES_CONTINUE) {
+        if ((status = htp_run_on_expect_hook(conn, expt_val)) != EVHTP_RES_OK) {
             conn->status = status;
             evhtp_send_reply(conn->request, status, "no", NULL);
             return -1;
@@ -1290,12 +1290,14 @@ evhtp_request_keepalive(evhtp_request_t * req, evhtp_res code) {
     evhtp_log_debug("enter");
     if (htparser_should_keep_alive(conn->parser) == 0) {
         /* parsed request doesn't even support keep-alive */
+	printf("htparser says don't keep alive\n");
         return 0;
     }
 
     if (htp_should_close_based_on_cflags(conn->flags, code)) {
         /* one of the user-set flags has informed us to close, thus
          * do not keep alive */
+	printf("cflags says don't keep alive\n");
         return 0;
     }
 

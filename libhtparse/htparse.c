@@ -303,14 +303,18 @@ int
 htparser_should_keep_alive(htparser * p) {
     if (p->major > 0 && p->minor > 0) {
         if (p->flags & parser_flag_connection_close) {
+            printf("flag == connection close HTTP/1.1\n");
+            return 0;
+        } else {
+            return 1;
+        }
+    } else {
+        if (p->flags & parser_flag_connection_keep_alive) {
+            return 1;
+        } else {
+            printf("flag == no keep-alive http/1.0\n");
             return 0;
         }
-
-        return 1;
-    }
-
-    if (p->flags & parser_flag_connection_keep_alive) {
-        return 1;
     }
 
     return 0;
@@ -1207,9 +1211,10 @@ hdrline_start:
                                 break;
                             case eval_hdr_val_connection:
                                 switch (p->buf[0]) {
+                                    case 'K':
                                     case 'k':
                                         if (_str9cmp((p->buf + 1),
-                                                     'e', 'e', 'p', '-', 'a', 'l', 'i', 'v', 'e')) {
+                                                     'e', 'e', 'p', '-', 'A', 'l', 'i', 'v', 'e')) {
                                             p->flags |= parser_flag_connection_keep_alive;
                                         }
                                         break;

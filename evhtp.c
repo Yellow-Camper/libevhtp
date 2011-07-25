@@ -264,7 +264,7 @@ htp_run_on_expect_hook(evhtp_conn_t * conn, const char * expt_val) {
         return htp_conn_hook_call(conn, _on_expect, expt_val);
     }
 
-    return EVHTP_RES_CONTINUE;
+    return EVHTP_RES_OK;
 }
 
 static evhtp_res
@@ -550,7 +550,7 @@ htp_headers_complete_cb(htparser * p) {
             return 0;
         }
 
-        if ((status = htp_run_on_expect_hook(conn, expt_val)) != EVHTP_RES_CONTINUE) {
+        if ((status = htp_run_on_expect_hook(conn, expt_val)) != EVHTP_RES_OK) {
             conn->status = status;
             evhtp_send_reply(conn->request, status, "no", NULL);
             return -1;
@@ -820,7 +820,7 @@ htp_conn_free(evhtp_conn_t * conn) {
         return;
     }
 
-    evhtp_log_debug("enter");
+    evhtp_log_debug("[%p] enter", conn->parser);
 
     if (conn->request) {
         evhtp_request_free(conn->request);
@@ -951,6 +951,7 @@ htp_conn_resume(evhtp_conn_t * conn) {
 static void
 htp_conn_suspend(evhtp_conn_t * conn) {
     evhtp_log_debug("enter");
+    evhtp_log_debug("conn = %p", conn);
 
     if (conn->htp->suspend_enabled == 0 || conn->resume_ev == NULL) {
         return;
@@ -975,9 +976,9 @@ htp_recv_cb(evbev_t * bev, void * arg) {
     avail    = evbuffer_get_length(ibuf);
     read_buf = evbuffer_pullup(ibuf, avail);
 
+    evhtp_log_debug("[%p] running", conn->parser);
     nread    = htparser_run(conn->parser, &conn->htp->psets, (const char *)read_buf, avail);
-
-    evhtp_log_debug("nread = %zu, avail = %zu", nread, avail);
+    evhtp_log_debug("[%p] nread = %zu, avail = %zu", conn->parser, nread, avail);
 
     switch (conn->status) {
         case EVHTP_RES_OK:
@@ -1274,6 +1275,7 @@ evhtp_request_suspend(evhtp_request_t * req) {
 void
 evhtp_request_resume(evhtp_request_t * req) {
     evhtp_log_debug("enter");
+    evhtp_log_debug("p = %p", req->conn->parser);
     return htp_conn_resume(evhtp_request_get_conn(req));
 }
 
@@ -1290,12 +1292,14 @@ evhtp_request_keepalive(evhtp_request_t * req, evhtp_res code) {
     evhtp_log_debug("enter");
     if (htparser_should_keep_alive(conn->parser) == 0) {
         /* parsed request doesn't even support keep-alive */
+	printf("htparser says don't keep alive\n");
         return 0;
     }
 
     if (htp_should_close_based_on_cflags(conn->flags, code)) {
         /* one of the user-set flags has informed us to close, thus
          * do not keep alive */
+	printf("cflags says don't keep alive\n");
         return 0;
     }
 

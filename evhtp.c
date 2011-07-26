@@ -774,6 +774,7 @@ htp_request_new(evhtp_conn_t * conn) {
     }
 
     r->conn       = conn;
+    r->status     = EVHTP_RES_OK;
     r->buffer_in  = evbuffer_new();
     r->buffer_out = evbuffer_new();
     r->parser     = htparser_new();
@@ -837,7 +838,7 @@ htp_request_read_cb(evbev_t * bev, void * arg) {
     buf   = evbuffer_pullup(r->buffer_in, avail);
     nread = htparser_run(r->parser, &r->conn->htp->psets, (const char *)buf, avail);
 
-    evhtp_log_debug("%zu", nread);
+    evhtp_log_debug("avail = %zu nread = %zu", avail, nread);
 
     switch (r->status) {
         case EVHTP_RES_OK:

@@ -58,6 +58,7 @@ test_streaming(evhtp_request_t * req, void * arg __unused__) {
 
 static void
 test_regex(evhtp_request_t * req, void * arg __unused__) {
+    printf("Derp.\n");
     evhtp_send_reply(req, EVHTP_RES_OK, "REGEXOK", NULL);
 }
 
@@ -159,8 +160,7 @@ print_uri(evhtp_request_t * req __unused__, const char * uri __unused__, void * 
 static evhtp_res
 print_data(evhtp_request_t * req, const char * data __unused__, size_t len, void * arg __unused__) {
     if (len) {
-        evbuf_t * buf = evhtp_request_get_input(req);
-        evbuffer_drain(buf, len);
+        printf("%zu\n", len);
     }
 
     return EVHTP_RES_OK;
@@ -178,7 +178,6 @@ inspect_expect(evhtp_request_t * req __unused__, const char * expct_str, void * 
 
 static evhtp_res
 test_regex_hdrs_cb(evhtp_request_t * req __unused__, evhtp_hdrs_t * hdrs __unused__, void * arg __unused__) {
-
     return EVHTP_RES_OK;
 }
 

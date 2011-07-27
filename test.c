@@ -14,14 +14,15 @@ static char * chunks[] = {
 };
 
 #ifndef DISABLE_EVTHR
-int       use_threads = 0;
-int       num_threads = 0;
+int                use_threads = 0;
+int                num_threads = 0;
 #endif
-char    * bind_addr   = "0.0.0.0";
-uint16_t  bind_port   = 8081;
-char    * ssl_pem     = NULL;
-char    * ssl_ca      = NULL;
-event_t * timer_ev    = NULL;
+char             * bind_addr   = "0.0.0.0";
+uint16_t           bind_port   = 8081;
+char             * ssl_pem     = NULL;
+char             * ssl_ca      = NULL;
+__thread event_t * timer_ev    = NULL;
+__thread int       pause_count = 0;
 
 struct _chunkarg {
     uint8_t           idx;
@@ -62,19 +63,16 @@ test_regex(evhtp_request_t * req, void * arg __unused__) {
     evhtp_send_reply(req, EVHTP_RES_OK, "REGEXOK", NULL);
 }
 
-int pause_count = 0;
-
 static void
 test_pause_cb(evhtp_request_t * req, void * arg __unused__) {
     struct evbuffer * b = evbuffer_new();
 
     printf("test_pause_cb()\n");
     evbuffer_add(b, "pause!\n", 7);
+    //event_free(timer_ev);
     evhtp_send_reply(req, EVHTP_RES_OK, "HErP", b);
     evbuffer_free(b);
     pause_count = 0;
-    evtimer_del(timer_ev);
-    event_free(timer_ev);
     timer_ev = NULL;
 }
 
@@ -100,14 +98,14 @@ test_pause_hdr_cb(evhtp_request_t * req, evhtp_hdr_t * hdr, void * arg __unused_
            evhtp_hdr_get_key(hdr), evhtp_hdr_get_val(hdr));
 
 
-    tv.tv_sec  = 5;
+    tv.tv_sec  = 1;
     tv.tv_usec = 0;
 
-    if (pause_count++ <= 4) {
+    if (pause_count++ <= 2) {
         evtimer_add(timer_ev, &tv);
         return EVHTP_RES_PAUSE;
     } else {
-	printf("test_pause_hdr_cb() got enoug...\n");
+        printf("test_pause_hdr_cb() got enoug...\n");
     }
 
     return EVHTP_RES_OK;

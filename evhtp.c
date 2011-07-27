@@ -19,7 +19,6 @@
 
 typedef struct evhtp_callbacks  evhtp_callbacks_t;
 typedef struct evhtp_requests_s evhtp_requests_t;
-typedef enum htp_parse_state    htp_parse_state;
 
 typedef void (*htp_conn_write_fini_cb)(evhtp_conn_t * conn, void * args);
 
@@ -59,16 +58,6 @@ struct evhtp {
     evhtp_ssl_cfg     * ssl_cfg;
     evthr_pool_t      * pool;
     char                suspend_enabled;
-};
-
-enum htp_parse_state {
-    htp_parse_s_nil = 0,
-    htp_parse_s_path,
-    htp_parse_s_query,
-    htp_parse_s_uri,
-    htp_parse_s_hdr_key,
-    htp_parse_s_hdr_val,
-    htp_parse_s_hdr_fin
 };
 
 struct evhtp_hooks {
@@ -129,8 +118,6 @@ struct evhtp_request {
     evhtp_stream_cb   stream_cb;
     void            * cbarg;
     void            * stream_cbarg;
-    evbuf_t         * buffer_in;
-    evbuf_t         * buffer_out;
     evhtp_conn_t    * conn;
     htparser        * parser;
     event_t         * resume_ev;
@@ -305,6 +292,7 @@ htp_request_run_uri_hook(evhtp_request_t * r, const char * u) {
     void         * r_arg = htp_get_hookargs(r, _uri);
 
     evhtp_log_debug("enter");
+
     if (r_cb) {
         return (r_cb)(r, u, r_arg);
     }
@@ -485,7 +473,7 @@ static int
 htp_headers_complete_cb(htparser * p) {
     evhtp_conn_t    * c = htparser_get_userdata(p);
     evhtp_request_t * r = c->current_request;
-    char            * expect_val;
+    const char      * expect_val;
 
     r->proto = htp_proto(htparser_get_major(p),
                          htparser_get_minor(p));
@@ -560,7 +548,6 @@ htp_body_cb(htparser * p, const char * b, size_t l) {
     evhtp_request_t * r = htparser_get_userdata(p);
 
     evhtp_log_debug("enter");
-    evhtp_log_debug("parse_bytes_read = %zu", htparser_get_bytes_read(p));
 
     if (htp_request_is_paused(r)) {
         return -1;
@@ -740,7 +727,7 @@ htp_conn_free(evhtp_conn_t * conn) {
     }
 
     evhtp_log_debug("enter");
-    return;
+
     htp_requests_free(&conn->requests);
 
     if (conn->hooks) {
@@ -753,6 +740,10 @@ htp_conn_free(evhtp_conn_t * conn) {
 
     if (conn->bev) {
         bufferevent_free(conn->bev);
+    }
+
+    if (conn->parser) {
+        free(conn->parser);
     }
 
     free(conn);
@@ -777,8 +768,6 @@ htp_conn_new(evhtp_t * htp) {
     conn->ssl             = NULL;
     conn->thr             = NULL;
     conn->current_request = NULL;
-    conn->buffer_in       = evbuffer_new();
-    conn->buffer_out      = evbuffer_new();
     conn->parser          = htparser_new();
 
     htparser_init(conn->parser);
@@ -787,11 +776,6 @@ htp_conn_new(evhtp_t * htp) {
     TAILQ_INIT(&conn->requests);
 
     return conn;
-}
-
-static void
-htp_conn_reset(evhtp_conn_t * conn) {
-    evhtp_log_debug("enter");
 }
 
 static int
@@ -879,12 +863,10 @@ htp_request_new(evhtp_conn_t * conn) {
         return NULL;
     }
 
-    r->conn       = conn;
-    r->status     = EVHTP_RES_OK;
-    r->buffer_in  = evbuffer_new();
-    r->buffer_out = evbuffer_new();
-    r->resume_ev  = event_new(conn->evbase, -1, EV_READ | EV_PERSIST, htp_request_resume_cb, r);
-    r->parser     = conn->parser;
+    r->conn      = conn;
+    r->status    = EVHTP_RES_OK;
+    r->resume_ev = event_new(conn->evbase, -1, EV_READ | EV_PERSIST, htp_request_resume_cb, r);
+    r->parser    = conn->parser;
 
     TAILQ_INIT(&r->headers_out);
     TAILQ_INIT(&r->headers_in);
@@ -925,7 +907,7 @@ htp_request_pause(evhtp_request_t * r) {
 static void htp_connection_recv(evbev_t * bev, void * arg);
 
 static void
-htp_request_resume_cb(int fd, short events, void * arg) {
+htp_request_resume_cb(int fd __unused__, short events __unused__, void * arg) {
     evhtp_request_t * r = arg;
 
     evhtp_log_debug("enter");
@@ -1045,6 +1027,15 @@ htp_run_post_accept(evhtp_t * htp, evhtp_conn_t * conn) {
 }
 
 static void
+htp_connection_error(evbev_t * bev __unused__, short events __unused__, void * arg) {
+    evhtp_conn_t * c = arg;
+
+    evhtp_log_debug("enter");
+
+    return htp_conn_free(c);
+}
+
+static void
 htp_accept_cb(evserv_t * serv __unused__, int fd, struct sockaddr * s, int sl, void * arg) {
     evhtp_t      * htp;
     evhtp_conn_t * conn;
@@ -1086,7 +1077,7 @@ htp_accept_cb(evserv_t * serv __unused__, int fd, struct sockaddr * s, int sl, v
     }
 
     bufferevent_enable(conn->bev, EV_READ);
-    bufferevent_setcb(conn->bev, htp_connection_recv, NULL, NULL, conn);
+    bufferevent_setcb(conn->bev, htp_connection_recv, NULL, htp_connection_error, conn);
 }     /* htp_accept_cb */
 
 static void
@@ -1226,8 +1217,6 @@ evhtp_request_get_resume_ev(evhtp_request_t * req) {
 
 int
 evhtp_request_keepalive(evhtp_request_t * req, evhtp_res code) {
-    evhtp_conn_t * conn = req->conn;
-
     evhtp_log_debug("enter");
     if (htparser_should_keep_alive(req->parser) == 0) {
         /* parsed request doesn't even support keep-alive */
@@ -1322,16 +1311,16 @@ htp_resp_fini_cb(evbev_t * bev __unused__, void * arg) {
     conn      = r->conn;
 
     bufferevent_setwatermark(conn->bev, EV_READ | EV_WRITE, 0, 0);
-    bufferevent_setcb(conn->bev, htp_connection_recv, NULL, NULL, conn);
+    bufferevent_setcb(conn->bev, htp_connection_recv, NULL, htp_connection_error, conn);
 
     if (keepalive) {
-        /* evhtp_request_free(r); */
+        evhtp_request_free(r);
         /* htparser_init(conn->parser); */
         /* htp_connection_recv(conn->bev, conn); */
     } else {
         /* evhtp_request_free(r); */
         /* evhtp_request_free(r); */
-        /* htp_conn_free(conn); */
+        htp_conn_free(conn);
     }
 }
 
@@ -1352,23 +1341,20 @@ static void
 htp_stream_fini_cb(evbev_t * bev __unused__, void * arg) {
     evhtp_request_t * req;
     evhtp_conn_t    * conn;
-    evbuf_t         * buf;
 
     evhtp_log_debug("enter");
 
     req  = (evhtp_request_t *)arg;
     conn = req->conn;
-    buf  = evhtp_request_get_output(req);
 
     switch (req->stream_cb(req, req->stream_cbarg)) {
         case EVHTP_RES_OK:
-            bufferevent_write_buffer(conn->bev, buf);
             return;
         case EVHTP_RES_DONE:
+            evhtp_log_debug("JFKDJFLKDSJFKLDSJFKLDSJFLKDSJFLDSJFLDSJKLDS");
             if (req->chunked) {
-                evbuffer_add_reference(buf, "0\r\n\r\n", 5, NULL, NULL);
                 bufferevent_setcb(conn->bev, NULL, htp_resp_fini_cb, htp_resp_err_cb, req);
-                bufferevent_write_buffer(conn->bev, buf);
+                bufferevent_write(conn->bev, "0\r\n\r\n", 5);
                 return;
             }
             break;
@@ -1396,7 +1382,7 @@ evhtp_send_reply(evhtp_request_t * req, evhtp_res code, const char * r __unused_
     evhtp_log_debug("enter");
 
     conn           = req->conn;
-    obuf           = evhtp_request_get_output(req);
+    obuf           = evbuffer_new();
     req->keepalive = evhtp_request_keepalive(req, code);
 
     assert(obuf != NULL);
@@ -1415,6 +1401,8 @@ evhtp_send_reply(evhtp_request_t * req, evhtp_res code, const char * r __unused_
     bufferevent_setwatermark(conn->bev, EV_WRITE, 1, 0);
     bufferevent_setcb(conn->bev, NULL, htp_resp_fini_cb, htp_resp_err_cb, req);
     bufferevent_write_buffer(conn->bev, obuf);
+
+    evbuffer_free(obuf);
 }     /* evhtp_send_reply */
 
 void
@@ -1425,7 +1413,7 @@ evhtp_send_reply_stream(evhtp_request_t * req, evhtp_res code, evhtp_stream_cb c
     evhtp_log_debug("enter");
 
     conn = req->conn;
-    obuf = evhtp_request_get_output(req);
+    obuf = evbuffer_new();
 
     assert(obuf != NULL);
 
@@ -1459,18 +1447,8 @@ evhtp_send_reply_stream(evhtp_request_t * req, evhtp_res code, evhtp_stream_cb c
     bufferevent_setwatermark(conn->bev, EV_WRITE, 1, 0);
     bufferevent_setcb(conn->bev, NULL, htp_stream_fini_cb, htp_resp_err_cb, req);
     bufferevent_write_buffer(conn->bev, obuf);
+    evbuffer_free(obuf);
 }     /* evhtp_send_reply_stream */
-
-void
-evhtp_request_make_chunk(evhtp_request_t * req, evbuf_t * buf) {
-    evbuf_t * obuf = evhtp_request_get_output(req);
-
-    evhtp_log_debug("enter");
-
-    evbuffer_add_printf(obuf, "%" PRIxMAX "\r\n", evbuffer_get_length(buf));
-    evbuffer_add_buffer(obuf, buf);
-    evbuffer_add_reference(obuf, CRLF, 2, NULL, NULL);
-}
 
 void
 evhtp_send_stream(evhtp_request_t * req, evbuf_t * buf) {
@@ -1478,9 +1456,13 @@ evhtp_send_stream(evhtp_request_t * req, evbuf_t * buf) {
 
     switch (req->proto) {
         case EVHTP_PROTO_1_1:
-            return evhtp_request_make_chunk(req, buf);
+            evbuffer_add_printf(bufferevent_get_output(req->conn->bev),
+                                "%" PRIxMAX "\r\n", evbuffer_get_length(buf));
+            bufferevent_write_buffer(req->conn->bev, buf);
+            bufferevent_write(req->conn->bev, "\r\n", 2);
+            break;
         case EVHTP_PROTO_1_0:
-            evbuffer_add_buffer(evhtp_request_get_output(req), buf);
+            bufferevent_write_buffer(req->conn->bev, buf);
             req->keepalive = 0;
             break;
         default:
@@ -1723,10 +1705,6 @@ evhtp_request_free(evhtp_request_t * req) {
 
     htp_request_run_finished_hook(req);
 
-    if (req->parser) {
-        free(req->parser);
-    }
-
     if (req->path) {
         free(req->path);
     }
@@ -1738,14 +1716,7 @@ evhtp_request_free(evhtp_request_t * req) {
     evhtp_hdrs_free(&req->headers_in);
     evhtp_hdrs_free(&req->headers_out);
 
-    if (req->buffer_in) {
-        evbuffer_free(req->buffer_in);
-    }
-
-    if (req->buffer_out) {
-        evbuffer_free(req->buffer_out);
-    }
-
+    event_del(req->resume_ev);
     event_free(req->resume_ev);
 
     TAILQ_REMOVE(&req->conn->requests, req, next);
@@ -1932,16 +1903,6 @@ evhtp_request_get_headers_in(evhtp_request_t * request) {
 evhtp_hdrs_t *
 evhtp_request_get_headers_out(evhtp_request_t * request) {
     return &request->headers_out;
-}
-
-evbuf_t *
-evhtp_request_get_input(evhtp_request_t * request) {
-    return request->buffer_in;
-}
-
-evbuf_t *
-evhtp_request_get_output(evhtp_request_t * request) {
-    return request->buffer_out;
 }
 
 evhtp_callback_cb

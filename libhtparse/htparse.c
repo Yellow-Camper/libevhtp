@@ -104,6 +104,7 @@ struct htparser {
     unsigned char major;
     unsigned char minor;
     uint64_t      content_len;
+    uint64_t      bytes_read;
 
     char         buf[PARSER_STACK_MAX];
     unsigned int buf_idx;
@@ -362,6 +363,11 @@ htparser_get_content_length(htparser * p) {
     return p->content_len;
 }
 
+uint64_t
+htparser_get_bytes_read(htparser * p) {
+    return p->bytes_read;
+}
+
 void
 htparser_init(htparser * p) {
     memset(p, 0, sizeof(htparser));
@@ -383,6 +389,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
     htparse_log_debug("p == %p", p);
 
     p->error = htparse_error_none;
+    p->bytes_read = 0;
 
     for (i = 0; i < len; i++) {
         int res;
@@ -396,6 +403,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             p->error = htparse_error_too_big;
             return i + 1;
         }
+
+	p->bytes_read += 1;
 
         switch (p->state) {
             case s_reqline_start:

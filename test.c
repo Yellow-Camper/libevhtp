@@ -72,6 +72,10 @@ test_pause_cb(evhtp_request_t * req, void * arg __unused__) {
     evbuffer_add(b, "pause!\n", 7);
     evhtp_send_reply(req, EVHTP_RES_OK, "HErP", b);
     evbuffer_free(b);
+    pause_count = 0;
+    evtimer_del(timer_ev);
+    event_free(timer_ev);
+    timer_ev = NULL;
 }
 
 static void
@@ -99,9 +103,11 @@ test_pause_hdr_cb(evhtp_request_t * req, evhtp_hdr_t * hdr, void * arg __unused_
     tv.tv_sec  = 1;
     tv.tv_usec = 0;
 
-    if (pause_count++ <= 3) {
+    if (pause_count++ <= 4) {
         evtimer_add(timer_ev, &tv);
         return EVHTP_RES_PAUSE;
+    } else {
+	printf("test_pause_hdr_cb() got enoug...\n");
     }
 
     return EVHTP_RES_OK;

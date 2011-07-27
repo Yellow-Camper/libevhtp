@@ -100,7 +100,7 @@ test_pause_hdr_cb(evhtp_request_t * req, evhtp_hdr_t * hdr, void * arg __unused_
            evhtp_hdr_get_key(hdr), evhtp_hdr_get_val(hdr));
 
 
-    tv.tv_sec  = 1;
+    tv.tv_sec  = 5;
     tv.tv_usec = 0;
 
     if (pause_count++ <= 4) {

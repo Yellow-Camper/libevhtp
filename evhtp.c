@@ -359,6 +359,8 @@ htp_end_cb(htparser * p) {
     evhtp_conn_t    * c = htparser_get_userdata(p);
     evhtp_request_t * r = c->current_request;
 
+    evhtp_log_debug("enter");
+
     r->finished = 1;
 
     if (r->cb) {
@@ -713,9 +715,11 @@ htp_requests_free(evhtp_requests_t * requests) {
     evhtp_request_t * s;
 
     evhtp_log_debug("enter");
+
     for (r = TAILQ_FIRST(requests); r != NULL; r = s) {
         s = TAILQ_NEXT(r, next);
 
+        /* TAILQ_REMOVE(requests, r, next); */
         evhtp_request_free(r);
     }
 }
@@ -845,6 +849,7 @@ void
 htp_request_insert_tail(evhtp_request_t * r) {
     /* XXX htp_request_lock(r) */
     /* XXX htp_connection_lock(r->conn) */
+    evhtp_log_debug("enter");
     if (r->next.tqe_prev || r->next.tqe_next) {
         TAILQ_REMOVE(&r->conn->requests, r, next);
     }
@@ -913,6 +918,7 @@ htp_request_resume_cb(int fd __unused__, short events __unused__, void * arg) {
     evhtp_log_debug("enter");
 
     event_del(r->resume_ev);
+    r->status = EVHTP_RES_OK;
 
     htp_connection_recv(r->conn->bev, r->conn);
 }
@@ -927,22 +933,34 @@ htp_connection_recv(evbev_t * bev, void * arg) {
 
     evhtp_log_debug("enter");
 
-    if (r != NULL) {
-        if (r->status == EVHTP_RES_PAUSE) {
-            return;
+    while (evbuffer_get_length(bufferevent_get_input(bev))) {
+        r = c->current_request;
+
+        if (r != NULL) {
+            if (r->status == EVHTP_RES_PAUSE) {
+                return;
+            }
+
+            r->status = EVHTP_RES_OK;
         }
 
-        r->status = EVHTP_RES_OK;
+        avail = evbuffer_get_length(bufferevent_get_input(bev));
+        buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
+        nread = htparser_run(c->parser, &c->htp->psets, (const char *)buf, avail);
+
+        evhtp_log_debug("Avail = %zu, nread = %zu [status = %d]", avail, nread,
+                        c->current_request ? c->current_request->status : -1);
+
+        evbuffer_drain(bufferevent_get_input(bev), nread);
+
+        if (avail != nread) {
+            if (c->current_request && c->current_request->status != EVHTP_RES_OK) {
+                break;
+            }
+        }
     }
 
-    avail = evbuffer_get_length(bufferevent_get_input(bev));
-    buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
-    nread = htparser_run(c->parser, &c->htp->psets, (const char *)buf, avail);
-
-    evhtp_log_debug("Avail = %zu, nread = %zu [status = %d]", avail, nread,
-                    c->current_request->status);
-
-    evbuffer_drain(bufferevent_get_input(bev), nread);
+    evhtp_log_debug("exit");
 } /* htp_connection_recv */
 
 static int
@@ -956,44 +974,6 @@ htp_hdr_output(evhtp_hdr_t * hdr, void * arg) {
     evbuffer_add(buf, hdr->val, strlen(hdr->val));
     evbuffer_add(buf, CRLF, 2);
     return 0;
-}
-
-static void
-htp_exec_in_thr(evthr_t * thr, void * arg, void * shared) {
-#if 0
-    evhtp_t      * htp;
-    evhtp_conn_t * conn;
-
-    evhtp_log_debug("enter");
-    htp          = (evhtp_t *)shared;
-    conn         = (evhtp_conn_t *)arg;
-
-    conn->evbase = evthr_get_base(thr);
-    conn->thr    = thr;
-
-    if (htp->ssl_ctx == NULL) {
-        conn->bev = bufferevent_socket_new(conn->evbase, conn->sock,
-                                           BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
-    } else {
-#ifndef DISABLE_SSL
-        conn->ssl = SSL_new(htp->ssl_ctx);
-        conn->bev = bufferevent_openssl_socket_new(conn->evbase,
-                                                   conn->sock, conn->ssl, BUFFEREVENT_SSL_ACCEPTING,
-                                                   BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
-
-        SSL_set_app_data(conn->ssl, conn);
-#endif
-    }
-
-    if (htp_run_post_accept(htp, conn) < 0) {
-        return htp_conn_free(conn);
-    }
-
-    bufferevent_enable(conn->bev, EV_READ);
-    bufferevent_setcb(conn->bev, htp_recv_cb, NULL, htp_err_cb, conn);
-
-    evthr_inc_backlog(conn->thr);
-#endif
 }
 
 static int
@@ -1033,6 +1013,42 @@ htp_connection_error(evbev_t * bev __unused__, short events __unused__, void * a
     evhtp_log_debug("enter");
 
     return htp_conn_free(c);
+}
+
+static void
+htp_exec_in_thr(evthr_t * thr, void * arg, void * shared) {
+    evhtp_t      * htp;
+    evhtp_conn_t * conn;
+
+    evhtp_log_debug("enter");
+    htp          = (evhtp_t *)shared;
+    conn         = (evhtp_conn_t *)arg;
+
+    conn->evbase = evthr_get_base(thr);
+    conn->thr    = thr;
+
+    if (htp->ssl_ctx == NULL) {
+        conn->bev = bufferevent_socket_new(conn->evbase, conn->sock,
+                                           BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
+    } else {
+#ifndef DISABLE_SSL
+        conn->ssl = SSL_new(htp->ssl_ctx);
+        conn->bev = bufferevent_openssl_socket_new(conn->evbase,
+                                                   conn->sock, conn->ssl, BUFFEREVENT_SSL_ACCEPTING,
+                                                   BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
+
+        SSL_set_app_data(conn->ssl, conn);
+#endif
+    }
+
+    if (htp_run_post_accept(htp, conn) < 0) {
+        return htp_conn_free(conn);
+    }
+
+    bufferevent_enable(conn->bev, EV_READ);
+    bufferevent_setcb(conn->bev, htp_connection_recv, NULL, htp_connection_error, conn);
+
+    evthr_inc_backlog(conn->thr);
 }
 
 static void
@@ -1220,14 +1236,14 @@ evhtp_request_keepalive(evhtp_request_t * req, evhtp_res code) {
     evhtp_log_debug("enter");
     if (htparser_should_keep_alive(req->parser) == 0) {
         /* parsed request doesn't even support keep-alive */
-        printf("htparser says don't keep alive\n");
+        evhtp_log_debug("htparser says don't keep alive\n");
         return 0;
     }
 
     if (htp_should_close_based_on_cflags(req->conn->flags, code)) {
         /* one of the user-set flags has informed us to close, thus
          * do not keep alive */
-        printf("cflags says don't keep alive\n");
+        evhtp_log_debug("cflags says don't keep alive\n");
         return 0;
     }
 
@@ -1291,9 +1307,9 @@ htp_set_body_buf(evbuf_t * dst, evbuf_t * src) {
         return;
     }
 
-    evhtp_log_debug("setting body...%p %zu", src, evbuffer_get_length(src));
 
     if (src && evbuffer_get_length(src)) {
+        evhtp_log_debug("setting body...%p %zu", src, evbuffer_get_length(src));
         evbuffer_add_buffer(dst, src);
     }
 }
@@ -1305,7 +1321,9 @@ htp_resp_fini_cb(evbev_t * bev __unused__, void * arg) {
     int               keepalive;
 
     evhtp_log_debug("enter");
-    evhtp_log_debug("%zu", evbuffer_get_length(bufferevent_get_output(bev)));
+    evhtp_log_debug("output %zu", evbuffer_get_length(bufferevent_get_output(bev)));
+    evhtp_log_debug("input %zu", evbuffer_get_length(bufferevent_get_output(bev)));
+    evhtp_log_debug("keepalive = %d", r->keepalive);
 
     keepalive = r->keepalive;
     conn      = r->conn;
@@ -1314,9 +1332,14 @@ htp_resp_fini_cb(evbev_t * bev __unused__, void * arg) {
     bufferevent_setcb(conn->bev, htp_connection_recv, NULL, htp_connection_error, conn);
 
     if (keepalive) {
+        if (r == conn->current_request) {
+            conn->current_request = NULL;
+        }
+
         evhtp_request_free(r);
-        /* htparser_init(conn->parser); */
-        /* htp_connection_recv(conn->bev, conn); */
+        htparser_init(conn->parser);
+        htparser_set_userdata(conn->parser, conn);
+        htp_connection_recv(conn->bev, conn);
     } else {
         /* evhtp_request_free(r); */
         /* evhtp_request_free(r); */
@@ -1402,6 +1425,7 @@ evhtp_send_reply(evhtp_request_t * req, evhtp_res code, const char * r __unused_
     bufferevent_setcb(conn->bev, NULL, htp_resp_fini_cb, htp_resp_err_cb, req);
     bufferevent_write_buffer(conn->bev, obuf);
 
+    evhtp_log_debug("Writing %zu", evbuffer_get_length(bufferevent_get_output(conn->bev)));
     evbuffer_free(obuf);
 }     /* evhtp_send_reply */
 
@@ -1716,7 +1740,6 @@ evhtp_request_free(evhtp_request_t * req) {
     evhtp_hdrs_free(&req->headers_in);
     evhtp_hdrs_free(&req->headers_out);
 
-    event_del(req->resume_ev);
     event_free(req->resume_ev);
 
     TAILQ_REMOVE(&req->conn->requests, req, next);

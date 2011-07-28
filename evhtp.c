@@ -547,25 +547,15 @@ htp_path_cb(htparser * p, const char * b, size_t l) {
 
 static int
 htp_body_cb(htparser * p, const char * b, size_t l) {
-    evhtp_request_t * r = htparser_get_userdata(p);
+    evhtp_conn_t    * c = htparser_get_userdata(p);
+    evhtp_request_t * r = c->current_request;
 
     evhtp_log_debug("enter");
 
-    if (htp_request_is_paused(r)) {
-        return -1;
-    }
-
     r->status = htp_request_run_read_hook(r, b, l);
 
-    switch (r->status) {
-        case EVHTP_RES_OK:
-            break;
-        case EVHTP_RES_PAUSE:
-            /* htp_request_pause(r); */
-            return -1;
-            break;
-        default:
-            return -1;
+    if (r->status != EVHTP_RES_OK) {
+        return -1;
     }
 
     return 0;
@@ -647,6 +637,7 @@ htp_callback_find(evhtp_callbacks_t * cbs,
     unsigned int       hash;
 
     evhtp_log_debug("enter");
+
     if (cbs == NULL) {
         return NULL;
     }
@@ -719,7 +710,6 @@ htp_requests_free(evhtp_requests_t * requests) {
     for (r = TAILQ_FIRST(requests); r != NULL; r = s) {
         s = TAILQ_NEXT(r, next);
 
-        /* TAILQ_REMOVE(requests, r, next); */
         evhtp_request_free(r);
     }
 }
@@ -814,48 +804,33 @@ htp_conn_get_evbase(evhtp_conn_t * conn) {
 
 evhtp_request_t *
 htp_connection_get_request_head(evhtp_conn_t * conn) {
-    /* XXX htp_connection_lock(conn) */
     evhtp_request_t * r = TAILQ_FIRST(&conn->requests);
-
-    /* XXX htp_connection_unlock(conn) */
 
     return r;
 }
 
 evhtp_request_t *
 htp_connection_get_request_tail(evhtp_conn_t * conn) {
-    /* XXX htp_connection_lock(conn) */
     evhtp_request_t * r = TAILQ_LAST(&conn->requests, evhtp_requests_s);
-
-    /* XXX htp_connection_unlock(conn); */
 
     return r;
 }
 
 void
 htp_request_insert_head(evhtp_request_t * r) {
-    /* XXX htp_request_lock(r) */
-    /* XXX htp_connection_lock(r->conn) */
     if (r->next.tqe_prev || r->next.tqe_next) {
         TAILQ_REMOVE(&r->conn->requests, r, next);
     }
 
     TAILQ_INSERT_HEAD(&r->conn->requests, r, next);
-    /* XXX htp_connection_unlock(r->conn) */
-    /* XXX htp_request_unlock(r) */
 }
 
 void
 htp_request_insert_tail(evhtp_request_t * r) {
-    /* XXX htp_request_lock(r) */
-    /* XXX htp_connection_lock(r->conn) */
-    evhtp_log_debug("enter");
     if (r->next.tqe_prev || r->next.tqe_next) {
         TAILQ_REMOVE(&r->conn->requests, r, next);
     }
     TAILQ_INSERT_TAIL(&r->conn->requests, r, next);
-    /* XXX htp_connection_unlock */
-    /* XXX htp_request_unlock */
 }
 
 static evhtp_request_t *
@@ -904,8 +879,6 @@ htp_request_pause(evhtp_request_t * r) {
     }
 
     evhtp_log_debug("pausing");
-    /* r->status = EVHTP_RES_PAUSE; */
-    /* htp_request_insert_tail(r); */
     event_add(r->resume_ev, NULL);
 }
 
@@ -1341,8 +1314,6 @@ htp_resp_fini_cb(evbev_t * bev __unused__, void * arg) {
         htparser_set_userdata(conn->parser, conn);
         htp_connection_recv(conn->bev, conn);
     } else {
-        /* evhtp_request_free(r); */
-        /* evhtp_request_free(r); */
         htp_conn_free(conn);
     }
 }
@@ -1374,7 +1345,6 @@ htp_stream_fini_cb(evbev_t * bev __unused__, void * arg) {
         case EVHTP_RES_OK:
             return;
         case EVHTP_RES_DONE:
-            evhtp_log_debug("JFKDJFLKDSJFKLDSJFKLDSJFLKDSJFLDSJFLDSJKLDS");
             if (req->chunked) {
                 bufferevent_setcb(conn->bev, NULL, htp_resp_fini_cb, htp_resp_err_cb, req);
                 bufferevent_write(conn->bev, "0\r\n\r\n", 5);
@@ -1710,6 +1680,7 @@ evhtp_hdr_find(evhtp_hdrs_t * hdrs, const char * key) {
     evhtp_hdr_t * hdr = NULL;
 
     evhtp_log_debug("enter");
+
     TAILQ_FOREACH(hdr, hdrs, next) {
         if (!strcasecmp(hdr->key, key)) {
             return hdr->val;

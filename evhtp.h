@@ -17,50 +17,50 @@
 #endif
 
 #ifndef DISABLE_SSL
-typedef SSL_SESSION                      evhtp_ssl_sess_t;
-typedef SSL                              evhtp_ssl_t;
-typedef SSL_CTX                          evhtp_ssl_ctx_t;
+typedef SSL_SESSION               evhtp_ssl_sess_t;
+typedef SSL                       evhtp_ssl_t;
+typedef SSL_CTX                   evhtp_ssl_ctx_t;
 #else
-typedef void                             evhtp_ssl_sess_t;
-typedef void                             evhtp_ssl_t;
-typedef void                             evhtp_ssl_ctx_t;
+typedef void                      evhtp_ssl_sess_t;
+typedef void                      evhtp_ssl_t;
+typedef void                      evhtp_ssl_ctx_t;
 #endif
 
-typedef struct evbuffer                  evbuf_t;
-typedef struct event                     event_t;
-typedef struct evconnlistener            evserv_t;
-typedef struct bufferevent               evbev_t;
+typedef struct evbuffer           evbuf_t;
+typedef struct event              event_t;
+typedef struct evconnlistener     evserv_t;
+typedef struct bufferevent        evbev_t;
 #ifdef DISABLE_EVTHR
-typedef struct event_base                evbase_t;
-typedef void                             evthr_t;
-typedef void                             evthr_pool_t;
-typedef void                             evhtp_mutex_t;
+typedef struct event_base         evbase_t;
+typedef void                      evthr_t;
+typedef void                      evthr_pool_t;
+typedef void                      evhtp_mutex_t;
 #else
-typedef pthread_mutex_t                  evhtp_mutex_t;
+typedef pthread_mutex_t           evhtp_mutex_t;
 #endif
 
-typedef struct evhtp_s                   evhtp_t;
-typedef struct evhtp_defaults_s          evhtp_defaults_t;
-typedef struct evhtp_callbacks_s         evhtp_callbacks_t;
-typedef struct evhtp_callback_s          evhtp_callback_t;
-typedef struct evhtp_defaults_s          evhtp_defaults_5;
-typedef struct evhtp_kv_s                evhtp_kv_t;
-typedef struct evhtp_uri_s               evhtp_uri_t;
-typedef struct evhtp_request_path_s      evhtp_request_path_t;
-typedef struct evhtp_request_authority_s evhtp_request_authority_t;
-typedef struct evhtp_request_s           evhtp_request_t;
-typedef struct evhtp_hooks_s             evhtp_hooks_t;
-typedef struct evhtp_headers_s           evhtp_headers_t;
-typedef struct evhtp_kv_s                evhtp_header_t;
-typedef struct evhtp_request_query_s     evhtp_request_query_t;
-typedef struct evhtp_connection_s        evhtp_connection_t;
-typedef struct evhtp_ssl_cfg_s           evhtp_ssl_cfg_t;
-typedef uint16_t                         evhtp_res;
-typedef uint8_t                          evhtp_error_flags;
+typedef struct evhtp_s            evhtp_t;
+typedef struct evhtp_defaults_s   evhtp_defaults_t;
+typedef struct evhtp_callbacks_s  evhtp_callbacks_t;
+typedef struct evhtp_callback_s   evhtp_callback_t;
+typedef struct evhtp_defaults_s   evhtp_defaults_5;
+typedef struct evhtp_kv_s         evhtp_kv_t;
+typedef struct evhtp_uri_s        evhtp_uri_t;
+typedef struct evhtp_path_s       evhtp_path_t;
+typedef struct evhtp_authority_s  evhtp_authority_t;
+typedef struct evhtp_request_s    evhtp_request_t;
+typedef struct evhtp_hooks_s      evhtp_hooks_t;
+typedef struct evhtp_headers_s    evhtp_headers_t;
+typedef struct evhtp_kv_s         evhtp_header_t;
+typedef struct evhtp_query_s      evhtp_query_t;
+typedef struct evhtp_connection_s evhtp_connection_t;
+typedef struct evhtp_ssl_cfg_s    evhtp_ssl_cfg_t;
+typedef uint16_t                  evhtp_res;
+typedef uint8_t                   evhtp_error_flags;
 
-typedef enum evhtp_hook_type             evhtp_hook_type;
-typedef enum evhtp_callback_type         evhtp_callback_type;
-typedef enum evhtp_proto                 evhtp_proto;
+typedef enum evhtp_hook_type      evhtp_hook_type;
+typedef enum evhtp_callback_type  evhtp_callback_type;
+typedef enum evhtp_proto          evhtp_proto;
 
 typedef void (*evhtp_callback_cb)(evhtp_request_t * req, void * arg);
 typedef void (*evhtp_hook_err_cb)(evhtp_request_t * req, evhtp_error_flags errtype, void * arg);
@@ -68,7 +68,7 @@ typedef evhtp_res (*evhtp_pre_accept_cb)(int fd, struct sockaddr * sa, int salen
 typedef evhtp_res (*evhtp_post_accept_cb)(evhtp_connection_t * conn, void * arg);
 typedef evhtp_res (*evhtp_hook_header_cb)(evhtp_request_t * req, evhtp_header_t * hdr, void * arg);
 typedef evhtp_res (*evhtp_hook_headers_cb)(evhtp_request_t * req, evhtp_headers_t * hdr, void * arg);
-typedef evhtp_res (*evhtp_hook_path_cb)(evhtp_request_t * req, evhtp_request_path_t * path, void * arg);
+typedef evhtp_res (*evhtp_hook_path_cb)(evhtp_request_t * req, evhtp_path_t * path, void * arg);
 typedef evhtp_res (*evhtp_hook_read_cb)(evhtp_request_t * req, void * data, size_t len);
 typedef evhtp_res (*evhtp_hook_fini_cb)(evhtp_request_t * req, void * arg);
 
@@ -230,37 +230,58 @@ struct evhtp_callback_s {
     evhtp_callback_t * next;
 };
 
+
+/**
+ * @brief a generic key/value structure
+ */
 struct evhtp_kv_s {
     char * key;
     char * val;
 
-    char k_heaped : 1;
-    char v_heaped : 1;
+    char k_heaped : 1; /**< set to 1 if the key can be free()'d */
+    char v_heaped : 1; /**< set to 1 if the val can be free()'d */
 
     TAILQ_ENTRY(evhtp_kv_s) next;
 };
 
-TAILQ_HEAD(evhtp_request_query_s, evhtp_kv_s);
 
+/**
+ * @brief a tailq of evhtp_kv_t structures representing query arguments
+ *
+ */
+TAILQ_HEAD(evhtp_query_s, evhtp_kv_s);
+
+
+/**
+ * @brief a generic container representing an entire URI strucutre
+ */
 struct evhtp_uri_s {
-    evhtp_request_authority_t * authority;
-    evhtp_request_path_t      * path;
-    unsigned char             * fragment;
-    evhtp_request_query_t       query;
-    htp_scheme                  scheme;
+    evhtp_authority_t * authority;
+    evhtp_path_t      * path;
+    unsigned char     * fragment; /**< data after '#' in uri */
+    evhtp_query_t       query;
+    htp_scheme          scheme;   /**< set if a scheme is found */
 };
 
-struct evhtp_request_authority_s {
-    char   * username;
-    char   * password;
-    char   * hostname;
-    uint16_t port;
+
+/**
+ * @brief structure which represents authority information in a URI
+ */
+struct evhtp_authority_s {
+    char   * username;            /**< the username in URI (http://<USER>:.. */
+    char   * password;            /**< the password in URI (http://...:<PASS>.. */
+    char   * hostname;            /**< hostname if present in URI */
+    uint16_t port;                /**< port if present in URI */
 };
 
-struct evhtp_request_path_s {
-    char       * full;
-    char       * path;
-    char       * file;
+
+/**
+ * @brief structure which represents a URI path and or file
+ */
+struct evhtp_path_s {
+    char       * full;            /**< the full path+file (/a/b/c.html) */
+    char       * path;            /**< the path (/a/b/) */
+    char       * file;            /**< the filename if present (c.html) */
     unsigned int matched_soff;
     unsigned int matched_eoff;
 };
@@ -482,9 +503,9 @@ evhtp_kv_t * evhtp_kv_new(const char * key, const char * val, char kalloc, char 
  * @param query data containing the uri query arguments
  * @param len size of the data
  *
- * @return evhtp_request_query_t * on success, NULL on error
+ * @return evhtp_query_t * on success, NULL on error
  */
-evhtp_request_query_t * evhtp_request_parse_query(const char * query, size_t len);
+evhtp_query_t * evhtp_request_parse_query(const char * query, size_t len);
 
 #endif /* __EVHTP__H__ */
 

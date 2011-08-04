@@ -136,7 +136,7 @@ _evhtp_protocol(const char major, const char minor) {
  * @return EVHTP_RES_OK on success, otherwise something else.
  */
 static evhtp_res
-_evhtp_request_path_hook(evhtp_request_t * request, evhtp_request_path_t * path) {
+_evhtp_path_hook(evhtp_request_t * request, evhtp_path_t * path) {
     return EVHTP_RES_OK;
 }
 
@@ -263,14 +263,14 @@ _evhtp_uri_new(void) {
  *
  * @return evhtp_request_t * on success, NULL on error.
  */
-static evhtp_request_path_t *
-_evhtp_request_path_new(const char * data, size_t len) {
-    evhtp_request_path_t * req_path;
-    const char           * data_end = (const char *)(data + len);
-    char                 * path     = NULL;
-    char                 * file     = NULL;
+static evhtp_path_t *
+_evhtp_path_new(const char * data, size_t len) {
+    evhtp_path_t * req_path;
+    const char   * data_end = (const char *)(data + len);
+    char         * path     = NULL;
+    char         * file     = NULL;
 
-    if (!(req_path = calloc(sizeof(evhtp_request_path_t), 1))) {
+    if (!(req_path = calloc(sizeof(evhtp_path_t), 1))) {
         return NULL;
     }
 
@@ -339,7 +339,7 @@ _evhtp_request_path_new(const char * data, size_t len) {
     req_path->file = file;
 
     return req_path;
-} /* _evhtp_request_path_new */
+} /* _evhtp_path_new */
 
 static int
 _evhtp_request_parser_start(htparser * p) {
@@ -362,19 +362,19 @@ _evhtp_request_parser_args(htparser * p, const char * data, size_t len) {
 
 static int
 _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
-    evhtp_connection_t   * c        = htparser_get_userdata(p);
-    evhtp_callback_t     * callback = NULL;
-    evhtp_callback_cb      cb       = NULL;
-    evhtp_uri_t          * uri;
-    evhtp_request_path_t * path;
-    void                 * cbarg = NULL;
+    evhtp_connection_t * c        = htparser_get_userdata(p);
+    evhtp_callback_t   * callback = NULL;
+    evhtp_callback_cb    cb       = NULL;
+    evhtp_uri_t        * uri;
+    evhtp_path_t       * path;
+    void               * cbarg = NULL;
 
     if (!(uri = _evhtp_uri_new())) {
         c->request->status = EVHTP_RES_FATAL;
         return -1;
     }
 
-    if (!(path = _evhtp_request_path_new(data, len))) {
+    if (!(path = _evhtp_path_new(data, len))) {
         c->request->status = EVHTP_RES_FATAL;
         return -1;
     }
@@ -405,7 +405,7 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
     c->request->proto  = _evhtp_protocol(htparser_get_major(p),
                                          htparser_get_minor(p));
 
-    if ((c->request->status = _evhtp_request_path_hook(c->request, path)) != EVHTP_RES_OK) {
+    if ((c->request->status = _evhtp_path_hook(c->request, path)) != EVHTP_RES_OK) {
         return -1;
     }
 
@@ -687,19 +687,19 @@ typedef enum {
     s_query_done
 } query_parser_state;
 
-evhtp_request_query_t *
+evhtp_query_t *
 evhtp_request_parse_query(const char * query, size_t len) {
-    evhtp_request_query_t * query_args;
-    query_parser_state      state = s_query_start;
-    char                    key_buf[1024];
-    char                    val_buf[1024];
-    int                     key_idx;
-    int                     val_idx;
-    int                     res;
-    unsigned char           ch;
-    size_t                  i;
+    evhtp_query_t    * query_args;
+    query_parser_state state = s_query_start;
+    char               key_buf[1024];
+    char               val_buf[1024];
+    int                key_idx;
+    int                val_idx;
+    int                res;
+    unsigned char      ch;
+    size_t             i;
 
-    if (!(query_args = malloc(sizeof(evhtp_request_query_t)))) {
+    if (!(query_args = malloc(sizeof(evhtp_query_t)))) {
         return NULL;
     }
 

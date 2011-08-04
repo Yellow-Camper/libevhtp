@@ -268,8 +268,8 @@ struct evhtp_uri_s {
  * @brief structure which represents authority information in a URI
  */
 struct evhtp_authority_s {
-    char   * username;            /**< the username in URI (http://<USER>:.. */
-    char   * password;            /**< the password in URI (http://...:<PASS>.. */
+    char   * username;            /**< the username in URI (scheme://USER:.. */
+    char   * password;            /**< the password in URI (scheme://...:PASS.. */
     char   * hostname;            /**< hostname if present in URI */
     uint16_t port;                /**< port if present in URI */
 };
@@ -282,8 +282,12 @@ struct evhtp_path_s {
     char       * full;            /**< the full path+file (/a/b/c.html) */
     char       * path;            /**< the path (/a/b/) */
     char       * file;            /**< the filename if present (c.html) */
-    unsigned int matched_soff;
-    unsigned int matched_eoff;
+    unsigned int matched_soff;    /**< offset of where the uri starts
+                                   *   mainly used for regex matching
+                                   */
+    unsigned int matched_eoff;    /**< offset of where the uri ends
+                                   *   mainly used for regex matching
+                                   */
 };
 
 TAILQ_HEAD(evhtp_headers_s, evhtp_kv_s);
@@ -485,8 +489,8 @@ int evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb)
 /**
  * @brief Allocates a new key/value structure.
  *
- * @param key \0 terminated string
- * @param val \0 terminated string
+ * @param key null terminated string
+ * @param val null terminated string
  * @param kalloc if set to 1, the key will be copied, if 0 no copy is done.
  * @param valloc if set to 1, the val will be copied, if 0 no copy is done.
  *
@@ -505,7 +509,7 @@ evhtp_kv_t * evhtp_kv_new(const char * key, const char * val, char kalloc, char 
  *
  * @return evhtp_query_t * on success, NULL on error
  */
-evhtp_query_t * evhtp_request_parse_query(const char * query, size_t len);
+evhtp_query_t * evhtp_parse_query(const char * query, size_t len);
 
 #endif /* __EVHTP__H__ */
 

@@ -688,7 +688,7 @@ typedef enum {
 } query_parser_state;
 
 evhtp_query_t *
-evhtp_request_parse_query(const char * query, size_t len) {
+evhtp_parse_query(const char * query, size_t len) {
     evhtp_query_t    * query_args;
     query_parser_state state = s_query_start;
     char               key_buf[1024];
@@ -837,7 +837,7 @@ evhtp_request_parse_query(const char * query, size_t len) {
     return query_args;
 error:
     return NULL;
-}         /* evhtp_request_parse_query_args */
+} /* evhtp_parse_query */
 
 int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port) {
@@ -940,18 +940,6 @@ evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb) {
     }
 
     return 0;
-}
-
-void
-evhtp_set_pre_acceptcb(evhtp_t * htp, evhtp_pre_accept_cb cb, void * arg) {
-    htp->defaults.pre_accept       = cb;
-    htp->defaults.pre_accept_cbarg = arg;
-}
-
-void
-evhtp_set_post_acceptcb(evhtp_t * htp, evhtp_post_accept_cb cb, void * arg) {
-    htp->defaults.post_accept       = cb;
-    htp->defaults.post_accept_cbarg = arg;
 }
 
 int

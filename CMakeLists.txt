@@ -130,6 +130,6 @@ install (FILES evhtp.h DESTINATION include)
 install (FILES libhtparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
 
-add_executable(test test.c)
-target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
+#add_executable(test test.c)
+#target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
 

@@ -14,16 +14,20 @@
 #include "onigposix.h"
 #include "evhtp.h"
 
-static int  _evhtp_request_parser_start(htparser * p);
-static int  _evhtp_request_parser_path(htparser * p, const char * data, size_t len);
-static int  _evhtp_request_parser_args(htparser * p, const char * data, size_t len);
-static int  _evhtp_request_parser_header_key(htparser * p, const char * data, size_t len);
-static int  _evhtp_request_parser_header_val(htparser * p, const char * data, size_t len);
-static int  _evhtp_request_parser_headers(htparser * p);
-static int  _evhtp_request_parser_body(htparser * p, const char * data, size_t len);
-static int  _evhtp_request_parser_fini(htparser * p);
+static int                  _evhtp_request_parser_start(htparser * p);
+static int                  _evhtp_request_parser_path(htparser * p, const char * data, size_t len);
+static int                  _evhtp_request_parser_args(htparser * p, const char * data, size_t len);
+static int                  _evhtp_request_parser_header_key(htparser * p, const char * data, size_t len);
+static int                  _evhtp_request_parser_header_val(htparser * p, const char * data, size_t len);
+static int                  _evhtp_request_parser_headers(htparser * p);
+static int                  _evhtp_request_parser_body(htparser * p, const char * data, size_t len);
+static int                  _evhtp_request_parser_fini(htparser * p);
 
-static void _evhtp_connection_readcb(evbev_t * bev, void * arg);
+static void                 _evhtp_connection_readcb(evbev_t * bev, void * arg);
+
+static void                 _evhtp_connection_free(evhtp_connection_t * connection);
+static evhtp_connection_t * _evhtp_connection_new(evhtp_t * htp, int sock);
+
 /**
  * @brief callback definitions for request processing from libhtparse
  */
@@ -48,7 +52,6 @@ static htparse_hooks request_psets = {
 /*
  * PRIVATE FUNCTIONS
  */
-
 
 /**
  * @brief a weak hash function
@@ -122,6 +125,19 @@ _evhtp_protocol(const char major, const char minor) {
     }
 
     return EVHTP_PROTO_INVALID;
+}
+
+/**
+ * @brief runs the user-defined on_path hook for a request
+ *
+ * @param request the request structure
+ * @param path the path structure
+ *
+ * @return EVHTP_RES_OK on success, otherwise something else.
+ */
+static evhtp_res
+_evhtp_request_path_hook(evhtp_request_t * request, evhtp_request_path_t * path) {
+    return EVHTP_RES_OK;
 }
 
 /**
@@ -475,6 +491,16 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
     evbuffer_drain(bufferevent_get_input(bev), nread);
 }
 
+static void
+_evhtp_connection_writecb(evbev_t * bev, void * arg) {
+    return;
+}
+
+static void
+_evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
+    return;
+}
+
 static int
 _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
 #ifndef DISABLE_SSL
@@ -507,6 +533,16 @@ end:
     return 0;
 }
 
+static void
+_evhtp_default_request_cb(evhtp_request_t * request, void * arg) {
+    return;
+}
+
+static void
+_evhtp_connection_free(evhtp_connection_t * connection) {
+    return;
+}
+
 static evhtp_connection_t *
 _evhtp_connection_new(evhtp_t * htp, int sock) {
     evhtp_connection_t * connection;
@@ -530,6 +566,44 @@ _evhtp_connection_new(evhtp_t * htp, int sock) {
     htparser_set_userdata(connection->parser, connection);
 
     return connection;
+}
+
+static int
+_evhtp_run_pre_accept(evhtp_t * htp, int sock, struct sockaddr * s, int sl) {
+    void    * args;
+    evhtp_res res;
+
+    if (htp->defaults.pre_accept == NULL) {
+        return 0;
+    }
+
+    args = htp->defaults.pre_accept_cbarg;
+    res  = htp->defaults.pre_accept(sock, s, sl, args);
+
+    if (res != EVHTP_RES_OK) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+_evhtp_run_post_accept(evhtp_t * htp, evhtp_connection_t * connection) {
+    void    * args;
+    evhtp_res res;
+
+    if (htp->defaults.post_accept == NULL) {
+        return 0;
+    }
+
+    args = htp->defaults.post_accept_cbarg;
+    res  = htp->defaults.post_accept(connection, args);
+
+    if (res != EVHTP_RES_OK) {
+        return -1;
+    }
+
+    return 0;
 }
 
 static void
@@ -803,6 +877,11 @@ evhtp_callbacks_new(unsigned int buckets) {
     return cbs;
 }
 
+void
+evhtp_callback_free(evhtp_callback_t * callback) {
+    return;
+}
+
 evhtp_callback_t *
 evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_cb cb, void * arg) {
     evhtp_callback_t * hcb;
@@ -930,7 +1009,7 @@ evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
     }
 
     if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
-        callback_free(hcb);
+        evhtp_callback_free(hcb);
         return NULL;
     }
 
@@ -952,7 +1031,7 @@ evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, vo
     }
 
     if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
-        callback_free(hcb);
+        evhtp_callback_free(hcb);
         return NULL;
     }
 
@@ -993,7 +1072,7 @@ evhtp_new(evbase_t * evbase, void * arg) {
     htp->evbase      = evbase;
     htp->server_name = "evhtp, sucka";
 
-    evhtp_set_gencb(htp, default_404_cb, (void *)htp);
+    evhtp_set_gencb(htp, _evhtp_default_request_cb, (void *)htp);
 
     return htp;
 }

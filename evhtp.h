@@ -5,6 +5,8 @@
 #include <evthr.h>
 #endif
 
+#include <htparse.h>
+#include <onigposix.h>
 #include <sys/queue.h>
 #include <event.h>
 #include <event2/listener.h>
@@ -45,18 +47,25 @@ typedef struct evhtp_callbacks_s  evhtp_callbacks_t;
 typedef struct evhtp_callback_s   evhtp_callback_t;
 typedef struct evhtp_defaults_s   evhtp_defaults_5;
 typedef struct evhtp_kv_s         evhtp_kv_t;
+typedef struct evhtp_kvs_s        evhtp_kvs_t;
 typedef struct evhtp_uri_s        evhtp_uri_t;
 typedef struct evhtp_path_s       evhtp_path_t;
 typedef struct evhtp_authority_s  evhtp_authority_t;
 typedef struct evhtp_request_s    evhtp_request_t;
 typedef struct evhtp_hooks_s      evhtp_hooks_t;
-typedef struct evhtp_headers_s    evhtp_headers_t;
-typedef struct evhtp_kv_s         evhtp_header_t;
-typedef struct evhtp_query_s      evhtp_query_t;
 typedef struct evhtp_connection_s evhtp_connection_t;
 typedef struct evhtp_ssl_cfg_s    evhtp_ssl_cfg_t;
 typedef uint16_t                  evhtp_res;
 typedef uint8_t                   evhtp_error_flags;
+
+
+#define evhtp_header_s  evhtp_kv_s
+#define evhtp_headers_s evhtp_kvs_s
+#define evhtp_query_s   evhtp_kvs_s
+
+#define evhtp_header_t  evhtp_kv_t
+#define evhtp_headers_t evhtp_kvs_t
+#define evhtp_query_t   evhtp_kvs_t
 
 typedef enum evhtp_hook_type      evhtp_hook_type;
 typedef enum evhtp_callback_type  evhtp_callback_type;
@@ -161,6 +170,7 @@ enum evhtp_proto {
     EVHTP_PROTO_11
 };
 
+
 struct evhtp_defaults_s {
     evhtp_callback_cb    cb;
     evhtp_pre_accept_cb  pre_accept;
@@ -244,12 +254,8 @@ struct evhtp_kv_s {
     TAILQ_ENTRY(evhtp_kv_s) next;
 };
 
+TAILQ_HEAD(evhtp_kvs_s, evhtp_kv_s);
 
-/**
- * @brief a tailq of evhtp_kv_t structures representing query arguments
- *
- */
-TAILQ_HEAD(evhtp_query_s, evhtp_kv_s);
 
 
 /**
@@ -290,8 +296,6 @@ struct evhtp_path_s {
                                    */
 };
 
-TAILQ_HEAD(evhtp_headers_s, evhtp_kv_s);
-
 struct evhtp_request_s {
     evhtp_t            * htp;
     evhtp_connection_t * conn;
@@ -304,6 +308,7 @@ struct evhtp_request_s {
     evhtp_proto          proto;
     htp_method           method;
     evhtp_res            status;
+    char                 keepalive;
 
     evhtp_callback_cb cb;
     void            * cbarg;
@@ -441,6 +446,8 @@ evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp
  */
 int evhtp_set_hook(evhtp_callback_t * hcb, evhtp_hook_type type, void * cb, void * arg);
 
+int evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port);
+
 /**
  * @brief creates a new evhtp_callbacks_t structure
  *
@@ -502,6 +509,14 @@ evhtp_kv_t * evhtp_kv_new(const char * key, const char * val, char kalloc, char 
 
 
 /**
+ * @brief appends a key/val structure to a evhtp_kvs_t tailq
+ *
+ * @param kvs an evhtp_kvs_t structure
+ * @param kv  an evhtp_kv_t structure
+ */
+void evhtp_kvs_add_kv(evhtp_kvs_t * kvs, evhtp_kv_t * kv);
+
+/**
  * @brief Parses the query portion of the uri into a set of key/values
  *
  * Parses query arguments like "?herp=derp&foo=bar;blah=baz"
@@ -513,6 +528,18 @@ evhtp_kv_t * evhtp_kv_new(const char * key, const char * val, char kalloc, char 
  */
 evhtp_query_t * evhtp_parse_query(const char * query, size_t len);
 
+
+/**
+ * @brief creates a new evhtp_header_t key/val structure
+ *
+ * @param key a null terminated string
+ * @param val a null terminated string
+ * @param kalloc if 1, key will be copied, otherwise no copy performed
+ * @param valloc if 1, val will be copied, otehrwise no copy performed
+ *
+ * @return evhtp_header_t * or NULL on error
+ */
+evhtp_header_t * evhtp_header_new(const char * key, const char * val, char kalloc, char valloc);
 
 /**
  * @brief creates a new evhtp_header_t, sets only the key, and adds to the
@@ -538,6 +565,14 @@ evhtp_header_t * evhtp_header_key_add(evhtp_headers_t * headers, const char * ke
  */
 evhtp_header_t * evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char valloc);
 
+
+/**
+ * @brief adds an evhtp_header_t to the end of the evhtp_headers_t tailq
+ *
+ * @param headers
+ * @param header
+ */
+void evhtp_headers_add_header(evhtp_headers_t * headers, evhtp_header_t * header);
 
 /**
  * @brief finds the value of a key in a evhtp_headers_t structure

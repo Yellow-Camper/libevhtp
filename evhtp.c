@@ -6,12 +6,11 @@
 #include <errno.h>
 #include <signal.h>
 #include <ctype.h>
+#include <inttypes.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "htparse.h"
-#include "onigposix.h"
 #include "evhtp.h"
 
 static int                  _evhtp_request_parser_start(htparser * p);
@@ -194,9 +193,15 @@ _evhtp_body_hook(evhtp_request_t * request) {
 static evhtp_callback_t *
 _evhtp_callback_hash_find(evhtp_callbacks_t * callbacks, const char * path) {
     evhtp_callback_t * callback;
-    unsigned int       hash  = _evhtp_quick_hash(path);
-    unsigned int       shash = (hash & (callbacks->buckets - 1));
+    unsigned int       hash;
+    unsigned int       shash;
 
+    if (path == NULL) {
+        return NULL;
+    }
+
+    hash     = _evhtp_quick_hash(path);
+    shash    = (hash & (callbacks->buckets - 1));
     callback = callbacks->callbacks[shash];
 
     while (callback != NULL) {
@@ -542,6 +547,60 @@ _evhtp_request_parser_fini(htparser * p) {
     return 0;
 }
 
+static evbuf_t *
+_evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
+    evbuf_t * buf = evbuffer_new();
+
+    if (evbuffer_get_length(request->buffer_out)) {
+        /* add extra headers (like content-length/type) if not already present */
+
+        if (!evhtp_header_find(&request->headers_out, "Content-Length")) {
+            char lstr[23];
+
+            snprintf(lstr, sizeof(lstr), "%" PRIuMAX,
+                     evbuffer_get_length(request->buffer_out));
+
+            evhtp_headers_add_header(&request->headers_out,
+                                     evhtp_header_new("Content-Length", lstr, 0, 1));
+        }
+
+        if (!evhtp_header_find(&request->headers_out, "Content-Type")) {
+            evhtp_headers_add_header(&request->headers_out,
+                                     evhtp_header_new("Content-Type", "text/plain", 0, 0));
+        } else {
+            evhtp_headers_add_header(&request->headers_out,
+                                     evhtp_header_new("Content-Length", "0", 0, 0));
+        }
+    }
+
+    /* add the proper keep-alive type headers based on http version */
+    switch (request->proto) {
+        case EVHTP_PROTO_11:
+            if (request->keepalive == 0) {
+                /* protocol is HTTP/1.1 but client wanted to close */
+                evhtp_headers_add_header(&request->headers_out,
+                                         evhtp_header_new("Connection", "close", 0, 0));
+            }
+            break;
+        case EVHTP_PROTO_10:
+            if (request->keepalive == 1) {
+                /* protocol is HTTP/1.0 and clients wants to keep established */
+                evhtp_headers_add_header(&request->headers_out,
+                                         evhtp_header_new("Connection", "keep-alive", 0, 0));
+            }
+            break;
+        default:
+            break;
+    }
+
+    /* add the status line */
+    evbuffer_add_printf(buf, "HTTP/%d.%d %d DERP\r\n",
+                        htparser_get_major(request->conn->parser),
+                        htparser_get_minor(request->conn->parser), code);
+
+    return buf;
+} /* _evhtp_create_reply */
+
 /**
  * @brief determine if a connection is currently paused
  *
@@ -757,7 +816,7 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
     evhtp_t            * htp = arg;
     evhtp_connection_t * connection;
 
-    if (_evhtp_run_pre_accept(htp, fd, s, sl) != EVHTP_RES_OK) {
+    if (_evhtp_run_pre_accept(htp, fd, s, sl) < 0) {
         return;
     }
 
@@ -774,7 +833,7 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
         return _evhtp_connection_free(connection);
     }
 
-    if (_evhtp_run_post_accept(htp, connection) != EVHTP_RES_OK) {
+    if (_evhtp_run_post_accept(htp, connection) < 0) {
         return _evhtp_connection_free(connection);
     }
 }
@@ -784,14 +843,26 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
  */
 
 evhtp_header_t *
+evhtp_header_new(const char * key, const char * val, char kalloc, char valloc) {
+    return evhtp_kv_new(key, val, kalloc, valloc);
+}
+
+void
+evhtp_headers_add_header(evhtp_headers_t * headers, evhtp_header_t * header) {
+    return evhtp_kvs_add_kv(headers, header);
+}
+
+evhtp_header_t *
 evhtp_header_key_add(evhtp_headers_t * headers, const char * key, char kalloc) {
     evhtp_header_t * header;
 
-    if (!(header = (evhtp_header_t *)evhtp_kv_new(key, NULL, kalloc, 0))) {
+    if (!(header = evhtp_header_new(key, NULL, kalloc, 0))) {
         return NULL;
     }
 
-    TAILQ_INSERT_TAIL(headers, header, next);
+
+    evhtp_headers_add_header(headers, header);
+
     return header;
 }
 
@@ -822,6 +893,7 @@ evhtp_header_find(evhtp_headers_t * headers, const char * key) {
     return NULL;
 }
 
+/* const char * evhtp_kv_find(evhtp_h */
 evhtp_kv_t *
 evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc) {
     evhtp_kv_t * kv;
@@ -842,6 +914,15 @@ evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc) {
     }
 
     return kv;
+}
+
+void
+evhtp_kvs_add_kv(evhtp_kvs_t * kvs, evhtp_kv_t * kv) {
+    if (kvs == NULL || kv == NULL) {
+        return;
+    }
+
+    TAILQ_INSERT_TAIL(kvs, kv, next);
 }
 
 typedef enum {
@@ -1007,6 +1088,17 @@ evhtp_parse_query(const char * query, size_t len) {
 error:
     return NULL;
 }     /* evhtp_parse_query */
+
+void
+evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
+    evhtp_connection_t * c = request->conn;
+    evbuf_t            * reply_buf;
+
+    if (!(reply_buf = _evhtp_create_reply(request, code))) {
+        /* XXX error handling */
+        return;
+    }
+}
 
 int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port) {

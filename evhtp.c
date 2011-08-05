@@ -141,6 +141,49 @@ _evhtp_path_hook(evhtp_request_t * request, evhtp_path_t * path) {
 }
 
 /**
+ * @brief runs the user-defined on_header hook for a request
+ *
+ * once a full key: value header has been parsed, this will call the hook
+ *
+ * @param request the request strucutre
+ * @param header the header structure
+ *
+ * @return EVHTP_RES_OK on success, otherwise something else.
+ */
+static evhtp_res
+_evhtp_header_hook(evhtp_request_t * request, evhtp_header_t * header) {
+    return EVHTP_RES_OK;
+}
+
+/**
+ * @brief runs the user-defined on_Headers hook for a request after all headers
+ *        have been parsed.
+ *
+ * @param request the request structure
+ * @param headers the headers tailq structure
+ *
+ * @return EVHTP_RES_OK on success, otherwise something else.
+ */
+static evhtp_res
+_evhtp_headers_hook(evhtp_request_t * request, evhtp_headers_t * headers) {
+    return EVHTP_RES_OK;
+}
+
+/**
+ * @brief runs the user-defined on_body hook for requests containing a body.
+ *        the data is stored in the request->buffer_in so the user may either
+ *        leave it, or drain upon being called.
+ *
+ * @param request the request strucutre
+ *
+ * @return EVHTP_RES_OK on success, otherwise something else.
+ */
+static evhtp_res
+_evhtp_body_hook(evhtp_request_t * request) {
+    return EVHTP_RES_OK;
+}
+
+/**
  * @brief attempts to find a callback via hashing the path
  *
  * @param callbacks a evhtp_callbacks_t * structure
@@ -225,9 +268,11 @@ _evhtp_request_new(evhtp_connection_t * c) {
         return NULL;
     }
 
-    req->conn   = c;
-    req->htp    = c->htp;
-    req->status = EVHTP_RES_OK;
+    req->conn       = c;
+    req->htp        = c->htp;
+    req->status     = EVHTP_RES_OK;
+    req->buffer_in  = evbuffer_new();
+    req->buffer_out = evbuffer_new();
 
     TAILQ_INIT(&req->headers_in);
     TAILQ_INIT(&req->headers_out);
@@ -242,8 +287,6 @@ _evhtp_uri_new(void) {
     if (!(uri = calloc(sizeof(evhtp_uri_t), 1))) {
         return NULL;
     }
-
-    TAILQ_INIT(&uri->query);
 
     return uri;
 }
@@ -357,6 +400,42 @@ _evhtp_request_parser_args(htparser * p, const char * data, size_t len) {
     evhtp_connection_t * c   = htparser_get_userdata(p);
     evhtp_uri_t        * uri = c->request->uri;
 
+    if (!(uri->query = evhtp_parse_query(data, len))) {
+        c->request->status = EVHTP_RES_ERROR;
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+_evhtp_request_parser_header_key(htparser * p, const char * data, size_t len) {
+    evhtp_connection_t * c     = htparser_get_userdata(p);
+    char               * key_s = strndup(data, len);
+
+    if (evhtp_header_key_add(&c->request->headers_in, key_s, 1) == NULL) {
+        c->request->status = EVHTP_RES_FATAL;
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+_evhtp_request_parser_header_val(htparser * p, const char * data, size_t len) {
+    evhtp_connection_t * c     = htparser_get_userdata(p);
+    char               * val_s = strndup(data, len);
+    evhtp_header_t     * header;
+
+    if ((header = evhtp_header_val_add(&c->request->headers_in, val_s, 1)) == NULL) {
+        c->request->status = EVHTP_RES_FATAL;
+        return -1;
+    }
+
+    if ((c->request->status = _evhtp_header_hook(c->request, header)) != EVHTP_RES_OK) {
+        return -1;
+    }
+
     return 0;
 }
 
@@ -410,7 +489,58 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
     }
 
     return 0;
-} /* _evhtp_request_parser_path */
+}     /* _evhtp_request_parser_path */
+
+static int
+_evhtp_request_parser_headers(htparser * p) {
+    evhtp_connection_t * c = htparser_get_userdata(p);
+    const char         * expect_val;
+
+    c->request->status = _evhtp_headers_hook(c->request, &c->request->headers_in);
+
+    if (c->request->status != EVHTP_RES_OK) {
+        return -1;
+    }
+
+    if (!evhtp_header_find(&c->request->headers_in, "Content-Length")) {
+        return 0;
+    }
+
+    if (!(expect_val = evhtp_header_find(&c->request->headers_in, "Expect"))) {
+        return 0;
+    }
+
+    evbuffer_add_printf(bufferevent_get_output(c->bev),
+                        "HTTP/%d.%d 100 Continue\r\n\r\n",
+                        htparser_get_major(p),
+                        htparser_get_minor(p));
+
+    return 0;
+}
+
+static int
+_evhtp_request_parser_body(htparser * p, const char * data, size_t len) {
+    evhtp_connection_t * c = htparser_get_userdata(p);
+
+    evbuffer_add(c->request->buffer_in, data, len);
+
+    if ((c->request->status = _evhtp_body_hook(c->request)) != EVHTP_RES_OK) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+_evhtp_request_parser_fini(htparser * p) {
+    evhtp_connection_t * c = htparser_get_userdata(p);
+
+    if (c->request->cb) {
+        (c->request->cb)(c->request, c->request->cbarg);
+    }
+
+    return 0;
+}
 
 /**
  * @brief determine if a connection is currently paused
@@ -653,13 +783,48 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
  * PUBLIC FUNCTIONS
  */
 
+evhtp_header_t *
+evhtp_header_key_add(evhtp_headers_t * headers, const char * key, char kalloc) {
+    evhtp_header_t * header;
+
+    if (!(header = (evhtp_header_t *)evhtp_kv_new(key, NULL, kalloc, 0))) {
+        return NULL;
+    }
+
+    TAILQ_INSERT_TAIL(headers, header, next);
+    return header;
+}
+
+evhtp_header_t *
+evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char valloc) {
+    evhtp_header_t * header = TAILQ_LAST(headers, evhtp_headers_s);
+
+    if (header == NULL) {
+        return NULL;
+    }
+
+    header->val      = valloc ? strdup(val) : (char *)val;
+    header->v_heaped = valloc;
+
+    return header;
+}
+
+const char *
+evhtp_header_find(evhtp_headers_t * headers, const char * key) {
+    evhtp_header_t * header;
+
+    TAILQ_FOREACH(header, headers, next) {
+        if (strcasecmp(header->key, key) == 0) {
+            return header->val;
+        }
+    }
+
+    return NULL;
+}
+
 evhtp_kv_t *
 evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc) {
     evhtp_kv_t * kv;
-
-    if (key == NULL || val == NULL) {
-        return NULL;
-    }
 
     if (!(kv = calloc(sizeof(evhtp_kv_t), 1))) {
         return NULL;
@@ -668,8 +833,13 @@ evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc) {
     kv->k_heaped = kalloc;
     kv->v_heaped = valloc;
 
-    kv->key      = kalloc ? strdup(key) : (char *)key;
-    kv->val      = valloc ? strdup(val) : (char *)val;
+    if (key != NULL) {
+        kv->key = kalloc ? strdup(key) : (char *)key;
+    }
+
+    if (val != NULL) {
+        kv->val = valloc ? strdup(val) : (char *)val;
+    }
 
     return kv;
 }
@@ -800,12 +970,11 @@ evhtp_parse_query(const char * query, size_t len) {
 
                         break;
                     default:
-                        /* XXX put char into val buffer */
                         val_buf[val_idx++] = ch;
                         val_buf[val_idx]   = '\0';
 
                         break;
-                } /* switch */
+                }     /* switch */
                 break;
             case s_query_val_hex_1:
                 if (!isalnum(ch) || ispunct(ch)) {
@@ -827,7 +996,7 @@ evhtp_parse_query(const char * query, size_t len) {
                 /* bad state */
                 res = -1;
                 goto error;
-        } /* switch */
+        }     /* switch */
     }
 
     if (key_idx && val_idx) {
@@ -837,7 +1006,7 @@ evhtp_parse_query(const char * query, size_t len) {
     return query_args;
 error:
     return NULL;
-} /* evhtp_parse_query */
+}     /* evhtp_parse_query */
 
 int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port) {

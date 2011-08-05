@@ -259,7 +259,7 @@ struct evhtp_uri_s {
     evhtp_authority_t * authority;
     evhtp_path_t      * path;
     unsigned char     * fragment; /**< data after '#' in uri */
-    evhtp_query_t       query;
+    evhtp_query_t     * query;
     htp_scheme          scheme;   /**< set if a scheme is found */
 };
 
@@ -297,6 +297,8 @@ struct evhtp_request_s {
     evhtp_connection_t * conn;
     evhtp_hooks_t      * hooks;
     evhtp_uri_t        * uri;
+    evbuf_t            * buffer_in;
+    evbuf_t            * buffer_out;
     evhtp_headers_t      headers_in;
     evhtp_headers_t      headers_out;
     evhtp_proto          proto;
@@ -510,6 +512,42 @@ evhtp_kv_t * evhtp_kv_new(const char * key, const char * val, char kalloc, char 
  * @return evhtp_query_t * on success, NULL on error
  */
 evhtp_query_t * evhtp_parse_query(const char * query, size_t len);
+
+
+/**
+ * @brief creates a new evhtp_header_t, sets only the key, and adds to the
+ *        evhtp_headers TAILQ
+ *
+ * @param headers the evhtp_headers_t TAILQ (evhtp_kv_t)
+ * @param key a null terminated string
+ * @param kalloc if 1 the string will be copied, otherwise assigned
+ *
+ * @return an evhtp_header_t pointer or NULL on error
+ */
+evhtp_header_t * evhtp_header_key_add(evhtp_headers_t * headers, const char * key, char kalloc);
+
+
+/**
+ * @brief finds the last header in the headers tailq and adds the value
+ *
+ * @param headers the evhtp_headers_t TAILQ (evhtp_kv_t)
+ * @param val a null terminated string
+ * @param valloc if 1 the string will be copied, otherwise assigned
+ *
+ * @return an evhtp_header_t pointer or NULL on error
+ */
+evhtp_header_t * evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char valloc);
+
+
+/**
+ * @brief finds the value of a key in a evhtp_headers_t structure
+ *
+ * @param headers the evhtp_headers_t tailq
+ * @param key the key to find
+ *
+ * @return the value of the header key if found, NULL if not found.
+ */
+const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
 
 #endif /* __EVHTP__H__ */
 

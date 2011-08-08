@@ -86,6 +86,11 @@ typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get_cb)(evhtp_connection_t *, unsi
 typedef void (*evhtp_ssl_scache_del_cb)(evhtp_t *, unsigned char *, unsigned int len);
 typedef void * (*evhtp_ssl_scache_init_cb)(evhtp_t *);
 
+typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
+typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
+
+#define evhtp_headers_iterator evhtp_kvs_iterator
+
 #define EVHTP_RES_ERROR        0
 #define EVHTP_RES_PAUSE        1
 #define EVHTP_RES_FATAL        2
@@ -303,8 +308,8 @@ struct evhtp_request_s {
     evhtp_uri_t        * uri;
     evbuf_t            * buffer_in;
     evbuf_t            * buffer_out;
-    evhtp_headers_t      headers_in;
-    evhtp_headers_t      headers_out;
+    evhtp_headers_t    * headers_in;
+    evhtp_headers_t    * headers_out;
     evhtp_proto          proto;
     htp_method           method;
     evhtp_res            status;
@@ -444,9 +449,14 @@ evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp
  *
  * @return 0 on success, -1 on error
  */
-int evhtp_set_hook(evhtp_callback_t * hcb, evhtp_hook_type type, void * cb, void * arg);
+int  evhtp_set_hook(evhtp_callback_t * hcb, evhtp_hook_type type, void * cb, void * arg);
 
-int evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port);
+int  evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port);
+
+int  evhtp_use_threads(evhtp_t * htp, int nthreads);
+
+void evhtp_send_reply(evhtp_request_t * request, evhtp_res code);
+
 
 /**
  * @brief creates a new evhtp_callbacks_t structure
@@ -505,7 +515,13 @@ int evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb)
  *
  * @return evhtp_kv_t * on success, NULL on error.
  */
-evhtp_kv_t * evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc);
+evhtp_kv_t  * evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc);
+evhtp_kvs_t * evhtp_kvs_new(void);
+
+void          evhtp_kv_free(evhtp_kv_t * kv);
+void          evhtp_kvs_free(evhtp_kvs_t * kvs);
+
+const char  * evhtp_kv_find(evhtp_kvs_t * kvs, const char * key);
 
 
 /**
@@ -515,6 +531,8 @@ evhtp_kv_t * evhtp_kv_new(const char * key, const char * val, char kalloc, char 
  * @param kv  an evhtp_kv_t structure
  */
 void evhtp_kvs_add_kv(evhtp_kvs_t * kvs, evhtp_kv_t * kv);
+
+int  evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, void * arg);
 
 /**
  * @brief Parses the query portion of the uri into a set of key/values
@@ -583,6 +601,16 @@ void evhtp_headers_add_header(evhtp_headers_t * headers, evhtp_header_t * header
  * @return the value of the header key if found, NULL if not found.
  */
 const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
+
+#define evhtp_header_find        evhtp_kv_find
+#define evhtp_headers_for_each   evhtp_kvs_for_each
+#define evhtp_header_new         evhtp_kv_new
+#define evhtp_header_free        evhtp_kv_free
+#define evhtp_headers_new        evhtp_kvs_new
+#define evhtp_headers_free       evhtp_kvs_free
+#define evhtp_headers_add_header evhtp_kvs_add_kv
+#define evhtp_query_new          evhtp_kvs_new
+#define evhtp_query_free         evhtp_kvs_free
 
 #endif /* __EVHTP__H__ */
 

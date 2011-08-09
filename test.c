@@ -134,11 +134,8 @@ test_bar_cb(evhtp_request_t * req, void * arg ) {
 
 static void
 test_default_cb(evhtp_request_t * req, void * arg ) {
-    struct evbuffer * b = evbuffer_new();
-
-    evbuffer_add_reference(b, "derp", 4, NULL, NULL);
+    evbuffer_add_reference(req->buffer_out, "derp", 4, NULL, NULL);
     evhtp_send_reply(req, EVHTP_RES_OK);
-    evbuffer_free(b);
 }
 
 static evhtp_res

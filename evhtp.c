@@ -1140,8 +1140,8 @@ evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc) {
             char * s  = malloc(sz + 1);
 
             s[sz]   = '\0';
-            memcpy(s, key, sz);
-            kv->key = s;
+            memcpy(s, val, sz);
+            kv->val = s;
         } else {
             kv->val = (char *)val;
         }

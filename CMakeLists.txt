@@ -133,6 +133,6 @@ install (FILES evthr/evthr.h DESTINATION include)
 add_executable(test2 test2.c)
 target_link_libraries(test2 libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
 
-#add_executable(test test.c)
-#target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
+add_executable(test test.c)
+target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
 

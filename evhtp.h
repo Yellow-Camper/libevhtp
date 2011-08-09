@@ -79,8 +79,9 @@ typedef evhtp_res (*evhtp_post_accept_cb)(evhtp_connection_t * conn, void * arg)
 typedef evhtp_res (*evhtp_hook_header_cb)(evhtp_request_t * req, evhtp_header_t * hdr, void * arg);
 typedef evhtp_res (*evhtp_hook_headers_cb)(evhtp_request_t * req, evhtp_headers_t * hdr, void * arg);
 typedef evhtp_res (*evhtp_hook_path_cb)(evhtp_request_t * req, evhtp_path_t * path, void * arg);
-typedef evhtp_res (*evhtp_hook_read_cb)(evhtp_request_t * req, void * data, size_t len);
-typedef evhtp_res (*evhtp_hook_fini_cb)(evhtp_request_t * req, void * arg);
+typedef evhtp_res (*evhtp_hook_read_cb)(evhtp_request_t * req, evbuf_t * buf, void * arg);
+typedef evhtp_res (*evhtp_hook_request_fini_cb)(evhtp_request_t * req, void * arg);
+typedef evhtp_res (*evhtp_hook_connection_fini_cb)(evhtp_connection_t * connection, void * arg);
 
 typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
 typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
@@ -164,12 +165,13 @@ enum evhtp_ssl_scache_type {
  *        during the request processing cycle.
  */
 enum evhtp_hook_type {
-    evhtp_hook_on_header,  /**< type which defines to hook after one header has been parsed */
-    evhtp_hook_on_headers, /**< type which defines to hook after all headers have been parsed */
-    evhtp_hook_on_path,    /**< type which defines to hook once a path has been parsed */
-    evhtp_hook_on_read,    /**< type which defines to hook whenever the parser recieves data in a body */
-    evhtp_hook_on_fini,    /**< type which defines to hook before the request is free'd */
-    evhtp_hook_on_error    /**< type which defines to hook whenever an error occurs */
+    evhtp_hook_on_header,       /**< type which defines to hook after one header has been parsed */
+    evhtp_hook_on_headers,      /**< type which defines to hook after all headers have been parsed */
+    evhtp_hook_on_path,         /**< type which defines to hook once a path has been parsed */
+    evhtp_hook_on_read,         /**< type which defines to hook whenever the parser recieves data in a body */
+    evhtp_hook_on_request_fini, /**< type which defines to hook before the request is free'd */
+    evhtp_hook_on_connection_fini,
+    evhtp_hook_on_error         /**< type which defines to hook whenever an error occurs */
 };
 
 enum evhtp_callback_type {
@@ -301,6 +303,8 @@ struct evhtp_path_s {
     char       * full;            /**< the full path+file (/a/b/c.html) */
     char       * path;            /**< the path (/a/b/) */
     char       * file;            /**< the filename if present (c.html) */
+    char       * match_start;
+    char       * match_end;
     unsigned int matched_soff;    /**< offset of where the uri starts
                                    *   mainly used for regex matching
                                    */
@@ -322,6 +326,7 @@ struct evhtp_request_s {
     htp_method           method;
     evhtp_res            status;
     char                 keepalive;
+    char                 finished;
 
     evhtp_callback_cb cb;
     void            * cbarg;
@@ -341,18 +346,20 @@ struct evhtp_connection_s {
 };
 
 struct evhtp_hooks_s {
-    evhtp_hook_header_cb  on_header;
-    evhtp_hook_headers_cb on_headers;
-    evhtp_hook_path_cb    on_path;
-    evhtp_hook_read_cb    on_read;
-    evhtp_hook_fini_cb    on_fini;
-    evhtp_hook_err_cb     on_error;
+    evhtp_hook_header_cb          on_header;
+    evhtp_hook_headers_cb         on_headers;
+    evhtp_hook_path_cb            on_path;
+    evhtp_hook_read_cb            on_read;
+    evhtp_hook_request_fini_cb    on_request_fini;
+    evhtp_hook_connection_fini_cb on_connection_fini;
+    evhtp_hook_err_cb             on_error;
 
     void * on_header_arg;
     void * on_headers_arg;
     void * on_path_arg;
     void * on_read_arg;
-    void * on_fini_arg;
+    void * on_request_fini_arg;
+    void * on_connection_fini_arg;
     void * on_error_arg;
 };
 
@@ -482,6 +489,7 @@ void evhtp_send_reply(evhtp_request_t * request, evhtp_res code);
  * @return an evhtp_callbacks_t structure
  */
 evhtp_callbacks_t * evhtp_callbacks_new(unsigned int buckets);
+void                evhtp_callbacks_free(evhtp_callbacks_t * callbacks);
 
 
 /**
@@ -504,6 +512,7 @@ evhtp_callbacks_t * evhtp_callbacks_new(unsigned int buckets);
  * @return 0 on success, -1 on error.
  */
 evhtp_callback_t * evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_cb cb, void * arg);
+void               evhtp_callback_free(evhtp_callback_t * callback);
 
 
 /**
@@ -624,5 +633,9 @@ const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
 #define evhtp_query_new          evhtp_kvs_new
 #define evhtp_query_free         evhtp_kvs_free
 
+void evhtp_connection_pause(evhtp_connection_t * connection);
+void evhtp_connection_resume(evhtp_connection_t * connection);
+void evhtp_request_pause(evhtp_request_t * request);
+void evhtp_request_resume(evhtp_request_t * request);
 #endif /* __EVHTP__H__ */
 

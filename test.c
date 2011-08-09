@@ -6,13 +6,6 @@
 #include <errno.h>
 #include <evhtp.h>
 
-static char * chunks[] = {
-    "foo\n",
-    "bar\n",
-    "baz\n",
-    NULL
-};
-
 #ifndef DISABLE_EVTHR
 int                use_threads = 0;
 int                num_threads = 0;
@@ -24,106 +17,108 @@ char             * ssl_ca      = NULL;
 __thread event_t * timer_ev    = NULL;
 __thread int       pause_count = 0;
 
-#if 0
-struct _chunkarg {
-    uint8_t           idx;
-    struct evbuffer * buf;
+struct pauser {
+    event_t         * timer_ev;
+    evhtp_request_t * request;
 };
 
+/* pause testing */
+static void
+resume_request_timer(int sock, short which, void * arg) {
+    struct pauser * pause = arg;
+
+    printf("resume_request_timer()\n");
+
+    evtimer_del(pause->timer_ev);
+    evhtp_request_resume(pause->request);
+}
+
 static evhtp_res
-_send_chunk(evhtp_request_t * req, void * arg) {
-    struct _chunkarg * carg = arg;
+pause_cb(evhtp_request_t * request, evhtp_header_t * header, void * arg) {
+    struct pauser * pause = arg;
+    struct timeval  tv;
 
-    if (chunks[carg->idx] == NULL) {
-        evbuffer_free(carg->buf);
-        free(carg);
-        return EVHTP_RES_DONE;
-    }
+    printf("pause_cb(%p) k=%s, v=%s\n", request->conn, header->key, header->val);
 
-    evbuffer_add_reference(carg->buf, chunks[carg->idx], strlen(chunks[carg->idx]), NULL, NULL);
-    evhtp_send_stream(req, carg->buf);
+    tv.tv_sec  = 1;
+    tv.tv_usec = 100000;
 
-    carg->idx++;
+    evtimer_add(pause->timer_ev, &tv);
+
+    return EVHTP_RES_PAUSE;
+}
+
+static evhtp_res
+resume_cb(evhtp_request_t * request, evhtp_headers_t * headers, void * arg) {
+    struct pauser * pause = arg;
+
+    printf("resume_cb(%p)\n", request->conn);
+    evtimer_del(pause->timer_ev);
+    evhtp_request_resume(request);
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
+free_pause_cb(evhtp_connection_t * connection, void * arg) {
+    struct pauser * pause = arg;
+
+    printf("free_pause_cb(%p)\n", connection);
+
+    evhtp_connection_resume(connection);
+    event_free(pause->timer_ev);
+    free(pause);
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
+pause_init_cb(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
+    struct pauser * pause = malloc(sizeof(struct pauser));
+
+    printf("pause_init_cb(%p)\n", req->conn);
+
+    pause->timer_ev = evtimer_new(req->conn->evbase,
+                                  resume_request_timer, pause);
+    pause->request  = req;
+
+    evhtp_set_hook(&req->hooks, evhtp_hook_on_header, pause_cb, pause);
+    evhtp_set_hook(&req->hooks, evhtp_hook_on_headers, resume_cb, pause);
+    evhtp_set_hook(&req->conn->hooks, evhtp_hook_on_connection_fini, free_pause_cb, pause);
+    //evhtp_set_hook(&req->hooks, evhtp_hook_on_fini, free_pause_cb, pause);
 
     return EVHTP_RES_OK;
 }
 
 static void
-test_streaming(evhtp_request_t * req, void * arg ) {
-    struct _chunkarg * carg = malloc(sizeof(struct _chunkarg));
-
-    carg->idx = 0;
-    carg->buf = evbuffer_new();
-
-    evhtp_send_reply_stream(req, EVHTP_RES_OK, _send_chunk, carg);
+test_pause_cb(evhtp_request_t * request, void * arg) {
+    printf("test_pause_cb()\n");
+    evhtp_request_resume(request);
+    evhtp_send_reply(request, EVHTP_RES_OK);
 }
-
-#endif
 
 static void
 test_regex(evhtp_request_t * req, void * arg) {
-    printf("Derp.\n");
+    evbuffer_add_printf(req->buffer_out,
+                        "start = '%s', end = '%s\n",
+                        req->uri->path->match_start,
+                        req->uri->path->match_end);
+
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
-#if 0
-static void
-test_pause_cb(evhtp_request_t * req, void * arg ) {
-    struct evbuffer * b = evbuffer_new();
-
-    printf("test_pause_cb()\n");
-    evbuffer_add(b, "pause!\n", 7);
-    /* event_free(timer_ev); */
-    evhtp_send_reply(req, EVHTP_RES_OK, "HErP", b);
-    evbuffer_free(b);
-    pause_count = 0;
-    timer_ev    = NULL;
-}
-
-static void
-test_resume_stuff(int sock, short which, void * arg) {
-    evhtp_request_t * req = arg;
-
-    printf("test_resume_stuff()\n");
-
-    evtimer_del(timer_ev);
-    evhtp_request_resume(req);
-}
-
-static evhtp_res
-test_pause_hdr_cb(evhtp_request_t * req, evhtp_hdr_t * hdr, void * arg ) {
-    struct timeval tv;
-
-    if (timer_ev == NULL) {
-        timer_ev = evtimer_new(evhtp_request_get_evbase(req), test_resume_stuff, req);
-    }
-
-    printf("test_pause_hdr_cb() key = %s, val = %s\n",
-           evhtp_hdr_get_key(hdr), evhtp_hdr_get_val(hdr));
-
-
-    tv.tv_sec  = 1;
-    tv.tv_usec = 0;
-
-    if (pause_count++ <= 2) {
-        evtimer_add(timer_ev, &tv);
-        return EVHTP_RES_PAUSE;
-    } else {
-        printf("test_pause_hdr_cb() got enoug...\n");
-    }
-
-    return EVHTP_RES_OK;
-}
-
-#endif
 static void
 test_foo_cb(evhtp_request_t * req, void * arg ) {
-    printf("hi\n");
+    evbuffer_add_reference(req->buffer_out,
+                           "test_foo_cb\n", 12, NULL, NULL);
+
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
 static void
 test_500_cb(evhtp_request_t * req, void * arg ) {
+    evbuffer_add_reference(req->buffer_out,
+                           "test_500_cb\n", 12, NULL, NULL);
+
     evhtp_send_reply(req, EVHTP_RES_SERVERR);
 }
 
@@ -134,51 +129,55 @@ test_bar_cb(evhtp_request_t * req, void * arg ) {
 
 static void
 test_default_cb(evhtp_request_t * req, void * arg ) {
-    evbuffer_add_reference(req->buffer_out, "derp", 4, NULL, NULL);
+    evbuffer_add_reference(req->buffer_out,
+                           "test_default_cb\n", 16, NULL, NULL);
+
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
 static evhtp_res
-print_kv(evhtp_request_t * req, evhtp_header_t * hdr, void * arg ) {
+print_kv(evhtp_request_t * req, evhtp_header_t * hdr, void * arg) {
+    evbuffer_add_printf(req->buffer_out,
+                        "print_kv() key = '%s', val = '%s'\n",
+                        hdr->key, hdr->val);
+
     return EVHTP_RES_OK;
+}
+
+static int
+output_header(evhtp_header_t * header, void * arg) {
+    evbuf_t * buf = arg;
+
+    evbuffer_add_printf(buf, "print_kvs() key = '%s', val = '%s'\n",
+                        header->key, header->val);
+    return 0;
 }
 
 static evhtp_res
 print_kvs(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
+    evhtp_headers_for_each(hdrs, output_header, req->buffer_out);
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
-print_path(evhtp_request_t * req, const char * path, void * arg ) {
-#if 0
-    if (!strncmp(path, "/derp", 5)) {
-        evhtp_set_close_on(req->conn, EVHTP_CLOSE_ON_200);
-    }
-#endif
-
-    return EVHTP_RES_OK;
-}
-
-static evhtp_res
-print_uri(evhtp_request_t * req, const char * uri, void * arg ) {
-    return EVHTP_RES_OK;
-}
-
-static evhtp_res
-print_data(evhtp_request_t * req, const char * data, size_t len, void * arg ) {
-    if (len) {
-        printf("%zu\n", len);
-    }
+print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
+    evbuffer_add_printf(req->buffer_out,
+                        "print_path() full        = '%s'\n"
+                        "             path        = '%s'\n"
+                        "             file        = '%s'\n"
+                        "             match start = '%s'\n"
+                        "             match_end   = '%s'\n",
+                        path->full, path->path, path->file,
+                        path->match_start, path->match_end);
 
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
-inspect_expect(evhtp_request_t * req, const char * expct_str, void * arg ) {
-    if (strcmp(expct_str, "100-continue")) {
-        printf("Inspecting expect failed!\n");
-        return EVHTP_RES_EXPECTFAIL;
-    }
+print_data(evhtp_request_t * req, evbuf_t * buf, void * arg ) {
+    evbuffer_add_printf(req->buffer_out,
+                        "got %zu bytes of data\n",
+                        evbuffer_get_length(buf));
 
     return EVHTP_RES_OK;
 }
@@ -201,7 +200,6 @@ test_pre_accept(int fd, struct sockaddr * sin, int sl, void * arg) {
 
 static evhtp_res
 set_my_connection_handlers(evhtp_connection_t * conn, void * arg ) {
-
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_header, print_kv, "foo");
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_headers, print_kvs, "bar");
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_path, print_path, "baz");
@@ -305,14 +303,14 @@ main(int argc, char ** argv) {
 
     cb_1   = evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
     cb_2   = evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
-    cb_3   = evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
-    cb_4   = evhtp_set_cb(htp, "/500", test_500_cb, "500");
-    cb_6   = evhtp_set_regex_cb(htp, "^/anything/.*", test_regex, NULL);
+    cb_3   = evhtp_set_cb(htp, "/foo/", test_foo_cb, "bar");
+    cb_4   = evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
+    cb_5   = evhtp_set_cb(htp, "/500", test_500_cb, "500");
+    cb_6   = evhtp_set_regex_cb(htp, "^(/anything/).*", test_regex, NULL);
+    cb_7   = evhtp_set_cb(htp, "/pause", test_pause_cb, NULL);
 
-    /* setup a pausing test callback */
-    /* cb_7 = evhtp_set_cb(htp, "/pause", test_pause_cb, NULL); */
-    /* evhtp_set_callback_hook(cb_7, EVHTP_HOOK_HDR_READ, test_pause_hdr_cb, NULL); */
-
+    /* set a callback to pause on each header for cb_7 */
+    evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, NULL);
 
     /* set a callback to set hooks specifically for the cb_6 callback */
     evhtp_set_hook(&cb_6->hooks, evhtp_hook_on_headers, test_regex_hdrs_cb, NULL);

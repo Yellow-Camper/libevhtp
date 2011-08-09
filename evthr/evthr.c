@@ -198,8 +198,6 @@ evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
 
     evthr_inc_backlog(thread);
 
-    memset(&cmd, 0, sizeof(cmd));
-
     cmd.magic = _EVTHR_MAGIC;
     cmd.cb    = cb;
     cmd.args  = arg;

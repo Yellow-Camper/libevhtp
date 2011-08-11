@@ -4,68 +4,84 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
+#include <signal.h>
 #include <evhtp.h>
 
 #ifndef DISABLE_EVTHR
-int                use_threads = 0;
-int                num_threads = 0;
+int      use_threads = 0;
+int      num_threads = 0;
 #endif
-char             * bind_addr   = "0.0.0.0";
-uint16_t           bind_port   = 8081;
-char             * ssl_pem     = NULL;
-char             * ssl_ca      = NULL;
-__thread event_t * timer_ev    = NULL;
-__thread int       pause_count = 0;
+char   * bind_addr   = "0.0.0.0";
+uint16_t bind_port   = 8081;
+char   * ssl_pem     = NULL;
+char   * ssl_ca      = NULL;
 
 struct pauser {
     event_t         * timer_ev;
     evhtp_request_t * request;
+    struct timeval  * tv;
 };
 
 /* pause testing */
 static void
 resume_request_timer(int sock, short which, void * arg) {
-    struct pauser * pause = arg;
+    struct pauser * pause = (struct pauser *)arg;
 
-    printf("resume_request_timer()\n");
+    printf("resume_request_timer(%p) timer_ev = %p\n", pause->request->conn, pause->timer_ev);
+    fflush(stdout);
 
-    evtimer_del(pause->timer_ev);
     evhtp_request_resume(pause->request);
 }
 
 static evhtp_res
 pause_cb(evhtp_request_t * request, evhtp_header_t * header, void * arg) {
-    struct pauser * pause = arg;
-    struct timeval  tv;
+    struct pauser * pause = (struct pauser *)arg;
+    int             s     = rand() % 1000000;
 
-    printf("pause_cb(%p) k=%s, v=%s\n", request->conn, header->key, header->val);
+    printf("pause_cb(%p) pause == %p, timer_ev = %p\n",
+           request->conn, pause, pause->timer_ev);
+    printf("pause_cb(%p) k=%s, v=%s timer_ev = %p\n", request->conn,
+           header->key, header->val, pause->timer_ev);
+    printf("pause_cb(%p) setting to %ld usec sleep timer_ev = %p\n",
+           request->conn, (long int)s, pause->timer_ev);
 
-    tv.tv_sec  = 1;
-    tv.tv_usec = 100000;
+    pause->tv->tv_sec  = 0;
+    pause->tv->tv_usec = (long int)s;
 
-    evtimer_add(pause->timer_ev, &tv);
+    if (evtimer_pending(pause->timer_ev, NULL)) {
+        evtimer_del(pause->timer_ev);
+    }
+
+    evtimer_add(pause->timer_ev, pause->tv);
 
     return EVHTP_RES_PAUSE;
 }
 
 static evhtp_res
 resume_cb(evhtp_request_t * request, evhtp_headers_t * headers, void * arg) {
-    struct pauser * pause = arg;
+    struct pauser * pause = (struct pauser *)arg;
 
-    printf("resume_cb(%p)\n", request->conn);
-    evtimer_del(pause->timer_ev);
+    printf("resume_cb(%p) timer_ev = %p\n", request->conn, pause->timer_ev);
+
     evhtp_request_resume(request);
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
-free_pause_cb(evhtp_connection_t * connection, void * arg) {
-    struct pauser * pause = arg;
+pause_connection_fini(evhtp_connection_t * connection, void * arg) {
+    printf("pause_connection_fini(%p)\n", connection);
 
-    printf("free_pause_cb(%p)\n", connection);
+    return EVHTP_RES_OK;
+}
 
-    evhtp_connection_resume(connection);
+static evhtp_res
+pause_request_fini(evhtp_request_t * request, void * arg) {
+    struct pauser * pause = (struct pauser *)arg;
+
+    printf("pause_request_fini() req=%p, c=%p\n", request, request->conn);
     event_free(pause->timer_ev);
+
+    free(pause->tv);
     free(pause);
 
     return EVHTP_RES_OK;
@@ -73,26 +89,24 @@ free_pause_cb(evhtp_connection_t * connection, void * arg) {
 
 static evhtp_res
 pause_init_cb(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
-    struct pauser * pause = malloc(sizeof(struct pauser));
+    evbase_t      * evbase = arg;
+    struct pauser * pause  = calloc(sizeof(struct pauser), 1);
 
-    printf("pause_init_cb(%p)\n", req->conn);
+    pause->tv       = calloc(sizeof(struct timeval), 1);
 
-    pause->timer_ev = evtimer_new(req->conn->evbase,
-                                  resume_request_timer, pause);
+    pause->timer_ev = evtimer_new(evbase, resume_request_timer, pause);
     pause->request  = req;
 
     evhtp_set_hook(&req->hooks, evhtp_hook_on_header, pause_cb, pause);
-    evhtp_set_hook(&req->hooks, evhtp_hook_on_headers, resume_cb, pause);
-    evhtp_set_hook(&req->conn->hooks, evhtp_hook_on_connection_fini, free_pause_cb, pause);
-    //evhtp_set_hook(&req->hooks, evhtp_hook_on_fini, free_pause_cb, pause);
+    evhtp_set_hook(&req->hooks, evhtp_hook_on_request_fini, pause_request_fini, pause);
+    evhtp_set_hook(&req->conn->hooks, evhtp_hook_on_connection_fini, pause_connection_fini, NULL);
 
     return EVHTP_RES_OK;
 }
 
 static void
 test_pause_cb(evhtp_request_t * request, void * arg) {
-    printf("test_pause_cb()\n");
-    evhtp_request_resume(request);
+    printf("test_pause_cb(%p)\n", request->conn);
     evhtp_send_reply(request, EVHTP_RES_OK);
 }
 
@@ -276,6 +290,11 @@ parse_args(int argc, char ** argv) {
     return 0;
 } /* parse_args */
 
+void
+sigint(int s) {
+    exit(0);
+}
+
 int
 main(int argc, char ** argv) {
     evbase_t         * evbase = NULL;
@@ -292,11 +311,14 @@ main(int argc, char ** argv) {
         exit(1);
     }
 
+    event_enable_debug_mode();
 #ifndef DISABLE_EVTHR
     if (use_threads) {
         evthread_use_pthreads();
     }
 #endif
+
+    srand(time(NULL));
 
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
@@ -310,7 +332,7 @@ main(int argc, char ** argv) {
     cb_7   = evhtp_set_cb(htp, "/pause", test_pause_cb, NULL);
 
     /* set a callback to pause on each header for cb_7 */
-    evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, NULL);
+    evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, evbase);
 
     /* set a callback to set hooks specifically for the cb_6 callback */
     evhtp_set_hook(&cb_6->hooks, evhtp_hook_on_headers, test_regex_hdrs_cb, NULL);
@@ -351,6 +373,8 @@ main(int argc, char ** argv) {
 #endif
 
     evhtp_bind_socket(htp, bind_addr, bind_port);
+
+    signal(SIGINT, sigint);
 
     event_base_loop(evbase, 0);
     return 0;

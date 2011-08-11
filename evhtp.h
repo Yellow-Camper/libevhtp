@@ -325,8 +325,8 @@ struct evhtp_request_s {
     evhtp_proto          proto;
     htp_method           method;
     evhtp_res            status;
-    char                 keepalive;
-    char                 finished;
+    int keepalive;
+    int finished;
 
     evhtp_callback_cb cb;
     void            * cbarg;

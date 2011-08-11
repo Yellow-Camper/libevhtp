@@ -121,7 +121,7 @@ else()
 	set(LIBEVHTP_SOURCES evthr/evthr.c evhtp.c libhtparse/htparse.c)
 endif(DISABLE_EVTHR)
 
-add_library(libevhtp SHARED ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
+add_library(libevhtp STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
 

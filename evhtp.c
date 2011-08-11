@@ -32,9 +32,9 @@ static void                 _evhtp_uri_free(evhtp_uri_t * uri);
 static evhtp_path_t       * _evhtp_path_new(const char * data, size_t len);
 static void                 _evhtp_path_free(evhtp_path_t * path);
 
-#define HOOK_AVAIL(var, hook_name)                (var->hooks ? (var->hooks->hook_name ? : NULL) : NULL)
+#define HOOK_AVAIL(var, hook_name)                (var->hooks && var->hooks->hook_name) /* (var->hooks ? (var->hooks->hook_name ? : NULL) : NULL) */
 #define HOOK_FUNC(var, hook_name)                 (var->hooks->hook_name)
-#define HOOK_ARGS(var, hook_name)                 (var->hooks->hook_name ## _arg)
+#define HOOK_ARGS(var, hook_name)                 var->hooks->hook_name ## _arg
 
 #define HOOK_REQUEST_RUN(request, hook_name, ...) do {                                        \
         if (HOOK_AVAIL(request, hook_name)) {                                                 \
@@ -222,15 +222,14 @@ _evhtp_body_hook(evhtp_request_t * request, evbuf_t * buf) {
 
 static evhtp_res
 _evhtp_request_fini_hook(evhtp_request_t * request) {
-
     if (request->hooks && request->hooks->on_request_fini) {
         return (request->hooks->on_request_fini)(request,
-		request->hooks->on_request_fini_arg);
+                                                 request->hooks->on_request_fini_arg);
     }
 
     if (request->conn->hooks && request->conn->hooks->on_request_fini) {
-	return (request->conn->hooks->on_request_fini)(request,
-		request->conn->hooks->on_request_fini_arg);
+        return (request->conn->hooks->on_request_fini)(request,
+                                                       request->conn->hooks->on_request_fini_arg);
     }
 
     return EVHTP_RES_OK;
@@ -239,8 +238,8 @@ _evhtp_request_fini_hook(evhtp_request_t * request) {
 static evhtp_res
 _evhtp_connection_fini_hook(evhtp_connection_t * connection) {
     if (connection->hooks && connection->hooks->on_connection_fini) {
-	return (connection->hooks->on_connection_fini)(connection, 
-		connection->hooks->on_connection_fini_arg);
+        return (connection->hooks->on_connection_fini)(connection,
+                                                       connection->hooks->on_connection_fini_arg);
     }
 
     return EVHTP_RES_OK;
@@ -366,6 +365,10 @@ _evhtp_request_free(evhtp_request_t * request) {
 
     evhtp_headers_free(request->headers_in);
     evhtp_headers_free(request->headers_out);
+
+    if (request->hooks) {
+        free(request->hooks);
+    }
 
     if (request->buffer_in) {
         evbuffer_free(request->buffer_in);
@@ -657,13 +660,18 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
            (void *)(path->full + path->matched_eoff),
            strlen(path->full) - path->matched_eoff);
 
-    path->match_start  = match_start;
-    path->match_end    = match_end;
+    path->match_start = match_start;
+    path->match_end   = match_end;
 
-    uri->path          = path;
-    uri->scheme        = htparser_get_scheme(p);
+    uri->path         = path;
+    uri->scheme       = htparser_get_scheme(p);
 
-    c->request->hooks  = hooks;
+    if (hooks != NULL) {
+        c->request->hooks = malloc(sizeof(evhtp_hooks_t));
+
+        memcpy(c->request->hooks, hooks, sizeof(evhtp_hooks_t));
+    }
+
     c->request->uri    = uri;
     c->request->cb     = cb;
     c->request->cbarg  = cbarg;
@@ -833,8 +841,6 @@ static void
 _evhtp_connection_resumecb(int fd, short events, void * arg) {
     evhtp_connection_t * c = arg;
 
-    event_del(c->resume_ev);
-
     if (c->request) {
         c->request->status = EVHTP_RES_OK;
     }
@@ -849,14 +855,17 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
     size_t               nread;
     size_t               avail;
 
+    if (c->request) {
+        c->request->status = EVHTP_RES_OK;
+    }
+
     avail = evbuffer_get_length(bufferevent_get_input(bev));
     buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
     nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
 
     if (avail != nread) {
         if (c->request && c->request->status == EVHTP_RES_PAUSE) {
-            bufferevent_disable(bev, EV_READ);
-            evhtp_connection_pause(c);
+            evhtp_request_pause(c->request);
         } else {
             /* XXX error handling */
             _evhtp_connection_free(c);
@@ -908,8 +917,7 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
     }
 #endif
 
-    connection->bev = bufferevent_socket_new(evbase, connection->sock,
-	    BEV_OPT_DEFER_CALLBACKS| BEV_OPT_CLOSE_ON_FREE);
+    connection->bev = bufferevent_socket_new(evbase, connection->sock,BEV_OPT_CLOSE_ON_FREE);
 end:
 
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
@@ -1156,33 +1164,26 @@ _evhtp_ssl_get_scache_ent(evhtp_ssl_t * ssl, unsigned char * sid, int sid_len, i
  */
 void
 evhtp_connection_pause(evhtp_connection_t * c) {
-
-    //if (_evhtp_connection_paused(c)) {
-    //    return;
-    //}
-
-    bufferevent_disable(c->bev, EV_READ);
-    //event_add(c->resume_ev, NULL);
+    if ((bufferevent_get_enabled(c->bev) & EV_READ)) {
+        bufferevent_disable(c->bev, EV_READ);
+    }
 }
 
 void
 evhtp_connection_resume(evhtp_connection_t * c) {
-
-    //if (_evhtp_connection_paused(c)) {
-	bufferevent_enable(c->bev, EV_READ);
+    if (!(bufferevent_get_enabled(c->bev) & EV_READ)) {
+        bufferevent_enable(c->bev, EV_READ);
         event_active(c->resume_ev, EV_WRITE, 1);
-    //}
+    }
 }
 
 void
 evhtp_request_pause(evhtp_request_t * request) {
-    //request->status = EVHTP_RES_PAUSE;
     return evhtp_connection_pause(request->conn);
 }
 
 void
 evhtp_request_resume(evhtp_request_t * request) {
-    //request->status = EVHTP_RES_OK;
     return evhtp_connection_resume(request->conn);
 }
 
@@ -1193,7 +1194,6 @@ evhtp_header_key_add(evhtp_headers_t * headers, const char * key, char kalloc) {
     if (!(header = evhtp_header_new(key, NULL, kalloc, 0))) {
         return NULL;
     }
-
 
     evhtp_headers_add_header(headers, header);
 
@@ -1494,7 +1494,7 @@ query_key:
                 /* bad state */
                 res = -1;
                 goto error;
-        }     /* switch */
+        }       /* switch */
     }
 
     if (key_idx && val_idx) {
@@ -1709,10 +1709,10 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * a
             (*hooks)->on_request_fini     = (evhtp_hook_request_fini_cb)cb;
             (*hooks)->on_request_fini_arg = arg;
             break;
-	case evhtp_hook_on_connection_fini:
-	    (*hooks)->on_connection_fini = (evhtp_hook_connection_fini_cb)cb;
-	    (*hooks)->on_connection_fini_arg = arg;
-	    break;
+        case evhtp_hook_on_connection_fini:
+            (*hooks)->on_connection_fini     = (evhtp_hook_connection_fini_cb)cb;
+            (*hooks)->on_connection_fini_arg = arg;
+            break;
         case evhtp_hook_on_error:
             (*hooks)->on_error     = (evhtp_hook_err_cb)cb;
             (*hooks)->on_error_arg = arg;
@@ -1722,7 +1722,7 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * a
     }     /* switch */
 
     return 0;
-}
+} /* evhtp_set_hook */
 
 evhtp_callback_t *
 evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg) {

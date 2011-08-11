@@ -543,6 +543,12 @@ static int
 _evhtp_request_parser_start(htparser * p) {
     evhtp_connection_t * c = htparser_get_userdata(p);
 
+    if (c->request) {
+        if (c->request->finished == 1) {
+            _evhtp_request_free(c->request);
+        }
+    }
+
     if (!(c->request = _evhtp_request_new(c))) {
         return -1;
     }
@@ -752,10 +758,10 @@ static int
 _evhtp_create_headers(evhtp_header_t * header, void * arg) {
     evbuf_t * buf = arg;
 
-    evbuffer_add(buf, header->key, strlen(header->key));
-    evbuffer_add(buf, ": ", 2);
-    evbuffer_add(buf, header->val, strlen(header->val));
-    evbuffer_add(buf, "\r\n", 2);
+    evbuffer_add_reference(buf, header->key, strlen(header->key), NULL, NULL);
+    evbuffer_add_reference(buf, ": ", 2, NULL, NULL);
+    evbuffer_add_reference(buf, header->val, strlen(header->val), NULL, NULL);
+    evbuffer_add_reference(buf, "\r\n", 2, NULL, NULL);
     return 0;
 }
 
@@ -886,10 +892,10 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
 
     if (c->request->keepalive) {
         _evhtp_request_free(c->request);
+        c->request = NULL;
 
         htparser_init(c->parser);
         htparser_set_userdata(c->parser, c);
-        c->request = NULL;
     } else {
         _evhtp_connection_free(c);
     }
@@ -917,7 +923,9 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
     }
 #endif
 
-    connection->bev = bufferevent_socket_new(evbase, connection->sock,BEV_OPT_CLOSE_ON_FREE);
+    connection->bev = bufferevent_socket_new(evbase,
+                                             connection->sock,
+                                             BEV_OPT_CLOSE_ON_FREE); /* | BEV_OPT_DEFER_CALLBACKS); */
 end:
 
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
@@ -989,6 +997,10 @@ _evhtp_connection_free(evhtp_connection_t * connection) {
         free(connection->hooks);
     }
 
+    if (connection->thread) {
+        evthr_dec_backlog(connection->thread);
+    }
+
     free(connection);
 }
 
@@ -1036,6 +1048,9 @@ _evhtp_run_in_thread(evthr_t * thr, void * arg, void * shared) {
     evhtp_connection_t * connection = arg;
 
     connection->evbase = evthr_get_base(thr);
+    connection->thread = thr;
+
+    evthr_inc_backlog(connection->thread);
 
     if (_evhtp_connection_accept(connection->evbase, connection) < 0) {
         return _evhtp_connection_free(connection);

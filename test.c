@@ -169,7 +169,7 @@ output_header(evhtp_header_t * header, void * arg) {
 
 static evhtp_res
 print_kvs(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
-    evhtp_headers_for_each(hdrs, output_header, req->buffer_out);
+    /* evhtp_headers_for_each(hdrs, output_header, req->buffer_out); */
     return EVHTP_RES_OK;
 }
 
@@ -311,7 +311,6 @@ main(int argc, char ** argv) {
         exit(1);
     }
 
-    event_enable_debug_mode();
 #ifndef DISABLE_EVTHR
     if (use_threads) {
         evthread_use_pthreads();

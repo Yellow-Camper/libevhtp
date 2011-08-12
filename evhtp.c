@@ -1872,9 +1872,6 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         case evhtp_ssl_scache_type_disabled:
             cache_mode = SSL_SESS_CACHE_OFF;
             break;
-        case evhtp_ssl_scache_type_internal:
-            cache_mode = SSL_SESS_CACHE_SERVER;
-            break;
         case evhtp_ssl_scache_type_user:
             cache_mode = SSL_SESS_CACHE_SERVER |
                          SSL_SESS_CACHE_NO_INTERNAL |
@@ -1896,6 +1893,9 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
             get_cb  = _evhtp_ssl_builtin_get;
             del_cb  = _evhtp_ssl_builtin_del;
 #endif
+         case evhtp_ssl_scache_type_internal:
+	 default:
+            cache_mode = SSL_SESS_CACHE_SERVER;
             break;
     } /* switch */
 

@@ -129,6 +129,7 @@ install (TARGETS libevhtp DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
 install (FILES libhtparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
+install (FILES oniguruma/onigposix.h DESTINATION include)
 
 add_executable(test2 test2.c)
 target_link_libraries(test2 libevhtp ${LIBEVHTP_EXTERNAL_LIBS})

@@ -58,16 +58,6 @@ pause_cb(evhtp_request_t * request, evhtp_header_t * header, void * arg) {
 }
 
 static evhtp_res
-resume_cb(evhtp_request_t * request, evhtp_headers_t * headers, void * arg) {
-    struct pauser * pause = (struct pauser *)arg;
-
-    printf("resume_cb(%p) timer_ev = %p\n", request->conn, pause->timer_ev);
-
-    evhtp_request_resume(request);
-    return EVHTP_RES_OK;
-}
-
-static evhtp_res
 pause_connection_fini(evhtp_connection_t * connection, void * arg) {
     printf("pause_connection_fini(%p)\n", connection);
 
@@ -89,7 +79,7 @@ pause_request_fini(evhtp_request_t * request, void * arg) {
 
 static evhtp_res
 pause_init_cb(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
-    evbase_t      * evbase = arg;
+    evbase_t      * evbase = req->conn->evbase;
     struct pauser * pause  = calloc(sizeof(struct pauser), 1);
 
     pause->tv       = calloc(sizeof(struct timeval), 1);
@@ -169,7 +159,7 @@ output_header(evhtp_header_t * header, void * arg) {
 
 static evhtp_res
 print_kvs(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
-    /* evhtp_headers_for_each(hdrs, output_header, req->buffer_out); */
+    evhtp_headers_for_each(hdrs, output_header, req->buffer_out);
     return EVHTP_RES_OK;
 }
 
@@ -325,7 +315,7 @@ main(int argc, char ** argv) {
     cb_7   = evhtp_set_cb(htp, "/pause", test_pause_cb, NULL);
 
     /* set a callback to pause on each header for cb_7 */
-    evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, evbase);
+    evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, NULL);
 
     /* set a callback to set hooks specifically for the cb_6 callback */
     evhtp_set_hook(&cb_6->hooks, evhtp_hook_on_headers, test_regex_hdrs_cb, NULL);

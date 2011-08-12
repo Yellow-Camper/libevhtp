@@ -15,6 +15,7 @@ char   * bind_addr   = "0.0.0.0";
 uint16_t bind_port   = 8081;
 char   * ssl_pem     = NULL;
 char   * ssl_ca      = NULL;
+char   * ssl_capath  = NULL;
 
 struct pauser {
     event_t         * timer_ev;
@@ -223,7 +224,8 @@ const char * help   =
 #endif
 #ifndef DISABLE_SSL
     "  -s <pem> : Enable SSL and PEM       (default: NULL)\n"
-    "  -c <ca>  : CA cert file             (default: NULL\n"
+    "  -c <ca>  : CA cert file             (default: NULL)\n"
+    "  -C <path>: CA Path                  (default: NULL)\n"
 #endif
     "  -r <str> : Document root            (default: .)\n"
     "  -a <str> : Bind Address             (default: 0.0.0.0)\n"
@@ -335,6 +337,7 @@ main(int argc, char ** argv) {
             .pemfile        = ssl_pem,
             .privfile       = ssl_pem,
             .cafile         = ssl_ca,
+            .capath         = ssl_capath,
             .ciphers        = "RC4+RSA:HIGH:+MEDIUM:+LOW",
             .ssl_opts       = SSL_OP_NO_SSLv2,
             .scache_type    = evhtp_ssl_scache_type_builtin,

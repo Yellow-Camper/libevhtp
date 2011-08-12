@@ -1864,9 +1864,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers);
     }
 
-    if (cfg->cafile != NULL) {
-        SSL_CTX_load_verify_locations(htp->ssl_ctx, cfg->cafile, NULL);
-    }
+    SSL_CTX_load_verify_locations(htp->ssl_ctx, cfg->cafile, cfg->capath);
 
     switch (cfg->scache_type) {
         case evhtp_ssl_scache_type_disabled:
@@ -1893,8 +1891,8 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
             get_cb  = _evhtp_ssl_builtin_get;
             del_cb  = _evhtp_ssl_builtin_del;
 #endif
-         case evhtp_ssl_scache_type_internal:
-	 default:
+        case evhtp_ssl_scache_type_internal:
+        default:
             cache_mode = SSL_SESS_CACHE_SERVER;
             break;
     } /* switch */

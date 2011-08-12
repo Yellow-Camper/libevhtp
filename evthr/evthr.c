@@ -25,7 +25,7 @@
 #define __unused__
 #endif
 
-#define _EVTHR_MAGIC 0x4d52
+#define _EVTHR_MAGIC 0x03fb
 
 typedef struct evthr_cmd        evthr_cmd_t;
 typedef struct evthr_pool_slist evthr_pool_slist_t;
@@ -205,7 +205,7 @@ evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
 
     pthread_mutex_lock(thread->rlock);
 
-    if (send(thread->wdr, &cmd, sizeof(evthr_cmd_t), 0) <= 0) {
+    if (send(thread->wdr, &cmd, sizeof(cmd), 0) <= 0) {
         pthread_mutex_unlock(thread->rlock);
         return EVTHR_RES_RETRY;
     }

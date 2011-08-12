@@ -263,6 +263,9 @@ struct evhtp_kv_s {
     char * key;
     char * val;
 
+    size_t klen;
+    size_t vlen;
+
     char k_heaped : 1; /**< set to 1 if the key can be free()'d */
     char v_heaped : 1; /**< set to 1 if the val can be free()'d */
 

@@ -311,12 +311,6 @@ main(int argc, char ** argv) {
         exit(1);
     }
 
-#ifndef DISABLE_EVTHR
-    if (use_threads) {
-        evthread_use_pthreads();
-    }
-#endif
-
     srand(time(NULL));
 
     evbase = event_base_new();

@@ -758,10 +758,10 @@ static int
 _evhtp_create_headers(evhtp_header_t * header, void * arg) {
     evbuf_t * buf = arg;
 
-    evbuffer_add_reference(buf, header->key, strlen(header->key), NULL, NULL);
-    evbuffer_add_reference(buf, ": ", 2, NULL, NULL);
-    evbuffer_add_reference(buf, header->val, strlen(header->val), NULL, NULL);
-    evbuffer_add_reference(buf, "\r\n", 2, NULL, NULL);
+    evbuffer_add(buf, header->key, header->klen);
+    evbuffer_add(buf, ": ", 2);
+    evbuffer_add(buf, header->val, header->vlen);
+    evbuffer_add(buf, "\r\n", 2);
     return 0;
 }
 
@@ -1223,11 +1223,12 @@ evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char valloc) {
         return NULL;
     }
 
+    header->vlen = strlen(val);
+
     if (valloc == 1) {
-        size_t sz = strlen(val);
-        header->val     = malloc(sz + 1);
-        header->val[sz] = '\0';
-        memcpy(header->val, val, sz);
+        header->val = malloc(header->vlen + 1);
+        header->val[header->vlen] = '\0';
+        memcpy(header->val, val, header->vlen);
     } else {
         header->val = (char *)val;
     }
@@ -1255,35 +1256,39 @@ evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc) {
 
     kv->k_heaped = kalloc;
     kv->v_heaped = valloc;
+    kv->klen     = 0;
+    kv->vlen     = 0;
 
     if (key != NULL) {
-        if (kalloc == 1) {
-            size_t sz = strlen(key);
-            char * s  = malloc(sz + 1);
+        kv->klen = strlen(key);
 
-            s[sz]   = '\0';
-            memcpy(s, key, sz);
-            kv->key = s;
+        if (kalloc == 1) {
+            char * s = malloc(kv->klen + 1);
+
+            s[kv->klen] = '\0';
+            memcpy(s, key, kv->klen);
+            kv->key     = s;
         } else {
             kv->key = (char *)key;
         }
     }
 
     if (val != NULL) {
-        if (valloc == 1) {
-            size_t sz = strlen(val);
-            char * s  = malloc(sz + 1);
+        kv->vlen = strlen(val);
 
-            s[sz]   = '\0';
-            memcpy(s, val, sz);
-            kv->val = s;
+        if (valloc == 1) {
+            char * s = malloc(kv->vlen + 1);
+
+            s[kv->vlen] = '\0';
+            memcpy(s, val, kv->vlen);
+            kv->val     = s;
         } else {
             kv->val = (char *)val;
         }
     }
 
     return kv;
-}
+} /* evhtp_kv_new */
 
 void
 evhtp_kv_free(evhtp_kv_t * kv) {

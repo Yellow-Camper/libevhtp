@@ -328,8 +328,8 @@ struct evhtp_request_s {
     evhtp_proto          proto;
     htp_method           method;
     evhtp_res            status;
-    int keepalive;
-    int finished;
+    int                  keepalive;
+    int                  finished;
 
     evhtp_callback_cb cb;
     void            * cbarg;
@@ -370,6 +370,7 @@ struct evhtp_ssl_cfg_s {
     char                * pemfile;
     char                * privfile;
     char                * cafile;
+    char                * capath;
     char                * ciphers;
     long                  ssl_opts;
     evhtp_ssl_scache_type scache_type;

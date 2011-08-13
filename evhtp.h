@@ -375,7 +375,7 @@ struct evhtp_ssl_cfg_s {
     char                * ciphers;
     long                  ssl_opts;
     long                  verify_peer;
-    long                  max_verify_depth;
+    long                  verify_depth;
     void                * x509_verify_cb;
     void                * x509_check_issued_cb;
     long                  store_flags;

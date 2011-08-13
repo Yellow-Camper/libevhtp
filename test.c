@@ -213,6 +213,17 @@ set_my_connection_handlers(evhtp_connection_t * conn, void * arg ) {
     return EVHTP_RES_OK;
 }
 
+#ifndef DISABLE_SSL
+static int
+dummy_ssl_verify_callback(int ok, X509_STORE_CTX * x509_store) {
+    return 1;
+}
+static int
+dummy_check_issued_cb(X509_STORE_CTX *ctx,X509 *x,X509 *issuer) {
+    return 1;
+}
+#endif
+
 const char * optstr = "htn:a:p:r:s:c:";
 
 const char * help   =
@@ -334,18 +345,22 @@ main(int argc, char ** argv) {
 #ifndef DISABLE_SSL
     if (ssl_pem != NULL) {
         evhtp_ssl_cfg_t scfg = {
-            .pemfile        = ssl_pem,
-            .privfile       = ssl_pem,
-            .cafile         = ssl_ca,
-            .capath         = ssl_capath,
-            .ciphers        = "RC4+RSA:HIGH:+MEDIUM:+LOW",
-            .ssl_opts       = SSL_OP_NO_SSLv2,
-            .scache_type    = evhtp_ssl_scache_type_builtin,
-            .scache_timeout = 1024,
-            .scache_init    = NULL,
-            .scache_add     = NULL,
-            .scache_get     = NULL,
-            .scache_del     = NULL,
+            .pemfile              = ssl_pem,
+            .privfile             = ssl_pem,
+            .cafile               = ssl_ca,
+            .capath               = ssl_capath,
+            .ciphers              = "RC4+RSA:HIGH:+MEDIUM:+LOW",
+            .ssl_opts             = SSL_OP_NO_SSLv2,
+            .verify_peer          = SSL_VERIFY_PEER,
+            .verify_depth         = 42,
+            .x509_verify_cb       = dummy_ssl_verify_callback,
+            .x509_check_issued_cb = dummy_check_issued_cb,
+            .scache_type          = evhtp_ssl_scache_type_builtin,
+            .scache_timeout       = 1024,
+            .scache_init          = NULL,
+            .scache_add           = NULL,
+            .scache_get           = NULL,
+            .scache_del           = NULL,
         };
 
         evhtp_ssl_init(htp, &scfg);

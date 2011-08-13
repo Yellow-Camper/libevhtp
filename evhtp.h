@@ -143,6 +143,7 @@ typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_UNSUPPORTED  415
 #define EVHTP_RES_RANGENOTSC   416
 #define EVHTP_RES_EXPECTFAIL   417
+#define EVHTP_RES_IAMATEAPOT   418
 
 #define EVHTP_RES_500          500
 #define EVHTP_RES_SERVERR      500
@@ -373,6 +374,11 @@ struct evhtp_ssl_cfg_s {
     char                * capath;
     char                * ciphers;
     long                  ssl_opts;
+    long                  verify_peer;
+    long                  max_verify_depth;
+    void                * x509_verify_cb;
+    void                * x509_check_issued_cb;
+    long                  store_flags;
     evhtp_ssl_scache_type scache_type;
     long                  scache_timeout;
     evhtp_ssl_scache_init scache_init;

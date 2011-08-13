@@ -220,6 +220,14 @@ _evhtp_body_hook(evhtp_request_t * request, evbuf_t * buf) {
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief runs the user-defined hook called just prior to a request been
+ *        free()'d
+ *
+ * @param request therequest structure
+ *
+ * @return EVHTP_RES_OK on success, otherwise treated as an error
+ */
 static evhtp_res
 _evhtp_request_fini_hook(evhtp_request_t * request) {
     if (request->hooks && request->hooks->on_request_fini) {
@@ -235,6 +243,14 @@ _evhtp_request_fini_hook(evhtp_request_t * request) {
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief runs the user-definedhook called just prior to a connection being
+ *        closed
+ *
+ * @param connection the connection structure
+ *
+ * @return EVHTP_RES_OK on success, but pretty much ignored in any case.
+ */
 static evhtp_res
 _evhtp_connection_fini_hook(evhtp_connection_t * connection) {
     if (connection->hooks && connection->hooks->on_connection_fini) {
@@ -280,6 +296,19 @@ _evhtp_callback_hash_find(evhtp_callbacks_t * callbacks, const char * path) {
     return NULL;
 }
 
+/**
+ * @brief iterate through a tailq of callback hooks defined as a regex until a
+ *        match is found.
+ *
+ * @param callbacks a evhtp_callbacks_t structure
+ * @param path a string containing a path to be matched against
+ * @param soff a pointer to an integer which will be filled with the start
+ *             offset in the string if matched.
+ * @param eoff a pointer to an integer which will be filled with the end
+ *             offset in the string if matched
+ *
+ * @return an evhtp_callback_t function on success, otherwise NULL
+ */
 static evhtp_callback_t *
 _evhtp_callback_regex_find(evhtp_callbacks_t * callbacks, const char * path,
                            unsigned int * soff, unsigned int * eoff) {
@@ -307,6 +336,16 @@ _evhtp_callback_regex_find(evhtp_callbacks_t * callbacks, const char * path,
     return NULL;
 }
 
+/**
+ * @brief A wrapper around both hash and regex hook lookups
+ *
+ * @param callbacks
+ * @param path
+ * @param start_offset
+ * @param end_offset
+ *
+ * @return evhtp_callback_t on success, otherwise NULL
+ */
 static evhtp_callback_t *
 _evhtp_callback_find(evhtp_callbacks_t * callbacks,
                      const char        * path,
@@ -332,6 +371,13 @@ _evhtp_callback_find(evhtp_callbacks_t * callbacks,
     return NULL;
 }
 
+/**
+ * @brief Creates a new evhtp_request_t
+ *
+ * @param c
+ *
+ * @return evhtp_request_t structure on success, otherwise NULL
+ */
 static evhtp_request_t *
 _evhtp_request_new(evhtp_connection_t * c) {
     evhtp_request_t * req;
@@ -354,6 +400,11 @@ _evhtp_request_new(evhtp_connection_t * c) {
     return req;
 }
 
+/**
+ * @brief frees all data in an evhtp_request_t along with calling finished hooks
+ *
+ * @param request the request structure
+ */
 static void
 _evhtp_request_free(evhtp_request_t * request) {
     if (request == NULL) {
@@ -827,22 +878,6 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
     return buf;
 } /* _evhtp_create_reply */
 
-/**
- * @brief determine if a connection is currently paused
- *
- * @param c a evhtp_connection_t * structure
- *
- * @return 1 if paused, 0 if not paused
- */
-static int
-_evhtp_connection_paused(evhtp_connection_t * c) {
-    if (event_pending(c->resume_ev, EV_WRITE, NULL)) {
-        return 1;
-    }
-
-    return 0;
-}
-
 static void
 _evhtp_connection_resumecb(int fd, short events, void * arg) {
     evhtp_connection_t * c = arg;
@@ -873,7 +908,6 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
         if (c->request && c->request->status == EVHTP_RES_PAUSE) {
             evhtp_request_pause(c->request);
         } else {
-            /* XXX error handling */
             _evhtp_connection_free(c);
             return;
         }
@@ -895,9 +929,9 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
         c->request = NULL;
 
         htparser_init(c->parser);
-        htparser_set_userdata(c->parser, c);
+        return htparser_set_userdata(c->parser, c);
     } else {
-        _evhtp_connection_free(c);
+        return _evhtp_connection_free(c);
     }
 
     return;
@@ -1532,8 +1566,7 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
     evbuf_t            * reply_buf;
 
     if (!(reply_buf = _evhtp_create_reply(request, code))) {
-        /* XXX error handling */
-        return;
+        return _evhtp_connection_free(request->conn);
     }
 
     bufferevent_write_buffer(c->bev, reply_buf);
@@ -1865,6 +1898,20 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
     }
 
     SSL_CTX_load_verify_locations(htp->ssl_ctx, cfg->cafile, cfg->capath);
+    X509_STORE_set_flags(SSL_CTX_get_cert_store(htp->ssl_ctx), cfg->store_flags);
+
+    if (cfg->x509_verify_cb != NULL) {
+        SSL_CTX_set_verify(htp->ssl_ctx, cfg->verify_peer, cfg->x509_verify_cb);
+    }
+
+    if (cfg->x509_check_issued_cb != NULL) {
+        htp->ssl_ctx->cert_store->check_issued = cfg->x509_check_issued_cb;
+    }
+
+    if (cfg->verify_depth) {
+        SSL_CTX_set_verify_depth(htp->ssl_ctx, cfg->verify_depth);
+    }
+
 
     switch (cfg->scache_type) {
         case evhtp_ssl_scache_type_disabled:

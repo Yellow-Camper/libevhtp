@@ -1875,7 +1875,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         htp->ssl_ctx->cert_store->check_issued = cfg->x509_check_issued_cb;
     }
 
-    if (cfg->max_verify_depth) {
+    if (cfg->verify_depth) {
         SSL_CTX_set_verify_depth(htp->ssl_ctx, cfg->verify_depth);
     }
 

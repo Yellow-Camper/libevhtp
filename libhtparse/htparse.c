@@ -1202,6 +1202,7 @@ hdrline_start:
                 res = 0;
 
                 switch (ch) {
+		    char * m = p->buf;
                     case CR:
                         res = hook_hdr_val_run(p, hooks, p->buf, p->buf_idx);
 
@@ -1227,8 +1228,7 @@ hdrline_start:
                                         }
                                         break;
                                     case 'c':
-                                        if (_str5cmp(p->buf,
-                                                     'c', 'l', 'o', 's', 'e')) {
+                                        if (_str5cmp(p->buf, 'c', 'l', 'o', 's', 'e')) {
                                             p->flags |= parser_flag_connection_close;
                                         }
                                         break;

@@ -40,7 +40,6 @@ TAILQ_HEAD(evthr_pool_slist, evthr);
 
 struct evthr_pool {
     int                nthreads;
-    int                nprocs;
     evthr_pool_slist_t threads;
 };
 
@@ -433,9 +432,7 @@ evthr_pool_new(int nthreads, void * shared) {
 
     for (i = 0; i < nthreads; i++) {
         evthr_t * thread;
-        int       proc = i % pool->nprocs;
-
-        if (!(thread = evthr_new(shared, proc))) {
+        if (!(thread = evthr_new(shared, 0))) {
             evthr_pool_free(pool);
             return NULL;
         }

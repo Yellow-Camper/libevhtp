@@ -47,7 +47,7 @@ pause_cb(evhtp_request_t * request, evhtp_header_t * header, void * arg) {
            request->conn, (long int)s, pause->timer_ev);
 
     pause->tv->tv_sec  = 0;
-    pause->tv->tv_usec = (long int)s;
+    pause->tv->tv_usec = s;
 
     if (evtimer_pending(pause->timer_ev, NULL)) {
         evtimer_del(pause->timer_ev);
@@ -316,7 +316,7 @@ main(int argc, char ** argv) {
         exit(1);
     }
 
-    srand(time(NULL));
+    srand((unsigned)time(NULL));
 
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
@@ -347,22 +347,22 @@ main(int argc, char ** argv) {
 #ifndef DISABLE_SSL
     if (ssl_pem != NULL) {
         evhtp_ssl_cfg_t scfg = {
-            .pemfile              = ssl_pem,
-            .privfile             = ssl_pem,
-            .cafile               = ssl_ca,
-            .capath               = ssl_capath,
-            .ciphers              = "RC4+RSA:HIGH:+MEDIUM:+LOW",
-            .ssl_opts             = SSL_OP_NO_SSLv2,
-            .verify_peer          = SSL_VERIFY_PEER,
-            .verify_depth         = 42,
-            .x509_verify_cb       = dummy_ssl_verify_callback,
-            .x509_check_issued_cb = dummy_check_issued_cb,
-            .scache_type          = evhtp_ssl_scache_type_builtin,
-            .scache_timeout       = 1024,
-            .scache_init          = NULL,
-            .scache_add           = NULL,
-            .scache_get           = NULL,
-            .scache_del           = NULL,
+            .pemfile            = ssl_pem,
+            .privfile           = ssl_pem,
+            .cafile             = ssl_ca,
+            .capath             = ssl_capath,
+            .ciphers            = "RC4+RSA:HIGH:+MEDIUM:+LOW",
+            .ssl_opts           = SSL_OP_NO_SSLv2,
+            .verify_peer        = SSL_VERIFY_PEER,
+            .verify_depth       = 42,
+            .x509_verify_cb     = dummy_ssl_verify_callback,
+            .x509_chk_issued_cb = dummy_check_issued_cb,
+            .scache_type        = evhtp_ssl_scache_type_builtin,
+            .scache_timeout     = 1024,
+            .scache_init        = NULL,
+            .scache_add         = NULL,
+            .scache_get         = NULL,
+            .scache_del         = NULL,
         };
 
         evhtp_ssl_init(htp, &scfg);

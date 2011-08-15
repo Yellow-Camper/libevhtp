@@ -86,6 +86,9 @@ typedef evhtp_res (*evhtp_hook_connection_fini_cb)(evhtp_connection_t * connecti
 typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
 typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
 
+typedef int (*evhtp_ssl_verify_cb)(int pre_verify, X509_STORE_CTX * ctx);
+typedef int (*evhtp_ssl_chk_issued_cb)(X509_STORE_CTX * ctx, X509 * x, X509 * issuer);
+
 typedef int (*evhtp_ssl_scache_add)(evhtp_connection_t * connection, unsigned char * sid, int sid_len, evhtp_ssl_sess_t * sess);
 typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid_len);
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
@@ -368,24 +371,24 @@ struct evhtp_hooks_s {
 };
 
 struct evhtp_ssl_cfg_s {
-    char                * pemfile;
-    char                * privfile;
-    char                * cafile;
-    char                * capath;
-    char                * ciphers;
-    long                  ssl_opts;
-    long                  verify_peer;
-    long                  verify_depth;
-    void                * x509_verify_cb;
-    void                * x509_check_issued_cb;
-    long                  store_flags;
-    evhtp_ssl_scache_type scache_type;
-    long                  scache_timeout;
-    evhtp_ssl_scache_init scache_init;
-    evhtp_ssl_scache_add  scache_add;
-    evhtp_ssl_scache_get  scache_get;
-    evhtp_ssl_scache_del  scache_del;
-    void                * args;
+    char                  * pemfile;
+    char                  * privfile;
+    char                  * cafile;
+    char                  * capath;
+    char                  * ciphers;
+    long                    ssl_opts;
+    int                     verify_peer;
+    int                     verify_depth;
+    evhtp_ssl_verify_cb     x509_verify_cb;
+    evhtp_ssl_chk_issued_cb x509_chk_issued_cb;
+    long                    store_flags;
+    evhtp_ssl_scache_type   scache_type;
+    long                    scache_timeout;
+    evhtp_ssl_scache_init   scache_init;
+    evhtp_ssl_scache_add    scache_add;
+    evhtp_ssl_scache_get    scache_get;
+    evhtp_ssl_scache_del    scache_del;
+    void                  * args;
 };
 
 /**

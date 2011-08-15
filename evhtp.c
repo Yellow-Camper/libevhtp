@@ -5,10 +5,12 @@
 #include <errno.h>
 #include <signal.h>
 #include <ctype.h>
+#include <strings.h>
 #include <inttypes.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <alloca.h>
 
 #include "evhtp.h"
 
@@ -358,7 +360,7 @@ _evhtp_callback_find(evhtp_callbacks_t * callbacks,
 
     if ((callback = _evhtp_callback_hash_find(callbacks, path)) != NULL) {
         *start_offset = 0;
-        *end_offset   = strlen(path);
+        *end_offset   = (unsigned int)strlen(path);
         return callback;
     }
 
@@ -690,7 +692,7 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
         cbarg = c->htp->defaults.cbarg;
 
         path->matched_soff = 0;
-        path->matched_soff = strlen(path->full);
+        path->matched_soff = (unsigned int)strlen(path->full);
     }
 
     match_start = calloc(strlen(path->full) + 1, 1);
@@ -1909,8 +1911,8 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         SSL_CTX_set_verify(htp->ssl_ctx, cfg->verify_peer, cfg->x509_verify_cb);
     }
 
-    if (cfg->x509_check_issued_cb != NULL) {
-        htp->ssl_ctx->cert_store->check_issued = cfg->x509_check_issued_cb;
+    if (cfg->x509_chk_issued_cb != NULL) {
+        htp->ssl_ctx->cert_store->check_issued = cfg->x509_chk_issued_cb;
     }
 
     if (cfg->verify_depth) {

@@ -40,14 +40,14 @@ pause_cb(evhtp_request_t * request, evhtp_header_t * header, void * arg) {
     int             s     = rand() % 1000000;
 
     printf("pause_cb(%p) pause == %p, timer_ev = %p\n",
-           request->conn, pause, pause->timer_ev);
+        request->conn, pause, pause->timer_ev);
     printf("pause_cb(%p) k=%s, v=%s timer_ev = %p\n", request->conn,
-           header->key, header->val, pause->timer_ev);
+        header->key, header->val, pause->timer_ev);
     printf("pause_cb(%p) setting to %ld usec sleep timer_ev = %p\n",
-           request->conn, (long int)s, pause->timer_ev);
+        request->conn, (long int)s, pause->timer_ev);
 
     pause->tv->tv_sec  = 0;
-    pause->tv->tv_usec = (long int)s;
+    pause->tv->tv_usec = s;
 
     if (evtimer_pending(pause->timer_ev, NULL)) {
         evtimer_del(pause->timer_ev);
@@ -104,9 +104,9 @@ test_pause_cb(evhtp_request_t * request, void * arg) {
 static void
 test_regex(evhtp_request_t * req, void * arg) {
     evbuffer_add_printf(req->buffer_out,
-                        "start = '%s', end = '%s\n",
-                        req->uri->path->match_start,
-                        req->uri->path->match_end);
+        "start = '%s', end = '%s\n",
+        req->uri->path->match_start,
+        req->uri->path->match_end);
 
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
@@ -114,7 +114,7 @@ test_regex(evhtp_request_t * req, void * arg) {
 static void
 test_foo_cb(evhtp_request_t * req, void * arg ) {
     evbuffer_add_reference(req->buffer_out,
-                           "test_foo_cb\n", 12, NULL, NULL);
+        "test_foo_cb\n", 12, NULL, NULL);
 
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
@@ -122,7 +122,7 @@ test_foo_cb(evhtp_request_t * req, void * arg ) {
 static void
 test_500_cb(evhtp_request_t * req, void * arg ) {
     evbuffer_add_reference(req->buffer_out,
-                           "test_500_cb\n", 12, NULL, NULL);
+        "test_500_cb\n", 12, NULL, NULL);
 
     evhtp_send_reply(req, EVHTP_RES_SERVERR);
 }
@@ -135,7 +135,7 @@ test_bar_cb(evhtp_request_t * req, void * arg ) {
 static void
 test_default_cb(evhtp_request_t * req, void * arg ) {
     evbuffer_add_reference(req->buffer_out,
-                           "test_default_cb\n", 16, NULL, NULL);
+        "test_default_cb\n", 16, NULL, NULL);
 
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
@@ -143,8 +143,8 @@ test_default_cb(evhtp_request_t * req, void * arg ) {
 static evhtp_res
 print_kv(evhtp_request_t * req, evhtp_header_t * hdr, void * arg) {
     evbuffer_add_printf(req->buffer_out,
-                        "print_kv() key = '%s', val = '%s'\n",
-                        hdr->key, hdr->val);
+        "print_kv() key = '%s', val = '%s'\n",
+        hdr->key, hdr->val);
 
     return EVHTP_RES_OK;
 }
@@ -154,7 +154,7 @@ output_header(evhtp_header_t * header, void * arg) {
     evbuf_t * buf = arg;
 
     evbuffer_add_printf(buf, "print_kvs() key = '%s', val = '%s'\n",
-                        header->key, header->val);
+        header->key, header->val);
     return 0;
 }
 
@@ -167,13 +167,13 @@ print_kvs(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
 static evhtp_res
 print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
     evbuffer_add_printf(req->buffer_out,
-                        "print_path() full        = '%s'\n"
-                        "             path        = '%s'\n"
-                        "             file        = '%s'\n"
-                        "             match start = '%s'\n"
-                        "             match_end   = '%s'\n",
-                        path->full, path->path, path->file,
-                        path->match_start, path->match_end);
+        "print_path() full        = '%s'\n"
+        "             path        = '%s'\n"
+        "             file        = '%s'\n"
+        "             match start = '%s'\n"
+        "             match_end   = '%s'\n",
+        path->full, path->path, path->file,
+        path->match_start, path->match_end);
 
     return EVHTP_RES_OK;
 }
@@ -181,8 +181,8 @@ print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
 static evhtp_res
 print_data(evhtp_request_t * req, evbuf_t * buf, void * arg ) {
     evbuffer_add_printf(req->buffer_out,
-                        "got %zu bytes of data\n",
-                        evbuffer_get_length(buf));
+        "got %zu bytes of data\n",
+        evbuffer_get_length(buf));
 
     return EVHTP_RES_OK;
 }
@@ -259,10 +259,10 @@ parse_args(int argc, char ** argv) {
                 printf("Usage: %s [opts]\n%s", argv[0], help);
                 return -1;
             case 'a':
-                bind_addr = strdup(optarg);
+                bind_addr   = strdup(optarg);
                 break;
             case 'p':
-                bind_port = atoi(optarg);
+                bind_port   = atoi(optarg);
                 break;
 #ifndef DISABLE_EVTHR
             case 't':
@@ -274,10 +274,10 @@ parse_args(int argc, char ** argv) {
 #endif
 #ifndef DISABLE_SSL
             case 's':
-                ssl_pem = strdup(optarg);
+                ssl_pem     = strdup(optarg);
                 break;
             case 'c':
-                ssl_ca = strdup(optarg);
+                ssl_ca      = strdup(optarg);
                 break;
 #endif
             default:
@@ -316,7 +316,7 @@ main(int argc, char ** argv) {
         exit(1);
     }
 
-    srand(time(NULL));
+    srand((unsigned)time(NULL));
 
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
@@ -347,22 +347,22 @@ main(int argc, char ** argv) {
 #ifndef DISABLE_SSL
     if (ssl_pem != NULL) {
         evhtp_ssl_cfg_t scfg = {
-            .pemfile              = ssl_pem,
-            .privfile             = ssl_pem,
-            .cafile               = ssl_ca,
-            .capath               = ssl_capath,
-            .ciphers              = "RC4+RSA:HIGH:+MEDIUM:+LOW",
-            .ssl_opts             = SSL_OP_NO_SSLv2,
-            .verify_peer          = SSL_VERIFY_PEER,
-            .verify_depth         = 42,
-            .x509_verify_cb       = dummy_ssl_verify_callback,
-            .x509_check_issued_cb = dummy_check_issued_cb,
-            .scache_type          = evhtp_ssl_scache_type_builtin,
-            .scache_timeout       = 1024,
-            .scache_init          = NULL,
-            .scache_add           = NULL,
-            .scache_get           = NULL,
-            .scache_del           = NULL,
+            .pemfile            = ssl_pem,
+            .privfile           = ssl_pem,
+            .cafile             = ssl_ca,
+            .capath             = ssl_capath,
+            .ciphers            = "RC4+RSA:HIGH:+MEDIUM:+LOW",
+            .ssl_opts           = SSL_OP_NO_SSLv2,
+            .verify_peer        = SSL_VERIFY_PEER,
+            .verify_depth       = 42,
+            .x509_verify_cb     = dummy_ssl_verify_callback,
+            .x509_chk_issued_cb = dummy_check_issued_cb,
+            .scache_type        = evhtp_ssl_scache_type_builtin,
+            .scache_timeout     = 1024,
+            .scache_init        = NULL,
+            .scache_add         = NULL,
+            .scache_get         = NULL,
+            .scache_del         = NULL,
         };
 
         evhtp_ssl_init(htp, &scfg);

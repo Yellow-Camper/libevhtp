@@ -8,10 +8,16 @@ typedef struct htparse_hooks htparse_hooks;
 
 typedef enum htp_scheme      htp_scheme;
 typedef enum htp_method      htp_method;
+typedef enum htp_type        htp_type;
 typedef enum htpparse_error  htpparse_error;
 
 typedef int (*htparse_hook)(htparser *);
 typedef int (*htparse_data_hook)(htparser *, const char *, size_t);
+
+enum htp_type {
+    htp_type_request = 0,
+    htp_type_response
+};
 
 enum htp_scheme {
     htp_scheme_none = 0,
@@ -60,23 +66,19 @@ enum htpparse_error {
 struct htparse_hooks {
     htparse_hook      on_msg_begin;
     htparse_data_hook method;
-
     htparse_data_hook scheme;       /* called if scheme is found */
     htparse_data_hook host;         /* called if a host was in the request scheme */
     htparse_data_hook port;         /* called if a port was in the request scheme */
     htparse_data_hook path;         /* only the path of the uri */
     htparse_data_hook args;         /* only the arguments of the uri */
     htparse_data_hook uri;          /* the entire uri including path/args */
-
     htparse_hook      on_hdrs_begin;
     htparse_data_hook hdr_key;
     htparse_data_hook hdr_val;
     htparse_hook      on_hdrs_complete;
-
     htparse_hook      on_new_chunk; /* called after parsed chunk octet */
     htparse_data_hook body;
-
-    htparse_hook on_msg_complete;
+    htparse_hook      on_msg_complete;
 };
 
 
@@ -92,7 +94,7 @@ htpparse_error htparser_get_error(htparser *);
 const char   * htparser_get_strerror(htparser *);
 void         * htparser_get_userdata(htparser *);
 void           htparser_set_userdata(htparser *, void *);
-void           htparser_init(htparser *);
+void           htparser_init(htparser *, htp_type);
 htparser     * htparser_new(void);
 
 #endif

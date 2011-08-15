@@ -968,7 +968,7 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
         _evhtp_request_free(c->request);
         c->request = NULL;
 
-        htparser_init(c->parser);
+        htparser_init(c->parser, htp_type_request);
         return htparser_set_userdata(c->parser, c);
     } else {
         return _evhtp_connection_free(c);
@@ -1040,7 +1040,7 @@ _evhtp_connection_new(evhtp_t * htp, int sock) {
     connection->htp       = htp;
     connection->parser    = htparser_new();
 
-    htparser_init(connection->parser);
+    htparser_init(connection->parser, htp_type_request);
     htparser_set_userdata(connection->parser, connection);
 
     return connection;

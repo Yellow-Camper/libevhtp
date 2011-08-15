@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 2.8)
 project(reason)
 
@@ -13,8 +12,10 @@ INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFiles)
 INCLUDE (CheckTypeSize)
 
-CHECK_FUNCTION_EXISTS(alloca C_ALLOCA)
-CHECK_FUNCTION_EXISTS(memcmp HAVE_MEMCMP)
+CHECK_FUNCTION_EXISTS(alloca  C_ALLOCA)
+CHECK_FUNCTION_EXISTS(memcmp  HAVE_MEMCMP)
+CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
+CHECK_FUNCTION_EXISTS(strnlen HAVE_STRNLEN)
 
 CHECK_INCLUDE_FILES(alloca.h HAVE_ALLOCA_H)
 CHECK_INCLUDE_FILES(strings.h HAVE_STRINGS_H)
@@ -78,15 +79,18 @@ set(ONIG_SOURCES
 	oniguruma/enc/cp1251.c
 )
 
-#add_library(libonig STATIC ${ONIG_SOURCES})
-#set_target_properties(libonig PROPERTIES OUTPUT_NAME "onig")
+if (NOT HAVE_STRNDUP)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_STRNDUP")
+endif(NOT HAVE_STRNDUP)
 
-OPTION(DISABLE_SSL "Disable ssl support" OFF)
+if (NOT HAVE_STRNLEN) 
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_STRNLEN")
+endif(NOT HAVE_STRNLEN)
+
+OPTION(DISABLE_SSL   "Disable ssl support"      OFF)
 OPTION(DISABLE_EVTHR "Disable evthread support" OFF)
-OPTION(EXPAND_HTTP_PARSER_MACROS "Enable pre-processor expansion" OFF)
 
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
-SET(EXPAND_HTTP_PARSER_MACROS ON)
 
 include(BaseConfig)
 
@@ -96,6 +100,7 @@ message("Dbg CFLAGS: ${CMAKE_C_FLAGS_DEBUG}")
 message("Rel CFLAGS: ${CMAKE_C_FLAGS_RELEASE}")
 
 find_package(LibEvent)
+find_package(OpenSSL)
 
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/libhtparse
@@ -103,9 +108,14 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/oniguruma
 	${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/evthr
+  ${OPENSSL_INCLUDE_DIR}
 )
 
-set(LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARY} ${LIBEVENT_PTHREADS_LIBRARY} ${LIBEVENT_OPENSSL_LIBRARY})
+set(LIBEVHTP_EXTERNAL_LIBS 
+		${LIBEVENT_LIBRARY} 
+		${LIBEVENT_PTHREADS_LIBRARY} 
+		${LIBEVENT_OPENSSL_LIBRARY} 
+		${OPENSSL_LIBRARIES})
 
 if (NOT ${LIBEVENT_PTHREADS_FOUND})
 	set(DISABLE_EVTHR 1)
@@ -115,14 +125,13 @@ if (NOT ${LIBEVENT_OPENSSL_FOUND})
 	set (DISABLE_SSL 1)
 endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
-if (DISABLE_EVTHR)
-	set(LIBEVHTP_SOURCES evhtp.c libhtparse/htparse.c)
-else()
-	set(LIBEVHTP_SOURCES evthr/evthr.c evhtp.c libhtparse/htparse.c)
-endif(DISABLE_EVTHR)
+set(LIBEVHTP_SOURCES evhtp.c libhtparse/htparse.c)
+
+if (NOT DISABLE_EVTHR)
+	set (LIBEVHTP_SOURCES ${LIBEVHTP_SOURCES} evthr/evthr.c)
+endif(NOT DISABLE_EVTHR)
 
 add_library(libevhtp STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
-
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
 
 install (TARGETS libevhtp DESTINATION lib)
@@ -131,8 +140,8 @@ install (FILES libhtparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
 install (FILES oniguruma/onigposix.h DESTINATION include)
 
-add_executable(test2 test2.c)
-target_link_libraries(test2 libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
+#add_executable(test2 test2.c)
+#target_link_libraries(test2 libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
 
 add_executable(test test.c)
 target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS})

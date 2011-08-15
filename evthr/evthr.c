@@ -6,12 +6,11 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <errno.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <sched.h>
 #include <sys/syscall.h>
 #include <sys/ioctl.h>
 #include <sys/queue.h>
+#include <unistd.h>
 #include <pthread.h>
 
 #include <event.h>
@@ -152,11 +151,6 @@ error:
     event_base_loopbreak(thread->evbase);
     return;
 } /* _evthr_read_cmd */
-
-static int
-_evthr_get_num_procs(void) {
-    return sysconf(_SC_NPROCESSORS_ONLN);
-}
 
 static void *
 _evthr_loop(void * args) {
@@ -434,7 +428,6 @@ evthr_pool_new(int nthreads, void * shared) {
         return NULL;
     }
 
-    pool->nprocs   = _evthr_get_num_procs();
     pool->nthreads = nthreads;
     TAILQ_INIT(&pool->threads);
 

@@ -89,6 +89,7 @@ htp_method     htparser_get_method(htparser *);
 const char   * htparser_get_methodstr(htparser *);
 unsigned char  htparser_get_major(htparser *);
 unsigned char  htparser_get_minor(htparser *);
+unsigned int   htparser_get_status(htparser *);
 uint64_t       htparser_get_content_length(htparser *);
 htpparse_error htparser_get_error(htparser *);
 const char   * htparser_get_strerror(htparser *);

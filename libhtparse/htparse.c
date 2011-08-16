@@ -307,6 +307,11 @@ htparser_get_strerror(htparser * p) {
     return errstr_map[e];
 }
 
+unsigned int
+htparser_get_status(htparser * p) {
+    return p->status;
+}
+
 int
 htparser_should_keep_alive(htparser * p) {
     if (p->major > 0 && p->minor > 0) {
@@ -1269,7 +1274,7 @@ hdrline_start:
                 res = 0;
 
                 switch (ch) {
-		    char * m = p->buf;
+                    char * m = p->buf;
                     case CR:
                         res = hook_hdr_val_run(p, hooks, p->buf, p->buf_idx);
 

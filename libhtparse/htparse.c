@@ -924,13 +924,14 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         int r1 = 0;
                         int r2 = 0;
 
-                        if (p->args_offset) {
+                        if (!r1) {
+                            r2 = hook_path_run(p, hooks, p->buf, p->buf_idx);
+                        }
+
+			if (p->args_offset) {
                             r1 = hook_args_run(p, hooks, p->args_offset, p->buf_idx);
                         }
 
-                        if (!r1) {
-                            r2 = hook_uri_run(p, hooks, p->buf, p->buf_idx);
-                        }
 
                         p->buf_idx = 0;
                         p->state   = s_http_09;
@@ -1579,7 +1580,6 @@ hdrline_start:
 
             default:
                 htparse_log_debug("[%p] This is a silly state....", p);
-                abort();
                 p->error = htparse_error_inval_state;
                 return i + 1;
         } /* switch */

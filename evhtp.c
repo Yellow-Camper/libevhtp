@@ -836,7 +836,7 @@ static int
 _evhtp_request_parser_fini(htparser * p) {
     evhtp_connection_t * c = htparser_get_userdata(p);
 
-    c->request->finished = 1;
+    /* c->request->finished = 1; */
 
     if (c->request->cb) {
         (c->request->cb)(c->request, c->request->cbarg);
@@ -960,7 +960,7 @@ static void
 _evhtp_connection_writecb(evbev_t * bev, void * arg) {
     evhtp_connection_t * c = arg;
 
-    if (!c->request->finished || evbuffer_get_length(bufferevent_get_output(bev))) {
+    if (c->request->finished == 0 || evbuffer_get_length(bufferevent_get_output(bev))) {
         return;
     }
 
@@ -1605,6 +1605,7 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
     evhtp_connection_t * c = request->conn;
     evbuf_t            * reply_buf;
 
+    request->finished = 1;
     if (!(reply_buf = _evhtp_create_reply(request, code))) {
         return _evhtp_connection_free(request->conn);
     }

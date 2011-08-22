@@ -489,6 +489,10 @@ int  evhtp_use_threads(evhtp_t * htp, int nthreads);
 
 void evhtp_send_reply(evhtp_request_t * request, evhtp_res code);
 
+void evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code);
+void evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf);
+void evhtp_send_reply_end(evhtp_request_t * request);
+
 
 /**
  * @brief creates a new evhtp_callbacks_t structure

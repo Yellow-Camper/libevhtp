@@ -165,6 +165,7 @@ _evthr_loop(void * args) {
     }
 
     thread->evbase = event_base_new();
+    evthread_make_base_notifiable(thread->evbase);
     thread->event  = event_new(thread->evbase, thread->rdr,
                                EV_READ | EV_PERSIST, _evthr_read_cmd, args);
 

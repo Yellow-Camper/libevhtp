@@ -999,7 +999,8 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
 
     connection->bev = bufferevent_socket_new(evbase,
                                              connection->sock,
-                                             BEV_OPT_CLOSE_ON_FREE); /* | BEV_OPT_DEFER_CALLBACKS); */
+                                             BEV_OPT_CLOSE_ON_FREE |
+                                             BEV_OPT_THREADSAFE | BEV_OPT_DEFER_CALLBACKS);
 end:
 
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
@@ -1601,11 +1602,38 @@ error:
 }     /* evhtp_parse_query */
 
 void
+evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code) {
+    evhtp_connection_t * c = request->conn;
+    evbuf_t            * reply_buf;
+
+    if (!(reply_buf = _evhtp_create_reply(request, code))) {
+        return _evhtp_connection_free(c);
+    }
+
+    bufferevent_write_buffer(c->bev, reply_buf);
+    evbuffer_free(reply_buf);
+}
+
+void
+evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf) {
+    evhtp_connection_t * c = request->conn;
+
+    bufferevent_write_buffer(c->bev, buf);
+}
+
+void
+evhtp_send_reply_end(evhtp_request_t * request) {
+    request->finished = 1;
+    return _evhtp_connection_writecb(request->conn->bev, request->conn);
+}
+
+void
 evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
     evhtp_connection_t * c = request->conn;
     evbuf_t            * reply_buf;
 
     request->finished = 1;
+
     if (!(reply_buf = _evhtp_create_reply(request, code))) {
         return _evhtp_connection_free(request->conn);
     }

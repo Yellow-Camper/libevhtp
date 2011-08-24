@@ -371,7 +371,7 @@ main(int argc, char ** argv) {
 
 #ifndef DISABLE_EVTHR
     if (use_threads) {
-        evhtp_use_threads(htp, num_threads);
+        evhtp_use_threads(htp, NULL, num_threads, NULL);
     }
 #endif
 

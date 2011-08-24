@@ -72,6 +72,7 @@ typedef enum evhtp_callback_type   evhtp_callback_type;
 typedef enum evhtp_proto           evhtp_proto;
 typedef enum evhtp_ssl_scache_type evhtp_ssl_scache_type;
 
+typedef void (*evhtp_thread_init_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
 typedef void (*evhtp_callback_cb)(evhtp_request_t * req, void * arg);
 typedef void (*evhtp_hook_err_cb)(evhtp_request_t * req, evhtp_error_flags errtype, void * arg);
 typedef evhtp_res (*evhtp_pre_accept_cb)(int fd, struct sockaddr * sa, int salen, void * arg);
@@ -214,6 +215,9 @@ struct evhtp_s {
     evthr_pool_t      * thr_pool;
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
+
+    evhtp_thread_init_cb thread_init_cb;
+    void               * thread_init_cbarg;
 };
 
 /**
@@ -485,7 +489,7 @@ int  evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, voi
 
 int  evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port);
 
-int  evhtp_use_threads(evhtp_t * htp, int nthreads);
+int  evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
 
 void evhtp_send_reply(evhtp_request_t * request, evhtp_res code);
 

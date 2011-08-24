@@ -997,10 +997,7 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
     }
 #endif
 
-    connection->bev = bufferevent_socket_new(evbase,
-                                             connection->sock,
-                                             BEV_OPT_CLOSE_ON_FREE |
-                                             BEV_OPT_THREADSAFE | BEV_OPT_DEFER_CALLBACKS);
+    connection->bev = bufferevent_socket_new(evbase, connection->sock, BEV_OPT_CLOSE_ON_FREE);
 end:
 
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
@@ -1868,9 +1865,21 @@ evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
     return hcb;
 }
 
+static void
+_evhtp_thread_init(evthr_t * thr, void * arg) {
+    evhtp_t * htp = (evhtp_t *)arg;
+
+    if (htp->thread_init_cb) {
+        htp->thread_init_cb(htp, thr, htp->thread_init_cbarg);
+    }
+}
+
 int
-evhtp_use_threads(evhtp_t * htp, int nthreads) {
-    if (!(htp->thr_pool = evthr_pool_new(nthreads, htp))) {
+evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg) {
+    htp->thread_init_cb    = init_cb;
+    htp->thread_init_cbarg = arg;
+
+    if (!(htp->thr_pool = evthr_pool_new(nthreads, _evhtp_thread_init, htp))) {
         return -1;
     }
 

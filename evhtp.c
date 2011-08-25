@@ -55,21 +55,23 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
  * @brief callback definitions for request processing from libhtparse
  */
 static htparse_hooks request_psets = {
-    .on_msg_begin     = _evhtp_request_parser_start,
-    .method           = NULL,
-    .scheme           = NULL,
-    .host             = NULL,
-    .port             = NULL,
-    .path             = _evhtp_request_parser_path,
-    .args             = _evhtp_request_parser_args,
-    .uri              = NULL,
-    .on_hdrs_begin    = NULL,
-    .hdr_key          = _evhtp_request_parser_header_key,
-    .hdr_val          = _evhtp_request_parser_header_val,
-    .on_hdrs_complete = _evhtp_request_parser_headers,
-    .on_new_chunk     = NULL,
-    .body             = _evhtp_request_parser_body,
-    .on_msg_complete  = _evhtp_request_parser_fini
+    .on_msg_begin       = _evhtp_request_parser_start,
+    .method             = NULL,
+    .scheme             = NULL,
+    .host               = NULL,
+    .port               = NULL,
+    .path               = _evhtp_request_parser_path,
+    .args               = _evhtp_request_parser_args,
+    .uri                = NULL,
+    .on_hdrs_begin      = NULL,
+    .hdr_key            = _evhtp_request_parser_header_key,
+    .hdr_val            = _evhtp_request_parser_header_val,
+    .on_hdrs_complete   = _evhtp_request_parser_headers,
+    .on_new_chunk       = NULL,
+    .on_chunk_complete  = NULL,
+    .on_chunks_complete = NULL,
+    .body               = _evhtp_request_parser_body,
+    .on_msg_complete    = _evhtp_request_parser_fini
 };
 
 #ifndef DISABLE_SSL

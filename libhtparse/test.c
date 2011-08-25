@@ -74,7 +74,7 @@ _read_body(htparser * p, const char * data, size_t len) {
 
 static int
 _on_new_chunk(htparser * p) {
-    printf("\t--payload (%zu)--\n", htparser_get_content_length(p));
+    printf("\t--chunk payload (%zu)--\n", htparser_get_content_length(p));
     /* printf("..chunk..\n"); */
     return 0;
 }
@@ -96,7 +96,7 @@ _test(htparser * p, htparse_hooks * hooks, const char * l, htp_type type) {
 
 static void
 _test_fragments(htparser * p, htparse_hooks * hooks, const char ** fragments,
-	htp_type type) {
+                htp_type type) {
     int i = 0;
 
     printf("---- test fragment ----\n");
@@ -189,21 +189,23 @@ int
 main(int argc, char ** argv) {
     htparser    * p     = htparser_new();
     htparse_hooks hooks = {
-        .on_msg_begin     = _on_msg_start,
-        .method           = _method,
-        .scheme           = NULL,
-        .host             = NULL,
-        .port             = NULL,
-        .path             = _path,
-        .args             = _args,
-        .uri              = _uri,
-        .on_hdrs_begin    = _hdrs_start,
-        .hdr_key          = _hdr_key,
-        .hdr_val          = _hdr_val,
-        .on_hdrs_complete = _hdrs_end,
-        .on_new_chunk     = _on_new_chunk,
-        .body             = _read_body,
-        .on_msg_complete  = _on_msg_end
+        .on_msg_begin       = _on_msg_start,
+        .method             = _method,
+        .scheme             = NULL,
+        .host               = NULL,
+        .port               = NULL,
+        .path               = _path,
+        .args               = _args,
+        .uri                = _uri,
+        .on_hdrs_begin      = _hdrs_start,
+        .hdr_key            = _hdr_key,
+        .hdr_val            = _hdr_val,
+        .on_hdrs_complete   = _hdrs_end,
+        .on_new_chunk       = _on_new_chunk,
+        .on_chunk_complete  = NULL,
+        .on_chunks_complete = NULL,
+        .body               = _read_body,
+        .on_msg_complete    = _on_msg_end
     };
 
     const char  * test_1 = "GET / HTTP/1.0\r\n\r\n";
@@ -224,9 +226,9 @@ main(int argc, char ** argv) {
     const char * test_9 = "GET /big_content_len HTTP/1.1\r\n"
                           "Content-Length: 18446744073709551615\r\n\r\n";
 
-    const char * test_fail = "GET /JF HfD]\r\n\r\n";
+    const char * test_fail   = "GET /JF HfD]\r\n\r\n";
     const char * test_resp_1 = "HTTP/1.0 200 OK\r\n"
-	                       "Stuff: junk\r\n\r\n";
+                               "Stuff: junk\r\n\r\n";
 
     _test(p, &hooks, test_resp_1, htp_type_response);
     _test(p, &hooks, test_1, htp_type_request);

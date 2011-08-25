@@ -290,9 +290,9 @@ TAILQ_HEAD(evhtp_kvs_s, evhtp_kv_s);
 struct evhtp_uri_s {
     evhtp_authority_t * authority;
     evhtp_path_t      * path;
-    unsigned char     * fragment; /**< data after '#' in uri */
+    unsigned char     * fragment;     /**< data after '#' in uri */
     evhtp_query_t     * query;
-    htp_scheme          scheme;   /**< set if a scheme is found */
+    htp_scheme          scheme;       /**< set if a scheme is found */
 };
 
 
@@ -300,10 +300,10 @@ struct evhtp_uri_s {
  * @brief structure which represents authority information in a URI
  */
 struct evhtp_authority_s {
-    char   * username;            /**< the username in URI (scheme://USER:.. */
-    char   * password;            /**< the password in URI (scheme://...:PASS.. */
-    char   * hostname;            /**< hostname if present in URI */
-    uint16_t port;                /**< port if present in URI */
+    char   * username;                /**< the username in URI (scheme://USER:.. */
+    char   * password;                /**< the password in URI (scheme://...:PASS.. */
+    char   * hostname;                /**< hostname if present in URI */
+    uint16_t port;                    /**< port if present in URI */
 };
 
 
@@ -311,36 +311,40 @@ struct evhtp_authority_s {
  * @brief structure which represents a URI path and or file
  */
 struct evhtp_path_s {
-    char       * full;            /**< the full path+file (/a/b/c.html) */
-    char       * path;            /**< the path (/a/b/) */
-    char       * file;            /**< the filename if present (c.html) */
+    char       * full;                /**< the full path+file (/a/b/c.html) */
+    char       * path;                /**< the path (/a/b/) */
+    char       * file;                /**< the filename if present (c.html) */
     char       * match_start;
     char       * match_end;
-    unsigned int matched_soff;    /**< offset of where the uri starts
-                                   *   mainly used for regex matching
-                                   */
-    unsigned int matched_eoff;    /**< offset of where the uri ends
-                                   *   mainly used for regex matching
-                                   */
+    unsigned int matched_soff;        /**< offset of where the uri starts
+                                       *   mainly used for regex matching
+                                       */
+    unsigned int matched_eoff;        /**< offset of where the uri ends
+                                       *   mainly used for regex matching
+                                       */
 };
 
-struct evhtp_request_s {
-    evhtp_t            * htp;
-    evhtp_connection_t * conn;
-    evhtp_hooks_t      * hooks;
-    evhtp_uri_t        * uri;
-    evbuf_t            * buffer_in;
-    evbuf_t            * buffer_out;
-    evhtp_headers_t    * headers_in;
-    evhtp_headers_t    * headers_out;
-    evhtp_proto          proto;
-    htp_method           method;
-    evhtp_res            status;
-    int                  keepalive;
-    int                  finished;
 
-    evhtp_callback_cb cb;
-    void            * cbarg;
+/**
+ * @brief a structure containing all information for a http request.
+ */
+struct evhtp_request_s {
+    evhtp_t            * htp;         /**< the parent evhtp_t structure */
+    evhtp_connection_t * conn;        /**< the associated connection */
+    evhtp_hooks_t      * hooks;       /**< request specific hooks */
+    evhtp_uri_t        * uri;         /**< request URI information */
+    evbuf_t            * buffer_in;   /**< buffer containing data from client */
+    evbuf_t            * buffer_out;  /**< buffer containing data to client */
+    evhtp_headers_t    * headers_in;  /**< headers from client */
+    evhtp_headers_t    * headers_out; /**< headers to client */
+    evhtp_proto          proto;       /**< HTTP protocol used */
+    htp_method           method;      /**< HTTP method used */
+    evhtp_res            status;      /**< The HTTP response code or other error conditions */
+    int                  keepalive;   /**< set to 1 if the connection is keep-alive */
+    int                  finished;    /**< set to 1 if the request is fully processed */
+
+    evhtp_callback_cb cb;             /**< the function to call when fully processed */
+    void            * cbarg;          /**< argument which is passed to the cb function */
 };
 
 struct evhtp_connection_s {

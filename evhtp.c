@@ -250,8 +250,7 @@ _evhtp_headers_hook(evhtp_request_t * request, evhtp_headers_t * headers) {
  *        leave it, or drain upon being called.
  *
  * @param request the request strucutre
- * @param data that was read (which is also stored in buffer_in)
- * @param length of the data that was read.
+ * @param buf a evbuffer containing body data
  *
  * @return EVHTP_RES_OK on success, otherwise something else.
  */
@@ -474,6 +473,11 @@ _evhtp_request_free(evhtp_request_t * request) {
     free(request);
 }
 
+/**
+ * @brief create an overlay URI structure
+ *
+ * @return evhtp_uri_t
+ */
 static evhtp_uri_t *
 _evhtp_uri_new(void) {
     evhtp_uri_t * uri;
@@ -485,6 +489,11 @@ _evhtp_uri_new(void) {
     return uri;
 }
 
+/**
+ * @brief frees an overlay URI structure
+ *
+ * @param uri evhtp_uri_t
+ */
 static void
 _evhtp_uri_free(evhtp_uri_t * uri) {
     if (uri == NULL) {
@@ -1249,7 +1258,7 @@ _evhtp_ssl_get_scache_ent(evhtp_ssl_t * ssl, unsigned char * sid, int sid_len, i
  */
 
 /**
- * @brief pauses a connection (disables reading, and enables the resume event.
+ * @brief pauses a connection (disables reading)
  *
  * @param c a evhtp_connection_t * structure
  */
@@ -1260,6 +1269,11 @@ evhtp_connection_pause(evhtp_connection_t * c) {
     }
 }
 
+/**
+ * @brief resumes a connection (enables reading) and activates resume event.
+ *
+ * @param c
+ */
 void
 evhtp_connection_resume(evhtp_connection_t * c) {
     if (!(bufferevent_get_enabled(c->bev) & EV_READ)) {
@@ -1268,11 +1282,25 @@ evhtp_connection_resume(evhtp_connection_t * c) {
     }
 }
 
+/**
+ * @brief Wrapper around evhtp_connection_pause
+ *
+ * @see evhtp_connection_pause
+ *
+ * @param request
+ */
 void
 evhtp_request_pause(evhtp_request_t * request) {
     return evhtp_connection_pause(request->conn);
 }
 
+/**
+ * @brief Wrapper around evhtp_connection_resume
+ *
+ * @see evhtp_connection_resume
+ *
+ * @param request
+ */
 void
 evhtp_request_resume(evhtp_request_t * request) {
     return evhtp_connection_resume(request->conn);

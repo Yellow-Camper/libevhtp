@@ -992,6 +992,10 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
 
 static void
 _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
+    if ((events & BEV_EVENT_CONNECTED)) {
+	return;
+    }
+
     return _evhtp_connection_free((evhtp_connection_t *)arg);
 }
 
@@ -1003,8 +1007,7 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
         connection->bev     = bufferevent_openssl_socket_new(evbase,
                                                              connection->sock, connection->ssl_ctx,
                                                              BUFFEREVENT_SSL_ACCEPTING,
-                                                             BEV_OPT_CLOSE_ON_FREE |
-                                                             BEV_OPT_DEFER_CALLBACKS);
+                                                             BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
         SSL_set_app_data(connection->ssl_ctx, connection);
         goto end;
     }
@@ -2022,7 +2025,6 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         SSL_CTX_set_verify_depth(htp->ssl_ctx, cfg->verify_depth);
     }
 
-
     switch (cfg->scache_type) {
         case evhtp_ssl_scache_type_disabled:
             cache_mode = SSL_SESS_CACHE_OFF;
@@ -2048,22 +2050,22 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
             get_cb  = _evhtp_ssl_builtin_get;
             del_cb  = _evhtp_ssl_builtin_del;
 #endif
+	    break;
         case evhtp_ssl_scache_type_internal:
         default:
             cache_mode = SSL_SESS_CACHE_SERVER;
             break;
     } /* switch */
 
-    SSL_CTX_use_certificate_file(htp->ssl_ctx,
-                                 cfg->pemfile, SSL_FILETYPE_PEM);
-    SSL_CTX_use_PrivateKey_file(htp->ssl_ctx,
-                                cfg->privfile ? : cfg->pemfile, SSL_FILETYPE_PEM);
-
+    SSL_CTX_use_certificate_file(htp->ssl_ctx, cfg->pemfile, SSL_FILETYPE_PEM);
+    SSL_CTX_use_PrivateKey_file(htp->ssl_ctx, cfg->privfile ? : cfg->pemfile, SSL_FILETYPE_PEM);
 
     SSL_CTX_set_session_id_context(htp->ssl_ctx,
                                    (void*)&session_id_context,
                                    sizeof(session_id_context));
+
     SSL_CTX_set_session_cache_mode(htp->ssl_ctx, cache_mode);
+    SSL_CTX_sess_set_cache_size(htp->ssl_ctx, 50000);
 
     SSL_CTX_sess_set_new_cb(htp->ssl_ctx, _evhtp_ssl_add_scache_ent);
     SSL_CTX_sess_set_get_cb(htp->ssl_ctx, _evhtp_ssl_get_scache_ent);

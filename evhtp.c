@@ -55,21 +55,23 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
  * @brief callback definitions for request processing from libhtparse
  */
 static htparse_hooks request_psets = {
-    .on_msg_begin     = _evhtp_request_parser_start,
-    .method           = NULL,
-    .scheme           = NULL,
-    .host             = NULL,
-    .port             = NULL,
-    .path             = _evhtp_request_parser_path,
-    .args             = _evhtp_request_parser_args,
-    .uri              = NULL,
-    .on_hdrs_begin    = NULL,
-    .hdr_key          = _evhtp_request_parser_header_key,
-    .hdr_val          = _evhtp_request_parser_header_val,
-    .on_hdrs_complete = _evhtp_request_parser_headers,
-    .on_new_chunk     = NULL,
-    .body             = _evhtp_request_parser_body,
-    .on_msg_complete  = _evhtp_request_parser_fini
+    .on_msg_begin       = _evhtp_request_parser_start,
+    .method             = NULL,
+    .scheme             = NULL,
+    .host               = NULL,
+    .port               = NULL,
+    .path               = _evhtp_request_parser_path,
+    .args               = _evhtp_request_parser_args,
+    .uri                = NULL,
+    .on_hdrs_begin      = NULL,
+    .hdr_key            = _evhtp_request_parser_header_key,
+    .hdr_val            = _evhtp_request_parser_header_val,
+    .on_hdrs_complete   = _evhtp_request_parser_headers,
+    .on_new_chunk       = NULL,
+    .on_chunk_complete  = NULL,
+    .on_chunks_complete = NULL,
+    .body               = _evhtp_request_parser_body,
+    .on_msg_complete    = _evhtp_request_parser_fini
 };
 
 #ifndef DISABLE_SSL
@@ -248,8 +250,7 @@ _evhtp_headers_hook(evhtp_request_t * request, evhtp_headers_t * headers) {
  *        leave it, or drain upon being called.
  *
  * @param request the request strucutre
- * @param data that was read (which is also stored in buffer_in)
- * @param length of the data that was read.
+ * @param buf a evbuffer containing body data
  *
  * @return EVHTP_RES_OK on success, otherwise something else.
  */
@@ -472,6 +473,11 @@ _evhtp_request_free(evhtp_request_t * request) {
     free(request);
 }
 
+/**
+ * @brief create an overlay URI structure
+ *
+ * @return evhtp_uri_t
+ */
 static evhtp_uri_t *
 _evhtp_uri_new(void) {
     evhtp_uri_t * uri;
@@ -483,6 +489,11 @@ _evhtp_uri_new(void) {
     return uri;
 }
 
+/**
+ * @brief frees an overlay URI structure
+ *
+ * @param uri evhtp_uri_t
+ */
 static void
 _evhtp_uri_free(evhtp_uri_t * uri) {
     if (uri == NULL) {
@@ -836,7 +847,7 @@ static int
 _evhtp_request_parser_fini(htparser * p) {
     evhtp_connection_t * c = htparser_get_userdata(p);
 
-    c->request->finished = 1;
+    /* c->request->finished = 1; */
 
     if (c->request->cb) {
         (c->request->cb)(c->request, c->request->cbarg);
@@ -878,8 +889,10 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
                                      evhtp_header_new("Content-Type", "text/plain", 0, 0));
         }
     } else {
-        evhtp_headers_add_header(request->headers_out,
-                                 evhtp_header_new("Content-Length", "0", 0, 0));
+        if (!evhtp_header_find(request->headers_out, "Content-Length")) {
+            evhtp_headers_add_header(request->headers_out,
+                                     evhtp_header_new("Content-Length", "0", 0, 0));
+        }
     }
 
 
@@ -960,7 +973,7 @@ static void
 _evhtp_connection_writecb(evbev_t * bev, void * arg) {
     evhtp_connection_t * c = arg;
 
-    if (!c->request->finished || evbuffer_get_length(bufferevent_get_output(bev))) {
+    if (c->request->finished == 0 || evbuffer_get_length(bufferevent_get_output(bev))) {
         return;
     }
 
@@ -979,6 +992,10 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
 
 static void
 _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
+    if ((events & BEV_EVENT_CONNECTED)) {
+	return;
+    }
+
     return _evhtp_connection_free((evhtp_connection_t *)arg);
 }
 
@@ -990,16 +1007,13 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
         connection->bev     = bufferevent_openssl_socket_new(evbase,
                                                              connection->sock, connection->ssl_ctx,
                                                              BUFFEREVENT_SSL_ACCEPTING,
-                                                             BEV_OPT_CLOSE_ON_FREE |
-                                                             BEV_OPT_DEFER_CALLBACKS);
+                                                             BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
         SSL_set_app_data(connection->ssl_ctx, connection);
         goto end;
     }
 #endif
 
-    connection->bev = bufferevent_socket_new(evbase,
-                                             connection->sock,
-                                             BEV_OPT_CLOSE_ON_FREE); /* | BEV_OPT_DEFER_CALLBACKS); */
+    connection->bev = bufferevent_socket_new(evbase, connection->sock, BEV_OPT_CLOSE_ON_FREE);
 end:
 
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
@@ -1247,7 +1261,7 @@ _evhtp_ssl_get_scache_ent(evhtp_ssl_t * ssl, unsigned char * sid, int sid_len, i
  */
 
 /**
- * @brief pauses a connection (disables reading, and enables the resume event.
+ * @brief pauses a connection (disables reading)
  *
  * @param c a evhtp_connection_t * structure
  */
@@ -1258,6 +1272,11 @@ evhtp_connection_pause(evhtp_connection_t * c) {
     }
 }
 
+/**
+ * @brief resumes a connection (enables reading) and activates resume event.
+ *
+ * @param c
+ */
 void
 evhtp_connection_resume(evhtp_connection_t * c) {
     if (!(bufferevent_get_enabled(c->bev) & EV_READ)) {
@@ -1266,11 +1285,25 @@ evhtp_connection_resume(evhtp_connection_t * c) {
     }
 }
 
+/**
+ * @brief Wrapper around evhtp_connection_pause
+ *
+ * @see evhtp_connection_pause
+ *
+ * @param request
+ */
 void
 evhtp_request_pause(evhtp_request_t * request) {
     return evhtp_connection_pause(request->conn);
 }
 
+/**
+ * @brief Wrapper around evhtp_connection_resume
+ *
+ * @see evhtp_connection_resume
+ *
+ * @param request
+ */
 void
 evhtp_request_resume(evhtp_request_t * request) {
     return evhtp_connection_resume(request->conn);
@@ -1601,9 +1634,37 @@ error:
 }     /* evhtp_parse_query */
 
 void
+evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code) {
+    evhtp_connection_t * c = request->conn;
+    evbuf_t            * reply_buf;
+
+    if (!(reply_buf = _evhtp_create_reply(request, code))) {
+        return _evhtp_connection_free(c);
+    }
+
+    bufferevent_write_buffer(c->bev, reply_buf);
+    evbuffer_free(reply_buf);
+}
+
+void
+evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf) {
+    evhtp_connection_t * c = request->conn;
+
+    bufferevent_write_buffer(c->bev, buf);
+}
+
+void
+evhtp_send_reply_end(evhtp_request_t * request) {
+    request->finished = 1;
+    return _evhtp_connection_writecb(request->conn->bev, request->conn);
+}
+
+void
 evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
     evhtp_connection_t * c = request->conn;
     evbuf_t            * reply_buf;
+
+    request->finished = 1;
 
     if (!(reply_buf = _evhtp_create_reply(request, code))) {
         return _evhtp_connection_free(request->conn);
@@ -1839,9 +1900,21 @@ evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
     return hcb;
 }
 
+static void
+_evhtp_thread_init(evthr_t * thr, void * arg) {
+    evhtp_t * htp = (evhtp_t *)arg;
+
+    if (htp->thread_init_cb) {
+        htp->thread_init_cb(htp, thr, htp->thread_init_cbarg);
+    }
+}
+
 int
-evhtp_use_threads(evhtp_t * htp, int nthreads) {
-    if (!(htp->thr_pool = evthr_pool_new(nthreads, htp))) {
+evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg) {
+    htp->thread_init_cb    = init_cb;
+    htp->thread_init_cbarg = arg;
+
+    if (!(htp->thr_pool = evthr_pool_new(nthreads, _evhtp_thread_init, htp))) {
         return -1;
     }
 
@@ -1952,7 +2025,6 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         SSL_CTX_set_verify_depth(htp->ssl_ctx, cfg->verify_depth);
     }
 
-
     switch (cfg->scache_type) {
         case evhtp_ssl_scache_type_disabled:
             cache_mode = SSL_SESS_CACHE_OFF;
@@ -1978,22 +2050,22 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
             get_cb  = _evhtp_ssl_builtin_get;
             del_cb  = _evhtp_ssl_builtin_del;
 #endif
+	    break;
         case evhtp_ssl_scache_type_internal:
         default:
             cache_mode = SSL_SESS_CACHE_SERVER;
             break;
     } /* switch */
 
-    SSL_CTX_use_certificate_file(htp->ssl_ctx,
-                                 cfg->pemfile, SSL_FILETYPE_PEM);
-    SSL_CTX_use_PrivateKey_file(htp->ssl_ctx,
-                                cfg->privfile ? : cfg->pemfile, SSL_FILETYPE_PEM);
-
+    SSL_CTX_use_certificate_file(htp->ssl_ctx, cfg->pemfile, SSL_FILETYPE_PEM);
+    SSL_CTX_use_PrivateKey_file(htp->ssl_ctx, cfg->privfile ? : cfg->pemfile, SSL_FILETYPE_PEM);
 
     SSL_CTX_set_session_id_context(htp->ssl_ctx,
                                    (void*)&session_id_context,
                                    sizeof(session_id_context));
+
     SSL_CTX_set_session_cache_mode(htp->ssl_ctx, cache_mode);
+    SSL_CTX_sess_set_cache_size(htp->ssl_ctx, 50000);
 
     SSL_CTX_sess_set_new_cb(htp->ssl_ctx, _evhtp_ssl_add_scache_ent);
     SSL_CTX_sess_set_get_cb(htp->ssl_ctx, _evhtp_ssl_get_scache_ent);

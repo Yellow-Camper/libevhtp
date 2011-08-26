@@ -72,6 +72,7 @@ typedef enum evhtp_callback_type   evhtp_callback_type;
 typedef enum evhtp_proto           evhtp_proto;
 typedef enum evhtp_ssl_scache_type evhtp_ssl_scache_type;
 
+typedef void (*evhtp_thread_init_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
 typedef void (*evhtp_callback_cb)(evhtp_request_t * req, void * arg);
 typedef void (*evhtp_hook_err_cb)(evhtp_request_t * req, evhtp_error_flags errtype, void * arg);
 typedef evhtp_res (*evhtp_pre_accept_cb)(int fd, struct sockaddr * sa, int salen, void * arg);
@@ -214,6 +215,9 @@ struct evhtp_s {
     evthr_pool_t      * thr_pool;
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
+
+    evhtp_thread_init_cb thread_init_cb;
+    void               * thread_init_cbarg;
 };
 
 /**
@@ -286,9 +290,9 @@ TAILQ_HEAD(evhtp_kvs_s, evhtp_kv_s);
 struct evhtp_uri_s {
     evhtp_authority_t * authority;
     evhtp_path_t      * path;
-    unsigned char     * fragment; /**< data after '#' in uri */
+    unsigned char     * fragment;     /**< data after '#' in uri */
     evhtp_query_t     * query;
-    htp_scheme          scheme;   /**< set if a scheme is found */
+    htp_scheme          scheme;       /**< set if a scheme is found */
 };
 
 
@@ -296,10 +300,10 @@ struct evhtp_uri_s {
  * @brief structure which represents authority information in a URI
  */
 struct evhtp_authority_s {
-    char   * username;            /**< the username in URI (scheme://USER:.. */
-    char   * password;            /**< the password in URI (scheme://...:PASS.. */
-    char   * hostname;            /**< hostname if present in URI */
-    uint16_t port;                /**< port if present in URI */
+    char   * username;                /**< the username in URI (scheme://USER:.. */
+    char   * password;                /**< the password in URI (scheme://...:PASS.. */
+    char   * hostname;                /**< hostname if present in URI */
+    uint16_t port;                    /**< port if present in URI */
 };
 
 
@@ -307,36 +311,40 @@ struct evhtp_authority_s {
  * @brief structure which represents a URI path and or file
  */
 struct evhtp_path_s {
-    char       * full;            /**< the full path+file (/a/b/c.html) */
-    char       * path;            /**< the path (/a/b/) */
-    char       * file;            /**< the filename if present (c.html) */
+    char       * full;                /**< the full path+file (/a/b/c.html) */
+    char       * path;                /**< the path (/a/b/) */
+    char       * file;                /**< the filename if present (c.html) */
     char       * match_start;
     char       * match_end;
-    unsigned int matched_soff;    /**< offset of where the uri starts
-                                   *   mainly used for regex matching
-                                   */
-    unsigned int matched_eoff;    /**< offset of where the uri ends
-                                   *   mainly used for regex matching
-                                   */
+    unsigned int matched_soff;        /**< offset of where the uri starts
+                                       *   mainly used for regex matching
+                                       */
+    unsigned int matched_eoff;        /**< offset of where the uri ends
+                                       *   mainly used for regex matching
+                                       */
 };
 
-struct evhtp_request_s {
-    evhtp_t            * htp;
-    evhtp_connection_t * conn;
-    evhtp_hooks_t      * hooks;
-    evhtp_uri_t        * uri;
-    evbuf_t            * buffer_in;
-    evbuf_t            * buffer_out;
-    evhtp_headers_t    * headers_in;
-    evhtp_headers_t    * headers_out;
-    evhtp_proto          proto;
-    htp_method           method;
-    evhtp_res            status;
-    int                  keepalive;
-    int                  finished;
 
-    evhtp_callback_cb cb;
-    void            * cbarg;
+/**
+ * @brief a structure containing all information for a http request.
+ */
+struct evhtp_request_s {
+    evhtp_t            * htp;         /**< the parent evhtp_t structure */
+    evhtp_connection_t * conn;        /**< the associated connection */
+    evhtp_hooks_t      * hooks;       /**< request specific hooks */
+    evhtp_uri_t        * uri;         /**< request URI information */
+    evbuf_t            * buffer_in;   /**< buffer containing data from client */
+    evbuf_t            * buffer_out;  /**< buffer containing data to client */
+    evhtp_headers_t    * headers_in;  /**< headers from client */
+    evhtp_headers_t    * headers_out; /**< headers to client */
+    evhtp_proto          proto;       /**< HTTP protocol used */
+    htp_method           method;      /**< HTTP method used */
+    evhtp_res            status;      /**< The HTTP response code or other error conditions */
+    int                  keepalive;   /**< set to 1 if the connection is keep-alive */
+    int                  finished;    /**< set to 1 if the request is fully processed */
+
+    evhtp_callback_cb cb;             /**< the function to call when fully processed */
+    void            * cbarg;          /**< argument which is passed to the cb function */
 };
 
 struct evhtp_connection_s {
@@ -485,9 +493,13 @@ int  evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, voi
 
 int  evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port);
 
-int  evhtp_use_threads(evhtp_t * htp, int nthreads);
+int  evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
 
 void evhtp_send_reply(evhtp_request_t * request, evhtp_res code);
+
+void evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code);
+void evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf);
+void evhtp_send_reply_end(evhtp_request_t * request);
 
 
 /**

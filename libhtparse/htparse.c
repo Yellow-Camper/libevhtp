@@ -236,6 +236,8 @@ __HTPARSE_GENHOOK(on_msg_begin);
 __HTPARSE_GENHOOK(on_hdrs_begin);
 __HTPARSE_GENHOOK(on_hdrs_complete);
 __HTPARSE_GENHOOK(on_new_chunk);
+__HTPARSE_GENHOOK(on_chunk_complete);
+__HTPARSE_GENHOOK(on_chunks_complete);
 __HTPARSE_GENHOOK(on_msg_complete);
 
 __HTPARSE_GENDHOOK(method);
@@ -305,6 +307,11 @@ htparser_get_strerror(htparser * p) {
     }
 
     return errstr_map[e];
+}
+
+unsigned int
+htparser_get_status(htparser * p) {
+    return p->status;
 }
 
 int
@@ -919,13 +926,14 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         int r1 = 0;
                         int r2 = 0;
 
+                        if (!r1) {
+                            r2 = hook_path_run(p, hooks, p->buf, p->buf_idx);
+                        }
+
                         if (p->args_offset) {
                             r1 = hook_args_run(p, hooks, p->args_offset, p->buf_idx);
                         }
 
-                        if (!r1) {
-                            r2 = hook_uri_run(p, hooks, p->buf, p->buf_idx);
-                        }
 
                         p->buf_idx = 0;
                         p->state   = s_http_09;
@@ -1269,7 +1277,6 @@ hdrline_start:
                 res = 0;
 
                 switch (ch) {
-		    char * m = p->buf;
                     case CR:
                         res = hook_hdr_val_run(p, hooks, p->buf, p->buf_idx);
 
@@ -1478,6 +1485,8 @@ hdrline_start:
                 }
 
                 if (p->content_len == 0) {
+                    res       = hook_on_chunks_complete_run(p, hooks);
+
                     p->flags |= parser_flag_trailing;
                     p->state  = s_hdrline_start;
                 } else {
@@ -1536,6 +1545,12 @@ hdrline_start:
                 }
 
                 p->state = s_chunk_size_start;
+
+                if (hook_on_chunk_complete_run(p, hooks)) {
+                    p->error = htparse_error_user;
+                    return i + 1;
+                }
+
                 break;
 
             case s_body_read:
@@ -1574,7 +1589,6 @@ hdrline_start:
 
             default:
                 htparse_log_debug("[%p] This is a silly state....", p);
-                abort();
                 p->error = htparse_error_inval_state;
                 return i + 1;
         } /* switch */

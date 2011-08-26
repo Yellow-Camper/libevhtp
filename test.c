@@ -357,7 +357,7 @@ main(int argc, char ** argv) {
             .verify_depth       = 42,
             .x509_verify_cb     = dummy_ssl_verify_callback,
             .x509_chk_issued_cb = dummy_check_issued_cb,
-            .scache_type        = evhtp_ssl_scache_type_builtin,
+            .scache_type        = evhtp_ssl_scache_type_internal,
             .scache_timeout     = 1024,
             .scache_init        = NULL,
             .scache_add         = NULL,
@@ -371,7 +371,7 @@ main(int argc, char ** argv) {
 
 #ifndef DISABLE_EVTHR
     if (use_threads) {
-        evhtp_use_threads(htp, num_threads);
+        evhtp_use_threads(htp, NULL, num_threads, NULL);
     }
 #endif
 

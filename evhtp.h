@@ -274,8 +274,8 @@ struct evhtp_kv_s {
     size_t klen;
     size_t vlen;
 
-    char k_heaped : 1; /**< set to 1 if the key can be free()'d */
-    char v_heaped : 1; /**< set to 1 if the val can be free()'d */
+    char k_heaped; /**< set to 1 if the key can be free()'d */
+    char v_heaped; /**< set to 1 if the val can be free()'d */
 
     TAILQ_ENTRY(evhtp_kv_s) next;
 };
@@ -566,8 +566,10 @@ evhtp_kvs_t * evhtp_kvs_new(void);
 
 void          evhtp_kv_free(evhtp_kv_t * kv);
 void          evhtp_kvs_free(evhtp_kvs_t * kvs);
+void          evhtp_kv_rm_and_free(evhtp_kvs_t * kvs, evhtp_kv_t * kv);
 
 const char  * evhtp_kv_find(evhtp_kvs_t * kvs, const char * key);
+evhtp_kv_t  * evhtp_kvs_find_kv(evhtp_kvs_t * kvs, const char * key);
 
 
 /**
@@ -648,15 +650,17 @@ void evhtp_headers_add_header(evhtp_headers_t * headers, evhtp_header_t * header
  */
 const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
 
-#define evhtp_header_find        evhtp_kv_find
-#define evhtp_headers_for_each   evhtp_kvs_for_each
-#define evhtp_header_new         evhtp_kv_new
-#define evhtp_header_free        evhtp_kv_free
-#define evhtp_headers_new        evhtp_kvs_new
-#define evhtp_headers_free       evhtp_kvs_free
-#define evhtp_headers_add_header evhtp_kvs_add_kv
-#define evhtp_query_new          evhtp_kvs_new
-#define evhtp_query_free         evhtp_kvs_free
+#define evhtp_header_find         evhtp_kv_find
+#define evhtp_headers_find_header evhtp_kvs_find_kv
+#define evhtp_headers_for_each    evhtp_kvs_for_each
+#define evhtp_header_new          evhtp_kv_new
+#define evhtp_header_free         evhtp_kv_free
+#define evhtp_headers_new         evhtp_kvs_new
+#define evhtp_headers_free        evhtp_kvs_free
+#define evhtp_header_rm_and_free  evhtp_kv_rm_and_free
+#define evhtp_headers_add_header  evhtp_kvs_add_kv
+#define evhtp_query_new           evhtp_kvs_new
+#define evhtp_query_free          evhtp_kvs_free
 
 void evhtp_connection_pause(evhtp_connection_t * connection);
 void evhtp_connection_resume(evhtp_connection_t * connection);

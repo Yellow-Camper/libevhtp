@@ -28,13 +28,13 @@ static void                 _evhtp_connection_readcb(evbev_t * bev, void * arg);
 static void                 _evhtp_connection_free(evhtp_connection_t * connection);
 static evhtp_connection_t * _evhtp_connection_new(evhtp_t * htp, int sock);
 
-static evhtp_uri_t        * _evhtp_uri_new(void);
+static evhtp_uri_t *        _evhtp_uri_new(void);
 static void                 _evhtp_uri_free(evhtp_uri_t * uri);
 
-static evhtp_path_t       * _evhtp_path_new(const char * data, size_t len);
+static evhtp_path_t *       _evhtp_path_new(const char * data, size_t len);
 static void                 _evhtp_path_free(evhtp_path_t * path);
 
-#define HOOK_AVAIL(var, hook_name)                (var->hooks && var->hooks->hook_name) /* (var->hooks ? (var->hooks->hook_name ? : NULL) : NULL) */
+#define HOOK_AVAIL(var, hook_name)                (var->hooks && var->hooks->hook_name)
 #define HOOK_FUNC(var, hook_name)                 (var->hooks->hook_name)
 #define HOOK_ARGS(var, hook_name)                 var->hooks->hook_name ## _arg
 
@@ -648,6 +648,8 @@ _evhtp_request_parser_start(htparser * p) {
     if (c->request) {
         if (c->request->finished == 1) {
             _evhtp_request_free(c->request);
+        } else {
+            return -1;
         }
     }
 
@@ -890,8 +892,13 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
         }
     } else {
         if (!evhtp_header_find(request->headers_out, "Content-Length")) {
-            evhtp_headers_add_header(request->headers_out,
-                                     evhtp_header_new("Content-Length", "0", 0, 0));
+            const char * chunked = evhtp_header_find(request->headers_out,
+                                                     "transfer-encoding");
+
+            if (!chunked && !strstr(chunked, "chunked")) {
+                evhtp_headers_add_header(request->headers_out,
+                                         evhtp_header_new("Content-Length", "0", 0, 0));
+            }
         }
     }
 
@@ -993,7 +1000,7 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
 static void
 _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     if ((events & BEV_EVENT_CONNECTED)) {
-	return;
+        return;
     }
 
     return _evhtp_connection_free((evhtp_connection_t *)arg);
@@ -1013,7 +1020,8 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
     }
 #endif
 
-    connection->bev = bufferevent_socket_new(evbase, connection->sock, BEV_OPT_CLOSE_ON_FREE);
+    connection->bev = bufferevent_socket_new(evbase, connection->sock,
+                                             BEV_OPT_CLOSE_ON_FREE);
 end:
 
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
@@ -1415,6 +1423,17 @@ evhtp_kv_free(evhtp_kv_t * kv) {
 }
 
 void
+evhtp_kv_rm_and_free(evhtp_kvs_t * kvs, evhtp_kv_t * kv) {
+    if (kvs == NULL || kv == NULL) {
+        return;
+    }
+
+    TAILQ_REMOVE(kvs, kv, next);
+
+    evhtp_kv_free(kv);
+}
+
+void
 evhtp_kvs_free(evhtp_kvs_t * kvs) {
     evhtp_kv_t * kv;
     evhtp_kv_t * save;
@@ -1453,9 +1472,30 @@ const char *
 evhtp_kv_find(evhtp_kvs_t * kvs, const char * key) {
     evhtp_kv_t * kv;
 
+    if (kvs == NULL || key == NULL) {
+        return NULL;
+    }
+
     TAILQ_FOREACH(kv, kvs, next) {
         if (strcasecmp(kv->key, key) == 0) {
             return kv->val;
+        }
+    }
+
+    return NULL;
+}
+
+evhtp_kv_t *
+evhtp_kvs_find_kv(evhtp_kvs_t * kvs, const char * key) {
+    evhtp_kv_t * kv;
+
+    if (kvs == NULL || key == NULL) {
+        return NULL;
+    }
+
+    TAILQ_FOREACH(kv, kvs, next) {
+        if (strcasecmp(kv->key, key) == 0) {
+            return kv;
         }
     }
 
@@ -2050,7 +2090,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
             get_cb  = _evhtp_ssl_builtin_get;
             del_cb  = _evhtp_ssl_builtin_del;
 #endif
-	    break;
+            break;
         case evhtp_ssl_scache_type_internal:
         default:
             cache_mode = SSL_SESS_CACHE_SERVER;

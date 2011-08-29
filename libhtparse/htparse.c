@@ -1398,7 +1398,6 @@ hdrline_start:
                                 res      = hook_on_msg_complete_run(p, hooks);
                                 p->state = s_start;
                             } else if (p->flags & parser_flag_chunked) {
-                                res      = hook_on_new_chunk_run(p, hooks);
                                 p->state = s_chunk_size_start;
                             } else if (p->content_len > 0) {
                                 p->state = s_body_read;
@@ -1436,7 +1435,6 @@ hdrline_start:
                 } else if (p->flags & parser_flag_chunked) {
                     p->state = s_chunk_size_start;
                 } else if (p->content_len > 0) {
-                    res      = hook_on_new_chunk_run(p, hooks);
                     p->state = s_body_read;
                 } else if (p->content_len == 0) {
                     res      = hook_on_msg_complete_run(p, hooks);

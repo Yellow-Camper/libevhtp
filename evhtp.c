@@ -895,7 +895,7 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
             const char * chunked = evhtp_header_find(request->headers_out,
                                                      "transfer-encoding");
 
-            if (!chunked && !strstr(chunked, "chunked")) {
+            if (!chunked || !strstr(chunked, "chunked")) {
                 evhtp_headers_add_header(request->headers_out,
                                          evhtp_header_new("Content-Length", "0", 0, 0));
             }

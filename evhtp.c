@@ -980,7 +980,13 @@ static void
 _evhtp_connection_writecb(evbev_t * bev, void * arg) {
     evhtp_connection_t * c = arg;
 
+    if (c->request == NULL) {
+        /* printf("WTF %p %p\n", bev, arg); */
+        return _evhtp_connection_free(c);
+    }
+
     if (c->request->finished == 0 || evbuffer_get_length(bufferevent_get_output(bev))) {
+        /* printf("djkfsd %p %p\n", bev, arg); */
         return;
     }
 
@@ -1003,6 +1009,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
         return;
     }
 
+    /* printf("Jkfdsjlfsdkfjksdjfs %p %p\n", bev, arg); */
     return _evhtp_connection_free((evhtp_connection_t *)arg);
 }
 
@@ -1014,7 +1021,8 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
         connection->bev     = bufferevent_openssl_socket_new(evbase,
                                                              connection->sock, connection->ssl_ctx,
                                                              BUFFEREVENT_SSL_ACCEPTING,
-                                                             BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
+                                                             BEV_OPT_DEFER_CALLBACKS
+                                                             | BEV_OPT_CLOSE_ON_FREE);
         SSL_set_app_data(connection->ssl_ctx, connection);
         goto end;
     }
@@ -1023,7 +1031,6 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
     connection->bev = bufferevent_socket_new(evbase, connection->sock,
                                              BEV_OPT_CLOSE_ON_FREE);
 end:
-
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
                                       _evhtp_connection_resumecb, connection);
     event_add(connection->resume_ev, NULL);
@@ -1619,7 +1626,7 @@ query_key:
                 switch (ch) {
                     case ';':
                     case '&':
-                        TAILQ_INSERT_TAIL(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1), next);
+                        evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1));
 
                         memset(key_buf, 0, 1024);
                         memset(val_buf, 0, 1024);
@@ -1665,7 +1672,7 @@ query_key:
     }
 
     if (key_idx && val_idx) {
-        TAILQ_INSERT_TAIL(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1), next);
+        evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1));
     }
 
     return query_args;

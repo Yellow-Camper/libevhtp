@@ -291,7 +291,8 @@ struct evhtp_uri_s {
     evhtp_authority_t * authority;
     evhtp_path_t      * path;
     unsigned char     * fragment;     /**< data after '#' in uri */
-    evhtp_query_t     * query;
+    unsigned char     * query_raw;    /**< the unparsed query arguments */
+    evhtp_query_t     * query;        /**< list of k/v for query arguments */
     htp_scheme          scheme;       /**< set if a scheme is found */
 };
 
@@ -345,6 +346,7 @@ struct evhtp_request_s {
 
     evhtp_callback_cb cb;             /**< the function to call when fully processed */
     void            * cbarg;          /**< argument which is passed to the cb function */
+    int error;
 };
 
 struct evhtp_connection_s {
@@ -357,6 +359,7 @@ struct evhtp_connection_s {
     htparser        * parser;
     event_t         * resume_ev;
     int               sock;
+    int               error;
     evhtp_request_t * request;
 };
 

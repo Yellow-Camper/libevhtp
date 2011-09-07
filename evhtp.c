@@ -1040,7 +1040,7 @@ _evhtp_connection_new(evhtp_t * htp, int sock) {
     connection->htp       = htp;
     connection->parser    = htparser_new();
 
-    htparser_init(connection->parser);
+    htparser_init(connection->parser, htp_type_request);
     htparser_set_userdata(connection->parser, connection);
 
     return connection;

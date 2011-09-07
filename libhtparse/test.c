@@ -80,11 +80,11 @@ _on_new_chunk(htparser * p) {
 }
 
 static void
-_test(htparser * p, htparse_hooks * hooks, const char * l) {
+_test(htparser * p, htparse_hooks * hooks, const char * l, htp_type type) {
     printf("---- test ----\n");
     printf("%zu, %s\n", strlen(l), l);
 
-    htparser_init(p);
+    htparser_init(p, type);
     printf("%zu == %zu\n", htparser_run(p, hooks, l, strlen(l)), strlen(l));
 
     if (htparser_get_error(p)) {
@@ -95,11 +95,12 @@ _test(htparser * p, htparse_hooks * hooks, const char * l) {
 }
 
 static void
-_test_fragments(htparser * p, htparse_hooks * hooks, const char ** fragments) {
+_test_fragments(htparser * p, htparse_hooks * hooks, const char ** fragments,
+	htp_type type) {
     int i = 0;
 
     printf("---- test fragment ----\n");
-    htparser_init(p);
+    htparser_init(p, type);
 
     while (1) {
         const char * l = fragments[i++];
@@ -224,20 +225,23 @@ main(int argc, char ** argv) {
                           "Content-Length: 18446744073709551615\r\n\r\n";
 
     const char * test_fail = "GET /JF HfD]\r\n\r\n";
+    const char * test_resp_1 = "HTTP/1.0 200 OK\r\n"
+	                       "Stuff: junk\r\n\r\n";
 
-    _test(p, &hooks, test_1);
-    _test(p, &hooks, test_2);
-    _test(p, &hooks, test_3);
-    _test(p, &hooks, test_4);
-    _test(p, &hooks, test_7);
-    _test(p, &hooks, test_8);
-    _test(p, &hooks, test_9);
-    _test(p, &hooks, test_fail);
+    _test(p, &hooks, test_resp_1, htp_type_response);
+    _test(p, &hooks, test_1, htp_type_request);
+    _test(p, &hooks, test_2, htp_type_request);
+    _test(p, &hooks, test_3, htp_type_request);
+    _test(p, &hooks, test_4, htp_type_request);
+    _test(p, &hooks, test_7, htp_type_request);
+    _test(p, &hooks, test_8, htp_type_request);
+    _test(p, &hooks, test_9, htp_type_request);
+    _test(p, &hooks, test_fail, htp_type_request);
 
-    _test_fragments(p, &hooks, test_fragment_1);
-    _test_fragments(p, &hooks, test_fragment_2);
-    _test_fragments(p, &hooks, test_chunk_fragment_1);
-    _test_fragments(p, &hooks, test_chunk_fragment_2);
+    _test_fragments(p, &hooks, test_fragment_1, htp_type_request);
+    _test_fragments(p, &hooks, test_fragment_2, htp_type_request);
+    _test_fragments(p, &hooks, test_chunk_fragment_1, htp_type_request);
+    _test_fragments(p, &hooks, test_chunk_fragment_2, htp_type_request);
 
     return 0;
 } /* main */

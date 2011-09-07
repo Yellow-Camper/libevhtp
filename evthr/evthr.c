@@ -432,6 +432,7 @@ evthr_pool_new(int nthreads, void * shared) {
 
     for (i = 0; i < nthreads; i++) {
         evthr_t * thread;
+
         if (!(thread = evthr_new(shared, 0))) {
             evthr_pool_free(pool);
             return NULL;

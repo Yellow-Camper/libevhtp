@@ -74,7 +74,7 @@ _read_body(htparser * p, const char * data, size_t len) {
 
 static int
 _on_new_chunk(htparser * p) {
-    printf("\t--payload--\n");
+    printf("\t--payload (%zu)--\n", htparser_get_content_length(p));
     /* printf("..chunk..\n"); */
     return 0;
 }

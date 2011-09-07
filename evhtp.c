@@ -1000,7 +1000,7 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
         _evhtp_request_free(c->request);
         c->request = NULL;
 
-        htparser_init(c->parser);
+        htparser_init(c->parser, htp_type_request);
         return htparser_set_userdata(c->parser, c);
     } else {
         return _evhtp_connection_free(c);

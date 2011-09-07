@@ -1,3 +1,155 @@
+v0.4.0
+	- API fully documented via Doxygen
+
+	- Major re-factoring:
+			- evhtp_request_t, evhtp_connection_t evhtp_t are now exposed to the user
+
+			- htparse_hooks are no longer tied to a evhtp_t, but are private
+				globals (shouldn't ever be changed).
+
+			- bufferevent operations now share a single set of callbacks with an
+				evhtp_connection_t argument. This keeps things consistent.
+					- evhtp_connection_readcb reads and parses requests
+					- evhtp_connection_writecb determines if a response is completed
+						and whether it should keep the connection alive or close it.
+
+			- requests and connections can be paused and resumed.
+					- if you pause a request, all further request parsing is stopped so
+						that no further hooks are called until evhtp_request_resume() is
+						called.
+
+			- Callback definitions are now abstracted into a parent evhtp_callback_t
+				structure containing the type, hooks which can be added to a callback
+					- The callback-hooks act just like the old per-connection hooks.
+
+			- Callback searches have been cleaned up to facilitate both connection
+				based hooks and request based.
+
+			- Callback searches have now been broken up into 3 different functions:
+				_evhtp_callback_find,
+				_evhtp_callback_regex_find,
+				_evhtp_callback_hash_find
+					- _evhtp_callback_find is a wrapper around the other functions,
+					- _evhtp_callback_regex_find will now set a start and end matched
+						offset (so that a user can see exactly where the regex matched)
+
+			- Better API for defining a RFC compliant URI
+				- evhtp_uri_t structure is a wrapper around an entire URI
+					-> evhtp_request_authority_t
+							-- Container where username/password/hostname/port information
+								 is stored if in the request.
+					-> evhtp_request_path_t
+							-- Container where various path information from the URI is stored
+									- "full" = the full path including file, query args, and fragments
+									- "path" = just the parsed path (doesn't include file / qargs / fragments)
+									- "file" = the file found "/path/<file.ext>": file.txt being the file
+									- matched_soff = the offset where matched path was found
+									- matched_eoff = the offset where matched path was ended
+					-> fragment
+							-- a string containing fragment data in URI "...#stuff"
+					-> evhtp_request_query_t
+							-- A key/val queue of parsed URI query arguments
+					-> htp_scheme
+							- If a scheme was present, this is the enum value of the scheme
+
+			- Added evhtp_request_parse_query which will take the query portion of the
+				request URI and does a no-copy parse into an evhtp_request_query_t structure
+				(?h=b;c=d&b=4 would become a list of key-values stored in the query_t struct)
+
+			- Added evhtp_set_pre_accept_cb which calls user-defined function prior to
+				accepting a connection.
+
+			- Added evhtp_set_post_accept_cb which calls user-defined function after
+				accepting a connection.
+
+			- Added evhtp_kv_t structures which are generic key/value queues
+			- Added evhtp_kv_new()
+			- Added evhtp_kvs_new()
+			- Added evhtp_kv_free()
+			- Added evhtp_kvs_free()
+			- Added evhtp_kvs_for_each() - an iterator for kvs
+			- Added evhtp_kv_find() - returns the value (if found) for a key.
+			- Added evhtp_header_new()
+			- Added evhtp_headers_add_header()
+			- Added evhtp_header_key_add()
+
+			- evhtp_hook_type enum's have been been changed to not be in all CAPS:
+					- evhtp_hook_on_header  = type for a hook after one header is parsed
+					- evhtp_hook_on_headers = type for a hook after all headers are parsed
+					- evhtp_hook_on_path    = type for a hook after path is parsed
+					- evhtp_hook_on_read    = type for a hook when body data is read
+					- evhtp_hook_on_fini    = type for a hook just prior to being free()'d
+					- evhtp_hook_on_error   = type for a hook when a fatal error occurs
+
+    - Currently ssl bufferevents will not cleanly shutdown a SSL connection
+      once bufferevent_free() is called, only SSL_free is done. Since the
+      shutdown process is never taken the session is marked as "bad" and will
+      remove that session for the cache and other various things that can
+      break performance.
+
+      In order to fix this, before bufferevent_free() is called, I do a non-blocking
+      SSL_shutdown on the sessions SSL ctx. Since I use a set of flags which
+      essentially mark the session as clean, but ignores the full handshake; this
+      breaks TLS RFC. Not the best thing, but it works until a set of features I
+      added to libevent are put into the main base.
+
+    - Added a query_raw string which is the unparsed URI query arguments.
+
+    - SSL session callbacks setting is only done if there are user-defined ones
+      available.
+
+    - libhtparse fixes when dealing with requests with schema data.
+
+    - Fixed conditional bug for chunked responses
+			- _evhtp_create_reply() was adding a Content-Length: 0 header even if
+				the response is chunked (this breaks RFC).
+
+    - Added evhtp_kv_rm_and_free which will take a evhtp_kvs_t and evhtp_kv_t set
+      of arguments, remove the kv_t from kvs_t and free the kv_t structure.
+
+    - Added evhtp_kvs_find_kv which acts like kv_find but instead returns an
+      evhtp_kv_t structure.
+
+    - Added an on_chunk_complete hook in htparse which is called
+      when a single chunk has been fully parsed.
+
+    - Added an on_chunks_complete hook in htparse which is called
+      after all chunks in a request have been parsed.
+
+    - Added thread initialization functionality in evthr
+
+    - Added streaming reply functionality
+				- evhtp_send_reply_start() - creates the initial reply and sends
+				- evhtp_send_reply_body()  - sends a chunk of data to the client
+				- evhtp_send_reply_end()   - informs evhtp that the user is done streaming data and figures out whether to keep the connection alive or not.
+
+    - Added htparser_get_status to libhtparse
+
+		- Added HTTP response parsing in libevhtparsec
+
+    - OSX Compatability fixes
+
+    - Added evhtp_ssl_use_threads() which will properly initialize thread support for OpenSSL operations.
+
+    - ssl cfg now has 4 modes of defining how SSL session caching works
+				- evhtp_ssl_scache_type_disabled - disable cache entirely
+				- evhtp_ssl_scache_type_internal - use OpenSSL's build-in cache
+				- evhtp_ssl_scache_type_user     - use user-defined caching callbacks
+				- evhtp_ssl_scache_type_builtin  - use libevhtp's built-in cache (currently doesn't do anything)
+
+    - updated test.c to use the refactored API correctly
+
+    - Added x509_verify_cb, max_verify_depth, verify_peer and store_flags option (via Oscar Koeroo <okoeroo@gmail.com>)
+
+    - Added HTTP return code 418 (via Oscar Koeroo <okoeroo@gmail.com>) 
+
+    - Added dummy callbacks and values to the test.c program. (via Oscar Koeroo <okoeroo@gmail.com>)
+
+    - Added CA Path option for ssl_cfg. (via Oscar Koeroo <okoeroo@gmail.com>) 
+
+		- Fixed issue with htparser_should_keepalive() returning wrong values.
+
+
 v0.3.7
  - Due to various problems http-parser (ry/http-parser) I have written my own
    parser (derived and ispired from various nginx functions) (./libhtparse).

@@ -427,9 +427,9 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 p->flags = 0;
 
-		if (ch == CR || ch == LF) {
-		    break;
-		}
+                if (ch == CR || ch == LF) {
+                    break;
+                }
 
                 if ((ch < 'A' || ch > 'Z') && ch != '_') {
                     p->error = htparse_error_inval_reqline;
@@ -1157,7 +1157,9 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 switch (ch) {
                     case LF:
                         if (p->type == htp_type_response && p->status >= 100 && p->status < 200) {
-                            p->state = s_start;
+                            p->status       = 0;
+                            p->status_count = 0;
+                            p->state        = s_start;
                             break;
                         }
 

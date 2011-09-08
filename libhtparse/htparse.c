@@ -1158,6 +1158,11 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_almost_done:
                 switch (ch) {
                     case LF:
+                        if (p->type == htp_type_response && p->status >= 100 && p->status < 200) {
+                            p->state = s_start;
+                            break;
+                        }
+
                         p->state = s_done;
                         res      = hook_on_hdrs_begin_run(p, hooks);
                         break;

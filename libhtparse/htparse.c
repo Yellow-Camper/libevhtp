@@ -431,14 +431,6 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 		    break;
 		}
 
-#if 0
-                switch (ch) {
-                    case CR:
-                    case LF:
-                        break;
-                }
-#endif
-
                 if ((ch < 'A' || ch > 'Z') && ch != '_') {
                     p->error = htparse_error_inval_reqline;
                     return i + 1;

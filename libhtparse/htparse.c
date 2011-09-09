@@ -427,10 +427,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 p->flags = 0;
 
-                switch (ch) {
-                    case CR:
-                    case LF:
-                        break;
+                if (ch == CR || ch == LF) {
+                    break;
                 }
 
                 if ((ch < 'A' || ch > 'Z') && ch != '_') {
@@ -1158,6 +1156,13 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_almost_done:
                 switch (ch) {
                     case LF:
+                        if (p->type == htp_type_response && p->status >= 100 && p->status < 200) {
+                            p->status       = 0;
+                            p->status_count = 0;
+                            p->state        = s_start;
+                            break;
+                        }
+
                         p->state = s_done;
                         res      = hook_on_hdrs_begin_run(p, hooks);
                         break;

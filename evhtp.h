@@ -346,7 +346,7 @@ struct evhtp_request_s {
 
     evhtp_callback_cb cb;             /**< the function to call when fully processed */
     void            * cbarg;          /**< argument which is passed to the cb function */
-    int error;
+    int               error;
 };
 
 struct evhtp_connection_s {
@@ -358,6 +358,7 @@ struct evhtp_connection_s {
     evhtp_hooks_t   * hooks;
     htparser        * parser;
     event_t         * resume_ev;
+    struct sockaddr * saddr;
     int               sock;
     int               error;
     evhtp_request_t * request;
@@ -410,10 +411,10 @@ struct evhtp_ssl_cfg_s {
  *
  * @return a new evhtp_t structure or NULL on error
  */
-evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
+evhtp_t *           evhtp_new(evbase_t * evbase, void * arg);
 
-int       evhtp_ssl_use_threads(void);
-int       evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
+int                 evhtp_ssl_use_threads(void);
+int                 evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
 
 /**
  * @brief sets a callback which is called if no other callbacks are matched
@@ -422,9 +423,9 @@ int       evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
  * @param cb  the function to be executed
  * @param arg user-defined argument passed to the callback
  */
-void evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * arg);
-void evhtp_set_pre_accept_cb(evhtp_t * htp, evhtp_pre_accept_cb, void * arg);
-void evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept_cb, void * arg);
+void                evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * arg);
+void                evhtp_set_pre_accept_cb(evhtp_t * htp, evhtp_pre_accept_cb, void * arg);
+void                evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept_cb, void * arg);
 
 
 /**
@@ -437,7 +438,7 @@ void evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept_cb, void * arg);
  *
  * @return evhtp_callback_t * on success, NULL on error.
  */
-evhtp_callback_t * evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg);
+evhtp_callback_t *  evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg);
 
 
 /**
@@ -450,7 +451,7 @@ evhtp_callback_t * evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback
  *
  * @return evhtp_callback_t * on success, NULL on error
  */
-evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, void * arg);
+evhtp_callback_t *  evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, void * arg);
 
 
 /**
@@ -492,17 +493,17 @@ evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp
  *
  * @return 0 on success, -1 on error (if hooks is NULL, it is allocated)
  */
-int  evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * arg);
+int                 evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * arg);
 
-int  evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port);
+int                 evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port);
 
-int  evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
+int                 evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
 
-void evhtp_send_reply(evhtp_request_t * request, evhtp_res code);
+void                evhtp_send_reply(evhtp_request_t * request, evhtp_res code);
 
-void evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code);
-void evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf);
-void evhtp_send_reply_end(evhtp_request_t * request);
+void                evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code);
+void                evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf);
+void                evhtp_send_reply_end(evhtp_request_t * request);
 
 
 /**
@@ -539,8 +540,8 @@ void                evhtp_callbacks_free(evhtp_callbacks_t * callbacks);
  *
  * @return 0 on success, -1 on error.
  */
-evhtp_callback_t * evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_cb cb, void * arg);
-void               evhtp_callback_free(evhtp_callback_t * callback);
+evhtp_callback_t *  evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_cb cb, void * arg);
+void                evhtp_callback_free(evhtp_callback_t * callback);
 
 
 /**
@@ -551,7 +552,7 @@ void               evhtp_callback_free(evhtp_callback_t * callback);
  *
  * @return 0 on success, -1 on error
  */
-int evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb);
+int                 evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb);
 
 
 /**
@@ -564,15 +565,15 @@ int evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb)
  *
  * @return evhtp_kv_t * on success, NULL on error.
  */
-evhtp_kv_t  * evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc);
-evhtp_kvs_t * evhtp_kvs_new(void);
+evhtp_kv_t *        evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc);
+evhtp_kvs_t *       evhtp_kvs_new(void);
 
-void          evhtp_kv_free(evhtp_kv_t * kv);
-void          evhtp_kvs_free(evhtp_kvs_t * kvs);
-void          evhtp_kv_rm_and_free(evhtp_kvs_t * kvs, evhtp_kv_t * kv);
+void                evhtp_kv_free(evhtp_kv_t * kv);
+void                evhtp_kvs_free(evhtp_kvs_t * kvs);
+void                evhtp_kv_rm_and_free(evhtp_kvs_t * kvs, evhtp_kv_t * kv);
 
-const char  * evhtp_kv_find(evhtp_kvs_t * kvs, const char * key);
-evhtp_kv_t  * evhtp_kvs_find_kv(evhtp_kvs_t * kvs, const char * key);
+const char *        evhtp_kv_find(evhtp_kvs_t * kvs, const char * key);
+evhtp_kv_t *        evhtp_kvs_find_kv(evhtp_kvs_t * kvs, const char * key);
 
 
 /**
@@ -581,9 +582,9 @@ evhtp_kv_t  * evhtp_kvs_find_kv(evhtp_kvs_t * kvs, const char * key);
  * @param kvs an evhtp_kvs_t structure
  * @param kv  an evhtp_kv_t structure
  */
-void evhtp_kvs_add_kv(evhtp_kvs_t * kvs, evhtp_kv_t * kv);
+void                evhtp_kvs_add_kv(evhtp_kvs_t * kvs, evhtp_kv_t * kv);
 
-int  evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, void * arg);
+int                 evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, void * arg);
 
 /**
  * @brief Parses the query portion of the uri into a set of key/values
@@ -595,7 +596,7 @@ int  evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, void * arg);
  *
  * @return evhtp_query_t * on success, NULL on error
  */
-evhtp_query_t * evhtp_parse_query(const char * query, size_t len);
+evhtp_query_t *     evhtp_parse_query(const char * query, size_t len);
 
 
 /**
@@ -608,7 +609,7 @@ evhtp_query_t * evhtp_parse_query(const char * query, size_t len);
  *
  * @return evhtp_header_t * or NULL on error
  */
-evhtp_header_t * evhtp_header_new(const char * key, const char * val, char kalloc, char valloc);
+evhtp_header_t *    evhtp_header_new(const char * key, const char * val, char kalloc, char valloc);
 
 /**
  * @brief creates a new evhtp_header_t, sets only the key, and adds to the
@@ -620,7 +621,7 @@ evhtp_header_t * evhtp_header_new(const char * key, const char * val, char kallo
  *
  * @return an evhtp_header_t pointer or NULL on error
  */
-evhtp_header_t * evhtp_header_key_add(evhtp_headers_t * headers, const char * key, char kalloc);
+evhtp_header_t *    evhtp_header_key_add(evhtp_headers_t * headers, const char * key, char kalloc);
 
 
 /**
@@ -632,7 +633,7 @@ evhtp_header_t * evhtp_header_key_add(evhtp_headers_t * headers, const char * ke
  *
  * @return an evhtp_header_t pointer or NULL on error
  */
-evhtp_header_t * evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char valloc);
+evhtp_header_t *    evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char valloc);
 
 
 /**
@@ -641,7 +642,7 @@ evhtp_header_t * evhtp_header_val_add(evhtp_headers_t * headers, const char * va
  * @param headers
  * @param header
  */
-void evhtp_headers_add_header(evhtp_headers_t * headers, evhtp_header_t * header);
+void                evhtp_headers_add_header(evhtp_headers_t * headers, evhtp_header_t * header);
 
 /**
  * @brief finds the value of a key in a evhtp_headers_t structure
@@ -651,7 +652,7 @@ void evhtp_headers_add_header(evhtp_headers_t * headers, evhtp_header_t * header
  *
  * @return the value of the header key if found, NULL if not found.
  */
-const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
+const char *        evhtp_header_find(evhtp_headers_t * headers, const char * key);
 
 #define evhtp_header_find         evhtp_kv_find
 #define evhtp_headers_find_header evhtp_kvs_find_kv
@@ -665,9 +666,9 @@ const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
 #define evhtp_query_new           evhtp_kvs_new
 #define evhtp_query_free          evhtp_kvs_free
 
-void evhtp_connection_pause(evhtp_connection_t * connection);
-void evhtp_connection_resume(evhtp_connection_t * connection);
-void evhtp_request_pause(evhtp_request_t * request);
-void evhtp_request_resume(evhtp_request_t * request);
+void                evhtp_connection_pause(evhtp_connection_t * connection);
+void                evhtp_connection_resume(evhtp_connection_t * connection);
+void                evhtp_request_pause(evhtp_request_t * request);
+void                evhtp_request_resume(evhtp_request_t * request);
 #endif /* __EVHTP__H__ */
 

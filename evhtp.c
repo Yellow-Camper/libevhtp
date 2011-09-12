@@ -1129,8 +1129,12 @@ _evhtp_connection_free(evhtp_connection_t * connection) {
         evthr_dec_backlog(connection->thread);
     }
 
+    if (connection->saddr) {
+        free(connection->saddr);
+    }
+
     free(connection);
-}
+} /* _evhtp_connection_free */
 
 static int
 _evhtp_run_pre_accept(evhtp_t * htp, int sock, struct sockaddr * s, int sl) {
@@ -1201,6 +1205,9 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
     if (!(connection = _evhtp_connection_new(htp, fd))) {
         return;
     }
+
+    connection->saddr = malloc(sl);
+    memcpy(connection->saddr, s, sl);
 
     if (htp->thr_pool != NULL) {
         evthr_pool_defer(htp->thr_pool, _evhtp_run_in_thread, connection);
@@ -1729,8 +1736,10 @@ void
 evhtp_send_reply_end(evhtp_request_t * request) {
     request->finished = 1;
     bufferevent_flush(request->conn->bev, EV_WRITE, BEV_FLUSH);
-    /* bufferevent_write(request->conn->bev, "", 0); */
-    /* return _evhtp_connection_writecb(request->conn->bev, request->conn); */
+    /*
+     * bufferevent_write(request->conn->bev, "", 0);
+     * return _evhtp_connection_writecb(request->conn->bev, request->conn);
+     */
 }
 
 void

@@ -2080,9 +2080,9 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         return -1;
     }
 
-    SSL_load_error_strings();
     SSL_library_init();
-    RAND_status();
+    SSL_load_error_strings();
+    RAND_poll();
 
     htp->ssl_cfg = cfg;
     htp->ssl_ctx = SSL_CTX_new(SSLv23_server_method());

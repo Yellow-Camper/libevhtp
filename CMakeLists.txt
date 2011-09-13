@@ -101,6 +101,7 @@ message("Rel CFLAGS: ${CMAKE_C_FLAGS_RELEASE}")
 
 find_package(LibEvent)
 find_package(OpenSSL)
+find_path(LIBEVENT_INCLUDE_DIR event.h)
 
 include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}/libhtparse
@@ -109,6 +110,7 @@ include_directories(
 	${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/evthr
   ${OPENSSL_INCLUDE_DIR}
+	${LIBEVENT_INCLUDE_DIR}
 )
 
 set(LIBEVHTP_EXTERNAL_LIBS

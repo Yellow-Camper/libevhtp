@@ -1019,7 +1019,6 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     c->error = 1;
 
     if (c->request) {
-        printf("Derp\n");
         c->request->error = 1;
     }
 

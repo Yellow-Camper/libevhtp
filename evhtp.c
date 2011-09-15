@@ -1019,6 +1019,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     c->error = 1;
 
     if (c->request) {
+        printf("Derp\n");
         c->request->error = 1;
     }
 
@@ -2083,6 +2084,9 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
     SSL_library_init();
     SSL_load_error_strings();
     RAND_poll();
+
+    STACK_OF(SSL_COMP) * comp_methods = SSL_COMP_get_compression_methods();
+    sk_SSL_COMP_zero(comp_methods);
 
     htp->ssl_cfg = cfg;
     htp->ssl_ctx = SSL_CTX_new(SSLv23_server_method());

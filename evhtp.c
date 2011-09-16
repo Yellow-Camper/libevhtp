@@ -1027,6 +1027,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
 
 static int
 _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
+    struct timeval tv;
 #ifndef DISABLE_SSL
     if (connection->htp->ssl_ctx != NULL) {
         connection->ssl_ctx = SSL_new(connection->htp->ssl_ctx);
@@ -1042,7 +1043,6 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
     connection->bev = bufferevent_socket_new(evbase, connection->sock,
                                              BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
 end:
-    struct timeval tv;
     tv.tv_sec = 5;
     tv.tv_usec = 0;
     bufferevent_set_timeouts(connection->bev, &tv, NULL);

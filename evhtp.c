@@ -1042,6 +1042,10 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
     connection->bev = bufferevent_socket_new(evbase, connection->sock,
                                              BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
 end:
+    struct timeval tv;
+    tv.tv_sec = 5;
+    tv.tv_usec = 0;
+    bufferevent_set_timeouts(connection->bev, &tv, NULL);
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
                                       _evhtp_connection_resumecb, connection);
     event_add(connection->resume_ev, NULL);

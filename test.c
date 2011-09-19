@@ -358,6 +358,7 @@ main(int argc, char ** argv) {
             .x509_verify_cb     = dummy_ssl_verify_callback,
             .x509_chk_issued_cb = dummy_check_issued_cb,
             .scache_type        = evhtp_ssl_scache_type_internal,
+            .scache_size        = 1024,
             .scache_timeout     = 1024,
             .scache_init        = NULL,
             .scache_add         = NULL,

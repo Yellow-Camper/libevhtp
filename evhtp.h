@@ -218,6 +218,9 @@ struct evhtp_s {
 
     evhtp_thread_init_cb thread_init_cb;
     void               * thread_init_cbarg;
+
+    struct timeval * recv_timeo;
+    struct timeval * send_timeo;
 };
 
 /**
@@ -396,6 +399,7 @@ struct evhtp_ssl_cfg_s {
     long                    store_flags;
     evhtp_ssl_scache_type   scache_type;
     long                    scache_timeout;
+    long                    scache_size;
     evhtp_ssl_scache_init   scache_init;
     evhtp_ssl_scache_add    scache_add;
     evhtp_ssl_scache_get    scache_get;
@@ -413,6 +417,7 @@ struct evhtp_ssl_cfg_s {
  */
 evhtp_t *           evhtp_new(evbase_t * evbase, void * arg);
 
+void                evhtp_set_timeouts(evhtp_t * htp, struct timeval * r, struct timeval * w);
 int                 evhtp_ssl_use_threads(void);
 int                 evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
 

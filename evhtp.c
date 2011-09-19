@@ -1027,8 +1027,6 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
 
 static int
 _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
-    struct timeval tv1;
-    struct timeval tv2;
 #ifndef DISABLE_SSL
     if (connection->htp->ssl_ctx != NULL) {
         connection->ssl_ctx = SSL_new(connection->htp->ssl_ctx);
@@ -1044,11 +1042,11 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
     connection->bev = bufferevent_socket_new(evbase, connection->sock,
                                              BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
 end:
-    tv1.tv_sec = 2;
-    tv1.tv_usec = 0;
-    tv2.tv_sec = 5;
-    tv2.tv_usec = 0;
-    bufferevent_set_timeouts(connection->bev, &tv1, &tv2);
+
+    bufferevent_set_timeouts(connection->bev,
+                             connection->htp->recv_timeo,
+                             connection->htp->send_timeo);
+
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
                                       _evhtp_connection_resumecb, connection);
     event_add(connection->resume_ev, NULL);
@@ -2097,6 +2095,10 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
     htp->ssl_cfg = cfg;
     htp->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L
+    SSL_CTX_set_options(htp->ssl_ctx, SSL_MODE_RELEASE_BUFFERS);
+#endif
+
     SSL_CTX_set_options(htp->ssl_ctx, cfg->ssl_opts);
 
     if (cfg->ciphers != NULL) {
@@ -2157,20 +2159,23 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
                                    (void*)&session_id_context,
                                    sizeof(session_id_context));
 
-    SSL_CTX_set_session_cache_mode(htp->ssl_ctx, cache_mode);
-    SSL_CTX_sess_set_cache_size(htp->ssl_ctx, 50000);
-
-    if (cfg->scache_type == evhtp_ssl_scache_type_builtin ||
-        cfg->scache_type == evhtp_ssl_scache_type_user) {
-        SSL_CTX_sess_set_new_cb(htp->ssl_ctx, _evhtp_ssl_add_scache_ent);
-        SSL_CTX_sess_set_get_cb(htp->ssl_ctx, _evhtp_ssl_get_scache_ent);
-        SSL_CTX_sess_set_remove_cb(htp->ssl_ctx, _evhtp_ssl_delete_scache_ent);
-    }
-
     SSL_CTX_set_app_data(htp->ssl_ctx, htp);
+    SSL_CTX_set_session_cache_mode(htp->ssl_ctx, cache_mode);
 
-    if (cfg->scache_init) {
-        cfg->args = (cfg->scache_init)(htp);
+    if (cache_mode != SSL_SESS_CACHE_OFF) {
+        SSL_CTX_sess_set_cache_size(htp->ssl_ctx,
+                                    cfg->scache_size ? cfg->scache_size : 1024);
+
+        if (cfg->scache_type == evhtp_ssl_scache_type_builtin ||
+            cfg->scache_type == evhtp_ssl_scache_type_user) {
+            SSL_CTX_sess_set_new_cb(htp->ssl_ctx, _evhtp_ssl_add_scache_ent);
+            SSL_CTX_sess_set_get_cb(htp->ssl_ctx, _evhtp_ssl_get_scache_ent);
+            SSL_CTX_sess_set_remove_cb(htp->ssl_ctx, _evhtp_ssl_delete_scache_ent);
+
+            if (cfg->scache_init) {
+                cfg->args = (cfg->scache_init)(htp);
+            }
+        }
     }
 
     return 0;
@@ -2178,6 +2183,18 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
 
 #endif
 
+void
+evhtp_set_timeouts(evhtp_t * htp, struct timeval * r_timeo, struct timeval * w_timeo) {
+    if (r_timeo != NULL) {
+        htp->recv_timeo = malloc(sizeof(struct timeval));
+        memcpy(htp->recv_timeo, r_timeo, sizeof(struct timeval));
+    }
+
+    if (w_timeo != NULL) {
+        htp->send_timeo = malloc(sizeof(struct timeval));
+        memcpy(htp->send_timeo, w_timeo, sizeof(struct timeval));
+    }
+}
 
 evhtp_t *
 evhtp_new(evbase_t * evbase, void * arg) {

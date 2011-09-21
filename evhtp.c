@@ -1786,7 +1786,7 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 
     htp->server = evconnlistener_new_bind(htp->evbase,
                                           _evhtp_accept_cb, (void *)htp,
-                                          LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, 1024,
+                                          LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, backlog,
                                           (struct sockaddr *)&sin, sizeof(sin));
     return htp->server ? 0 : -1;
 }

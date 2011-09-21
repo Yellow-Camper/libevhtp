@@ -500,7 +500,7 @@ evhtp_callback_t *  evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evht
  */
 int                 evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * arg);
 
-int                 evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port);
+int                 evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port, int backlog);
 
 int                 evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
 

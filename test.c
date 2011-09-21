@@ -376,7 +376,7 @@ main(int argc, char ** argv) {
     }
 #endif
 
-    evhtp_bind_socket(htp, bind_addr, bind_port, 1024);
+    evhtp_bind_socket(htp, bind_addr, bind_port, 128);
 
     signal(SIGINT, sigint);
 

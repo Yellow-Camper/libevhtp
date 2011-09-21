@@ -1051,7 +1051,7 @@ end:
     tv2.tv_sec  = 5;
     tv2.tv_usec = 0;
     bufferevent_set_timeouts(connection->bev,
-                             &tv1, &tv2);
+                             &tv1, NULL);//&tv2);
 #if 0
     connection->htp->recv_timeo,
     connection->htp->send_timeo);

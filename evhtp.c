@@ -2095,8 +2095,10 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
     htp->ssl_cfg = cfg;
     htp->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 
+#if 0
 #if OPENSSL_VERSION_NUMBER >= 0x10000000L
     SSL_CTX_set_options(htp->ssl_ctx, SSL_MODE_RELEASE_BUFFERS);
+#endif
 #endif
 
     SSL_CTX_set_options(htp->ssl_ctx, cfg->ssl_opts);

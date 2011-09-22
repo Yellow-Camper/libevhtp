@@ -465,12 +465,12 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                     switch (p->buf_idx) {
                         case 3:
-                            if (_str3_cmp(m, 'G', 'E', 'T', ' ')) {
+                            if (_str3_cmp(m, 'G', 'E', 'T', '\0')) {
                                 p->method = htp_method_GET;
                                 break;
                             }
 
-                            if (_str3_cmp(m, 'P', 'U', 'T', ' ')) {
+                            if (_str3_cmp(m, 'P', 'U', 'T', '\0')) {
                                 p->method = htp_method_PUT;
                                 break;
                             }

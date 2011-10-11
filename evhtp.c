@@ -1589,15 +1589,15 @@ evhtp_parse_query(const char * query, size_t len) {
         res = 0;
         ch  = query[i];
 
-        if (key_idx >= 1024 || val_idx >= 1024) {
+        if (key_idx >= sizeof(key_buf) || val_idx >= sizeof(val_buf)) {
             res = -1;
             goto error;
         }
 
         switch (state) {
             case s_query_start:
-                memset(key_buf, 0, 1024);
-                memset(val_buf, 0, 1024);
+                memset(key_buf, 0, sizeof(key_buf));
+                memset(val_buf, 0, sizeof(val_buf));
 
                 key_idx = 0;
                 val_idx = 0;
@@ -1665,8 +1665,8 @@ query_key:
                     case '&':
                         evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1));
 
-                        memset(key_buf, 0, 1024);
-                        memset(val_buf, 0, 1024);
+                        memset(key_buf, 0, sizeof(key_buf));
+                        memset(val_buf, 0, sizeof(val_buf));
 
                         key_idx = 0;
                         val_idx = 0;

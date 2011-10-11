@@ -1027,9 +1027,6 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
 
 static int
 _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
-    struct timeval tv1;
-    struct timeval tv2;
-
 #ifndef DISABLE_SSL
     if (connection->htp->ssl_ctx != NULL) {
         connection->ssl_ctx = SSL_new(connection->htp->ssl_ctx);
@@ -1046,16 +1043,9 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
                                              BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
 end:
 
-    tv1.tv_sec  = 2;
-    tv1.tv_usec = 0;
-    tv2.tv_sec  = 5;
-    tv2.tv_usec = 0;
     bufferevent_set_timeouts(connection->bev,
-                             &tv1, NULL);//&tv2);
-#if 0
-    connection->htp->recv_timeo,
-    connection->htp->send_timeo);
-#endif
+                             connection->htp->recv_timeo,
+                             connection->htp->send_timeo);
 
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
                                       _evhtp_connection_resumecb, connection);

@@ -298,9 +298,11 @@ _str_to_ssize_t(char * str, size_t n) {
 
         value = value * 10 + (*str - '0');
 
+#if 0
         if (value > INTMAX_MAX) {
             return -1;
         }
+#endif
     }
 
     return value;
@@ -1454,8 +1456,10 @@ hdrline_start:
                     break;
                 } else if (p->flags & parser_flag_chunked) {
                     p->state = s_chunk_size_start;
+		    i--;
                 } else if (p->content_len > 0) {
                     p->state = s_body_read;
+		    i--;
                 } else if (p->content_len == 0) {
                     res      = hook_on_msg_complete_run(p, hooks);
                     p->state = s_start;

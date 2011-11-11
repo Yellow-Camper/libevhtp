@@ -259,10 +259,10 @@ parse_args(int argc, char ** argv) {
                 printf("Usage: %s [opts]\n%s", argv[0], help);
                 return -1;
             case 'a':
-                bind_addr = strdup(optarg);
+                bind_addr   = strdup(optarg);
                 break;
             case 'p':
-                bind_port = atoi(optarg);
+                bind_port   = atoi(optarg);
                 break;
 #ifndef DISABLE_EVTHR
             case 't':
@@ -274,10 +274,10 @@ parse_args(int argc, char ** argv) {
 #endif
 #ifndef DISABLE_SSL
             case 's':
-                ssl_pem = strdup(optarg);
+                ssl_pem     = strdup(optarg);
                 break;
             case 'c':
-                ssl_ca = strdup(optarg);
+                ssl_ca      = strdup(optarg);
                 break;
 #endif
             default:
@@ -347,23 +347,24 @@ main(int argc, char ** argv) {
 #ifndef DISABLE_SSL
     if (ssl_pem != NULL) {
         evhtp_ssl_cfg_t scfg = {
-            .pemfile            = ssl_pem,
-            .privfile           = ssl_pem,
-            .cafile             = ssl_ca,
-            .capath             = ssl_capath,
-            .ciphers            = "RC4+RSA:HIGH:+MEDIUM:+LOW",
-            .ssl_opts           = SSL_OP_NO_SSLv2,
-            .verify_peer        = SSL_VERIFY_PEER,
-            .verify_depth       = 42,
-            .x509_verify_cb     = dummy_ssl_verify_callback,
-            .x509_chk_issued_cb = dummy_check_issued_cb,
-            .scache_type        = evhtp_ssl_scache_type_internal,
-            .scache_size        = 1024,
-            .scache_timeout     = 1024,
-            .scache_init        = NULL,
-            .scache_add         = NULL,
-            .scache_get         = NULL,
-            .scache_del         = NULL,
+            .pemfile             = ssl_pem,
+            .privfile            = ssl_pem,
+            .cafile              = ssl_ca,
+            .capath              = ssl_capath,
+            .ciphers             = "RC4+RSA:HIGH:+MEDIUM:+LOW",
+            .ssl_opts            = SSL_OP_NO_SSLv2,
+            .verify_peer         = SSL_VERIFY_PEER,
+            .verify_depth        = 42,
+            .x509_verify_cb      = dummy_ssl_verify_callback,
+            .x509_chk_issued_cb  = dummy_check_issued_cb,
+            .scache_type         = evhtp_ssl_scache_type_internal,
+            .scache_size         = 1024,
+            .scache_timeout      = 1024,
+            .scache_init         = NULL,
+            .scache_add          = NULL,
+            .scache_get          = NULL,
+            .scache_del          = NULL,
+            .evhtp_ssl_passwd_cb = NULL
         };
 
         evhtp_ssl_init(htp, &scfg);

@@ -272,7 +272,7 @@ str_to_uint64(char * str, size_t n, int * err) {
 
         check = value * 10 + (*str - '0');
 
-        if (check <= value || check > UINT64_MAX) {
+        if ((value && check <= value) || check > UINT64_MAX) {
             *err = 1;
             return 0;
         }
@@ -1456,10 +1456,10 @@ hdrline_start:
                     break;
                 } else if (p->flags & parser_flag_chunked) {
                     p->state = s_chunk_size_start;
-		    i--;
+                    i--;
                 } else if (p->content_len > 0) {
                     p->state = s_body_read;
-		    i--;
+                    i--;
                 } else if (p->content_len == 0) {
                     res      = hook_on_msg_complete_run(p, hooks);
                     p->state = s_start;

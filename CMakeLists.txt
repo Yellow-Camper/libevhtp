@@ -143,9 +143,14 @@ install (FILES libhtparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
 install (FILES oniguruma/onigposix.h DESTINATION include)
 
-#add_executable(test2 test2.c)
-#target_link_libraries(test2 libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
+find_library (LIB_DL dl)
+set (SYS_LIBS ${LIB_DL})
+
+if (NOT APPLE)
+	find_library (LIB_RT rt)
+	set (SYS_LIBS ${SYS_LIBS} ${LIB_RT})
+endif()
 
 add_executable(test test.c)
-target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} rt)
+target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 

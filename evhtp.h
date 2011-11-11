@@ -87,7 +87,6 @@ typedef evhtp_res (*evhtp_hook_connection_fini_cb)(evhtp_connection_t * connecti
 typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
 typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
 
-typedef int (*evhtp_ssl_passwd_cb)(char * buf, int size, int rwflag, void * arg);
 typedef int (*evhtp_ssl_verify_cb)(int pre_verify, X509_STORE_CTX * ctx);
 typedef int (*evhtp_ssl_chk_issued_cb)(X509_STORE_CTX * ctx, X509 * x, X509 * issuer);
 
@@ -408,7 +407,6 @@ struct evhtp_ssl_cfg_s {
     evhtp_ssl_scache_add    scache_add;
     evhtp_ssl_scache_get    scache_get;
     evhtp_ssl_scache_del    scache_del;
-    evhtp_ssl_passwd_cb     passwd_cb;
     void                  * args;
 };
 

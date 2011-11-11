@@ -364,7 +364,6 @@ main(int argc, char ** argv) {
             .scache_add          = NULL,
             .scache_get          = NULL,
             .scache_del          = NULL,
-            .evhtp_ssl_passwd_cb = NULL
         };
 
         evhtp_ssl_init(htp, &scfg);
@@ -377,7 +376,10 @@ main(int argc, char ** argv) {
     }
 #endif
 
-    evhtp_bind_socket(htp, bind_addr, bind_port, 128);
+    if (evhtp_bind_socket(htp, bind_addr, bind_port, 128) < 0) {
+        fprintf(stderr, "Could not bind socket: %s\n", strerror(errno));
+        exit(-1);
+    }
 
     signal(SIGINT, sigint);
 

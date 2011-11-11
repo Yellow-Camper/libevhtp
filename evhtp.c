@@ -1178,7 +1178,7 @@ end:
 
 static void
 _evhtp_default_request_cb(evhtp_request_t * request, void * arg) {
-    return;
+    return evhtp_send_reply(request, EVHTP_RES_NOTFOUND);
 }
 
 static evhtp_connection_t *

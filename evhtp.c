@@ -189,9 +189,10 @@ static htparse_hooks request_psets = {
 };
 
 #ifndef DISABLE_SSL
-static int              session_id_context = 1;
-static int              ssl_num_locks;
-static evhtp_mutex_t ** ssl_locks;
+static int             session_id_context    = 1;
+static int             ssl_num_locks;
+static evhtp_mutex_t * ssl_locks;
+static int             ssl_locks_initialized = 0;
 #endif
 
 /*
@@ -1148,7 +1149,8 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
         connection->bev     = bufferevent_openssl_socket_new(evbase,
                                                              connection->sock, connection->ssl_ctx,
                                                              BUFFEREVENT_SSL_ACCEPTING,
-                                                             BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
+                                                             BEV_OPT_CLOSE_ON_FREE |
+                                                             BEV_OPT_DEFER_CALLBACKS);
         SSL_set_app_data(connection->ssl_ctx, connection);
         goto end;
     }
@@ -1355,9 +1357,9 @@ static void
 _evhtp_ssl_thread_lock(int mode, int type, const char * file, int line) {
     if (type < ssl_num_locks) {
         if (mode & CRYPTO_LOCK) {
-            pthread_mutex_lock(ssl_locks[type]);
+            pthread_mutex_lock(&(ssl_locks[type]));
         } else {
-            pthread_mutex_unlock(ssl_locks[type]);
+            pthread_mutex_unlock(&(ssl_locks[type]));
         }
     }
 }
@@ -2117,13 +2119,13 @@ evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, voi
     htp->thread_init_cb    = init_cb;
     htp->thread_init_cbarg = arg;
 
-    if (!(htp->thr_pool = evthr_pool_new(nthreads, _evhtp_thread_init, htp))) {
-        return -1;
-    }
-
 #ifndef DISABLE_SSL
     evhtp_ssl_use_threads();
 #endif
+
+    if (!(htp->thr_pool = evthr_pool_new(nthreads, _evhtp_thread_init, htp))) {
+        return -1;
+    }
 
     evthr_pool_start(htp->thr_pool);
     return 0;
@@ -2174,12 +2176,17 @@ int
 evhtp_ssl_use_threads(void) {
     int i;
 
-    ssl_num_locks = CRYPTO_num_locks();
-    ssl_locks     = malloc(ssl_num_locks * sizeof(evhtp_mutex_t *));
+    if (ssl_locks_initialized == 1) {
+        return 0;
+    }
+
+    ssl_locks_initialized = 1;
+
+    ssl_num_locks         = CRYPTO_num_locks();
+    ssl_locks = malloc(ssl_num_locks * sizeof(evhtp_mutex_t));
 
     for (i = 0; i < ssl_num_locks; i++) {
-        ssl_locks[i] = malloc(sizeof(evhtp_mutex_t));
-        pthread_mutex_init(ssl_locks[i], NULL);
+        pthread_mutex_init(&(ssl_locks[i]), NULL);
     }
 
     CRYPTO_set_id_callback(_evhtp_ssl_get_thread_id);

@@ -180,9 +180,12 @@ print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
 
 static evhtp_res
 print_data(evhtp_request_t * req, evbuf_t * buf, void * arg ) {
+#if 0
     evbuffer_add_printf(req->buffer_out,
                         "got %zu bytes of data\n",
                         evbuffer_get_length(buf));
+#endif
+    evbuffer_drain(buf, -1);
 
     return EVHTP_RES_OK;
 }
@@ -367,6 +370,16 @@ main(int argc, char ** argv) {
         };
 
         evhtp_ssl_init(htp, &scfg);
+
+	if (use_threads) {
+#define OPENSSL_THREAD_DEFINES
+#include <openssl/opensslconf.h>
+#if defined(OPENSSL_THREADS)
+#else
+	fprintf(stderr, "Your version of OpenSSL does not support threading!\n");
+	exit(-1);
+#endif
+	}
     }
 #endif
 

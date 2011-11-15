@@ -28,7 +28,7 @@
 #define htparse_log_debug(fmt, ...) do {} while (0)
 #endif
 
-#define PARSER_STACK_MAX 1024
+#define PARSER_STACK_MAX 8192
 #define LF               (unsigned char)10
 #define CR               (unsigned char)13
 #define CRLF             "\x0d\x0a"

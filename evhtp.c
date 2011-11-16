@@ -23,6 +23,9 @@ static int                  _evhtp_request_parser_header_val(htparser * p, const
 static int                  _evhtp_request_parser_headers(htparser * p);
 static int                  _evhtp_request_parser_body(htparser * p, const char * data, size_t len);
 static int                  _evhtp_request_parser_fini(htparser * p);
+static int                  _evhtp_request_parser_chunk_new(htparser * p);
+static int                  _evhtp_request_parser_chunk_fini(htparser * p);
+static int                  _evhtp_request_parser_chunks_fini(htparser * p);
 
 static void                 _evhtp_connection_readcb(evbev_t * bev, void * arg);
 
@@ -35,11 +38,11 @@ static void                 _evhtp_uri_free(evhtp_uri_t * uri);
 static evhtp_path_t       * _evhtp_path_new(const char * data, size_t len);
 static void                 _evhtp_path_free(evhtp_path_t * path);
 
-#define HOOK_AVAIL(var, hook_name)                (var->hooks && var->hooks->hook_name)
-#define HOOK_FUNC(var, hook_name)                 (var->hooks->hook_name)
-#define HOOK_ARGS(var, hook_name)                 var->hooks->hook_name ## _arg
+#define HOOK_AVAIL(var, hook_name)                 (var->hooks && var->hooks->hook_name)
+#define HOOK_FUNC(var, hook_name)                  (var->hooks->hook_name)
+#define HOOK_ARGS(var, hook_name)                  var->hooks->hook_name ## _arg
 
-#define HOOK_REQUEST_RUN(request, hook_name, ...) do {                                        \
+#define HOOK_REQUEST_RUN(request, hook_name, ...)  do {                                       \
         if (HOOK_AVAIL(request, hook_name)) {                                                 \
             return HOOK_FUNC(request, hook_name) (request, __VA_ARGS__,                       \
                                                   HOOK_ARGS(request, hook_name));             \
@@ -50,6 +53,18 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
                                                         HOOK_ARGS(request->conn, hook_name)); \
         }                                                                                     \
 } while (0)
+
+#define HOOK_REQUEST_RUN_NARGS(request, hook_name) do {                                       \
+        if (HOOK_AVAIL(request, hook_name)) {                                                 \
+            return HOOK_FUNC(request, hook_name) (request,                                    \
+                                                  HOOK_ARGS(request, hook_name));             \
+        }                                                                                     \
+                                                                                              \
+        if (HOOK_AVAIL(request->conn, hook_name)) {                                           \
+            return HOOK_FUNC(request->conn, hook_name) (request,                              \
+                                                        HOOK_ARGS(request->conn, hook_name)); \
+        }                                                                                     \
+} while (0);
 
 
 static int scode_tree_initialized = 0;
@@ -181,9 +196,9 @@ static htparse_hooks request_psets = {
     .hdr_key            = _evhtp_request_parser_header_key,
     .hdr_val            = _evhtp_request_parser_header_val,
     .on_hdrs_complete   = _evhtp_request_parser_headers,
-    .on_new_chunk       = NULL,
-    .on_chunk_complete  = NULL,
-    .on_chunks_complete = NULL,
+    .on_new_chunk       = _evhtp_request_parser_chunk_new,
+    .on_chunk_complete  = _evhtp_request_parser_chunk_fini,
+    .on_chunks_complete = _evhtp_request_parser_chunks_fini,
     .body               = _evhtp_request_parser_body,
     .on_msg_complete    = _evhtp_request_parser_fini
 };
@@ -386,6 +401,7 @@ _evhtp_body_hook(evhtp_request_t * request, evbuf_t * buf) {
  */
 static evhtp_res
 _evhtp_request_fini_hook(evhtp_request_t * request) {
+#if 0
     if (request->hooks && request->hooks->on_request_fini) {
         return (request->hooks->on_request_fini)(request,
                                                  request->hooks->on_request_fini_arg);
@@ -395,6 +411,29 @@ _evhtp_request_fini_hook(evhtp_request_t * request) {
         return (request->conn->hooks->on_request_fini)(request,
                                                        request->conn->hooks->on_request_fini_arg);
     }
+#endif
+    HOOK_REQUEST_RUN_NARGS(request, on_request_fini);
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
+_evhtp_chunk_new_hook(evhtp_request_t * request, uint64_t len) {
+    HOOK_REQUEST_RUN(request, on_new_chunk, len);
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
+_evhtp_chunk_fini_hook(evhtp_request_t * request) {
+    HOOK_REQUEST_RUN_NARGS(request, on_chunk_fini);
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
+_evhtp_chunks_fini_hook(evhtp_request_t * request) {
+    HOOK_REQUEST_RUN_NARGS(request, on_chunks_fini);
 
     return EVHTP_RES_OK;
 }
@@ -931,9 +970,11 @@ _evhtp_request_parser_headers(htparser * p) {
         return -1;
     }
 
+#if 0
     if (!evhtp_header_find(c->request->headers_in, "Content-Length")) {
         return 0;
     }
+#endif
 
     if (!(expect_val = evhtp_header_find(c->request->headers_in, "Expect"))) {
         return 0;
@@ -966,6 +1007,40 @@ _evhtp_request_parser_body(htparser * p, const char * data, size_t len) {
     evbuffer_free(buf);
 
     return res;
+}
+
+static int
+_evhtp_request_parser_chunk_new(htparser * p) {
+    evhtp_connection_t * c = htparser_get_userdata(p);
+
+    if ((c->request->status = _evhtp_chunk_new_hook(c->request,
+                                                    htparser_get_content_length(p))) != EVHTP_RES_OK) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+_evhtp_request_parser_chunk_fini(htparser * p) {
+    evhtp_connection_t * c = htparser_get_userdata(p);
+
+    if ((c->request->status = _evhtp_chunk_fini_hook(c->request)) != EVHTP_RES_OK) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+_evhtp_request_parser_chunks_fini(htparser * p) {
+    evhtp_connection_t * c = htparser_get_userdata(p);
+
+    if ((c->request->status = _evhtp_chunks_fini_hook(c->request)) != EVHTP_RES_OK) {
+        return -1;
+    }
+
+    return 0;
 }
 
 static int
@@ -1149,8 +1224,7 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
         connection->bev     = bufferevent_openssl_socket_new(evbase,
                                                              connection->sock, connection->ssl_ctx,
                                                              BUFFEREVENT_SSL_ACCEPTING,
-                                                             BEV_OPT_CLOSE_ON_FREE |
-                                                             BEV_OPT_DEFER_CALLBACKS);
+                                                             BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
         SSL_set_app_data(connection->ssl_ctx, connection);
         goto end;
     }
@@ -2075,6 +2149,18 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * a
         case evhtp_hook_on_error:
             (*hooks)->on_error               = (evhtp_hook_err_cb)cb;
             (*hooks)->on_error_arg           = arg;
+            break;
+        case evhtp_hook_on_new_chunk:
+            (*hooks)->on_new_chunk           = (evhtp_hook_chunk_new_cb)cb;
+            (*hooks)->on_new_chunk_arg       = arg;
+            break;
+        case evhtp_hook_on_chunk_complete:
+            (*hooks)->on_chunk_fini          = (evhtp_hook_chunk_fini_cb)cb;
+            (*hooks)->on_chunk_fini_arg      = arg;
+            break;
+        case evhtp_hook_on_chunks_complete:
+            (*hooks)->on_chunks_fini         = (evhtp_hook_chunks_fini_cb)cb;
+            (*hooks)->on_chunks_fini_arg     = arg;
             break;
         default:
             return -1;

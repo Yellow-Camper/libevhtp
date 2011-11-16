@@ -83,6 +83,9 @@ typedef evhtp_res (*evhtp_hook_path_cb)(evhtp_request_t * req, evhtp_path_t * pa
 typedef evhtp_res (*evhtp_hook_read_cb)(evhtp_request_t * req, evbuf_t * buf, void * arg);
 typedef evhtp_res (*evhtp_hook_request_fini_cb)(evhtp_request_t * req, void * arg);
 typedef evhtp_res (*evhtp_hook_connection_fini_cb)(evhtp_connection_t * connection, void * arg);
+typedef evhtp_res (*evhtp_hook_chunk_new_cb)(evhtp_request_t * r, uint64_t len, void * arg);
+typedef evhtp_res (*evhtp_hook_chunk_fini_cb)(evhtp_request_t * r, void * arg);
+typedef evhtp_res (*evhtp_hook_chunks_fini_cb)(evhtp_request_t * r, void * arg);
 
 typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
 typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
@@ -95,10 +98,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION "0.4.1"
-#define EVHTP_VERSION_MAJOR 0
-#define EVHTP_VERSION_MINOR 4
-#define EVHTP_VERSION_PATCH 1
+#define EVHTP_VERSION          "0.4.1"
+#define EVHTP_VERSION_MAJOR    0
+#define EVHTP_VERSION_MINOR    4
+#define EVHTP_VERSION_PATCH    1
 
 #define evhtp_headers_iterator evhtp_kvs_iterator
 
@@ -181,6 +184,9 @@ enum evhtp_hook_type {
     evhtp_hook_on_read,         /**< type which defines to hook whenever the parser recieves data in a body */
     evhtp_hook_on_request_fini, /**< type which defines to hook before the request is free'd */
     evhtp_hook_on_connection_fini,
+    evhtp_hook_on_new_chunk,
+    evhtp_hook_on_chunk_complete,
+    evhtp_hook_on_chunks_complete,
     evhtp_hook_on_error         /**< type which defines to hook whenever an error occurs */
 };
 
@@ -382,6 +388,9 @@ struct evhtp_hooks_s {
     evhtp_hook_request_fini_cb    on_request_fini;
     evhtp_hook_connection_fini_cb on_connection_fini;
     evhtp_hook_err_cb             on_error;
+    evhtp_hook_chunk_new_cb       on_new_chunk;
+    evhtp_hook_chunk_fini_cb      on_chunk_fini;
+    evhtp_hook_chunks_fini_cb     on_chunks_fini;
 
     void * on_header_arg;
     void * on_headers_arg;
@@ -390,6 +399,9 @@ struct evhtp_hooks_s {
     void * on_request_fini_arg;
     void * on_connection_fini_arg;
     void * on_error_arg;
+    void * on_new_chunk_arg;
+    void * on_chunk_fini_arg;
+    void * on_chunks_fini_arg;
 };
 
 struct evhtp_ssl_cfg_s {

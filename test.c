@@ -180,12 +180,36 @@ print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
 
 static evhtp_res
 print_data(evhtp_request_t * req, evbuf_t * buf, void * arg ) {
-#if 0
     evbuffer_add_printf(req->buffer_out,
                         "got %zu bytes of data\n",
                         evbuffer_get_length(buf));
+#if 0
+    printf("%.*s", evbuffer_get_length(buf), (char *)evbuffer_pullup(buf,
+                                                                     evbuffer_get_length(buf)));
 #endif
     evbuffer_drain(buf, -1);
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
+print_new_chunk_len(evhtp_request_t * req, uint64_t len, void * arg) {
+    evbuffer_add_printf(req->buffer_out,
+                        "started new chunk, %zu bytes\n", len);
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
+print_chunk_complete(evhtp_request_t * req, void * arg) {
+    evbuffer_add_printf(req->buffer_out, "ended a single chunk\n");
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
+print_chunks_complete(evhtp_request_t * req, void * arg) {
+    evbuffer_add_printf(req->buffer_out, "all chunks read\n");
 
     return EVHTP_RES_OK;
 }
@@ -207,11 +231,23 @@ test_pre_accept(int fd, struct sockaddr * sin, int sl, void * arg) {
 }
 
 static evhtp_res
+test_fini(evhtp_request_t * r, void * arg) {
+    fprintf(stderr, ".");
+    fflush(stderr);
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
 set_my_connection_handlers(evhtp_connection_t * conn, void * arg ) {
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_header, print_kv, "foo");
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_headers, print_kvs, "bar");
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_path, print_path, "baz");
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_read, print_data, "derp");
+    evhtp_set_hook(&conn->hooks, evhtp_hook_on_new_chunk, print_new_chunk_len, NULL);
+    evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunk_complete, print_chunk_complete, NULL);
+    evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunks_complete, print_chunks_complete, NULL);
+    evhtp_set_hook(&conn->hooks, evhtp_hook_on_request_fini, test_fini, NULL);
 
     return EVHTP_RES_OK;
 }
@@ -350,36 +386,36 @@ main(int argc, char ** argv) {
 #ifndef DISABLE_SSL
     if (ssl_pem != NULL) {
         evhtp_ssl_cfg_t scfg = {
-            .pemfile             = ssl_pem,
-            .privfile            = ssl_pem,
-            .cafile              = ssl_ca,
-            .capath              = ssl_capath,
-            .ciphers             = "RC4+RSA:HIGH:+MEDIUM:+LOW",
-            .ssl_opts            = SSL_OP_NO_SSLv2,
-            .verify_peer         = SSL_VERIFY_PEER,
-            .verify_depth        = 42,
-            .x509_verify_cb      = dummy_ssl_verify_callback,
-            .x509_chk_issued_cb  = dummy_check_issued_cb,
-            .scache_type         = evhtp_ssl_scache_type_internal,
-            .scache_size         = 1024,
-            .scache_timeout      = 1024,
-            .scache_init         = NULL,
-            .scache_add          = NULL,
-            .scache_get          = NULL,
-            .scache_del          = NULL,
+            .pemfile            = ssl_pem,
+            .privfile           = ssl_pem,
+            .cafile             = ssl_ca,
+            .capath             = ssl_capath,
+            .ciphers            = "RC4+RSA:HIGH:+MEDIUM:+LOW",
+            .ssl_opts           = SSL_OP_NO_SSLv2,
+            .verify_peer        = SSL_VERIFY_PEER,
+            .verify_depth       = 42,
+            .x509_verify_cb     = dummy_ssl_verify_callback,
+            .x509_chk_issued_cb = dummy_check_issued_cb,
+            .scache_type        = evhtp_ssl_scache_type_internal,
+            .scache_size        = 1024,
+            .scache_timeout     = 1024,
+            .scache_init        = NULL,
+            .scache_add         = NULL,
+            .scache_get         = NULL,
+            .scache_del         = NULL,
         };
 
         evhtp_ssl_init(htp, &scfg);
 
-	if (use_threads) {
-#define OPENSSL_THREAD_DEFINES
+        if (use_threads) {
+            #define OPENSSL_THREAD_DEFINES
 #include <openssl/opensslconf.h>
 #if defined(OPENSSL_THREADS)
 #else
-	fprintf(stderr, "Your version of OpenSSL does not support threading!\n");
-	exit(-1);
+            fprintf(stderr, "Your version of OpenSSL does not support threading!\n");
+            exit(-1);
 #endif
-	}
+        }
     }
 #endif
 

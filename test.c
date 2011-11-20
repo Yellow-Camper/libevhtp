@@ -434,7 +434,7 @@ main(int argc, char ** argv) {
 
     signal(SIGINT, sigint);
 
-    event_base_loop(evbase, 0);
+    event_base_loop(evbase, 1);
     return 0;
 } /* main */
 

@@ -2505,7 +2505,6 @@ evhtp_request_new(evhtp_callback_cb cb, void * arg) {
     return r;
 }
 
-
 int
 evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r,
                    htp_method meth, const char * uri) {

@@ -8,8 +8,6 @@
 static void
 request_cb(evhtp_request_t * req, void * arg) {
     printf("hi %zu\n", evbuffer_get_length(req->buffer_in));
-
-    event_base_loopbreak((evbase_t *)arg);
 }
 
 static evhtp_res
@@ -52,7 +50,6 @@ main(int argc, char ** argv) {
     request = evhtp_request_new(request_cb, evbase);
 
     evhtp_set_hook(&request->hooks, evhtp_hook_on_read, print_data, evbase);
-
     evhtp_set_hook(&request->hooks, evhtp_hook_on_new_chunk,
                    print_new_chunk_len, NULL);
     evhtp_set_hook(&request->hooks, evhtp_hook_on_chunk_complete,
@@ -64,10 +61,13 @@ main(int argc, char ** argv) {
                              evhtp_header_new("Host", "ieatfood.net", 0, 0));
     evhtp_headers_add_header(request->headers_out,
                              evhtp_header_new("User-Agent", "libevhtp", 0, 0));
+    evhtp_headers_add_header(request->headers_out,
+                             evhtp_header_new("Connection", "close", 0, 0));
 
     evhtp_make_request(conn, request, htp_method_GET, "/");
 
     event_base_loop(evbase, 0);
+    event_base_free(evbase);
 
     return 0;
 }

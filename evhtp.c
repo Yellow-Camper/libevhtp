@@ -970,9 +970,11 @@ _evhtp_request_parser_headers(htparser * p) {
         return -1;
     }
 
+#if 0
     if (!evhtp_header_find(c->request->headers_in, "Content-Length")) {
         return 0;
     }
+#endif
 
     if (!(expect_val = evhtp_header_find(c->request->headers_in, "Expect"))) {
         return 0;

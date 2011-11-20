@@ -158,5 +158,7 @@ if (NOT APPLE)
 endif()
 
 add_executable(test test.c)
-target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+add_executable(test_client test_client.c)
 
+target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_client libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})

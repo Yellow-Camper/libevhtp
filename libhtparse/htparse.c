@@ -359,12 +359,17 @@ htparser_get_method(htparser * p) {
 }
 
 const char *
-htparser_get_methodstr(htparser * p) {
-    if (p->method >= htp_method_UNKNOWN) {
-        return NULL;
+htparser_get_methodstr_m(htp_method meth) {
+    if (meth >= htp_method_UNKNOWN) {
+	return NULL;
     }
 
-    return method_strmap[p->method];
+    return method_strmap[meth];
+}
+
+const char *
+htparser_get_methodstr(htparser * p) {
+    return htparser_get_methodstr_m(p->method);
 }
 
 unsigned char

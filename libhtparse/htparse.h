@@ -89,6 +89,7 @@ int            htparser_should_keep_alive(htparser * p);
 htp_scheme     htparser_get_scheme(htparser *);
 htp_method     htparser_get_method(htparser *);
 const char   * htparser_get_methodstr(htparser *);
+const char   * htparser_get_methodstr_m(htp_method);
 unsigned char  htparser_get_major(htparser *);
 unsigned char  htparser_get_minor(htparser *);
 unsigned int   htparser_get_status(htparser *);

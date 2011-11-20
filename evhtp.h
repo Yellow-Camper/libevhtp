@@ -71,6 +71,7 @@ typedef enum evhtp_hook_type       evhtp_hook_type;
 typedef enum evhtp_callback_type   evhtp_callback_type;
 typedef enum evhtp_proto           evhtp_proto;
 typedef enum evhtp_ssl_scache_type evhtp_ssl_scache_type;
+typedef enum evhtp_type            evhtp_type;
 
 typedef void (*evhtp_thread_init_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
 typedef void (*evhtp_callback_cb)(evhtp_request_t * req, void * arg);
@@ -165,6 +166,11 @@ typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_GWTIMEOUT    504
 #define EVHTP_RES_VERNSUPPORT  505
 #define EVHTP_RES_BWEXEED      509
+
+enum evhtp_type {
+    evhtp_type_client,
+    evhtp_type_server
+};
 
 enum evhtp_ssl_scache_type {
     evhtp_ssl_scache_type_disabled = 0,
@@ -361,6 +367,8 @@ struct evhtp_request_s {
     evhtp_callback_cb cb;             /**< the function to call when fully processed */
     void            * cbarg;          /**< argument which is passed to the cb function */
     int               error;
+
+    TAILQ_ENTRY(evhtp_request_s) next;
 };
 
 #define evhtp_request_content_len(r) htparser_get_content_length(r->conn->parser)
@@ -377,7 +385,10 @@ struct evhtp_connection_s {
     struct sockaddr * saddr;
     int               sock;
     int               error;
+    evhtp_type        type;
     evhtp_request_t * request;
+
+    TAILQ_HEAD(, evhtp_request_s) pending;
 };
 
 struct evhtp_hooks_s {

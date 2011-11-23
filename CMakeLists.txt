@@ -110,12 +110,12 @@ find_path(LIBEVENT_INCLUDE_DIR event.h)
 
 include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}/compat
-	${CMAKE_CURRENT_SOURCE_DIR}/libhtparse
+	${CMAKE_CURRENT_SOURCE_DIR}/htparse
 	${CMAKE_CURRENT_BINARY_DIR}/oniguruma
 	${CMAKE_CURRENT_SOURCE_DIR}/oniguruma
 	${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/evthr
-    ${OPENSSL_INCLUDE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/evthr
+	${OPENSSL_INCLUDE_DIR}
 	${LIBEVENT_INCLUDE_DIR}
 )
 
@@ -133,7 +133,7 @@ if (NOT ${LIBEVENT_OPENSSL_FOUND})
 	set (DISABLE_SSL 1)
 endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
-set(LIBEVHTP_SOURCES evhtp.c libhtparse/htparse.c)
+set(LIBEVHTP_SOURCES evhtp.c htparse/htparse.c)
 
 if (NOT DISABLE_EVTHR)
 	set (LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} pthread)
@@ -145,7 +145,7 @@ set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
 
 install (TARGETS libevhtp DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
-install (FILES libhtparse/htparse.h DESTINATION include)
+install (FILES htparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
 install (FILES oniguruma/onigposix.h DESTINATION include)
 

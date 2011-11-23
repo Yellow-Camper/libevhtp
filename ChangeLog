@@ -1,3 +1,34 @@
+v0.4.2
+- Moved ./libhtparse to ./htparse
+- Increased the default stack size limit in the request parser.
+- Tweaked SSL thread initialization code.
+- Fixed strdup build warnings and errors on OSX
+- Added checks for sys/tree.h and use compat if not found.
+- Added proper status code string generation.
+    * Prior to this release, any http return status code would return the same
+      status code string "derp". Now all known status codes are mapped to the
+      proper status code string.
+
+- Added chunking hooks
+    * Prior to this commit, a chunked message is treated as just a body of data. So
+      when a single chunk header has been read, it would just start using it as the
+      content-length and send the body to the on_read hook.
+
+    * This can be problimatic when it comes to doing things like proyxing a request to
+      another server who is expecting chunked data. So the following hooks have been
+      added to give the user access to various stages of chunk processing:
+
+    * evhtp_hook_on_new_chunk
+        - Called at the start of a chunk with the number of bytes which will be parsed.
+
+    * evhtp_hook_on_chunk_complete
+        - called when a single chunk has been parsed and processed.
+
+    * evhtp_hook_on_chunks_complete
+        - called when all chunks for a request have been parsed and processed
+
+    * Refer to ./test.c for example usage of the chunk hooking functionality.
+
 v0.4.1
 
 - Various CMAKE fixes

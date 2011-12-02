@@ -66,6 +66,18 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
         }                                                                                     \
 } while (0);
 
+#define _evhtp_lock(h)                             do { \
+        if (h->lock) {                                  \
+            pthread_mutex_lock(h->lock);                \
+        }                                               \
+} while (0)
+
+#define _evhtp_unlock(h)                           do { \
+        if (h->lock) {                                  \
+            pthread_mutex_unlock(h->lock);              \
+        }                                               \
+} while (0)
+
 
 static int scode_tree_initialized = 0;
 
@@ -900,6 +912,8 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
         return -1;
     }
 
+    _evhtp_lock(c->htp);
+
     if ((callback = _evhtp_callback_find(c->htp->callbacks, path->path,
                                          &path->matched_soff, &path->matched_eoff))) {
         /* matched a callback using *just* the path (/a/b/c/) */
@@ -920,6 +934,8 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
         path->matched_soff = 0;
         path->matched_soff = (unsigned int)strlen(path->full);
     }
+
+    _evhtp_unlock(c->htp);
 
     match_start = calloc(strlen(path->full) + 1, 1);
     match_end   = calloc(strlen(path->full) + 1, 1);
@@ -2173,20 +2189,27 @@ evhtp_callback_t *
 evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg) {
     evhtp_callback_t * hcb;
 
+    _evhtp_lock(htp);
+
     if (htp->callbacks == NULL) {
         if (!(htp->callbacks = evhtp_callbacks_new(1024))) {
+            _evhtp_unlock(htp);
             return NULL;
         }
     }
 
     if (!(hcb = evhtp_callback_new(path, evhtp_callback_type_hash, cb, arg))) {
+        _evhtp_unlock(htp);
         return NULL;
     }
 
     if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
         evhtp_callback_free(hcb);
+        _evhtp_unlock(htp);
         return NULL;
     }
+
+    _evhtp_unlock(htp);
 
     return hcb;
 }
@@ -2213,6 +2236,12 @@ evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, voi
         return -1;
     }
 
+    if (!(htp->lock = malloc(sizeof(pthread_mutex_t)))) {
+        return -1;
+    }
+
+    pthread_mutex_init(htp->lock, NULL);
+
     evthr_pool_start(htp->thr_pool);
     return 0;
 }
@@ -2221,21 +2250,27 @@ evhtp_callback_t *
 evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, void * arg) {
     evhtp_callback_t * hcb;
 
+    _evhtp_lock(htp);
+
     if (htp->callbacks == NULL) {
         if (!(htp->callbacks = evhtp_callbacks_new(1024))) {
+            _evhtp_unlock(htp);
             return NULL;
         }
     }
 
     if (!(hcb = evhtp_callback_new(pattern, evhtp_callback_type_regex, cb, arg))) {
+        _evhtp_unlock(htp);
         return NULL;
     }
 
     if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
         evhtp_callback_free(hcb);
+        _evhtp_unlock(htp);
         return NULL;
     }
 
+    _evhtp_unlock(htp);
     return hcb;
 }
 

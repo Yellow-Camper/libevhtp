@@ -112,6 +112,35 @@ test_regex(evhtp_request_t * req, void * arg) {
 }
 
 static void
+dynamic_cb(evhtp_request_t * r, void * arg) {
+    const char * name = arg;
+
+    evbuffer_add_printf(r->buffer_out, "dynamic_cb = %s\n", name);
+    evhtp_send_reply(r, EVHTP_RES_OK);
+}
+
+static void
+create_callback(evhtp_request_t * r, void * arg) {
+    char * uri;
+    char * nuri;
+    size_t urilen;
+
+    uri    = r->uri->path->match_start;
+    urilen = strlen(uri);
+
+    if (urilen == 0) {
+        return evhtp_send_reply(r, EVHTP_RES_BADREQ);
+    }
+
+    nuri = calloc(urilen + 2, 1);
+
+    snprintf(nuri, urilen + 2, "/%s", uri);
+    evhtp_set_cb(r->htp, nuri, dynamic_cb, nuri);
+
+    evhtp_send_reply(r, EVHTP_RES_OK);
+}
+
+static void
 test_foo_cb(evhtp_request_t * req, void * arg ) {
     evbuffer_add_reference(req->buffer_out,
                            "test_foo_cb\n", 12, NULL, NULL);
@@ -180,10 +209,10 @@ print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
 
 static evhtp_res
 print_data(evhtp_request_t * req, evbuf_t * buf, void * arg ) {
-#if 0
     evbuffer_add_printf(req->buffer_out,
                         "got %zu bytes of data\n",
                         evbuffer_get_length(buf));
+#if 0
     printf("%.*s", evbuffer_get_length(buf), (char *)evbuffer_pullup(buf,
                                                                      evbuffer_get_length(buf)));
 #endif
@@ -352,6 +381,7 @@ main(int argc, char ** argv) {
     evhtp_callback_t * cb_5   = NULL;
     evhtp_callback_t * cb_6   = NULL;
     evhtp_callback_t * cb_7   = NULL;
+    evhtp_callback_t * cb_8   = NULL;
 
     if (parse_args(argc, argv) < 0) {
         exit(1);
@@ -369,6 +399,7 @@ main(int argc, char ** argv) {
     cb_5   = evhtp_set_cb(htp, "/500", test_500_cb, "500");
     cb_6   = evhtp_set_regex_cb(htp, "^(/anything/).*", test_regex, NULL);
     cb_7   = evhtp_set_cb(htp, "/pause", test_pause_cb, NULL);
+    cb_8   = evhtp_set_regex_cb(htp, "^/create/(.*)", create_callback, NULL);
 
     /* set a callback to pause on each header for cb_7 */
     evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, NULL);

@@ -215,7 +215,7 @@ static int             ssl_locks_initialized = 0;
  */
 
 #ifdef NO_STRNLEN
-size_t
+static size_t
 strnlen(const char * s, size_t maxlen) {
     const char * e;
     size_t       n;
@@ -230,7 +230,7 @@ strnlen(const char * s, size_t maxlen) {
 #endif
 
 #ifdef NO_STRNDUP
-char *
+static char *
 strndup(const char * s, size_t n) {
     size_t len = strnlen(s, n);
     char * ret;

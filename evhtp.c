@@ -1847,6 +1847,8 @@ query_key:
                         state = s_query_val;
                         break;
                     case '%':
+                        key_buf[key_idx++] = ch;
+                        key_buf[key_idx] = '\0';
                         state = s_query_key_hex_1;
                         break;
                     default:
@@ -1861,6 +1863,9 @@ query_key:
                     goto error;
                 }
 
+                key_buf[key_idx++] = ch;
+                key_buf[key_idx]   = '\0';
+
                 state = s_query_key_hex_2;
                 break;
             case s_query_key_hex_2:
@@ -1868,6 +1873,9 @@ query_key:
                     res = -1;
                     goto error;
                 }
+
+                key_buf[key_idx++] = ch;
+                key_buf[key_idx]   = '\0';
 
                 state = s_query_key;
                 break;
@@ -1887,8 +1895,10 @@ query_key:
 
                         break;
                     case '%':
-                        state              = s_query_val_hex_1;
+                        val_buf[val_idx++] = ch;
+                        val_buf[val_idx]   = '\0';
 
+                        state              = s_query_val_hex_1;
                         break;
                     default:
                         val_buf[val_idx++] = ch;
@@ -1903,6 +1913,9 @@ query_key:
                     goto error;
                 }
 
+                val_buf[val_idx++] = ch;
+                val_buf[val_idx]   = '\0';
+
                 state = s_query_val_hex_2;
                 break;
             case s_query_val_hex_2:
@@ -1910,6 +1923,9 @@ query_key:
                     res = -1;
                     goto error;
                 }
+
+                val_buf[val_idx++] = ch;
+                val_buf[val_idx]   = '\0';
 
                 state = s_query_val;
                 break;

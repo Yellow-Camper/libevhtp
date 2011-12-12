@@ -98,10 +98,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION          "0.4.2"
+#define EVHTP_VERSION          "0.4.3"
 #define EVHTP_VERSION_MAJOR    0
 #define EVHTP_VERSION_MINOR    4
-#define EVHTP_VERSION_PATCH    2
+#define EVHTP_VERSION_PATCH    3
 
 #define evhtp_headers_iterator evhtp_kvs_iterator
 
@@ -690,6 +690,16 @@ const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
 #define evhtp_headers_add_header  evhtp_kvs_add_kv
 #define evhtp_query_new           evhtp_kvs_new
 #define evhtp_query_free          evhtp_kvs_free
+
+
+/**
+ * @brief returns the htp_method enum version of the request method.
+ *
+ * @param r
+ *
+ * @return htp_method enum
+ */
+htp_method evhtp_request_get_method(evhtp_request_t * r);
 
 void evhtp_connection_pause(evhtp_connection_t * connection);
 void evhtp_connection_resume(evhtp_connection_t * connection);

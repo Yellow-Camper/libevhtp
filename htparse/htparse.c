@@ -542,7 +542,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                             }
                             break;
                         case 7:
-                            if (_str7_cmp(m, 'O', 'P', 'T', 'I', 'O', 'N', 'S', ' ')) {
+                            if (_str7_cmp(m, 'O', 'P', 'T', 'I', 'O', 'N', 'S', '\0')) {
                                 p->method = htp_method_OPTIONS;
                             }
 

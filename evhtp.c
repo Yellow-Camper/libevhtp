@@ -1519,6 +1519,11 @@ _evhtp_ssl_get_scache_ent(evhtp_ssl_t * ssl, unsigned char * sid, int sid_len, i
  * PUBLIC FUNCTIONS
  */
 
+htp_method
+evhtp_request_get_method(evhtp_request_t * r) {
+    return htparser_get_method(r->conn->parser);
+}
+
 /**
  * @brief pauses a connection (disables reading)
  *
@@ -1842,6 +1847,8 @@ query_key:
                         state = s_query_val;
                         break;
                     case '%':
+                        key_buf[key_idx++] = ch;
+                        key_buf[key_idx] = '\0';
                         state = s_query_key_hex_1;
                         break;
                     default:
@@ -1856,6 +1863,9 @@ query_key:
                     goto error;
                 }
 
+                key_buf[key_idx++] = ch;
+                key_buf[key_idx]   = '\0';
+
                 state = s_query_key_hex_2;
                 break;
             case s_query_key_hex_2:
@@ -1863,6 +1873,9 @@ query_key:
                     res = -1;
                     goto error;
                 }
+
+                key_buf[key_idx++] = ch;
+                key_buf[key_idx]   = '\0';
 
                 state = s_query_key;
                 break;
@@ -1882,8 +1895,10 @@ query_key:
 
                         break;
                     case '%':
-                        state              = s_query_val_hex_1;
+                        val_buf[val_idx++] = ch;
+                        val_buf[val_idx]   = '\0';
 
+                        state              = s_query_val_hex_1;
                         break;
                     default:
                         val_buf[val_idx++] = ch;
@@ -1898,6 +1913,9 @@ query_key:
                     goto error;
                 }
 
+                val_buf[val_idx++] = ch;
+                val_buf[val_idx]   = '\0';
+
                 state = s_query_val_hex_2;
                 break;
             case s_query_val_hex_2:
@@ -1905,6 +1923,9 @@ query_key:
                     res = -1;
                     goto error;
                 }
+
+                val_buf[val_idx++] = ch;
+                val_buf[val_idx]   = '\0';
 
                 state = s_query_val;
                 break;
@@ -1971,20 +1992,37 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
 
 int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog) {
-    struct sockaddr_in sin;
+    struct sockaddr_in  sin;
+    struct sockaddr_in6 sin6;
+    struct sockaddr   * sa;
+    size_t              sin_len;
 
     memset(&sin, 0, sizeof(sin));
 
-    sin.sin_family      = AF_INET;
-    sin.sin_port        = htons(port);
-    sin.sin_addr.s_addr = inet_addr(baddr);
+    if (strstr(baddr, ":")) {
+        memset(&sin6, 0, sizeof(sin6));
+
+        sin_len          = sizeof(struct sockaddr_in6);
+        sin6.sin6_port   = htons(port);
+        sin6.sin6_family = AF_INET6;
+
+        evutil_inet_pton(AF_INET6, baddr, &sin6.sin6_addr);
+        sa = (struct sockaddr *)&sin6;
+    } else {
+        sin_len             = sizeof(struct sockaddr_in);
+
+        sin.sin_family      = AF_INET;
+        sin.sin_port        = htons(port);
+        sin.sin_addr.s_addr = inet_addr(baddr);
+
+        sa = (struct sockaddr *)&sin;
+    }
 
     signal(SIGPIPE, SIG_IGN);
 
-    htp->server         = evconnlistener_new_bind(htp->evbase,
-                                                  _evhtp_accept_cb, (void *)htp,
-                                                  LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE, backlog,
-                                                  (struct sockaddr *)&sin, sizeof(sin));
+    htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
+                                          LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
+                                          backlog, sa, sin_len);
     return htp->server ? 0 : -1;
 }
 

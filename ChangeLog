@@ -1,3 +1,9 @@
+v0.4.3
+- Added IPv6 Support
+- Fixed some query argument parsing
+- Fixed issue with parsing OPTION methods.
+- Added thread-safe hooking callback add/delete functionality
+
 v0.4.2
 - Moved ./libhtparse to ./htparse
 - Increased the default stack size limit in the request parser.

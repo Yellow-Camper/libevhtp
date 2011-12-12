@@ -166,6 +166,7 @@ test_default_cb(evhtp_request_t * req, void * arg ) {
     evbuffer_add_reference(req->buffer_out,
                            "test_default_cb\n", 16, NULL, NULL);
 
+
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
@@ -200,9 +201,11 @@ print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
                         "             path        = '%s'\n"
                         "             file        = '%s'\n"
                         "             match start = '%s'\n"
-                        "             match_end   = '%s'\n",
+                        "             match_end   = '%s'\n"
+                        "             methno      = '%d'\n",
                         path->full, path->path, path->file,
-                        path->match_start, path->match_end);
+                        path->match_start, path->match_end,
+                        evhtp_request_get_method(req));
 
     return EVHTP_RES_OK;
 }

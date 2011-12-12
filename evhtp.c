@@ -1519,6 +1519,11 @@ _evhtp_ssl_get_scache_ent(evhtp_ssl_t * ssl, unsigned char * sid, int sid_len, i
  * PUBLIC FUNCTIONS
  */
 
+htp_method
+evhtp_request_get_method(evhtp_request_t * r) {
+    return htparser_get_method(r->conn->parser);
+}
+
 /**
  * @brief pauses a connection (disables reading)
  *

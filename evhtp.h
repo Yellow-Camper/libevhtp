@@ -691,6 +691,16 @@ const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
 #define evhtp_query_new           evhtp_kvs_new
 #define evhtp_query_free          evhtp_kvs_free
 
+
+/**
+ * @brief returns the htp_method enum version of the request method.
+ *
+ * @param r
+ *
+ * @return htp_method enum
+ */
+htp_method evhtp_request_get_method(evhtp_request_t * r);
+
 void evhtp_connection_pause(evhtp_connection_t * connection);
 void evhtp_connection_resume(evhtp_connection_t * connection);
 void evhtp_request_pause(evhtp_request_t * request);

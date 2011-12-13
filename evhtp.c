@@ -47,7 +47,7 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
                                                   HOOK_ARGS(request, hook_name));             \
         }                                                                                     \
                                                                                               \
-        if (HOOK_AVAIL(request->conn, hook_name)) {                                           \
+        if (HOOK_AVAIL(evhtp_request_get_connection(request), hook_name)) {                   \
             return HOOK_FUNC(request->conn, hook_name) (request, __VA_ARGS__,                 \
                                                         HOOK_ARGS(request->conn, hook_name)); \
         }                                                                                     \
@@ -412,17 +412,6 @@ _evhtp_body_hook(evhtp_request_t * request, evbuf_t * buf) {
  */
 static evhtp_res
 _evhtp_request_fini_hook(evhtp_request_t * request) {
-#if 0
-    if (request->hooks && request->hooks->on_request_fini) {
-        return (request->hooks->on_request_fini)(request,
-                                                 request->hooks->on_request_fini_arg);
-    }
-
-    if (request->conn->hooks && request->conn->hooks->on_request_fini) {
-        return (request->conn->hooks->on_request_fini)(request,
-                                                       request->conn->hooks->on_request_fini_arg);
-    }
-#endif
     HOOK_REQUEST_RUN_NARGS(request, on_request_fini);
 
     return EVHTP_RES_OK;
@@ -1900,8 +1889,10 @@ error:
 
 void
 evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code) {
-    evhtp_connection_t * c = request->conn;
+    evhtp_connection_t * c;
     evbuf_t            * reply_buf;
+
+    c = evhtp_request_get_connection(request);
 
     if (!(reply_buf = _evhtp_create_reply(request, code))) {
         return evhtp_connection_free(c);
@@ -1913,7 +1904,9 @@ evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code) {
 
 void
 evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf) {
-    evhtp_connection_t * c = request->conn;
+    evhtp_connection_t * c;
+
+    c = request->conn;
 
     bufferevent_write_buffer(c->bev, buf);
 }
@@ -1921,25 +1914,22 @@ evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf) {
 void
 evhtp_send_reply_end(evhtp_request_t * request) {
     request->finished = 1;
-    bufferevent_flush(request->conn->bev, EV_WRITE, BEV_FLUSH);
-    /*
-     * bufferevent_write(request->conn->bev, "", 0);
-     * return _evhtp_connection_writecb(request->conn->bev, request->conn);
-     */
+    bufferevent_flush(evhtp_request_get_bev(request), EV_WRITE, BEV_FLUSH);
 }
 
 void
 evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
-    evhtp_connection_t * c = request->conn;
+    evhtp_connection_t * c;
     evbuf_t            * reply_buf;
 
+    c = evhtp_request_get_connection(request);
     request->finished = 1;
 
     if (!(reply_buf = _evhtp_create_reply(request, code))) {
         return evhtp_connection_free(request->conn);
     }
 
-    bufferevent_write_buffer(c->bev, reply_buf);
+    bufferevent_write_buffer(evhtp_connection_get_bev(c), reply_buf);
     evbuffer_free(reply_buf);
 }
 
@@ -2227,14 +2217,21 @@ evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, voi
         return -1;
     }
 
+    evthr_pool_start(htp->thr_pool);
+    return 0;
+}
+
+int
+evhtp_use_callback_locks(evhtp_t * htp) {
+    if (htp == NULL) {
+        return -1;
+    }
+
     if (!(htp->lock = malloc(sizeof(pthread_mutex_t)))) {
         return -1;
     }
 
-    pthread_mutex_init(htp->lock, NULL);
-
-    evthr_pool_start(htp->thr_pool);
-    return 0;
+    return pthread_mutex_init(htp->lock, NULL);
 }
 
 evhtp_callback_t *

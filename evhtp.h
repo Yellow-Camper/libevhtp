@@ -441,6 +441,17 @@ void      evhtp_set_timeouts(evhtp_t * htp, struct timeval * r, struct timeval *
 int       evhtp_ssl_use_threads(void);
 int       evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
 
+
+/**
+ * @brief creates a lock around callbacks and hooks, allowing for threaded
+ * applications to add/remove/modify hooks & callbacks in a thread-safe manner.
+ *
+ * @param htp
+ *
+ * @return 0 on success, -1 on error
+ */
+int evhtp_use_callback_locks(evhtp_t * htp);
+
 /**
  * @brief sets a callback which is called if no other callbacks are matched
  *

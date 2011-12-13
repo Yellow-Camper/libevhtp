@@ -709,6 +709,15 @@ void       evhtp_request_resume(evhtp_request_t * request);
 
 
 /**
+ * @brief returns the underlying evhtp_connection_t structure from a request
+ *
+ * @param request
+ *
+ * @return evhtp_connection_t on success, otherwise NULL
+ */
+evhtp_connection_t * evhtp_request_get_connection(evhtp_request_t * request);
+
+/**
  * @brief Sets the connections underlying bufferevent
  *
  * @param conn

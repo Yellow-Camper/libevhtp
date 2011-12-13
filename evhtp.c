@@ -2437,6 +2437,11 @@ evhtp_request_set_bev(evhtp_request_t * request, evbev_t * bev) {
     return evhtp_connection_set_bev(request->conn, bev);
 }
 
+evhtp_connection_t *
+evhtp_request_get_connection(evhtp_request_t * request) {
+    return request->conn;
+}
+
 void
 evhtp_connection_free(evhtp_connection_t * connection) {
     if (connection == NULL) {

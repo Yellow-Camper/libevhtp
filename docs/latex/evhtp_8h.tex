@@ -1,0 +1,2532 @@
+\hypertarget{evhtp_8h}{
+\section{evhtp.h File Reference}
+\label{evhtp_8h}\index{evhtp.h@{evhtp.h}}
+}
+{\ttfamily \#include $<$evthr.h$>$}\par
+{\ttfamily \#include $<$htparse.h$>$}\par
+{\ttfamily \#include $<$onigposix.h$>$}\par
+{\ttfamily \#include $<$sys/queue.h$>$}\par
+{\ttfamily \#include $<$event.h$>$}\par
+{\ttfamily \#include $<$event2/listener.h$>$}\par
+{\ttfamily \#include $<$event2/bufferevent\_\-ssl.h$>$}\par
+{\ttfamily \#include $<$openssl/ssl.h$>$}\par
+{\ttfamily \#include $<$openssl/err.h$>$}\par
+{\ttfamily \#include $<$openssl/rand.h$>$}\par
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structevhtp__defaults__s}{evhtp\_\-defaults\_\-s}
+\item 
+struct \hyperlink{structevhtp__s}{evhtp\_\-s}
+\begin{DoxyCompactList}\small\item\em main structure containing all configuration information \item\end{DoxyCompactList}\item 
+struct \hyperlink{structevhtp__callbacks__s}{evhtp\_\-callbacks\_\-s}
+\begin{DoxyCompactList}\small\item\em structure containing all registered evhtp\_\-callbacks\_\-t \item\end{DoxyCompactList}\item 
+struct \hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-s}
+\begin{DoxyCompactList}\small\item\em structure containing a single callback and configuration \item\end{DoxyCompactList}\item 
+struct \hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-s}
+\begin{DoxyCompactList}\small\item\em a generic key/value structure \item\end{DoxyCompactList}\item 
+struct \hyperlink{structevhtp__uri__s}{evhtp\_\-uri\_\-s}
+\begin{DoxyCompactList}\small\item\em a generic container representing an entire URI strucutre \item\end{DoxyCompactList}\item 
+struct \hyperlink{structevhtp__authority__s}{evhtp\_\-authority\_\-s}
+\begin{DoxyCompactList}\small\item\em structure which represents authority information in a URI \item\end{DoxyCompactList}\item 
+struct \hyperlink{structevhtp__path__s}{evhtp\_\-path\_\-s}
+\begin{DoxyCompactList}\small\item\em structure which represents a URI path and or file \item\end{DoxyCompactList}\item 
+struct \hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-s}
+\begin{DoxyCompactList}\small\item\em a structure containing all information for a http request. \item\end{DoxyCompactList}\item 
+struct \hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-s}
+\item 
+struct \hyperlink{structevhtp__hooks__s}{evhtp\_\-hooks\_\-s}
+\item 
+struct \hyperlink{structevhtp__ssl__cfg__s}{evhtp\_\-ssl\_\-cfg\_\-s}
+\end{DoxyCompactItemize}
+\subsection*{Defines}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{evhtp_8h_a0318e8e73feec9c33d7b80cf53cbe8cf}{evhtp\_\-header\_\-s}~\hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-s}
+\item 
+\#define \hyperlink{evhtp_8h_aa9e97b1e39ea19584a41b542b6100ff3}{evhtp\_\-headers\_\-s}~evhtp\_\-kvs\_\-s
+\item 
+\#define \hyperlink{evhtp_8h_a13f829e41b7d1d0d57ce14d18baa85f4}{evhtp\_\-query\_\-s}~evhtp\_\-kvs\_\-s
+\item 
+\#define \hyperlink{evhtp_8h_a80d0821d52c096a7dded740f5b499cff}{evhtp\_\-header\_\-t}~\hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t}
+\item 
+\#define \hyperlink{evhtp_8h_a39e4a3adac2cba0714b1f6c77311f868}{evhtp\_\-headers\_\-t}~\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t}
+\item 
+\#define \hyperlink{evhtp_8h_aed08d04f28beb53e769bc25c2d382765}{evhtp\_\-query\_\-t}~\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t}
+\item 
+\#define \hyperlink{evhtp_8h_a78426bd2ca862c031f042173289a1998}{EVHTP\_\-VERSION}~\char`\"{}0.4.3\char`\"{}
+\item 
+\#define \hyperlink{evhtp_8h_aefd0f8fa0894c105ff5c870f1cfa0f70}{EVHTP\_\-VERSION\_\-MAJOR}~0
+\item 
+\#define \hyperlink{evhtp_8h_a0e7cb6969920f7f90e5df4ea56be977c}{EVHTP\_\-VERSION\_\-MINOR}~4
+\item 
+\#define \hyperlink{evhtp_8h_ab1c6db8daa5b48c5ff3c9336a511a192}{EVHTP\_\-VERSION\_\-PATCH}~3
+\item 
+\#define \hyperlink{evhtp_8h_accba0632dfea7c5ecb3cdec39f81752a}{evhtp\_\-headers\_\-iterator}~\hyperlink{evhtp_8h_a1fd6217aa45d41584d016b480e07299a}{evhtp\_\-kvs\_\-iterator}
+\item 
+\#define \hyperlink{evhtp_8h_a392f5421d742b9c615e7ef4420cf1c3c}{EVHTP\_\-RES\_\-ERROR}~0
+\item 
+\#define \hyperlink{evhtp_8h_ab4f1c1b0d77da95865ab9fd2701c0c9a}{EVHTP\_\-RES\_\-PAUSE}~1
+\item 
+\#define \hyperlink{evhtp_8h_a1c14742d81fa9dc1cffcf8aa2c0739c4}{EVHTP\_\-RES\_\-FATAL}~2
+\item 
+\#define \hyperlink{evhtp_8h_a137a73d703e70ec04a807668a5d523da}{EVHTP\_\-RES\_\-OK}~200
+\item 
+\#define \hyperlink{evhtp_8h_a62e8fb036aa3172f65538792a1ce964a}{EVHTP\_\-RES\_\-100}~100
+\item 
+\#define \hyperlink{evhtp_8h_a0ec793837bec4af8fa6a4752a41ac3c6}{EVHTP\_\-RES\_\-CONTINUE}~100
+\item 
+\#define \hyperlink{evhtp_8h_a16624a99036011b19ae0efb9fdae628c}{EVHTP\_\-RES\_\-SWITCH\_\-PROTO}~101
+\item 
+\#define \hyperlink{evhtp_8h_a1f4b43839d75a0de5af171c250ea4c1c}{EVHTP\_\-RES\_\-PROCESSING}~102
+\item 
+\#define \hyperlink{evhtp_8h_a3fae728d29531cfce14e1a3c4d902d19}{EVHTP\_\-RES\_\-URI\_\-TOOLONG}~122
+\item 
+\#define \hyperlink{evhtp_8h_a6558e45d302e553eb61716c44fbcbe36}{EVHTP\_\-RES\_\-200}~200
+\item 
+\#define \hyperlink{evhtp_8h_aa580578bdd046d17f347997b727cfb6d}{EVHTP\_\-RES\_\-CREATED}~201
+\item 
+\#define \hyperlink{evhtp_8h_a29b8da4629bc60fc14db2f16392fdbab}{EVHTP\_\-RES\_\-ACCEPTED}~202
+\item 
+\#define \hyperlink{evhtp_8h_abfc465aabf80f8deabe259b3bc5cc959}{EVHTP\_\-RES\_\-NAUTHINFO}~203
+\item 
+\#define \hyperlink{evhtp_8h_a294a66b0b14fabc7d266d42cf082b84f}{EVHTP\_\-RES\_\-NOCONTENT}~204
+\item 
+\#define \hyperlink{evhtp_8h_a584ab3f00b16d56665f57c80387375a4}{EVHTP\_\-RES\_\-RSTCONTENT}~205
+\item 
+\#define \hyperlink{evhtp_8h_aeea3ab8b8d188d855d575b790cf3107c}{EVHTP\_\-RES\_\-PARTIAL}~206
+\item 
+\#define \hyperlink{evhtp_8h_ae5982116161ce3883a0fdff84032ca0f}{EVHTP\_\-RES\_\-MSTATUS}~207
+\item 
+\#define \hyperlink{evhtp_8h_a650d81f281773dc7f377853e800c58d2}{EVHTP\_\-RES\_\-IMUSED}~226
+\item 
+\#define \hyperlink{evhtp_8h_ac64e254c6c3f0c1f4da688d3c5fcb013}{EVHTP\_\-RES\_\-300}~300
+\item 
+\#define \hyperlink{evhtp_8h_ac0792eb23dd88647201d0ca1e4bff736}{EVHTP\_\-RES\_\-MCHOICE}~300
+\item 
+\#define \hyperlink{evhtp_8h_a53faf3139e75575acc14e67ac31fbc36}{EVHTP\_\-RES\_\-MOVEDPERM}~301
+\item 
+\#define \hyperlink{evhtp_8h_a4720398d1d218d7fe114444149f81cfe}{EVHTP\_\-RES\_\-FOUND}~302
+\item 
+\#define \hyperlink{evhtp_8h_acd3de57a4d7a1a9f59e39ddd78992c50}{EVHTP\_\-RES\_\-SEEOTHER}~303
+\item 
+\#define \hyperlink{evhtp_8h_a1f96549492a740d63e1c6f42a7f417f7}{EVHTP\_\-RES\_\-NOTMOD}~304
+\item 
+\#define \hyperlink{evhtp_8h_a00952fdf36f14c4550d29e79e88cb185}{EVHTP\_\-RES\_\-USEPROXY}~305
+\item 
+\#define \hyperlink{evhtp_8h_a6b193aca113e9441c3d4f2f4b1ec942a}{EVHTP\_\-RES\_\-SWITCHPROXY}~306
+\item 
+\#define \hyperlink{evhtp_8h_a7ab05148fbf38663bae43154d07e2207}{EVHTP\_\-RES\_\-TMPREDIR}~307
+\item 
+\#define \hyperlink{evhtp_8h_a8c714c1f6c1bada5fbbcdf1a23a88fe6}{EVHTP\_\-RES\_\-400}~400
+\item 
+\#define \hyperlink{evhtp_8h_a1a2dda2dca0ef730ed7d0187bf03e9ab}{EVHTP\_\-RES\_\-BADREQ}~400
+\item 
+\#define \hyperlink{evhtp_8h_a221c7a3894160145e4ae556644ffb3d7}{EVHTP\_\-RES\_\-UNAUTH}~401
+\item 
+\#define \hyperlink{evhtp_8h_aa7faceb6d13f22f10cd5f94621f5cc16}{EVHTP\_\-RES\_\-PAYREQ}~402
+\item 
+\#define \hyperlink{evhtp_8h_a023e9fcda0541e8402efd813c532b74d}{EVHTP\_\-RES\_\-FORBIDDEN}~403
+\item 
+\#define \hyperlink{evhtp_8h_a8960e4320e8392669c44501c67ff5025}{EVHTP\_\-RES\_\-NOTFOUND}~404
+\item 
+\#define \hyperlink{evhtp_8h_a6c29cb887c52190246374fb0191a44fa}{EVHTP\_\-RES\_\-METHNALLOWED}~405
+\item 
+\#define \hyperlink{evhtp_8h_a315a164af1462b84b2c2b3801d02b14c}{EVHTP\_\-RES\_\-NACCEPTABLE}~406
+\item 
+\#define \hyperlink{evhtp_8h_a03f7cda799541fa98de15ab21fb85aa7}{EVHTP\_\-RES\_\-PROXYAUTHREQ}~407
+\item 
+\#define \hyperlink{evhtp_8h_a64413f34714afbd17fe5f69b96fe6c0f}{EVHTP\_\-RES\_\-TIMEOUT}~408
+\item 
+\#define \hyperlink{evhtp_8h_a78a7a3be96082dcab45eeeb15f470b39}{EVHTP\_\-RES\_\-CONFLICT}~409
+\item 
+\#define \hyperlink{evhtp_8h_aa4a6e7c690ed93e3b3320d897c5b8dde}{EVHTP\_\-RES\_\-GONE}~410
+\item 
+\#define \hyperlink{evhtp_8h_a173d84feb975325599393f3c411f651f}{EVHTP\_\-RES\_\-LENREQ}~411
+\item 
+\#define \hyperlink{evhtp_8h_a4e8618db6f21346d2d91edda27caf9f9}{EVHTP\_\-RES\_\-PRECONDFAIL}~412
+\item 
+\#define \hyperlink{evhtp_8h_ac56c2dd0ef185ea73250fa830e4a11ce}{EVHTP\_\-RES\_\-ENTOOLARGE}~413
+\item 
+\#define \hyperlink{evhtp_8h_a1f0310b27e969c0edf4b117a6e38f54f}{EVHTP\_\-RES\_\-URITOOLARGE}~414
+\item 
+\#define \hyperlink{evhtp_8h_ae4e3d51db05bcc86cd2b2eb87bb43f61}{EVHTP\_\-RES\_\-UNSUPPORTED}~415
+\item 
+\#define \hyperlink{evhtp_8h_af0f61fa9827632fd40e87e52348debf1}{EVHTP\_\-RES\_\-RANGENOTSC}~416
+\item 
+\#define \hyperlink{evhtp_8h_af04a62b2c33b0601ce51819e1c964a7d}{EVHTP\_\-RES\_\-EXPECTFAIL}~417
+\item 
+\#define \hyperlink{evhtp_8h_a79bf4cfb102127aece72e2a84543ae2f}{EVHTP\_\-RES\_\-IAMATEAPOT}~418
+\item 
+\#define \hyperlink{evhtp_8h_a4cce65b8cfc185835a3918b52732032b}{EVHTP\_\-RES\_\-500}~500
+\item 
+\#define \hyperlink{evhtp_8h_a8bb6091ce41c1546265b5e66cb214eaf}{EVHTP\_\-RES\_\-SERVERR}~500
+\item 
+\#define \hyperlink{evhtp_8h_a5ea134b9c4d8c55871ff946b055f7b78}{EVHTP\_\-RES\_\-NOTIMPL}~501
+\item 
+\#define \hyperlink{evhtp_8h_abe9e661f52c8d3818e07fa0ea437b6af}{EVHTP\_\-RES\_\-BADGATEWAY}~502
+\item 
+\#define \hyperlink{evhtp_8h_a1163a66e2f026f3dd35f22070885fb59}{EVHTP\_\-RES\_\-SERVUNAVAIL}~503
+\item 
+\#define \hyperlink{evhtp_8h_af7a13d23cdc8eface614242287982798}{EVHTP\_\-RES\_\-GWTIMEOUT}~504
+\item 
+\#define \hyperlink{evhtp_8h_af84424c11b0f8fa59b4136bb4c38cc36}{EVHTP\_\-RES\_\-VERNSUPPORT}~505
+\item 
+\#define \hyperlink{evhtp_8h_afcf1707c04fceb7c551ccc49252338e9}{EVHTP\_\-RES\_\-BWEXEED}~509
+\item 
+\#define \hyperlink{evhtp_8h_a88d8d2ad6c62967357528b809651cbaa}{evhtp\_\-request\_\-content\_\-len}(r)~htparser\_\-get\_\-content\_\-length(r-\/$>$conn-\/$>$parser)
+\item 
+\#define \hyperlink{evhtp_8h_a460abdd19c46cc098e5a48af04706a76}{evhtp\_\-header\_\-find}~evhtp\_\-kv\_\-find
+\item 
+\#define \hyperlink{evhtp_8h_a1caa526548110b12cf3c28b8e1f24c90}{evhtp\_\-headers\_\-find\_\-header}~evhtp\_\-kvs\_\-find\_\-kv
+\item 
+\#define \hyperlink{evhtp_8h_a9b7c8aecf6f7f61f846bef13d3fb49dd}{evhtp\_\-headers\_\-for\_\-each}~evhtp\_\-kvs\_\-for\_\-each
+\item 
+\#define \hyperlink{evhtp_8h_a64b52fae2f659d4dd47e0acb86c13c52}{evhtp\_\-header\_\-new}~evhtp\_\-kv\_\-new
+\item 
+\#define \hyperlink{evhtp_8h_ab79cc768753e3f5f0b6113cdcaff9d57}{evhtp\_\-header\_\-free}~evhtp\_\-kv\_\-free
+\item 
+\#define \hyperlink{evhtp_8h_a14972ffa9d3d4c159aedc305b59e8ff0}{evhtp\_\-headers\_\-new}~evhtp\_\-kvs\_\-new
+\item 
+\#define \hyperlink{evhtp_8h_ad1d9d954ccfd5fb137bbb54ef11ba16f}{evhtp\_\-headers\_\-free}~evhtp\_\-kvs\_\-free
+\item 
+\#define \hyperlink{evhtp_8h_a20bdc4d8ef99ba9f41f29df1e3bef6c7}{evhtp\_\-header\_\-rm\_\-and\_\-free}~evhtp\_\-kv\_\-rm\_\-and\_\-free
+\item 
+\#define \hyperlink{evhtp_8h_a17de25c1bb9ab6007719fb079ba8b600}{evhtp\_\-headers\_\-add\_\-header}~evhtp\_\-kvs\_\-add\_\-kv
+\item 
+\#define \hyperlink{evhtp_8h_a2e0319399020bb7500739ed621e62286}{evhtp\_\-query\_\-new}~evhtp\_\-kvs\_\-new
+\item 
+\#define \hyperlink{evhtp_8h_a688746f7582a41ada24b8768c11d7b9d}{evhtp\_\-query\_\-free}~evhtp\_\-kvs\_\-free
+\end{DoxyCompactItemize}
+\subsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef SSL\_\-SESSION \hyperlink{evhtp_8h_a50626a9b6079fb747f2cf946ea4d45d3}{evhtp\_\-ssl\_\-sess\_\-t}
+\item 
+typedef SSL \hyperlink{evhtp_8h_a85b31561e6827b118669d514fe00aa3d}{evhtp\_\-ssl\_\-t}
+\item 
+typedef SSL\_\-CTX \hyperlink{evhtp_8h_a3a45854457c03a9028160078945046da}{evhtp\_\-ssl\_\-ctx\_\-t}
+\item 
+typedef struct evbuffer \hyperlink{evhtp_8h_a7c30b85cd8bba6ebbfe58c3fc81139c8}{evbuf\_\-t}
+\item 
+typedef struct event \hyperlink{evhtp_8h_ad0c066ffb009d3286186a124d37a0c2d}{event\_\-t}
+\item 
+typedef struct evconnlistener \hyperlink{evhtp_8h_accea3745ada200d1acc361354315579c}{evserv\_\-t}
+\item 
+typedef struct bufferevent \hyperlink{evhtp_8h_af92ce7197ff545dc83b76f1650bc57e1}{evbev\_\-t}
+\item 
+typedef pthread\_\-mutex\_\-t \hyperlink{evhtp_8h_a0596c15be75c64f06caede909222ded8}{evhtp\_\-mutex\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__s}{evhtp\_\-s} \hyperlink{evhtp_8h_aa670c92d77f9a732e03a7d48ada2b31b}{evhtp\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__defaults__s}{evhtp\_\-defaults\_\-s} \hyperlink{evhtp_8h_ac6661001dc475c8e25760071e26311e1}{evhtp\_\-defaults\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__callbacks__s}{evhtp\_\-callbacks\_\-s} \hyperlink{evhtp_8h_a9570ba758e99f90fc29f4b427953e6a5}{evhtp\_\-callbacks\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-s} \hyperlink{evhtp_8h_aab03f383d0804cb7f53979b42bee3259}{evhtp\_\-callback\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__defaults__s}{evhtp\_\-defaults\_\-s} \hyperlink{evhtp_8h_acc65e992cb2290f3b22f2646f7f0a04c}{evhtp\_\-defaults\_\-5}
+\item 
+typedef struct \hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-s} \hyperlink{evhtp_8h_a96628900a8ac231da77ed7ee9305d3fe}{evhtp\_\-kv\_\-t}
+\item 
+typedef struct evhtp\_\-kvs\_\-s \hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__uri__s}{evhtp\_\-uri\_\-s} \hyperlink{evhtp_8h_a5057cdb41a47631dd5672cbc1b59bcf8}{evhtp\_\-uri\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__path__s}{evhtp\_\-path\_\-s} \hyperlink{evhtp_8h_af31f4c3052c7f4ed6c3bfa32dceb332f}{evhtp\_\-path\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__authority__s}{evhtp\_\-authority\_\-s} \hyperlink{evhtp_8h_a8421a0ba0361bdf9fa28292fe4e60a6f}{evhtp\_\-authority\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-s} \hyperlink{evhtp_8h_a7adab4c0e9bd15e2b846c3adca6c37f7}{evhtp\_\-request\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__hooks__s}{evhtp\_\-hooks\_\-s} \hyperlink{evhtp_8h_ac77d779459ec62f309d1fb09c5540786}{evhtp\_\-hooks\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-s} \hyperlink{evhtp_8h_aa51ddee7192d35f0f586d85d7e555891}{evhtp\_\-connection\_\-t}
+\item 
+typedef struct \hyperlink{structevhtp__ssl__cfg__s}{evhtp\_\-ssl\_\-cfg\_\-s} \hyperlink{evhtp_8h_adb4d7b6af31986dd5a7a33f5ac41dde6}{evhtp\_\-ssl\_\-cfg\_\-t}
+\item 
+typedef uint16\_\-t \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}
+\item 
+typedef uint8\_\-t \hyperlink{evhtp_8h_a9c82501bfc1b188fe9eb2858403c704c}{evhtp\_\-error\_\-flags}
+\item 
+typedef enum \hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143}{evhtp\_\-hook\_\-type} \hyperlink{evhtp_8h_a3e8bcc59a7a08b75637e98afa53eb38a}{evhtp\_\-hook\_\-type}
+\item 
+typedef enum \hyperlink{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37}{evhtp\_\-callback\_\-type} \hyperlink{evhtp_8h_a12bf12ccc27ffcb77609f0149ad7a4df}{evhtp\_\-callback\_\-type}
+\item 
+typedef enum \hyperlink{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5}{evhtp\_\-proto} \hyperlink{evhtp_8h_a924ad133b020d2ca9a983b520b2ae1b7}{evhtp\_\-proto}
+\item 
+typedef enum \hyperlink{evhtp_8h_ab478739101b89e04a6583b835033f998}{evhtp\_\-ssl\_\-scache\_\-type} \hyperlink{evhtp_8h_ae1bf6708a944c8b428f7bcfe2a41bcbe}{evhtp\_\-ssl\_\-scache\_\-type}
+\item 
+typedef void($\ast$ \hyperlink{evhtp_8h_a162b617e19f372264cc22388dce03f2e}{evhtp\_\-thread\_\-init\_\-cb} )(\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, evthr\_\-t $\ast$thr, void $\ast$arg)
+\item 
+typedef void($\ast$ \hyperlink{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}{evhtp\_\-callback\_\-cb} )(\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$req, void $\ast$arg)
+\item 
+typedef void($\ast$ \hyperlink{evhtp_8h_accee2d620d476bc387b20ac035bd4233}{evhtp\_\-hook\_\-err\_\-cb} )(\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$req, \hyperlink{evhtp_8h_a9c82501bfc1b188fe9eb2858403c704c}{evhtp\_\-error\_\-flags} errtype, void $\ast$arg)
+\item 
+typedef \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}($\ast$ \hyperlink{evhtp_8h_a8b649d8f816f5e4a8dc162b3bb373644}{evhtp\_\-pre\_\-accept\_\-cb} )(int fd, struct sockaddr $\ast$sa, int salen, void $\ast$arg)
+\item 
+typedef \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}($\ast$ \hyperlink{evhtp_8h_a1fbba02d0b28d101592e5509703eddff}{evhtp\_\-post\_\-accept\_\-cb} )(\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$conn, void $\ast$arg)
+\item 
+typedef \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}($\ast$ \hyperlink{evhtp_8h_a2cddb211091dc5b19e57188a9104c34f}{evhtp\_\-hook\_\-header\_\-cb} )(\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$req, evhtp\_\-header\_\-t $\ast$hdr, void $\ast$arg)
+\item 
+typedef \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}($\ast$ \hyperlink{evhtp_8h_aef2db349d398a565e2408694e1e8b646}{evhtp\_\-hook\_\-headers\_\-cb} )(\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$req, evhtp\_\-headers\_\-t $\ast$hdr, void $\ast$arg)
+\item 
+typedef \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}($\ast$ \hyperlink{evhtp_8h_ae389ed1d9a3addcaa39bc4b286e12fab}{evhtp\_\-hook\_\-path\_\-cb} )(\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$req, \hyperlink{structevhtp__path__s}{evhtp\_\-path\_\-t} $\ast$path, void $\ast$arg)
+\item 
+typedef \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}($\ast$ \hyperlink{evhtp_8h_a1c1df6bb6154893dd2d7e46999ea5f2d}{evhtp\_\-hook\_\-read\_\-cb} )(\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$req, \hyperlink{evhtp_8h_a7c30b85cd8bba6ebbfe58c3fc81139c8}{evbuf\_\-t} $\ast$buf, void $\ast$arg)
+\item 
+typedef \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}($\ast$ \hyperlink{evhtp_8h_a8653bf424ac2974da47ceb54ed131889}{evhtp\_\-hook\_\-request\_\-fini\_\-cb} )(\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$req, void $\ast$arg)
+\item 
+typedef \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}($\ast$ \hyperlink{evhtp_8h_a7305964a053bfbf2bbab00a56e87c63d}{evhtp\_\-hook\_\-connection\_\-fini\_\-cb} )(\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$connection, void $\ast$arg)
+\item 
+typedef \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}($\ast$ \hyperlink{evhtp_8h_a788b8f65cf9ff82171da1849feeb5750}{evhtp\_\-hook\_\-chunk\_\-new\_\-cb} )(\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$r, uint64\_\-t len, void $\ast$arg)
+\item 
+typedef \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}($\ast$ \hyperlink{evhtp_8h_ae98ecd9989d124a1450b932a677d6c0f}{evhtp\_\-hook\_\-chunk\_\-fini\_\-cb} )(\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$r, void $\ast$arg)
+\item 
+typedef \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res}($\ast$ \hyperlink{evhtp_8h_a29660300c43f22382a64ea48c00bf6a7}{evhtp\_\-hook\_\-chunks\_\-fini\_\-cb} )(\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$r, void $\ast$arg)
+\item 
+typedef int($\ast$ \hyperlink{evhtp_8h_a1fd6217aa45d41584d016b480e07299a}{evhtp\_\-kvs\_\-iterator} )(\hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t} $\ast$kv, void $\ast$arg)
+\item 
+typedef int($\ast$ \hyperlink{evhtp_8h_aeba254946d4ea7c2a80e493b56bbefaa}{evhtp\_\-headers\_\-iterator} )(evhtp\_\-header\_\-t $\ast$header, void $\ast$arg)
+\item 
+typedef int($\ast$ \hyperlink{evhtp_8h_a7bdd701080a9c5b0a97cdc71249bf6ff}{evhtp\_\-ssl\_\-verify\_\-cb} )(int pre\_\-verify, X509\_\-STORE\_\-CTX $\ast$ctx)
+\item 
+typedef int($\ast$ \hyperlink{evhtp_8h_ac6f6c53514c631d6ca12885cfc36f930}{evhtp\_\-ssl\_\-chk\_\-issued\_\-cb} )(X509\_\-STORE\_\-CTX $\ast$ctx, X509 $\ast$x, X509 $\ast$issuer)
+\item 
+typedef int($\ast$ \hyperlink{evhtp_8h_a88e4d535033e8110eb232e2f9f8afbc6}{evhtp\_\-ssl\_\-scache\_\-add} )(\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$connection, unsigned char $\ast$sid, int sid\_\-len, \hyperlink{evhtp_8h_a50626a9b6079fb747f2cf946ea4d45d3}{evhtp\_\-ssl\_\-sess\_\-t} $\ast$sess)
+\item 
+typedef void($\ast$ \hyperlink{evhtp_8h_a0850d66a9f1a8f87da1771a8b5deb691}{evhtp\_\-ssl\_\-scache\_\-del} )(\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, unsigned char $\ast$sid, int sid\_\-len)
+\item 
+typedef \hyperlink{evhtp_8h_a50626a9b6079fb747f2cf946ea4d45d3}{evhtp\_\-ssl\_\-sess\_\-t} $\ast$($\ast$ \hyperlink{evhtp_8h_aa0fab8ce3ec339ff62a366be3c3a6af9}{evhtp\_\-ssl\_\-scache\_\-get} )(\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$connection, unsigned char $\ast$sid, int sid\_\-len)
+\item 
+typedef void $\ast$($\ast$ \hyperlink{evhtp_8h_acc2a1492a21e87e24e46b8105ce16af5}{evhtp\_\-ssl\_\-scache\_\-init} )(\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$)
+\end{DoxyCompactItemize}
+\subsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \hyperlink{evhtp_8h_ab478739101b89e04a6583b835033f998}{evhtp\_\-ssl\_\-scache\_\-type} \{ \hyperlink{evhtp_8h_ab478739101b89e04a6583b835033f998aa9f5406d20adaee73a0559e1c9352b89}{evhtp\_\-ssl\_\-scache\_\-type\_\-disabled} =  0, 
+\hyperlink{evhtp_8h_ab478739101b89e04a6583b835033f998a7243b0b86808019db042efcae1ec1dfd}{evhtp\_\-ssl\_\-scache\_\-type\_\-internal}, 
+\hyperlink{evhtp_8h_ab478739101b89e04a6583b835033f998a182bf1150bb78632bd3add72183537fa}{evhtp\_\-ssl\_\-scache\_\-type\_\-user}, 
+\hyperlink{evhtp_8h_ab478739101b89e04a6583b835033f998a4d41f70356df9b2d4344a80d2aaffdd0}{evhtp\_\-ssl\_\-scache\_\-type\_\-builtin}
+ \}
+\item 
+enum \hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143}{evhtp\_\-hook\_\-type} \{ \par
+\hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a3722d9a701af7e65b856a5ebc176049c}{evhtp\_\-hook\_\-on\_\-header}, 
+\hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143adc8f0b37723e2cd796c18c88d8072bdc}{evhtp\_\-hook\_\-on\_\-headers}, 
+\hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143aca5c712633399cd270525a11e16df220}{evhtp\_\-hook\_\-on\_\-path}, 
+\hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a4e15805b570012268cfec0c9b63caeb2}{evhtp\_\-hook\_\-on\_\-read}, 
+\par
+\hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a6d8fb26ccc62b92b11c83206a7a6e1a4}{evhtp\_\-hook\_\-on\_\-request\_\-fini}, 
+\hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143ad462108a44b51cf21685e92d9b39e150}{evhtp\_\-hook\_\-on\_\-connection\_\-fini}, 
+\hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a50d56f5a4d4e140e84bf84a0c3d7021c}{evhtp\_\-hook\_\-on\_\-new\_\-chunk}, 
+\hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a64a48ee7f3dc1dcd7c9df18412572d99}{evhtp\_\-hook\_\-on\_\-chunk\_\-complete}, 
+\par
+\hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a9004b727c133c1b76386125c1f563c67}{evhtp\_\-hook\_\-on\_\-chunks\_\-complete}, 
+\hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a302078d947465813886608ae900b8a56}{evhtp\_\-hook\_\-on\_\-error}
+ \}
+\begin{DoxyCompactList}\small\item\em types associated with where a developer can hook into during the request processing cycle. \item\end{DoxyCompactList}\item 
+enum \hyperlink{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37}{evhtp\_\-callback\_\-type} \{ \hyperlink{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37a63b008cc9eaf17d7e5f6a06795a20dc1}{evhtp\_\-callback\_\-type\_\-hash}, 
+\hyperlink{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37a773da44d72e7d13d312f16bbc9cb311a}{evhtp\_\-callback\_\-type\_\-regex}
+ \}
+\item 
+enum \hyperlink{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5}{evhtp\_\-proto} \{ \hyperlink{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5a6b66541a62e032eaad5584ecaf5588dc}{EVHTP\_\-PROTO\_\-INVALID}, 
+\hyperlink{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5a143a8c508e5160497d3980327f1fddbf}{EVHTP\_\-PROTO\_\-10}, 
+\hyperlink{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5a719b441675efdbd967a85213a7d2e81d}{EVHTP\_\-PROTO\_\-11}
+ \}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{evhtp_8h_a3dfe435a7358e1f4ac803aaac0d71c33}{TAILQ\_\-HEAD} (evhtp\_\-kvs\_\-s, \hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-s})
+\item 
+\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$ \hyperlink{evhtp_8h_a97bbe491064943a8d5e0d3e7a937209b}{evhtp\_\-new} (evbase\_\-t $\ast$evbase, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em creates a new evhtp\_\-t instance \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8h_a0de8e77250bd6b49414f929df82d9a4b}{evhtp\_\-set\_\-timeouts} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, struct timeval $\ast$r, struct timeval $\ast$w)
+\item 
+int \hyperlink{evhtp_8h_a50dcb68a596352bf44b90e507f5f4a04}{evhtp\_\-ssl\_\-use\_\-threads} (void)
+\item 
+int \hyperlink{evhtp_8h_ab5817633efbce07e2aaf91e5e4f50cf4}{evhtp\_\-ssl\_\-init} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, \hyperlink{structevhtp__ssl__cfg__s}{evhtp\_\-ssl\_\-cfg\_\-t} $\ast$ssl\_\-cfg)
+\item 
+void \hyperlink{evhtp_8h_a39a5c7910a382f902c896b25854b742d}{evhtp\_\-set\_\-gencb} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, \hyperlink{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}{evhtp\_\-callback\_\-cb} cb, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em sets a callback which is called if no other callbacks are matched \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8h_a9d4dbcf6fa74b1c7ba6842dcf10b4607}{evhtp\_\-set\_\-pre\_\-accept\_\-cb} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, \hyperlink{evhtp_8h_a8b649d8f816f5e4a8dc162b3bb373644}{evhtp\_\-pre\_\-accept\_\-cb}, void $\ast$arg)
+\item 
+void \hyperlink{evhtp_8h_a62a30d19b80e2b7a0e04cabc47f189e0}{evhtp\_\-set\_\-post\_\-accept\_\-cb} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, \hyperlink{evhtp_8h_a1fbba02d0b28d101592e5509703eddff}{evhtp\_\-post\_\-accept\_\-cb}, void $\ast$arg)
+\item 
+\hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$ \hyperlink{evhtp_8h_ad5bb4aac3d544eb8a102c530b3b45fba}{evhtp\_\-set\_\-cb} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, const char $\ast$path, \hyperlink{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}{evhtp\_\-callback\_\-cb} cb, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em sets a callback to be executed on a specific path \item\end{DoxyCompactList}\item 
+\hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$ \hyperlink{evhtp_8h_adfec10ef2ef458d0757d3c7f71eabfa9}{evhtp\_\-set\_\-regex\_\-cb} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, const char $\ast$pattern, \hyperlink{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}{evhtp\_\-callback\_\-cb} cb, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em sets a callback to be executed based on a regex pattern \item\end{DoxyCompactList}\item 
+int \hyperlink{evhtp_8h_a9760b5203a449e9ba54dc3e84dd76122}{evhtp\_\-set\_\-hook} (\hyperlink{structevhtp__hooks__s}{evhtp\_\-hooks\_\-t} $\ast$$\ast$hooks, \hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143}{evhtp\_\-hook\_\-type} type, void $\ast$cb, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em sets a callback hook for either a connection or a path/regex . \item\end{DoxyCompactList}\item 
+int \hyperlink{evhtp_8h_aa695621a5145f96c9ebea6911fd6c3b5}{evhtp\_\-bind\_\-socket} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, const char $\ast$addr, uint16\_\-t port, int backlog)
+\item 
+int \hyperlink{evhtp_8h_abadb1db7b98cd01c9856ebe55efe77b3}{evhtp\_\-use\_\-threads} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, \hyperlink{evhtp_8h_a162b617e19f372264cc22388dce03f2e}{evhtp\_\-thread\_\-init\_\-cb} init\_\-cb, int nthreads, void $\ast$arg)
+\item 
+void \hyperlink{evhtp_8h_a207355af4b2d3e5211c4df0bbb8d195d}{evhtp\_\-send\_\-reply} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} code)
+\item 
+void \hyperlink{evhtp_8h_a616801e5dd5e515f78f3b430910b22da}{evhtp\_\-send\_\-reply\_\-start} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} code)
+\item 
+void \hyperlink{evhtp_8h_a6bf7db125fda2c96491d2ebde9d40611}{evhtp\_\-send\_\-reply\_\-body} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, \hyperlink{evhtp_8h_a7c30b85cd8bba6ebbfe58c3fc81139c8}{evbuf\_\-t} $\ast$buf)
+\item 
+void \hyperlink{evhtp_8h_a233d1f64458e5f71658d7bc64c80d569}{evhtp\_\-send\_\-reply\_\-end} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request)
+\item 
+\hyperlink{structevhtp__callbacks__s}{evhtp\_\-callbacks\_\-t} $\ast$ \hyperlink{evhtp_8h_a6064ac5acf3ed7e07ea4eb01a6230118}{evhtp\_\-callbacks\_\-new} (unsigned int buckets)
+\begin{DoxyCompactList}\small\item\em creates a new evhtp\_\-callbacks\_\-t structure \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8h_a4f5f66e5e371d0d34cc439b96b3a4862}{evhtp\_\-callbacks\_\-free} (\hyperlink{structevhtp__callbacks__s}{evhtp\_\-callbacks\_\-t} $\ast$callbacks)
+\item 
+\hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$ \hyperlink{evhtp_8h_a8d96790f46d2c063c5a2dd09ca0573a5}{evhtp\_\-callback\_\-new} (const char $\ast$path, \hyperlink{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37}{evhtp\_\-callback\_\-type} type, \hyperlink{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}{evhtp\_\-callback\_\-cb} cb, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em creates a new evhtp\_\-callback\_\-t structure. \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8h_aa18103f43b36858a97e1eef80b0e4044}{evhtp\_\-callback\_\-free} (\hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$callback)
+\item 
+int \hyperlink{evhtp_8h_a36a4df86347439381efba472dbdd72e2}{evhtp\_\-callbacks\_\-add\_\-callback} (\hyperlink{structevhtp__callbacks__s}{evhtp\_\-callbacks\_\-t} $\ast$cbs, \hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$cb)
+\begin{DoxyCompactList}\small\item\em Adds a evhtp\_\-callback\_\-t to the evhtp\_\-callbacks\_\-t list. \item\end{DoxyCompactList}\item 
+\hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t} $\ast$ \hyperlink{evhtp_8h_a8d67c39c09ef95018639ba82ba111efb}{evhtp\_\-kv\_\-new} (const char $\ast$key, const char $\ast$val, char kalloc, char valloc)
+\begin{DoxyCompactList}\small\item\em Allocates a new key/value structure. \item\end{DoxyCompactList}\item 
+\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$ \hyperlink{evhtp_8h_ae51f6f8596b24444cfd8c00f14143ff3}{evhtp\_\-kvs\_\-new} (void)
+\item 
+void \hyperlink{evhtp_8h_a7939fc367080e65dae817a198b0329bb}{evhtp\_\-kv\_\-free} (\hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t} $\ast$kv)
+\item 
+void \hyperlink{evhtp_8h_a653c3af86d2d3dd3c11abadd71589edf}{evhtp\_\-kvs\_\-free} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs)
+\item 
+void \hyperlink{evhtp_8h_a0ed832fa06fcce351bd4e294b01ca025}{evhtp\_\-kv\_\-rm\_\-and\_\-free} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs, \hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t} $\ast$kv)
+\item 
+const char $\ast$ \hyperlink{evhtp_8h_a5ad3f9da9252228d496c757b7fcbd876}{evhtp\_\-kv\_\-find} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs, const char $\ast$key)
+\item 
+\hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t} $\ast$ \hyperlink{evhtp_8h_a478309d26255defca90bd42775dc89d4}{evhtp\_\-kvs\_\-find\_\-kv} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs, const char $\ast$key)
+\item 
+void \hyperlink{evhtp_8h_a0860e34e7b5b5977e01f28afded17d89}{evhtp\_\-kvs\_\-add\_\-kv} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs, \hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t} $\ast$kv)
+\begin{DoxyCompactList}\small\item\em appends a key/val structure to a evhtp\_\-kvs\_\-t tailq \item\end{DoxyCompactList}\item 
+int \hyperlink{evhtp_8h_ab496e1fb070dd5c6830315e181f2f45f}{evhtp\_\-kvs\_\-for\_\-each} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs, \hyperlink{evhtp_8h_a1fd6217aa45d41584d016b480e07299a}{evhtp\_\-kvs\_\-iterator} cb, void $\ast$arg)
+\item 
+evhtp\_\-query\_\-t $\ast$ \hyperlink{evhtp_8h_a2bf7b8937c27b654fccd27bf811aa2eb}{evhtp\_\-parse\_\-query} (const char $\ast$query, size\_\-t len)
+\begin{DoxyCompactList}\small\item\em Parses the query portion of the uri into a set of key/values. \item\end{DoxyCompactList}\item 
+evhtp\_\-header\_\-t $\ast$ \hyperlink{evhtp_8h_a85fce33b102fc12363fdd5ffe17f663b}{evhtp\_\-header\_\-new} (const char $\ast$key, const char $\ast$val, char kalloc, char valloc)
+\begin{DoxyCompactList}\small\item\em creates a new evhtp\_\-header\_\-t key/val structure \item\end{DoxyCompactList}\item 
+evhtp\_\-header\_\-t $\ast$ \hyperlink{evhtp_8h_a371c397ed3001751650f4326e15a3eab}{evhtp\_\-header\_\-key\_\-add} (evhtp\_\-headers\_\-t $\ast$headers, const char $\ast$key, char kalloc)
+\begin{DoxyCompactList}\small\item\em creates a new evhtp\_\-header\_\-t, sets only the key, and adds to the evhtp\_\-headers TAILQ \item\end{DoxyCompactList}\item 
+evhtp\_\-header\_\-t $\ast$ \hyperlink{evhtp_8h_afb5aeb4995c7c20e774e6590b2a25512}{evhtp\_\-header\_\-val\_\-add} (evhtp\_\-headers\_\-t $\ast$headers, const char $\ast$val, char valloc)
+\begin{DoxyCompactList}\small\item\em finds the last header in the headers tailq and adds the value \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8h_ab895a8e59d43330c700dcbddb20b281d}{evhtp\_\-headers\_\-add\_\-header} (evhtp\_\-headers\_\-t $\ast$headers, evhtp\_\-header\_\-t $\ast$header)
+\begin{DoxyCompactList}\small\item\em adds an evhtp\_\-header\_\-t to the end of the evhtp\_\-headers\_\-t tailq \item\end{DoxyCompactList}\item 
+const char $\ast$ \hyperlink{evhtp_8h_a08460210e1ea2672b7a0a13d1814b9b7}{evhtp\_\-header\_\-find} (evhtp\_\-headers\_\-t $\ast$headers, const char $\ast$key)
+\begin{DoxyCompactList}\small\item\em finds the value of a key in a evhtp\_\-headers\_\-t structure \item\end{DoxyCompactList}\item 
+htp\_\-method \hyperlink{evhtp_8h_af0bf99a2bf280b1cef1cec805bd433d0}{evhtp\_\-request\_\-get\_\-method} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$r)
+\begin{DoxyCompactList}\small\item\em returns the htp\_\-method enum version of the request method. \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8h_affb4e79c7859189a0efc739344226d91}{evhtp\_\-connection\_\-pause} (\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$connection)
+\begin{DoxyCompactList}\small\item\em pauses a connection (disables reading) \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8h_a450bcd53aa74128bbb658f8af6aff320}{evhtp\_\-connection\_\-resume} (\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$connection)
+\begin{DoxyCompactList}\small\item\em resumes a connection (enables reading) and activates resume event. \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8h_ab35aec3adb697918e24b8ff966afe235}{evhtp\_\-request\_\-pause} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request)
+\begin{DoxyCompactList}\small\item\em Wrapper around evhtp\_\-connection\_\-pause. \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8h_a3f537cfe43afe795f575e4080d8a4f69}{evhtp\_\-request\_\-resume} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request)
+\begin{DoxyCompactList}\small\item\em Wrapper around evhtp\_\-connection\_\-resume. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Define Documentation}
+\hypertarget{evhtp_8h_a460abdd19c46cc098e5a48af04706a76}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-header\_\-find@{evhtp\_\-header\_\-find}}
+\index{evhtp\_\-header\_\-find@{evhtp\_\-header\_\-find}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-header\_\-find}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-header\_\-find~evhtp\_\-kv\_\-find}}
+\label{evhtp_8h_a460abdd19c46cc098e5a48af04706a76}
+
+
+Definition at line 682 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ab79cc768753e3f5f0b6113cdcaff9d57}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-header\_\-free@{evhtp\_\-header\_\-free}}
+\index{evhtp\_\-header\_\-free@{evhtp\_\-header\_\-free}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-header\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-header\_\-free~evhtp\_\-kv\_\-free}}
+\label{evhtp_8h_ab79cc768753e3f5f0b6113cdcaff9d57}
+
+
+Definition at line 686 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a64b52fae2f659d4dd47e0acb86c13c52}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-header\_\-new@{evhtp\_\-header\_\-new}}
+\index{evhtp\_\-header\_\-new@{evhtp\_\-header\_\-new}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-header\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-header\_\-new~evhtp\_\-kv\_\-new}}
+\label{evhtp_8h_a64b52fae2f659d4dd47e0acb86c13c52}
+
+
+Definition at line 685 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a20bdc4d8ef99ba9f41f29df1e3bef6c7}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-header\_\-rm\_\-and\_\-free@{evhtp\_\-header\_\-rm\_\-and\_\-free}}
+\index{evhtp\_\-header\_\-rm\_\-and\_\-free@{evhtp\_\-header\_\-rm\_\-and\_\-free}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-header\_\-rm\_\-and\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-header\_\-rm\_\-and\_\-free~evhtp\_\-kv\_\-rm\_\-and\_\-free}}
+\label{evhtp_8h_a20bdc4d8ef99ba9f41f29df1e3bef6c7}
+
+
+Definition at line 689 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a0318e8e73feec9c33d7b80cf53cbe8cf}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-header\_\-s@{evhtp\_\-header\_\-s}}
+\index{evhtp\_\-header\_\-s@{evhtp\_\-header\_\-s}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-header\_\-s}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-header\_\-s~{\bf evhtp\_\-kv\_\-s}}}
+\label{evhtp_8h_a0318e8e73feec9c33d7b80cf53cbe8cf}
+
+
+Definition at line 62 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a80d0821d52c096a7dded740f5b499cff}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-header\_\-t@{evhtp\_\-header\_\-t}}
+\index{evhtp\_\-header\_\-t@{evhtp\_\-header\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-header\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-header\_\-t~{\bf evhtp\_\-kv\_\-t}}}
+\label{evhtp_8h_a80d0821d52c096a7dded740f5b499cff}
+
+
+Definition at line 66 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a17de25c1bb9ab6007719fb079ba8b600}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-headers\_\-add\_\-header@{evhtp\_\-headers\_\-add\_\-header}}
+\index{evhtp\_\-headers\_\-add\_\-header@{evhtp\_\-headers\_\-add\_\-header}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-headers\_\-add\_\-header}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-headers\_\-add\_\-header~evhtp\_\-kvs\_\-add\_\-kv}}
+\label{evhtp_8h_a17de25c1bb9ab6007719fb079ba8b600}
+
+
+Definition at line 690 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a1caa526548110b12cf3c28b8e1f24c90}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-headers\_\-find\_\-header@{evhtp\_\-headers\_\-find\_\-header}}
+\index{evhtp\_\-headers\_\-find\_\-header@{evhtp\_\-headers\_\-find\_\-header}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-headers\_\-find\_\-header}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-headers\_\-find\_\-header~evhtp\_\-kvs\_\-find\_\-kv}}
+\label{evhtp_8h_a1caa526548110b12cf3c28b8e1f24c90}
+
+
+Definition at line 683 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a9b7c8aecf6f7f61f846bef13d3fb49dd}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-headers\_\-for\_\-each@{evhtp\_\-headers\_\-for\_\-each}}
+\index{evhtp\_\-headers\_\-for\_\-each@{evhtp\_\-headers\_\-for\_\-each}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-headers\_\-for\_\-each}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-headers\_\-for\_\-each~evhtp\_\-kvs\_\-for\_\-each}}
+\label{evhtp_8h_a9b7c8aecf6f7f61f846bef13d3fb49dd}
+
+
+Definition at line 684 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ad1d9d954ccfd5fb137bbb54ef11ba16f}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-headers\_\-free@{evhtp\_\-headers\_\-free}}
+\index{evhtp\_\-headers\_\-free@{evhtp\_\-headers\_\-free}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-headers\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-headers\_\-free~evhtp\_\-kvs\_\-free}}
+\label{evhtp_8h_ad1d9d954ccfd5fb137bbb54ef11ba16f}
+
+
+Definition at line 688 of file evhtp.h.
+
+\hypertarget{evhtp_8h_accba0632dfea7c5ecb3cdec39f81752a}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-headers\_\-iterator@{evhtp\_\-headers\_\-iterator}}
+\index{evhtp\_\-headers\_\-iterator@{evhtp\_\-headers\_\-iterator}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-headers\_\-iterator}]{\setlength{\rightskip}{0pt plus 5cm}\#define {\bf evhtp\_\-headers\_\-iterator}~{\bf evhtp\_\-kvs\_\-iterator}}}
+\label{evhtp_8h_accba0632dfea7c5ecb3cdec39f81752a}
+
+
+Definition at line 106 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a14972ffa9d3d4c159aedc305b59e8ff0}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-headers\_\-new@{evhtp\_\-headers\_\-new}}
+\index{evhtp\_\-headers\_\-new@{evhtp\_\-headers\_\-new}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-headers\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-headers\_\-new~evhtp\_\-kvs\_\-new}}
+\label{evhtp_8h_a14972ffa9d3d4c159aedc305b59e8ff0}
+
+
+Definition at line 687 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aa9e97b1e39ea19584a41b542b6100ff3}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-headers\_\-s@{evhtp\_\-headers\_\-s}}
+\index{evhtp\_\-headers\_\-s@{evhtp\_\-headers\_\-s}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-headers\_\-s}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-headers\_\-s~evhtp\_\-kvs\_\-s}}
+\label{evhtp_8h_aa9e97b1e39ea19584a41b542b6100ff3}
+
+
+Definition at line 63 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a39e4a3adac2cba0714b1f6c77311f868}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-headers\_\-t@{evhtp\_\-headers\_\-t}}
+\index{evhtp\_\-headers\_\-t@{evhtp\_\-headers\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-headers\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-headers\_\-t~{\bf evhtp\_\-kvs\_\-t}}}
+\label{evhtp_8h_a39e4a3adac2cba0714b1f6c77311f868}
+
+
+Definition at line 67 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a688746f7582a41ada24b8768c11d7b9d}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-query\_\-free@{evhtp\_\-query\_\-free}}
+\index{evhtp\_\-query\_\-free@{evhtp\_\-query\_\-free}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-query\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-query\_\-free~evhtp\_\-kvs\_\-free}}
+\label{evhtp_8h_a688746f7582a41ada24b8768c11d7b9d}
+
+
+Definition at line 692 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a2e0319399020bb7500739ed621e62286}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-query\_\-new@{evhtp\_\-query\_\-new}}
+\index{evhtp\_\-query\_\-new@{evhtp\_\-query\_\-new}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-query\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-query\_\-new~evhtp\_\-kvs\_\-new}}
+\label{evhtp_8h_a2e0319399020bb7500739ed621e62286}
+
+
+Definition at line 691 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a13f829e41b7d1d0d57ce14d18baa85f4}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-query\_\-s@{evhtp\_\-query\_\-s}}
+\index{evhtp\_\-query\_\-s@{evhtp\_\-query\_\-s}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-query\_\-s}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-query\_\-s~evhtp\_\-kvs\_\-s}}
+\label{evhtp_8h_a13f829e41b7d1d0d57ce14d18baa85f4}
+
+
+Definition at line 64 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aed08d04f28beb53e769bc25c2d382765}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-query\_\-t@{evhtp\_\-query\_\-t}}
+\index{evhtp\_\-query\_\-t@{evhtp\_\-query\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-query\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-query\_\-t~{\bf evhtp\_\-kvs\_\-t}}}
+\label{evhtp_8h_aed08d04f28beb53e769bc25c2d382765}
+
+
+Definition at line 68 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a88d8d2ad6c62967357528b809651cbaa}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-request\_\-content\_\-len@{evhtp\_\-request\_\-content\_\-len}}
+\index{evhtp\_\-request\_\-content\_\-len@{evhtp\_\-request\_\-content\_\-len}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-request\_\-content\_\-len}]{\setlength{\rightskip}{0pt plus 5cm}\#define evhtp\_\-request\_\-content\_\-len(
+\begin{DoxyParamCaption}
+\item[{}]{r}
+\end{DoxyParamCaption}
+)~htparser\_\-get\_\-content\_\-length(r-\/$>$conn-\/$>$parser)}}
+\label{evhtp_8h_a88d8d2ad6c62967357528b809651cbaa}
+
+
+Definition at line 367 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a62e8fb036aa3172f65538792a1ce964a}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-100@{EVHTP\_\-RES\_\-100}}
+\index{EVHTP\_\-RES\_\-100@{EVHTP\_\-RES\_\-100}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-100}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-100~100}}
+\label{evhtp_8h_a62e8fb036aa3172f65538792a1ce964a}
+
+
+Definition at line 113 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a6558e45d302e553eb61716c44fbcbe36}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-200@{EVHTP\_\-RES\_\-200}}
+\index{EVHTP\_\-RES\_\-200@{EVHTP\_\-RES\_\-200}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-200}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-200~200}}
+\label{evhtp_8h_a6558e45d302e553eb61716c44fbcbe36}
+
+
+Definition at line 119 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ac64e254c6c3f0c1f4da688d3c5fcb013}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-300@{EVHTP\_\-RES\_\-300}}
+\index{EVHTP\_\-RES\_\-300@{EVHTP\_\-RES\_\-300}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-300}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-300~300}}
+\label{evhtp_8h_ac64e254c6c3f0c1f4da688d3c5fcb013}
+
+
+Definition at line 129 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a8c714c1f6c1bada5fbbcdf1a23a88fe6}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-400@{EVHTP\_\-RES\_\-400}}
+\index{EVHTP\_\-RES\_\-400@{EVHTP\_\-RES\_\-400}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-400}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-400~400}}
+\label{evhtp_8h_a8c714c1f6c1bada5fbbcdf1a23a88fe6}
+
+
+Definition at line 139 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a4cce65b8cfc185835a3918b52732032b}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-500@{EVHTP\_\-RES\_\-500}}
+\index{EVHTP\_\-RES\_\-500@{EVHTP\_\-RES\_\-500}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-500}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-500~500}}
+\label{evhtp_8h_a4cce65b8cfc185835a3918b52732032b}
+
+
+Definition at line 160 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a29b8da4629bc60fc14db2f16392fdbab}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-ACCEPTED@{EVHTP\_\-RES\_\-ACCEPTED}}
+\index{EVHTP\_\-RES\_\-ACCEPTED@{EVHTP\_\-RES\_\-ACCEPTED}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-ACCEPTED}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-ACCEPTED~202}}
+\label{evhtp_8h_a29b8da4629bc60fc14db2f16392fdbab}
+
+
+Definition at line 121 of file evhtp.h.
+
+\hypertarget{evhtp_8h_abe9e661f52c8d3818e07fa0ea437b6af}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-BADGATEWAY@{EVHTP\_\-RES\_\-BADGATEWAY}}
+\index{EVHTP\_\-RES\_\-BADGATEWAY@{EVHTP\_\-RES\_\-BADGATEWAY}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-BADGATEWAY}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-BADGATEWAY~502}}
+\label{evhtp_8h_abe9e661f52c8d3818e07fa0ea437b6af}
+
+
+Definition at line 163 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a1a2dda2dca0ef730ed7d0187bf03e9ab}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-BADREQ@{EVHTP\_\-RES\_\-BADREQ}}
+\index{EVHTP\_\-RES\_\-BADREQ@{EVHTP\_\-RES\_\-BADREQ}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-BADREQ}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-BADREQ~400}}
+\label{evhtp_8h_a1a2dda2dca0ef730ed7d0187bf03e9ab}
+
+
+Definition at line 140 of file evhtp.h.
+
+\hypertarget{evhtp_8h_afcf1707c04fceb7c551ccc49252338e9}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-BWEXEED@{EVHTP\_\-RES\_\-BWEXEED}}
+\index{EVHTP\_\-RES\_\-BWEXEED@{EVHTP\_\-RES\_\-BWEXEED}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-BWEXEED}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-BWEXEED~509}}
+\label{evhtp_8h_afcf1707c04fceb7c551ccc49252338e9}
+
+
+Definition at line 167 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a78a7a3be96082dcab45eeeb15f470b39}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-CONFLICT@{EVHTP\_\-RES\_\-CONFLICT}}
+\index{EVHTP\_\-RES\_\-CONFLICT@{EVHTP\_\-RES\_\-CONFLICT}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-CONFLICT}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-CONFLICT~409}}
+\label{evhtp_8h_a78a7a3be96082dcab45eeeb15f470b39}
+
+
+Definition at line 149 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a0ec793837bec4af8fa6a4752a41ac3c6}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-CONTINUE@{EVHTP\_\-RES\_\-CONTINUE}}
+\index{EVHTP\_\-RES\_\-CONTINUE@{EVHTP\_\-RES\_\-CONTINUE}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-CONTINUE}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-CONTINUE~100}}
+\label{evhtp_8h_a0ec793837bec4af8fa6a4752a41ac3c6}
+
+
+Definition at line 114 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aa580578bdd046d17f347997b727cfb6d}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-CREATED@{EVHTP\_\-RES\_\-CREATED}}
+\index{EVHTP\_\-RES\_\-CREATED@{EVHTP\_\-RES\_\-CREATED}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-CREATED}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-CREATED~201}}
+\label{evhtp_8h_aa580578bdd046d17f347997b727cfb6d}
+
+
+Definition at line 120 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ac56c2dd0ef185ea73250fa830e4a11ce}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-ENTOOLARGE@{EVHTP\_\-RES\_\-ENTOOLARGE}}
+\index{EVHTP\_\-RES\_\-ENTOOLARGE@{EVHTP\_\-RES\_\-ENTOOLARGE}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-ENTOOLARGE}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-ENTOOLARGE~413}}
+\label{evhtp_8h_ac56c2dd0ef185ea73250fa830e4a11ce}
+
+
+Definition at line 153 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a392f5421d742b9c615e7ef4420cf1c3c}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-ERROR@{EVHTP\_\-RES\_\-ERROR}}
+\index{EVHTP\_\-RES\_\-ERROR@{EVHTP\_\-RES\_\-ERROR}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-ERROR}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-ERROR~0}}
+\label{evhtp_8h_a392f5421d742b9c615e7ef4420cf1c3c}
+
+
+Definition at line 108 of file evhtp.h.
+
+\hypertarget{evhtp_8h_af04a62b2c33b0601ce51819e1c964a7d}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-EXPECTFAIL@{EVHTP\_\-RES\_\-EXPECTFAIL}}
+\index{EVHTP\_\-RES\_\-EXPECTFAIL@{EVHTP\_\-RES\_\-EXPECTFAIL}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-EXPECTFAIL}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-EXPECTFAIL~417}}
+\label{evhtp_8h_af04a62b2c33b0601ce51819e1c964a7d}
+
+
+Definition at line 157 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a1c14742d81fa9dc1cffcf8aa2c0739c4}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-FATAL@{EVHTP\_\-RES\_\-FATAL}}
+\index{EVHTP\_\-RES\_\-FATAL@{EVHTP\_\-RES\_\-FATAL}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-FATAL}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-FATAL~2}}
+\label{evhtp_8h_a1c14742d81fa9dc1cffcf8aa2c0739c4}
+
+
+Definition at line 110 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a023e9fcda0541e8402efd813c532b74d}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-FORBIDDEN@{EVHTP\_\-RES\_\-FORBIDDEN}}
+\index{EVHTP\_\-RES\_\-FORBIDDEN@{EVHTP\_\-RES\_\-FORBIDDEN}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-FORBIDDEN}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-FORBIDDEN~403}}
+\label{evhtp_8h_a023e9fcda0541e8402efd813c532b74d}
+
+
+Definition at line 143 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a4720398d1d218d7fe114444149f81cfe}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-FOUND@{EVHTP\_\-RES\_\-FOUND}}
+\index{EVHTP\_\-RES\_\-FOUND@{EVHTP\_\-RES\_\-FOUND}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-FOUND}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-FOUND~302}}
+\label{evhtp_8h_a4720398d1d218d7fe114444149f81cfe}
+
+
+Definition at line 132 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aa4a6e7c690ed93e3b3320d897c5b8dde}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-GONE@{EVHTP\_\-RES\_\-GONE}}
+\index{EVHTP\_\-RES\_\-GONE@{EVHTP\_\-RES\_\-GONE}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-GONE}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-GONE~410}}
+\label{evhtp_8h_aa4a6e7c690ed93e3b3320d897c5b8dde}
+
+
+Definition at line 150 of file evhtp.h.
+
+\hypertarget{evhtp_8h_af7a13d23cdc8eface614242287982798}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-GWTIMEOUT@{EVHTP\_\-RES\_\-GWTIMEOUT}}
+\index{EVHTP\_\-RES\_\-GWTIMEOUT@{EVHTP\_\-RES\_\-GWTIMEOUT}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-GWTIMEOUT}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-GWTIMEOUT~504}}
+\label{evhtp_8h_af7a13d23cdc8eface614242287982798}
+
+
+Definition at line 165 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a79bf4cfb102127aece72e2a84543ae2f}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-IAMATEAPOT@{EVHTP\_\-RES\_\-IAMATEAPOT}}
+\index{EVHTP\_\-RES\_\-IAMATEAPOT@{EVHTP\_\-RES\_\-IAMATEAPOT}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-IAMATEAPOT}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-IAMATEAPOT~418}}
+\label{evhtp_8h_a79bf4cfb102127aece72e2a84543ae2f}
+
+
+Definition at line 158 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a650d81f281773dc7f377853e800c58d2}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-IMUSED@{EVHTP\_\-RES\_\-IMUSED}}
+\index{EVHTP\_\-RES\_\-IMUSED@{EVHTP\_\-RES\_\-IMUSED}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-IMUSED}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-IMUSED~226}}
+\label{evhtp_8h_a650d81f281773dc7f377853e800c58d2}
+
+
+Definition at line 127 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a173d84feb975325599393f3c411f651f}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-LENREQ@{EVHTP\_\-RES\_\-LENREQ}}
+\index{EVHTP\_\-RES\_\-LENREQ@{EVHTP\_\-RES\_\-LENREQ}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-LENREQ}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-LENREQ~411}}
+\label{evhtp_8h_a173d84feb975325599393f3c411f651f}
+
+
+Definition at line 151 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ac0792eb23dd88647201d0ca1e4bff736}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-MCHOICE@{EVHTP\_\-RES\_\-MCHOICE}}
+\index{EVHTP\_\-RES\_\-MCHOICE@{EVHTP\_\-RES\_\-MCHOICE}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-MCHOICE}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-MCHOICE~300}}
+\label{evhtp_8h_ac0792eb23dd88647201d0ca1e4bff736}
+
+
+Definition at line 130 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a6c29cb887c52190246374fb0191a44fa}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-METHNALLOWED@{EVHTP\_\-RES\_\-METHNALLOWED}}
+\index{EVHTP\_\-RES\_\-METHNALLOWED@{EVHTP\_\-RES\_\-METHNALLOWED}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-METHNALLOWED}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-METHNALLOWED~405}}
+\label{evhtp_8h_a6c29cb887c52190246374fb0191a44fa}
+
+
+Definition at line 145 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a53faf3139e75575acc14e67ac31fbc36}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-MOVEDPERM@{EVHTP\_\-RES\_\-MOVEDPERM}}
+\index{EVHTP\_\-RES\_\-MOVEDPERM@{EVHTP\_\-RES\_\-MOVEDPERM}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-MOVEDPERM}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-MOVEDPERM~301}}
+\label{evhtp_8h_a53faf3139e75575acc14e67ac31fbc36}
+
+
+Definition at line 131 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ae5982116161ce3883a0fdff84032ca0f}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-MSTATUS@{EVHTP\_\-RES\_\-MSTATUS}}
+\index{EVHTP\_\-RES\_\-MSTATUS@{EVHTP\_\-RES\_\-MSTATUS}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-MSTATUS}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-MSTATUS~207}}
+\label{evhtp_8h_ae5982116161ce3883a0fdff84032ca0f}
+
+
+Definition at line 126 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a315a164af1462b84b2c2b3801d02b14c}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-NACCEPTABLE@{EVHTP\_\-RES\_\-NACCEPTABLE}}
+\index{EVHTP\_\-RES\_\-NACCEPTABLE@{EVHTP\_\-RES\_\-NACCEPTABLE}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-NACCEPTABLE}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-NACCEPTABLE~406}}
+\label{evhtp_8h_a315a164af1462b84b2c2b3801d02b14c}
+
+
+Definition at line 146 of file evhtp.h.
+
+\hypertarget{evhtp_8h_abfc465aabf80f8deabe259b3bc5cc959}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-NAUTHINFO@{EVHTP\_\-RES\_\-NAUTHINFO}}
+\index{EVHTP\_\-RES\_\-NAUTHINFO@{EVHTP\_\-RES\_\-NAUTHINFO}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-NAUTHINFO}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-NAUTHINFO~203}}
+\label{evhtp_8h_abfc465aabf80f8deabe259b3bc5cc959}
+
+
+Definition at line 122 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a294a66b0b14fabc7d266d42cf082b84f}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-NOCONTENT@{EVHTP\_\-RES\_\-NOCONTENT}}
+\index{EVHTP\_\-RES\_\-NOCONTENT@{EVHTP\_\-RES\_\-NOCONTENT}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-NOCONTENT}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-NOCONTENT~204}}
+\label{evhtp_8h_a294a66b0b14fabc7d266d42cf082b84f}
+
+
+Definition at line 123 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a8960e4320e8392669c44501c67ff5025}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-NOTFOUND@{EVHTP\_\-RES\_\-NOTFOUND}}
+\index{EVHTP\_\-RES\_\-NOTFOUND@{EVHTP\_\-RES\_\-NOTFOUND}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-NOTFOUND}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-NOTFOUND~404}}
+\label{evhtp_8h_a8960e4320e8392669c44501c67ff5025}
+
+
+Definition at line 144 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a5ea134b9c4d8c55871ff946b055f7b78}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-NOTIMPL@{EVHTP\_\-RES\_\-NOTIMPL}}
+\index{EVHTP\_\-RES\_\-NOTIMPL@{EVHTP\_\-RES\_\-NOTIMPL}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-NOTIMPL}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-NOTIMPL~501}}
+\label{evhtp_8h_a5ea134b9c4d8c55871ff946b055f7b78}
+
+
+Definition at line 162 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a1f96549492a740d63e1c6f42a7f417f7}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-NOTMOD@{EVHTP\_\-RES\_\-NOTMOD}}
+\index{EVHTP\_\-RES\_\-NOTMOD@{EVHTP\_\-RES\_\-NOTMOD}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-NOTMOD}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-NOTMOD~304}}
+\label{evhtp_8h_a1f96549492a740d63e1c6f42a7f417f7}
+
+
+Definition at line 134 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a137a73d703e70ec04a807668a5d523da}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-OK@{EVHTP\_\-RES\_\-OK}}
+\index{EVHTP\_\-RES\_\-OK@{EVHTP\_\-RES\_\-OK}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-OK}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-OK~200}}
+\label{evhtp_8h_a137a73d703e70ec04a807668a5d523da}
+
+
+Definition at line 111 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aeea3ab8b8d188d855d575b790cf3107c}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-PARTIAL@{EVHTP\_\-RES\_\-PARTIAL}}
+\index{EVHTP\_\-RES\_\-PARTIAL@{EVHTP\_\-RES\_\-PARTIAL}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-PARTIAL}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-PARTIAL~206}}
+\label{evhtp_8h_aeea3ab8b8d188d855d575b790cf3107c}
+
+
+Definition at line 125 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ab4f1c1b0d77da95865ab9fd2701c0c9a}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-PAUSE@{EVHTP\_\-RES\_\-PAUSE}}
+\index{EVHTP\_\-RES\_\-PAUSE@{EVHTP\_\-RES\_\-PAUSE}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-PAUSE}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-PAUSE~1}}
+\label{evhtp_8h_ab4f1c1b0d77da95865ab9fd2701c0c9a}
+
+
+Definition at line 109 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aa7faceb6d13f22f10cd5f94621f5cc16}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-PAYREQ@{EVHTP\_\-RES\_\-PAYREQ}}
+\index{EVHTP\_\-RES\_\-PAYREQ@{EVHTP\_\-RES\_\-PAYREQ}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-PAYREQ}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-PAYREQ~402}}
+\label{evhtp_8h_aa7faceb6d13f22f10cd5f94621f5cc16}
+
+
+Definition at line 142 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a4e8618db6f21346d2d91edda27caf9f9}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-PRECONDFAIL@{EVHTP\_\-RES\_\-PRECONDFAIL}}
+\index{EVHTP\_\-RES\_\-PRECONDFAIL@{EVHTP\_\-RES\_\-PRECONDFAIL}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-PRECONDFAIL}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-PRECONDFAIL~412}}
+\label{evhtp_8h_a4e8618db6f21346d2d91edda27caf9f9}
+
+
+Definition at line 152 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a1f4b43839d75a0de5af171c250ea4c1c}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-PROCESSING@{EVHTP\_\-RES\_\-PROCESSING}}
+\index{EVHTP\_\-RES\_\-PROCESSING@{EVHTP\_\-RES\_\-PROCESSING}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-PROCESSING}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-PROCESSING~102}}
+\label{evhtp_8h_a1f4b43839d75a0de5af171c250ea4c1c}
+
+
+Definition at line 116 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a03f7cda799541fa98de15ab21fb85aa7}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-PROXYAUTHREQ@{EVHTP\_\-RES\_\-PROXYAUTHREQ}}
+\index{EVHTP\_\-RES\_\-PROXYAUTHREQ@{EVHTP\_\-RES\_\-PROXYAUTHREQ}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-PROXYAUTHREQ}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-PROXYAUTHREQ~407}}
+\label{evhtp_8h_a03f7cda799541fa98de15ab21fb85aa7}
+
+
+Definition at line 147 of file evhtp.h.
+
+\hypertarget{evhtp_8h_af0f61fa9827632fd40e87e52348debf1}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-RANGENOTSC@{EVHTP\_\-RES\_\-RANGENOTSC}}
+\index{EVHTP\_\-RES\_\-RANGENOTSC@{EVHTP\_\-RES\_\-RANGENOTSC}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-RANGENOTSC}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-RANGENOTSC~416}}
+\label{evhtp_8h_af0f61fa9827632fd40e87e52348debf1}
+
+
+Definition at line 156 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a584ab3f00b16d56665f57c80387375a4}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-RSTCONTENT@{EVHTP\_\-RES\_\-RSTCONTENT}}
+\index{EVHTP\_\-RES\_\-RSTCONTENT@{EVHTP\_\-RES\_\-RSTCONTENT}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-RSTCONTENT}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-RSTCONTENT~205}}
+\label{evhtp_8h_a584ab3f00b16d56665f57c80387375a4}
+
+
+Definition at line 124 of file evhtp.h.
+
+\hypertarget{evhtp_8h_acd3de57a4d7a1a9f59e39ddd78992c50}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-SEEOTHER@{EVHTP\_\-RES\_\-SEEOTHER}}
+\index{EVHTP\_\-RES\_\-SEEOTHER@{EVHTP\_\-RES\_\-SEEOTHER}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-SEEOTHER}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-SEEOTHER~303}}
+\label{evhtp_8h_acd3de57a4d7a1a9f59e39ddd78992c50}
+
+
+Definition at line 133 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a8bb6091ce41c1546265b5e66cb214eaf}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-SERVERR@{EVHTP\_\-RES\_\-SERVERR}}
+\index{EVHTP\_\-RES\_\-SERVERR@{EVHTP\_\-RES\_\-SERVERR}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-SERVERR}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-SERVERR~500}}
+\label{evhtp_8h_a8bb6091ce41c1546265b5e66cb214eaf}
+
+
+Definition at line 161 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a1163a66e2f026f3dd35f22070885fb59}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-SERVUNAVAIL@{EVHTP\_\-RES\_\-SERVUNAVAIL}}
+\index{EVHTP\_\-RES\_\-SERVUNAVAIL@{EVHTP\_\-RES\_\-SERVUNAVAIL}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-SERVUNAVAIL}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-SERVUNAVAIL~503}}
+\label{evhtp_8h_a1163a66e2f026f3dd35f22070885fb59}
+
+
+Definition at line 164 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a16624a99036011b19ae0efb9fdae628c}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-SWITCH\_\-PROTO@{EVHTP\_\-RES\_\-SWITCH\_\-PROTO}}
+\index{EVHTP\_\-RES\_\-SWITCH\_\-PROTO@{EVHTP\_\-RES\_\-SWITCH\_\-PROTO}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-SWITCH\_\-PROTO}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-SWITCH\_\-PROTO~101}}
+\label{evhtp_8h_a16624a99036011b19ae0efb9fdae628c}
+
+
+Definition at line 115 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a6b193aca113e9441c3d4f2f4b1ec942a}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-SWITCHPROXY@{EVHTP\_\-RES\_\-SWITCHPROXY}}
+\index{EVHTP\_\-RES\_\-SWITCHPROXY@{EVHTP\_\-RES\_\-SWITCHPROXY}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-SWITCHPROXY}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-SWITCHPROXY~306}}
+\label{evhtp_8h_a6b193aca113e9441c3d4f2f4b1ec942a}
+
+
+Definition at line 136 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a64413f34714afbd17fe5f69b96fe6c0f}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-TIMEOUT@{EVHTP\_\-RES\_\-TIMEOUT}}
+\index{EVHTP\_\-RES\_\-TIMEOUT@{EVHTP\_\-RES\_\-TIMEOUT}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-TIMEOUT}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-TIMEOUT~408}}
+\label{evhtp_8h_a64413f34714afbd17fe5f69b96fe6c0f}
+
+
+Definition at line 148 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a7ab05148fbf38663bae43154d07e2207}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-TMPREDIR@{EVHTP\_\-RES\_\-TMPREDIR}}
+\index{EVHTP\_\-RES\_\-TMPREDIR@{EVHTP\_\-RES\_\-TMPREDIR}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-TMPREDIR}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-TMPREDIR~307}}
+\label{evhtp_8h_a7ab05148fbf38663bae43154d07e2207}
+
+
+Definition at line 137 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a221c7a3894160145e4ae556644ffb3d7}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-UNAUTH@{EVHTP\_\-RES\_\-UNAUTH}}
+\index{EVHTP\_\-RES\_\-UNAUTH@{EVHTP\_\-RES\_\-UNAUTH}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-UNAUTH}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-UNAUTH~401}}
+\label{evhtp_8h_a221c7a3894160145e4ae556644ffb3d7}
+
+
+Definition at line 141 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ae4e3d51db05bcc86cd2b2eb87bb43f61}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-UNSUPPORTED@{EVHTP\_\-RES\_\-UNSUPPORTED}}
+\index{EVHTP\_\-RES\_\-UNSUPPORTED@{EVHTP\_\-RES\_\-UNSUPPORTED}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-UNSUPPORTED}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-UNSUPPORTED~415}}
+\label{evhtp_8h_ae4e3d51db05bcc86cd2b2eb87bb43f61}
+
+
+Definition at line 155 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a3fae728d29531cfce14e1a3c4d902d19}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-URI\_\-TOOLONG@{EVHTP\_\-RES\_\-URI\_\-TOOLONG}}
+\index{EVHTP\_\-RES\_\-URI\_\-TOOLONG@{EVHTP\_\-RES\_\-URI\_\-TOOLONG}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-URI\_\-TOOLONG}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-URI\_\-TOOLONG~122}}
+\label{evhtp_8h_a3fae728d29531cfce14e1a3c4d902d19}
+
+
+Definition at line 117 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a1f0310b27e969c0edf4b117a6e38f54f}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-URITOOLARGE@{EVHTP\_\-RES\_\-URITOOLARGE}}
+\index{EVHTP\_\-RES\_\-URITOOLARGE@{EVHTP\_\-RES\_\-URITOOLARGE}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-URITOOLARGE}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-URITOOLARGE~414}}
+\label{evhtp_8h_a1f0310b27e969c0edf4b117a6e38f54f}
+
+
+Definition at line 154 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a00952fdf36f14c4550d29e79e88cb185}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-USEPROXY@{EVHTP\_\-RES\_\-USEPROXY}}
+\index{EVHTP\_\-RES\_\-USEPROXY@{EVHTP\_\-RES\_\-USEPROXY}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-USEPROXY}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-USEPROXY~305}}
+\label{evhtp_8h_a00952fdf36f14c4550d29e79e88cb185}
+
+
+Definition at line 135 of file evhtp.h.
+
+\hypertarget{evhtp_8h_af84424c11b0f8fa59b4136bb4c38cc36}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-RES\_\-VERNSUPPORT@{EVHTP\_\-RES\_\-VERNSUPPORT}}
+\index{EVHTP\_\-RES\_\-VERNSUPPORT@{EVHTP\_\-RES\_\-VERNSUPPORT}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-RES\_\-VERNSUPPORT}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-RES\_\-VERNSUPPORT~505}}
+\label{evhtp_8h_af84424c11b0f8fa59b4136bb4c38cc36}
+
+
+Definition at line 166 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a78426bd2ca862c031f042173289a1998}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-VERSION@{EVHTP\_\-VERSION}}
+\index{EVHTP\_\-VERSION@{EVHTP\_\-VERSION}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-VERSION}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-VERSION~\char`\"{}0.4.3\char`\"{}}}
+\label{evhtp_8h_a78426bd2ca862c031f042173289a1998}
+
+
+Definition at line 101 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aefd0f8fa0894c105ff5c870f1cfa0f70}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-VERSION\_\-MAJOR@{EVHTP\_\-VERSION\_\-MAJOR}}
+\index{EVHTP\_\-VERSION\_\-MAJOR@{EVHTP\_\-VERSION\_\-MAJOR}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-VERSION\_\-MAJOR}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-VERSION\_\-MAJOR~0}}
+\label{evhtp_8h_aefd0f8fa0894c105ff5c870f1cfa0f70}
+
+
+Definition at line 102 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a0e7cb6969920f7f90e5df4ea56be977c}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-VERSION\_\-MINOR@{EVHTP\_\-VERSION\_\-MINOR}}
+\index{EVHTP\_\-VERSION\_\-MINOR@{EVHTP\_\-VERSION\_\-MINOR}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-VERSION\_\-MINOR}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-VERSION\_\-MINOR~4}}
+\label{evhtp_8h_a0e7cb6969920f7f90e5df4ea56be977c}
+
+
+Definition at line 103 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ab1c6db8daa5b48c5ff3c9336a511a192}{
+\index{evhtp.h@{evhtp.h}!EVHTP\_\-VERSION\_\-PATCH@{EVHTP\_\-VERSION\_\-PATCH}}
+\index{EVHTP\_\-VERSION\_\-PATCH@{EVHTP\_\-VERSION\_\-PATCH}!evhtp.h@{evhtp.h}}
+\subsubsection[{EVHTP\_\-VERSION\_\-PATCH}]{\setlength{\rightskip}{0pt plus 5cm}\#define EVHTP\_\-VERSION\_\-PATCH~3}}
+\label{evhtp_8h_ab1c6db8daa5b48c5ff3c9336a511a192}
+
+
+Definition at line 104 of file evhtp.h.
+
+
+
+\subsection{Typedef Documentation}
+\hypertarget{evhtp_8h_af92ce7197ff545dc83b76f1650bc57e1}{
+\index{evhtp.h@{evhtp.h}!evbev\_\-t@{evbev\_\-t}}
+\index{evbev\_\-t@{evbev\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evbev\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct bufferevent {\bf evbev\_\-t}}}
+\label{evhtp_8h_af92ce7197ff545dc83b76f1650bc57e1}
+
+
+Definition at line 34 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a7c30b85cd8bba6ebbfe58c3fc81139c8}{
+\index{evhtp.h@{evhtp.h}!evbuf\_\-t@{evbuf\_\-t}}
+\index{evbuf\_\-t@{evbuf\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evbuf\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct evbuffer {\bf evbuf\_\-t}}}
+\label{evhtp_8h_a7c30b85cd8bba6ebbfe58c3fc81139c8}
+
+
+Definition at line 31 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ad0c066ffb009d3286186a124d37a0c2d}{
+\index{evhtp.h@{evhtp.h}!event\_\-t@{event\_\-t}}
+\index{event\_\-t@{event\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{event\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct event {\bf event\_\-t}}}
+\label{evhtp_8h_ad0c066ffb009d3286186a124d37a0c2d}
+
+
+Definition at line 32 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a8421a0ba0361bdf9fa28292fe4e60a6f}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-authority\_\-t@{evhtp\_\-authority\_\-t}}
+\index{evhtp\_\-authority\_\-t@{evhtp\_\-authority\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-authority\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-authority\_\-s} {\bf evhtp\_\-authority\_\-t}}}
+\label{evhtp_8h_a8421a0ba0361bdf9fa28292fe4e60a6f}
+
+
+Definition at line 53 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-callback\_\-cb@{evhtp\_\-callback\_\-cb}}
+\index{evhtp\_\-callback\_\-cb@{evhtp\_\-callback\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-callback\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef void($\ast$ {\bf evhtp\_\-callback\_\-cb})({\bf evhtp\_\-request\_\-t} $\ast$req, void $\ast$arg)}}
+\label{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}
+
+
+Definition at line 76 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aab03f383d0804cb7f53979b42bee3259}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-callback\_\-t@{evhtp\_\-callback\_\-t}}
+\index{evhtp\_\-callback\_\-t@{evhtp\_\-callback\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-callback\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-callback\_\-s} {\bf evhtp\_\-callback\_\-t}}}
+\label{evhtp_8h_aab03f383d0804cb7f53979b42bee3259}
+
+
+Definition at line 47 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a12bf12ccc27ffcb77609f0149ad7a4df}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-callback\_\-type@{evhtp\_\-callback\_\-type}}
+\index{evhtp\_\-callback\_\-type@{evhtp\_\-callback\_\-type}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-callback\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}typedef enum {\bf evhtp\_\-callback\_\-type} {\bf evhtp\_\-callback\_\-type}}}
+\label{evhtp_8h_a12bf12ccc27ffcb77609f0149ad7a4df}
+
+
+Definition at line 71 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a9570ba758e99f90fc29f4b427953e6a5}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-callbacks\_\-t@{evhtp\_\-callbacks\_\-t}}
+\index{evhtp\_\-callbacks\_\-t@{evhtp\_\-callbacks\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-callbacks\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-callbacks\_\-s} {\bf evhtp\_\-callbacks\_\-t}}}
+\label{evhtp_8h_a9570ba758e99f90fc29f4b427953e6a5}
+
+
+Definition at line 46 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aa51ddee7192d35f0f586d85d7e555891}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-connection\_\-t@{evhtp\_\-connection\_\-t}}
+\index{evhtp\_\-connection\_\-t@{evhtp\_\-connection\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-connection\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-connection\_\-s} {\bf evhtp\_\-connection\_\-t}}}
+\label{evhtp_8h_aa51ddee7192d35f0f586d85d7e555891}
+
+
+Definition at line 56 of file evhtp.h.
+
+\hypertarget{evhtp_8h_acc65e992cb2290f3b22f2646f7f0a04c}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-defaults\_\-5@{evhtp\_\-defaults\_\-5}}
+\index{evhtp\_\-defaults\_\-5@{evhtp\_\-defaults\_\-5}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-defaults\_\-5}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-defaults\_\-s} {\bf evhtp\_\-defaults\_\-5}}}
+\label{evhtp_8h_acc65e992cb2290f3b22f2646f7f0a04c}
+
+
+Definition at line 48 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ac6661001dc475c8e25760071e26311e1}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-defaults\_\-t@{evhtp\_\-defaults\_\-t}}
+\index{evhtp\_\-defaults\_\-t@{evhtp\_\-defaults\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-defaults\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-defaults\_\-s} {\bf evhtp\_\-defaults\_\-t}}}
+\label{evhtp_8h_ac6661001dc475c8e25760071e26311e1}
+
+
+Definition at line 45 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a9c82501bfc1b188fe9eb2858403c704c}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-error\_\-flags@{evhtp\_\-error\_\-flags}}
+\index{evhtp\_\-error\_\-flags@{evhtp\_\-error\_\-flags}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-error\_\-flags}]{\setlength{\rightskip}{0pt plus 5cm}typedef uint8\_\-t {\bf evhtp\_\-error\_\-flags}}}
+\label{evhtp_8h_a9c82501bfc1b188fe9eb2858403c704c}
+
+
+Definition at line 59 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aeba254946d4ea7c2a80e493b56bbefaa}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-headers\_\-iterator@{evhtp\_\-headers\_\-iterator}}
+\index{evhtp\_\-headers\_\-iterator@{evhtp\_\-headers\_\-iterator}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-headers\_\-iterator}]{\setlength{\rightskip}{0pt plus 5cm}typedef int($\ast$ {\bf evhtp\_\-headers\_\-iterator})(evhtp\_\-header\_\-t $\ast$header, void $\ast$arg)}}
+\label{evhtp_8h_aeba254946d4ea7c2a80e493b56bbefaa}
+
+
+Definition at line 91 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ae98ecd9989d124a1450b932a677d6c0f}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-chunk\_\-fini\_\-cb@{evhtp\_\-hook\_\-chunk\_\-fini\_\-cb}}
+\index{evhtp\_\-hook\_\-chunk\_\-fini\_\-cb@{evhtp\_\-hook\_\-chunk\_\-fini\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-chunk\_\-fini\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-res}($\ast$ {\bf evhtp\_\-hook\_\-chunk\_\-fini\_\-cb})({\bf evhtp\_\-request\_\-t} $\ast$r, void $\ast$arg)}}
+\label{evhtp_8h_ae98ecd9989d124a1450b932a677d6c0f}
+
+
+Definition at line 87 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a788b8f65cf9ff82171da1849feeb5750}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-chunk\_\-new\_\-cb@{evhtp\_\-hook\_\-chunk\_\-new\_\-cb}}
+\index{evhtp\_\-hook\_\-chunk\_\-new\_\-cb@{evhtp\_\-hook\_\-chunk\_\-new\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-chunk\_\-new\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-res}($\ast$ {\bf evhtp\_\-hook\_\-chunk\_\-new\_\-cb})({\bf evhtp\_\-request\_\-t} $\ast$r, uint64\_\-t len, void $\ast$arg)}}
+\label{evhtp_8h_a788b8f65cf9ff82171da1849feeb5750}
+
+
+Definition at line 86 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a29660300c43f22382a64ea48c00bf6a7}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-chunks\_\-fini\_\-cb@{evhtp\_\-hook\_\-chunks\_\-fini\_\-cb}}
+\index{evhtp\_\-hook\_\-chunks\_\-fini\_\-cb@{evhtp\_\-hook\_\-chunks\_\-fini\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-chunks\_\-fini\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-res}($\ast$ {\bf evhtp\_\-hook\_\-chunks\_\-fini\_\-cb})({\bf evhtp\_\-request\_\-t} $\ast$r, void $\ast$arg)}}
+\label{evhtp_8h_a29660300c43f22382a64ea48c00bf6a7}
+
+
+Definition at line 88 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a7305964a053bfbf2bbab00a56e87c63d}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-connection\_\-fini\_\-cb@{evhtp\_\-hook\_\-connection\_\-fini\_\-cb}}
+\index{evhtp\_\-hook\_\-connection\_\-fini\_\-cb@{evhtp\_\-hook\_\-connection\_\-fini\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-connection\_\-fini\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-res}($\ast$ {\bf evhtp\_\-hook\_\-connection\_\-fini\_\-cb})({\bf evhtp\_\-connection\_\-t} $\ast$connection, void $\ast$arg)}}
+\label{evhtp_8h_a7305964a053bfbf2bbab00a56e87c63d}
+
+
+Definition at line 85 of file evhtp.h.
+
+\hypertarget{evhtp_8h_accee2d620d476bc387b20ac035bd4233}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-err\_\-cb@{evhtp\_\-hook\_\-err\_\-cb}}
+\index{evhtp\_\-hook\_\-err\_\-cb@{evhtp\_\-hook\_\-err\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-err\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef void($\ast$ {\bf evhtp\_\-hook\_\-err\_\-cb})({\bf evhtp\_\-request\_\-t} $\ast$req, {\bf evhtp\_\-error\_\-flags} errtype, void $\ast$arg)}}
+\label{evhtp_8h_accee2d620d476bc387b20ac035bd4233}
+
+
+Definition at line 77 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a2cddb211091dc5b19e57188a9104c34f}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-header\_\-cb@{evhtp\_\-hook\_\-header\_\-cb}}
+\index{evhtp\_\-hook\_\-header\_\-cb@{evhtp\_\-hook\_\-header\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-header\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-res}($\ast$ {\bf evhtp\_\-hook\_\-header\_\-cb})({\bf evhtp\_\-request\_\-t} $\ast$req, evhtp\_\-header\_\-t $\ast$hdr, void $\ast$arg)}}
+\label{evhtp_8h_a2cddb211091dc5b19e57188a9104c34f}
+
+
+Definition at line 80 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aef2db349d398a565e2408694e1e8b646}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-headers\_\-cb@{evhtp\_\-hook\_\-headers\_\-cb}}
+\index{evhtp\_\-hook\_\-headers\_\-cb@{evhtp\_\-hook\_\-headers\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-headers\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-res}($\ast$ {\bf evhtp\_\-hook\_\-headers\_\-cb})({\bf evhtp\_\-request\_\-t} $\ast$req, evhtp\_\-headers\_\-t $\ast$hdr, void $\ast$arg)}}
+\label{evhtp_8h_aef2db349d398a565e2408694e1e8b646}
+
+
+Definition at line 81 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ae389ed1d9a3addcaa39bc4b286e12fab}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-path\_\-cb@{evhtp\_\-hook\_\-path\_\-cb}}
+\index{evhtp\_\-hook\_\-path\_\-cb@{evhtp\_\-hook\_\-path\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-path\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-res}($\ast$ {\bf evhtp\_\-hook\_\-path\_\-cb})({\bf evhtp\_\-request\_\-t} $\ast$req, {\bf evhtp\_\-path\_\-t} $\ast$path, void $\ast$arg)}}
+\label{evhtp_8h_ae389ed1d9a3addcaa39bc4b286e12fab}
+
+
+Definition at line 82 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a1c1df6bb6154893dd2d7e46999ea5f2d}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-read\_\-cb@{evhtp\_\-hook\_\-read\_\-cb}}
+\index{evhtp\_\-hook\_\-read\_\-cb@{evhtp\_\-hook\_\-read\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-read\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-res}($\ast$ {\bf evhtp\_\-hook\_\-read\_\-cb})({\bf evhtp\_\-request\_\-t} $\ast$req, {\bf evbuf\_\-t} $\ast$buf, void $\ast$arg)}}
+\label{evhtp_8h_a1c1df6bb6154893dd2d7e46999ea5f2d}
+
+
+Definition at line 83 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a8653bf424ac2974da47ceb54ed131889}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-request\_\-fini\_\-cb@{evhtp\_\-hook\_\-request\_\-fini\_\-cb}}
+\index{evhtp\_\-hook\_\-request\_\-fini\_\-cb@{evhtp\_\-hook\_\-request\_\-fini\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-request\_\-fini\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-res}($\ast$ {\bf evhtp\_\-hook\_\-request\_\-fini\_\-cb})({\bf evhtp\_\-request\_\-t} $\ast$req, void $\ast$arg)}}
+\label{evhtp_8h_a8653bf424ac2974da47ceb54ed131889}
+
+
+Definition at line 84 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a3e8bcc59a7a08b75637e98afa53eb38a}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-type@{evhtp\_\-hook\_\-type}}
+\index{evhtp\_\-hook\_\-type@{evhtp\_\-hook\_\-type}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}typedef enum {\bf evhtp\_\-hook\_\-type} {\bf evhtp\_\-hook\_\-type}}}
+\label{evhtp_8h_a3e8bcc59a7a08b75637e98afa53eb38a}
+
+
+Definition at line 70 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ac77d779459ec62f309d1fb09c5540786}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hooks\_\-t@{evhtp\_\-hooks\_\-t}}
+\index{evhtp\_\-hooks\_\-t@{evhtp\_\-hooks\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hooks\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-hooks\_\-s} {\bf evhtp\_\-hooks\_\-t}}}
+\label{evhtp_8h_ac77d779459ec62f309d1fb09c5540786}
+
+
+Definition at line 55 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a96628900a8ac231da77ed7ee9305d3fe}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kv\_\-t@{evhtp\_\-kv\_\-t}}
+\index{evhtp\_\-kv\_\-t@{evhtp\_\-kv\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kv\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-kv\_\-s} {\bf evhtp\_\-kv\_\-t}}}
+\label{evhtp_8h_a96628900a8ac231da77ed7ee9305d3fe}
+
+
+Definition at line 49 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a1fd6217aa45d41584d016b480e07299a}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kvs\_\-iterator@{evhtp\_\-kvs\_\-iterator}}
+\index{evhtp\_\-kvs\_\-iterator@{evhtp\_\-kvs\_\-iterator}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kvs\_\-iterator}]{\setlength{\rightskip}{0pt plus 5cm}typedef int($\ast$ {\bf evhtp\_\-kvs\_\-iterator})({\bf evhtp\_\-kv\_\-t} $\ast$kv, void $\ast$arg)}}
+\label{evhtp_8h_a1fd6217aa45d41584d016b480e07299a}
+
+
+Definition at line 90 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kvs\_\-t@{evhtp\_\-kvs\_\-t}}
+\index{evhtp\_\-kvs\_\-t@{evhtp\_\-kvs\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kvs\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct evhtp\_\-kvs\_\-s {\bf evhtp\_\-kvs\_\-t}}}
+\label{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}
+
+
+Definition at line 50 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a0596c15be75c64f06caede909222ded8}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-mutex\_\-t@{evhtp\_\-mutex\_\-t}}
+\index{evhtp\_\-mutex\_\-t@{evhtp\_\-mutex\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-mutex\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef pthread\_\-mutex\_\-t {\bf evhtp\_\-mutex\_\-t}}}
+\label{evhtp_8h_a0596c15be75c64f06caede909222ded8}
+
+
+Definition at line 41 of file evhtp.h.
+
+\hypertarget{evhtp_8h_af31f4c3052c7f4ed6c3bfa32dceb332f}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-path\_\-t@{evhtp\_\-path\_\-t}}
+\index{evhtp\_\-path\_\-t@{evhtp\_\-path\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-path\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-path\_\-s} {\bf evhtp\_\-path\_\-t}}}
+\label{evhtp_8h_af31f4c3052c7f4ed6c3bfa32dceb332f}
+
+
+Definition at line 52 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a1fbba02d0b28d101592e5509703eddff}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-post\_\-accept\_\-cb@{evhtp\_\-post\_\-accept\_\-cb}}
+\index{evhtp\_\-post\_\-accept\_\-cb@{evhtp\_\-post\_\-accept\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-post\_\-accept\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-res}($\ast$ {\bf evhtp\_\-post\_\-accept\_\-cb})({\bf evhtp\_\-connection\_\-t} $\ast$conn, void $\ast$arg)}}
+\label{evhtp_8h_a1fbba02d0b28d101592e5509703eddff}
+
+
+Definition at line 79 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a8b649d8f816f5e4a8dc162b3bb373644}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-pre\_\-accept\_\-cb@{evhtp\_\-pre\_\-accept\_\-cb}}
+\index{evhtp\_\-pre\_\-accept\_\-cb@{evhtp\_\-pre\_\-accept\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-pre\_\-accept\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-res}($\ast$ {\bf evhtp\_\-pre\_\-accept\_\-cb})(int fd, struct sockaddr $\ast$sa, int salen, void $\ast$arg)}}
+\label{evhtp_8h_a8b649d8f816f5e4a8dc162b3bb373644}
+
+
+Definition at line 78 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a924ad133b020d2ca9a983b520b2ae1b7}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-proto@{evhtp\_\-proto}}
+\index{evhtp\_\-proto@{evhtp\_\-proto}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-proto}]{\setlength{\rightskip}{0pt plus 5cm}typedef enum {\bf evhtp\_\-proto} {\bf evhtp\_\-proto}}}
+\label{evhtp_8h_a924ad133b020d2ca9a983b520b2ae1b7}
+
+
+Definition at line 72 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a7adab4c0e9bd15e2b846c3adca6c37f7}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-request\_\-t@{evhtp\_\-request\_\-t}}
+\index{evhtp\_\-request\_\-t@{evhtp\_\-request\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-request\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-request\_\-s} {\bf evhtp\_\-request\_\-t}}}
+\label{evhtp_8h_a7adab4c0e9bd15e2b846c3adca6c37f7}
+
+
+Definition at line 54 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-res@{evhtp\_\-res}}
+\index{evhtp\_\-res@{evhtp\_\-res}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-res}]{\setlength{\rightskip}{0pt plus 5cm}typedef uint16\_\-t {\bf evhtp\_\-res}}}
+\label{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}
+
+
+Definition at line 58 of file evhtp.h.
+
+\hypertarget{evhtp_8h_adb4d7b6af31986dd5a7a33f5ac41dde6}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-cfg\_\-t@{evhtp\_\-ssl\_\-cfg\_\-t}}
+\index{evhtp\_\-ssl\_\-cfg\_\-t@{evhtp\_\-ssl\_\-cfg\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-cfg\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-ssl\_\-cfg\_\-s} {\bf evhtp\_\-ssl\_\-cfg\_\-t}}}
+\label{evhtp_8h_adb4d7b6af31986dd5a7a33f5ac41dde6}
+
+
+Definition at line 57 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ac6f6c53514c631d6ca12885cfc36f930}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-chk\_\-issued\_\-cb@{evhtp\_\-ssl\_\-chk\_\-issued\_\-cb}}
+\index{evhtp\_\-ssl\_\-chk\_\-issued\_\-cb@{evhtp\_\-ssl\_\-chk\_\-issued\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-chk\_\-issued\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef int($\ast$ {\bf evhtp\_\-ssl\_\-chk\_\-issued\_\-cb})(X509\_\-STORE\_\-CTX $\ast$ctx, X509 $\ast$x, X509 $\ast$issuer)}}
+\label{evhtp_8h_ac6f6c53514c631d6ca12885cfc36f930}
+
+
+Definition at line 94 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a3a45854457c03a9028160078945046da}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-ctx\_\-t@{evhtp\_\-ssl\_\-ctx\_\-t}}
+\index{evhtp\_\-ssl\_\-ctx\_\-t@{evhtp\_\-ssl\_\-ctx\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-ctx\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef SSL\_\-CTX {\bf evhtp\_\-ssl\_\-ctx\_\-t}}}
+\label{evhtp_8h_a3a45854457c03a9028160078945046da}
+
+
+Definition at line 24 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a88e4d535033e8110eb232e2f9f8afbc6}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-scache\_\-add@{evhtp\_\-ssl\_\-scache\_\-add}}
+\index{evhtp\_\-ssl\_\-scache\_\-add@{evhtp\_\-ssl\_\-scache\_\-add}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-scache\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}typedef int($\ast$ {\bf evhtp\_\-ssl\_\-scache\_\-add})({\bf evhtp\_\-connection\_\-t} $\ast$connection, unsigned char $\ast$sid, int sid\_\-len, {\bf evhtp\_\-ssl\_\-sess\_\-t} $\ast$sess)}}
+\label{evhtp_8h_a88e4d535033e8110eb232e2f9f8afbc6}
+
+
+Definition at line 96 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a0850d66a9f1a8f87da1771a8b5deb691}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-scache\_\-del@{evhtp\_\-ssl\_\-scache\_\-del}}
+\index{evhtp\_\-ssl\_\-scache\_\-del@{evhtp\_\-ssl\_\-scache\_\-del}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-scache\_\-del}]{\setlength{\rightskip}{0pt plus 5cm}typedef void($\ast$ {\bf evhtp\_\-ssl\_\-scache\_\-del})({\bf evhtp\_\-t} $\ast$htp, unsigned char $\ast$sid, int sid\_\-len)}}
+\label{evhtp_8h_a0850d66a9f1a8f87da1771a8b5deb691}
+
+
+Definition at line 97 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aa0fab8ce3ec339ff62a366be3c3a6af9}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-scache\_\-get@{evhtp\_\-ssl\_\-scache\_\-get}}
+\index{evhtp\_\-ssl\_\-scache\_\-get@{evhtp\_\-ssl\_\-scache\_\-get}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-scache\_\-get}]{\setlength{\rightskip}{0pt plus 5cm}typedef {\bf evhtp\_\-ssl\_\-sess\_\-t}$\ast$($\ast$ {\bf evhtp\_\-ssl\_\-scache\_\-get})({\bf evhtp\_\-connection\_\-t} $\ast$connection, unsigned char $\ast$sid, int sid\_\-len)}}
+\label{evhtp_8h_aa0fab8ce3ec339ff62a366be3c3a6af9}
+
+
+Definition at line 98 of file evhtp.h.
+
+\hypertarget{evhtp_8h_acc2a1492a21e87e24e46b8105ce16af5}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-scache\_\-init@{evhtp\_\-ssl\_\-scache\_\-init}}
+\index{evhtp\_\-ssl\_\-scache\_\-init@{evhtp\_\-ssl\_\-scache\_\-init}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-scache\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}typedef void$\ast$($\ast$ {\bf evhtp\_\-ssl\_\-scache\_\-init})({\bf evhtp\_\-t} $\ast$)}}
+\label{evhtp_8h_acc2a1492a21e87e24e46b8105ce16af5}
+
+
+Definition at line 99 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ae1bf6708a944c8b428f7bcfe2a41bcbe}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-scache\_\-type@{evhtp\_\-ssl\_\-scache\_\-type}}
+\index{evhtp\_\-ssl\_\-scache\_\-type@{evhtp\_\-ssl\_\-scache\_\-type}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-scache\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}typedef enum {\bf evhtp\_\-ssl\_\-scache\_\-type} {\bf evhtp\_\-ssl\_\-scache\_\-type}}}
+\label{evhtp_8h_ae1bf6708a944c8b428f7bcfe2a41bcbe}
+
+
+Definition at line 73 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a50626a9b6079fb747f2cf946ea4d45d3}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-sess\_\-t@{evhtp\_\-ssl\_\-sess\_\-t}}
+\index{evhtp\_\-ssl\_\-sess\_\-t@{evhtp\_\-ssl\_\-sess\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-sess\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef SSL\_\-SESSION {\bf evhtp\_\-ssl\_\-sess\_\-t}}}
+\label{evhtp_8h_a50626a9b6079fb747f2cf946ea4d45d3}
+
+
+Definition at line 22 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a85b31561e6827b118669d514fe00aa3d}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-t@{evhtp\_\-ssl\_\-t}}
+\index{evhtp\_\-ssl\_\-t@{evhtp\_\-ssl\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef SSL {\bf evhtp\_\-ssl\_\-t}}}
+\label{evhtp_8h_a85b31561e6827b118669d514fe00aa3d}
+
+
+Definition at line 23 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a7bdd701080a9c5b0a97cdc71249bf6ff}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-verify\_\-cb@{evhtp\_\-ssl\_\-verify\_\-cb}}
+\index{evhtp\_\-ssl\_\-verify\_\-cb@{evhtp\_\-ssl\_\-verify\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-verify\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef int($\ast$ {\bf evhtp\_\-ssl\_\-verify\_\-cb})(int pre\_\-verify, X509\_\-STORE\_\-CTX $\ast$ctx)}}
+\label{evhtp_8h_a7bdd701080a9c5b0a97cdc71249bf6ff}
+
+
+Definition at line 93 of file evhtp.h.
+
+\hypertarget{evhtp_8h_aa670c92d77f9a732e03a7d48ada2b31b}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-t@{evhtp\_\-t}}
+\index{evhtp\_\-t@{evhtp\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-s} {\bf evhtp\_\-t}}}
+\label{evhtp_8h_aa670c92d77f9a732e03a7d48ada2b31b}
+
+
+Definition at line 44 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a162b617e19f372264cc22388dce03f2e}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-thread\_\-init\_\-cb@{evhtp\_\-thread\_\-init\_\-cb}}
+\index{evhtp\_\-thread\_\-init\_\-cb@{evhtp\_\-thread\_\-init\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-thread\_\-init\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}typedef void($\ast$ {\bf evhtp\_\-thread\_\-init\_\-cb})({\bf evhtp\_\-t} $\ast$htp, evthr\_\-t $\ast$thr, void $\ast$arg)}}
+\label{evhtp_8h_a162b617e19f372264cc22388dce03f2e}
+
+
+Definition at line 75 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a5057cdb41a47631dd5672cbc1b59bcf8}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-uri\_\-t@{evhtp\_\-uri\_\-t}}
+\index{evhtp\_\-uri\_\-t@{evhtp\_\-uri\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-uri\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct {\bf evhtp\_\-uri\_\-s} {\bf evhtp\_\-uri\_\-t}}}
+\label{evhtp_8h_a5057cdb41a47631dd5672cbc1b59bcf8}
+
+
+Definition at line 51 of file evhtp.h.
+
+\hypertarget{evhtp_8h_accea3745ada200d1acc361354315579c}{
+\index{evhtp.h@{evhtp.h}!evserv\_\-t@{evserv\_\-t}}
+\index{evserv\_\-t@{evserv\_\-t}!evhtp.h@{evhtp.h}}
+\subsubsection[{evserv\_\-t}]{\setlength{\rightskip}{0pt plus 5cm}typedef struct evconnlistener {\bf evserv\_\-t}}}
+\label{evhtp_8h_accea3745ada200d1acc361354315579c}
+
+
+Definition at line 33 of file evhtp.h.
+
+
+
+\subsection{Enumeration Type Documentation}
+\hypertarget{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-callback\_\-type@{evhtp\_\-callback\_\-type}}
+\index{evhtp\_\-callback\_\-type@{evhtp\_\-callback\_\-type}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-callback\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}enum {\bf evhtp\_\-callback\_\-type}}}
+\label{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37}
+\begin{Desc}
+\item[Enumerator: ]\par
+\begin{description}
+\index{evhtp\_\-callback\_\-type\_\-hash@{evhtp\_\-callback\_\-type\_\-hash}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-callback\_\-type\_\-hash@{evhtp\_\-callback\_\-type\_\-hash}}\item[{\em 
+\hypertarget{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37a63b008cc9eaf17d7e5f6a06795a20dc1}{
+evhtp\_\-callback\_\-type\_\-hash}
+\label{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37a63b008cc9eaf17d7e5f6a06795a20dc1}
+}]\index{evhtp\_\-callback\_\-type\_\-regex@{evhtp\_\-callback\_\-type\_\-regex}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-callback\_\-type\_\-regex@{evhtp\_\-callback\_\-type\_\-regex}}\item[{\em 
+\hypertarget{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37a773da44d72e7d13d312f16bbc9cb311a}{
+evhtp\_\-callback\_\-type\_\-regex}
+\label{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37a773da44d72e7d13d312f16bbc9cb311a}
+}]\end{description}
+\end{Desc}
+
+
+
+Definition at line 193 of file evhtp.h.
+
+\hypertarget{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-type@{evhtp\_\-hook\_\-type}}
+\index{evhtp\_\-hook\_\-type@{evhtp\_\-hook\_\-type}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-hook\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}enum {\bf evhtp\_\-hook\_\-type}}}
+\label{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143}
+
+
+types associated with where a developer can hook into during the request processing cycle. 
+
+\begin{Desc}
+\item[Enumerator: ]\par
+\begin{description}
+\index{evhtp\_\-hook\_\-on\_\-header@{evhtp\_\-hook\_\-on\_\-header}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-on\_\-header@{evhtp\_\-hook\_\-on\_\-header}}\item[{\em 
+\hypertarget{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a3722d9a701af7e65b856a5ebc176049c}{
+evhtp\_\-hook\_\-on\_\-header}
+\label{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a3722d9a701af7e65b856a5ebc176049c}
+}]type which defines to hook after one header has been parsed \index{evhtp\_\-hook\_\-on\_\-headers@{evhtp\_\-hook\_\-on\_\-headers}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-on\_\-headers@{evhtp\_\-hook\_\-on\_\-headers}}\item[{\em 
+\hypertarget{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143adc8f0b37723e2cd796c18c88d8072bdc}{
+evhtp\_\-hook\_\-on\_\-headers}
+\label{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143adc8f0b37723e2cd796c18c88d8072bdc}
+}]type which defines to hook after all headers have been parsed \index{evhtp\_\-hook\_\-on\_\-path@{evhtp\_\-hook\_\-on\_\-path}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-on\_\-path@{evhtp\_\-hook\_\-on\_\-path}}\item[{\em 
+\hypertarget{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143aca5c712633399cd270525a11e16df220}{
+evhtp\_\-hook\_\-on\_\-path}
+\label{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143aca5c712633399cd270525a11e16df220}
+}]type which defines to hook once a path has been parsed \index{evhtp\_\-hook\_\-on\_\-read@{evhtp\_\-hook\_\-on\_\-read}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-on\_\-read@{evhtp\_\-hook\_\-on\_\-read}}\item[{\em 
+\hypertarget{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a4e15805b570012268cfec0c9b63caeb2}{
+evhtp\_\-hook\_\-on\_\-read}
+\label{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a4e15805b570012268cfec0c9b63caeb2}
+}]type which defines to hook whenever the parser recieves data in a body \index{evhtp\_\-hook\_\-on\_\-request\_\-fini@{evhtp\_\-hook\_\-on\_\-request\_\-fini}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-on\_\-request\_\-fini@{evhtp\_\-hook\_\-on\_\-request\_\-fini}}\item[{\em 
+\hypertarget{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a6d8fb26ccc62b92b11c83206a7a6e1a4}{
+evhtp\_\-hook\_\-on\_\-request\_\-fini}
+\label{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a6d8fb26ccc62b92b11c83206a7a6e1a4}
+}]type which defines to hook before the request is free'd \index{evhtp\_\-hook\_\-on\_\-connection\_\-fini@{evhtp\_\-hook\_\-on\_\-connection\_\-fini}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-on\_\-connection\_\-fini@{evhtp\_\-hook\_\-on\_\-connection\_\-fini}}\item[{\em 
+\hypertarget{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143ad462108a44b51cf21685e92d9b39e150}{
+evhtp\_\-hook\_\-on\_\-connection\_\-fini}
+\label{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143ad462108a44b51cf21685e92d9b39e150}
+}]\index{evhtp\_\-hook\_\-on\_\-new\_\-chunk@{evhtp\_\-hook\_\-on\_\-new\_\-chunk}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-on\_\-new\_\-chunk@{evhtp\_\-hook\_\-on\_\-new\_\-chunk}}\item[{\em 
+\hypertarget{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a50d56f5a4d4e140e84bf84a0c3d7021c}{
+evhtp\_\-hook\_\-on\_\-new\_\-chunk}
+\label{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a50d56f5a4d4e140e84bf84a0c3d7021c}
+}]\index{evhtp\_\-hook\_\-on\_\-chunk\_\-complete@{evhtp\_\-hook\_\-on\_\-chunk\_\-complete}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-on\_\-chunk\_\-complete@{evhtp\_\-hook\_\-on\_\-chunk\_\-complete}}\item[{\em 
+\hypertarget{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a64a48ee7f3dc1dcd7c9df18412572d99}{
+evhtp\_\-hook\_\-on\_\-chunk\_\-complete}
+\label{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a64a48ee7f3dc1dcd7c9df18412572d99}
+}]\index{evhtp\_\-hook\_\-on\_\-chunks\_\-complete@{evhtp\_\-hook\_\-on\_\-chunks\_\-complete}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-on\_\-chunks\_\-complete@{evhtp\_\-hook\_\-on\_\-chunks\_\-complete}}\item[{\em 
+\hypertarget{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a9004b727c133c1b76386125c1f563c67}{
+evhtp\_\-hook\_\-on\_\-chunks\_\-complete}
+\label{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a9004b727c133c1b76386125c1f563c67}
+}]\index{evhtp\_\-hook\_\-on\_\-error@{evhtp\_\-hook\_\-on\_\-error}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-hook\_\-on\_\-error@{evhtp\_\-hook\_\-on\_\-error}}\item[{\em 
+\hypertarget{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a302078d947465813886608ae900b8a56}{
+evhtp\_\-hook\_\-on\_\-error}
+\label{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143a302078d947465813886608ae900b8a56}
+}]type which defines to hook whenever an error occurs \end{description}
+\end{Desc}
+
+
+
+Definition at line 180 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-proto@{evhtp\_\-proto}}
+\index{evhtp\_\-proto@{evhtp\_\-proto}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-proto}]{\setlength{\rightskip}{0pt plus 5cm}enum {\bf evhtp\_\-proto}}}
+\label{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5}
+\begin{Desc}
+\item[Enumerator: ]\par
+\begin{description}
+\index{EVHTP\_\-PROTO\_\-INVALID@{EVHTP\_\-PROTO\_\-INVALID}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!EVHTP\_\-PROTO\_\-INVALID@{EVHTP\_\-PROTO\_\-INVALID}}\item[{\em 
+\hypertarget{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5a6b66541a62e032eaad5584ecaf5588dc}{
+EVHTP\_\-PROTO\_\-INVALID}
+\label{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5a6b66541a62e032eaad5584ecaf5588dc}
+}]\index{EVHTP\_\-PROTO\_\-10@{EVHTP\_\-PROTO\_\-10}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!EVHTP\_\-PROTO\_\-10@{EVHTP\_\-PROTO\_\-10}}\item[{\em 
+\hypertarget{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5a143a8c508e5160497d3980327f1fddbf}{
+EVHTP\_\-PROTO\_\-10}
+\label{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5a143a8c508e5160497d3980327f1fddbf}
+}]\index{EVHTP\_\-PROTO\_\-11@{EVHTP\_\-PROTO\_\-11}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!EVHTP\_\-PROTO\_\-11@{EVHTP\_\-PROTO\_\-11}}\item[{\em 
+\hypertarget{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5a719b441675efdbd967a85213a7d2e81d}{
+EVHTP\_\-PROTO\_\-11}
+\label{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5a719b441675efdbd967a85213a7d2e81d}
+}]\end{description}
+\end{Desc}
+
+
+
+Definition at line 198 of file evhtp.h.
+
+\hypertarget{evhtp_8h_ab478739101b89e04a6583b835033f998}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-scache\_\-type@{evhtp\_\-ssl\_\-scache\_\-type}}
+\index{evhtp\_\-ssl\_\-scache\_\-type@{evhtp\_\-ssl\_\-scache\_\-type}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-scache\_\-type}]{\setlength{\rightskip}{0pt plus 5cm}enum {\bf evhtp\_\-ssl\_\-scache\_\-type}}}
+\label{evhtp_8h_ab478739101b89e04a6583b835033f998}
+\begin{Desc}
+\item[Enumerator: ]\par
+\begin{description}
+\index{evhtp\_\-ssl\_\-scache\_\-type\_\-disabled@{evhtp\_\-ssl\_\-scache\_\-type\_\-disabled}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-scache\_\-type\_\-disabled@{evhtp\_\-ssl\_\-scache\_\-type\_\-disabled}}\item[{\em 
+\hypertarget{evhtp_8h_ab478739101b89e04a6583b835033f998aa9f5406d20adaee73a0559e1c9352b89}{
+evhtp\_\-ssl\_\-scache\_\-type\_\-disabled}
+\label{evhtp_8h_ab478739101b89e04a6583b835033f998aa9f5406d20adaee73a0559e1c9352b89}
+}]\index{evhtp\_\-ssl\_\-scache\_\-type\_\-internal@{evhtp\_\-ssl\_\-scache\_\-type\_\-internal}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-scache\_\-type\_\-internal@{evhtp\_\-ssl\_\-scache\_\-type\_\-internal}}\item[{\em 
+\hypertarget{evhtp_8h_ab478739101b89e04a6583b835033f998a7243b0b86808019db042efcae1ec1dfd}{
+evhtp\_\-ssl\_\-scache\_\-type\_\-internal}
+\label{evhtp_8h_ab478739101b89e04a6583b835033f998a7243b0b86808019db042efcae1ec1dfd}
+}]\index{evhtp\_\-ssl\_\-scache\_\-type\_\-user@{evhtp\_\-ssl\_\-scache\_\-type\_\-user}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-scache\_\-type\_\-user@{evhtp\_\-ssl\_\-scache\_\-type\_\-user}}\item[{\em 
+\hypertarget{evhtp_8h_ab478739101b89e04a6583b835033f998a182bf1150bb78632bd3add72183537fa}{
+evhtp\_\-ssl\_\-scache\_\-type\_\-user}
+\label{evhtp_8h_ab478739101b89e04a6583b835033f998a182bf1150bb78632bd3add72183537fa}
+}]\index{evhtp\_\-ssl\_\-scache\_\-type\_\-builtin@{evhtp\_\-ssl\_\-scache\_\-type\_\-builtin}!evhtp.h@{evhtp.h}}\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-scache\_\-type\_\-builtin@{evhtp\_\-ssl\_\-scache\_\-type\_\-builtin}}\item[{\em 
+\hypertarget{evhtp_8h_ab478739101b89e04a6583b835033f998a4d41f70356df9b2d4344a80d2aaffdd0}{
+evhtp\_\-ssl\_\-scache\_\-type\_\-builtin}
+\label{evhtp_8h_ab478739101b89e04a6583b835033f998a4d41f70356df9b2d4344a80d2aaffdd0}
+}]\end{description}
+\end{Desc}
+
+
+
+Definition at line 169 of file evhtp.h.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{evhtp_8h_aa695621a5145f96c9ebea6911fd6c3b5}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-bind\_\-socket@{evhtp\_\-bind\_\-socket}}
+\index{evhtp\_\-bind\_\-socket@{evhtp\_\-bind\_\-socket}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-bind\_\-socket}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-bind\_\-socket (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{const char $\ast$}]{ addr, }
+\item[{uint16\_\-t}]{ port, }
+\item[{int}]{ backlog}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_aa695621a5145f96c9ebea6911fd6c3b5}
+
+
+Definition at line 1994 of file evhtp.c.
+
+\hypertarget{evhtp_8h_aa18103f43b36858a97e1eef80b0e4044}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-callback\_\-free@{evhtp\_\-callback\_\-free}}
+\index{evhtp\_\-callback\_\-free@{evhtp\_\-callback\_\-free}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-callback\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-callback\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-callback\_\-t} $\ast$}]{ callback}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_aa18103f43b36858a97e1eef80b0e4044}
+
+
+Definition at line 2121 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a8d96790f46d2c063c5a2dd09ca0573a5}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-callback\_\-new@{evhtp\_\-callback\_\-new}}
+\index{evhtp\_\-callback\_\-new@{evhtp\_\-callback\_\-new}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-callback\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-callback\_\-t}$\ast$ evhtp\_\-callback\_\-new (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{ path, }
+\item[{{\bf evhtp\_\-callback\_\-type}}]{ type, }
+\item[{{\bf evhtp\_\-callback\_\-cb}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a8d96790f46d2c063c5a2dd09ca0573a5}
+
+
+creates a new evhtp\_\-callback\_\-t structure. 
+
+All callbacks are stored in this structure which define what the final function to be called after all parsing is done. A callback can be either a static string or a regular expression.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em path}]can either be a static path (/path/to/resource/) or a POSIX compatible regular expression ($^\wedge$/resource/(.$\ast$)) \item[{\em type}]informs the function what type of of information is is contained within the path argument. This can either be callback\_\-type\_\-path, or callback\_\-type\_\-regex. \item[{\em cb}]the callback function to be invoked \item[{\em arg}]optional argument which is passed when the callback is executed.\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success, -\/1 on error. 
+\end{DoxyReturn}
+
+
+Definition at line 2087 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a36a4df86347439381efba472dbdd72e2}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-callbacks\_\-add\_\-callback@{evhtp\_\-callbacks\_\-add\_\-callback}}
+\index{evhtp\_\-callbacks\_\-add\_\-callback@{evhtp\_\-callbacks\_\-add\_\-callback}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-callbacks\_\-add\_\-callback}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-callbacks\_\-add\_\-callback (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-callbacks\_\-t} $\ast$}]{ cbs, }
+\item[{{\bf evhtp\_\-callback\_\-t} $\ast$}]{ cb}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a36a4df86347439381efba472dbdd72e2}
+
+
+Adds a evhtp\_\-callback\_\-t to the evhtp\_\-callbacks\_\-t list. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em cbs}]an allocated evhtp\_\-callbacks\_\-t structure \item[{\em cb}]an initialized evhtp\_\-callback\_\-t structure\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success, -\/1 on error 
+\end{DoxyReturn}
+
+
+Definition at line 2145 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a4f5f66e5e371d0d34cc439b96b3a4862}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-callbacks\_\-free@{evhtp\_\-callbacks\_\-free}}
+\index{evhtp\_\-callbacks\_\-free@{evhtp\_\-callbacks\_\-free}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-callbacks\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-callbacks\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-callbacks\_\-t} $\ast$}]{ callbacks}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a4f5f66e5e371d0d34cc439b96b3a4862}
+
+
+Definition at line 2049 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a6064ac5acf3ed7e07ea4eb01a6230118}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-callbacks\_\-new@{evhtp\_\-callbacks\_\-new}}
+\index{evhtp\_\-callbacks\_\-new@{evhtp\_\-callbacks\_\-new}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-callbacks\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-callbacks\_\-t}$\ast$ evhtp\_\-callbacks\_\-new (
+\begin{DoxyParamCaption}
+\item[{unsigned int}]{ buckets}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a6064ac5acf3ed7e07ea4eb01a6230118}
+
+
+creates a new evhtp\_\-callbacks\_\-t structure 
+
+this structure is used to store all known callbacks for a request.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em buckets}]the number of buckets to allocate for the path type hash.\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+an evhtp\_\-callbacks\_\-t structure 
+\end{DoxyReturn}
+
+
+Definition at line 2030 of file evhtp.c.
+
+\hypertarget{evhtp_8h_affb4e79c7859189a0efc739344226d91}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-connection\_\-pause@{evhtp\_\-connection\_\-pause}}
+\index{evhtp\_\-connection\_\-pause@{evhtp\_\-connection\_\-pause}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-connection\_\-pause}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-connection\_\-pause (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-connection\_\-t} $\ast$}]{ c}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_affb4e79c7859189a0efc739344226d91}
+
+
+pauses a connection (disables reading) 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em c}]a evhtp\_\-connection\_\-t $\ast$ structure \end{DoxyParams}
+
+
+Definition at line 1533 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a450bcd53aa74128bbb658f8af6aff320}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-connection\_\-resume@{evhtp\_\-connection\_\-resume}}
+\index{evhtp\_\-connection\_\-resume@{evhtp\_\-connection\_\-resume}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-connection\_\-resume}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-connection\_\-resume (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-connection\_\-t} $\ast$}]{ c}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a450bcd53aa74128bbb658f8af6aff320}
+
+
+resumes a connection (enables reading) and activates resume event. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em c}]\end{DoxyParams}
+
+
+Definition at line 1545 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a08460210e1ea2672b7a0a13d1814b9b7}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-header\_\-find@{evhtp\_\-header\_\-find}}
+\index{evhtp\_\-header\_\-find@{evhtp\_\-header\_\-find}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-header\_\-find}]{\setlength{\rightskip}{0pt plus 5cm}const char$\ast$ evhtp\_\-header\_\-find (
+\begin{DoxyParamCaption}
+\item[{evhtp\_\-headers\_\-t $\ast$}]{ headers, }
+\item[{const char $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a08460210e1ea2672b7a0a13d1814b9b7}
+
+
+finds the value of a key in a evhtp\_\-headers\_\-t structure 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em headers}]the evhtp\_\-headers\_\-t tailq \item[{\em key}]the key to find\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+the value of the header key if found, NULL if not found. 
+\end{DoxyReturn}
+\hypertarget{evhtp_8h_a371c397ed3001751650f4326e15a3eab}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-header\_\-key\_\-add@{evhtp\_\-header\_\-key\_\-add}}
+\index{evhtp\_\-header\_\-key\_\-add@{evhtp\_\-header\_\-key\_\-add}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-header\_\-key\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}evhtp\_\-header\_\-t$\ast$ evhtp\_\-header\_\-key\_\-add (
+\begin{DoxyParamCaption}
+\item[{evhtp\_\-headers\_\-t $\ast$}]{ headers, }
+\item[{const char $\ast$}]{ key, }
+\item[{char}]{ kalloc}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a371c397ed3001751650f4326e15a3eab}
+
+
+creates a new evhtp\_\-header\_\-t, sets only the key, and adds to the evhtp\_\-headers TAILQ 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em headers}]the evhtp\_\-headers\_\-t TAILQ (evhtp\_\-kv\_\-t) \item[{\em key}]a null terminated string \item[{\em kalloc}]if 1 the string will be copied, otherwise assigned\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+an evhtp\_\-header\_\-t pointer or NULL on error 
+\end{DoxyReturn}
+
+
+Definition at line 1577 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a85fce33b102fc12363fdd5ffe17f663b}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-header\_\-new@{evhtp\_\-header\_\-new}}
+\index{evhtp\_\-header\_\-new@{evhtp\_\-header\_\-new}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-header\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}evhtp\_\-header\_\-t$\ast$ evhtp\_\-header\_\-new (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{ key, }
+\item[{const char $\ast$}]{ val, }
+\item[{char}]{ kalloc, }
+\item[{char}]{ valloc}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a85fce33b102fc12363fdd5ffe17f663b}
+
+
+creates a new evhtp\_\-header\_\-t key/val structure 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]a null terminated string \item[{\em val}]a null terminated string \item[{\em kalloc}]if 1, key will be copied, otherwise no copy performed \item[{\em valloc}]if 1, val will be copied, otehrwise no copy performed\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-header\_\-t $\ast$ or NULL on error 
+\end{DoxyReturn}
+\hypertarget{evhtp_8h_afb5aeb4995c7c20e774e6590b2a25512}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-header\_\-val\_\-add@{evhtp\_\-header\_\-val\_\-add}}
+\index{evhtp\_\-header\_\-val\_\-add@{evhtp\_\-header\_\-val\_\-add}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-header\_\-val\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}evhtp\_\-header\_\-t$\ast$ evhtp\_\-header\_\-val\_\-add (
+\begin{DoxyParamCaption}
+\item[{evhtp\_\-headers\_\-t $\ast$}]{ headers, }
+\item[{const char $\ast$}]{ val, }
+\item[{char}]{ valloc}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_afb5aeb4995c7c20e774e6590b2a25512}
+
+
+finds the last header in the headers tailq and adds the value 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em headers}]the evhtp\_\-headers\_\-t TAILQ (evhtp\_\-kv\_\-t) \item[{\em val}]a null terminated string \item[{\em valloc}]if 1 the string will be copied, otherwise assigned\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+an evhtp\_\-header\_\-t pointer or NULL on error 
+\end{DoxyReturn}
+
+
+Definition at line 1590 of file evhtp.c.
+
+\hypertarget{evhtp_8h_ab895a8e59d43330c700dcbddb20b281d}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-headers\_\-add\_\-header@{evhtp\_\-headers\_\-add\_\-header}}
+\index{evhtp\_\-headers\_\-add\_\-header@{evhtp\_\-headers\_\-add\_\-header}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-headers\_\-add\_\-header}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-headers\_\-add\_\-header (
+\begin{DoxyParamCaption}
+\item[{evhtp\_\-headers\_\-t $\ast$}]{ headers, }
+\item[{evhtp\_\-header\_\-t $\ast$}]{ header}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_ab895a8e59d43330c700dcbddb20b281d}
+
+
+adds an evhtp\_\-header\_\-t to the end of the evhtp\_\-headers\_\-t tailq 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em headers}]\item[{\em header}]\end{DoxyParams}
+\hypertarget{evhtp_8h_a5ad3f9da9252228d496c757b7fcbd876}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kv\_\-find@{evhtp\_\-kv\_\-find}}
+\index{evhtp\_\-kv\_\-find@{evhtp\_\-kv\_\-find}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kv\_\-find}]{\setlength{\rightskip}{0pt plus 5cm}const char$\ast$ evhtp\_\-kv\_\-find (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs, }
+\item[{const char $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a5ad3f9da9252228d496c757b7fcbd876}
+
+
+Definition at line 1728 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a7939fc367080e65dae817a198b0329bb}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kv\_\-free@{evhtp\_\-kv\_\-free}}
+\index{evhtp\_\-kv\_\-free@{evhtp\_\-kv\_\-free}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kv\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-kv\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kv\_\-t} $\ast$}]{ kv}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a7939fc367080e65dae817a198b0329bb}
+
+
+Definition at line 1665 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a8d67c39c09ef95018639ba82ba111efb}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kv\_\-new@{evhtp\_\-kv\_\-new}}
+\index{evhtp\_\-kv\_\-new@{evhtp\_\-kv\_\-new}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kv\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-kv\_\-t}$\ast$ evhtp\_\-kv\_\-new (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{ key, }
+\item[{const char $\ast$}]{ val, }
+\item[{char}]{ kalloc, }
+\item[{char}]{ valloc}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a8d67c39c09ef95018639ba82ba111efb}
+
+
+Allocates a new key/value structure. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]null terminated string \item[{\em val}]null terminated string \item[{\em kalloc}]if set to 1, the key will be copied, if 0 no copy is done. \item[{\em valloc}]if set to 1, the val will be copied, if 0 no copy is done.\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-kv\_\-t $\ast$ on success, NULL on error. 
+\end{DoxyReturn}
+
+
+Definition at line 1621 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a0ed832fa06fcce351bd4e294b01ca025}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kv\_\-rm\_\-and\_\-free@{evhtp\_\-kv\_\-rm\_\-and\_\-free}}
+\index{evhtp\_\-kv\_\-rm\_\-and\_\-free@{evhtp\_\-kv\_\-rm\_\-and\_\-free}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kv\_\-rm\_\-and\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-kv\_\-rm\_\-and\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs, }
+\item[{{\bf evhtp\_\-kv\_\-t} $\ast$}]{ kv}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a0ed832fa06fcce351bd4e294b01ca025}
+
+
+Definition at line 1682 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a0860e34e7b5b5977e01f28afded17d89}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kvs\_\-add\_\-kv@{evhtp\_\-kvs\_\-add\_\-kv}}
+\index{evhtp\_\-kvs\_\-add\_\-kv@{evhtp\_\-kvs\_\-add\_\-kv}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kvs\_\-add\_\-kv}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-kvs\_\-add\_\-kv (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs, }
+\item[{{\bf evhtp\_\-kv\_\-t} $\ast$}]{ kv}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a0860e34e7b5b5977e01f28afded17d89}
+
+
+appends a key/val structure to a evhtp\_\-kvs\_\-t tailq 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em kvs}]an evhtp\_\-kvs\_\-t structure \item[{\em kv}]an evhtp\_\-kv\_\-t structure \end{DoxyParams}
+
+
+Definition at line 1762 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a478309d26255defca90bd42775dc89d4}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kvs\_\-find\_\-kv@{evhtp\_\-kvs\_\-find\_\-kv}}
+\index{evhtp\_\-kvs\_\-find\_\-kv@{evhtp\_\-kvs\_\-find\_\-kv}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kvs\_\-find\_\-kv}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-kv\_\-t}$\ast$ evhtp\_\-kvs\_\-find\_\-kv (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs, }
+\item[{const char $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a478309d26255defca90bd42775dc89d4}
+
+
+Definition at line 1745 of file evhtp.c.
+
+\hypertarget{evhtp_8h_ab496e1fb070dd5c6830315e181f2f45f}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kvs\_\-for\_\-each@{evhtp\_\-kvs\_\-for\_\-each}}
+\index{evhtp\_\-kvs\_\-for\_\-each@{evhtp\_\-kvs\_\-for\_\-each}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kvs\_\-for\_\-each}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-kvs\_\-for\_\-each (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs, }
+\item[{{\bf evhtp\_\-kvs\_\-iterator}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_ab496e1fb070dd5c6830315e181f2f45f}
+
+
+Definition at line 1713 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a653c3af86d2d3dd3c11abadd71589edf}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kvs\_\-free@{evhtp\_\-kvs\_\-free}}
+\index{evhtp\_\-kvs\_\-free@{evhtp\_\-kvs\_\-free}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kvs\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-kvs\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a653c3af86d2d3dd3c11abadd71589edf}
+
+
+Definition at line 1693 of file evhtp.c.
+
+\hypertarget{evhtp_8h_ae51f6f8596b24444cfd8c00f14143ff3}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-kvs\_\-new@{evhtp\_\-kvs\_\-new}}
+\index{evhtp\_\-kvs\_\-new@{evhtp\_\-kvs\_\-new}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-kvs\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-kvs\_\-t}$\ast$ evhtp\_\-kvs\_\-new (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_ae51f6f8596b24444cfd8c00f14143ff3}
+
+
+Definition at line 1613 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a97bbe491064943a8d5e0d3e7a937209b}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-new@{evhtp\_\-new}}
+\index{evhtp\_\-new@{evhtp\_\-new}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-t}$\ast$ evhtp\_\-new (
+\begin{DoxyParamCaption}
+\item[{evbase\_\-t $\ast$}]{ evbase, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a97bbe491064943a8d5e0d3e7a937209b}
+
+
+creates a new evhtp\_\-t instance 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em evbase}]the initialized event base \item[{\em arg}]user-\/defined argument which is evhtp\_\-t specific\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a new evhtp\_\-t structure or NULL on error 
+\end{DoxyReturn}
+
+
+Definition at line 2481 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a2bf7b8937c27b654fccd27bf811aa2eb}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-parse\_\-query@{evhtp\_\-parse\_\-query}}
+\index{evhtp\_\-parse\_\-query@{evhtp\_\-parse\_\-query}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-parse\_\-query}]{\setlength{\rightskip}{0pt plus 5cm}evhtp\_\-query\_\-t$\ast$ evhtp\_\-parse\_\-query (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{ query, }
+\item[{size\_\-t}]{ len}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a2bf7b8937c27b654fccd27bf811aa2eb}
+
+
+Parses the query portion of the uri into a set of key/values. 
+
+Parses query arguments like \char`\"{}?herp=derp\&foo=bar;blah=baz\char`\"{}
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em query}]data containing the uri query arguments \item[{\em len}]size of the data\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-query\_\-t $\ast$ on success, NULL on error 
+\end{DoxyReturn}
+
+
+Definition at line 1784 of file evhtp.c.
+
+\hypertarget{evhtp_8h_af0bf99a2bf280b1cef1cec805bd433d0}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-request\_\-get\_\-method@{evhtp\_\-request\_\-get\_\-method}}
+\index{evhtp\_\-request\_\-get\_\-method@{evhtp\_\-request\_\-get\_\-method}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-request\_\-get\_\-method}]{\setlength{\rightskip}{0pt plus 5cm}htp\_\-method evhtp\_\-request\_\-get\_\-method (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ r}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_af0bf99a2bf280b1cef1cec805bd433d0}
+
+
+returns the htp\_\-method enum version of the request method. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em r}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+htp\_\-method enum 
+\end{DoxyReturn}
+
+
+Definition at line 1523 of file evhtp.c.
+
+\hypertarget{evhtp_8h_ab35aec3adb697918e24b8ff966afe235}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-request\_\-pause@{evhtp\_\-request\_\-pause}}
+\index{evhtp\_\-request\_\-pause@{evhtp\_\-request\_\-pause}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-request\_\-pause}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-request\_\-pause (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_ab35aec3adb697918e24b8ff966afe235}
+
+
+Wrapper around evhtp\_\-connection\_\-pause. 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{evhtp_8h_affb4e79c7859189a0efc739344226d91}{evhtp\_\-connection\_\-pause}
+\end{DoxySeeAlso}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em request}]\end{DoxyParams}
+
+
+Definition at line 1560 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a3f537cfe43afe795f575e4080d8a4f69}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-request\_\-resume@{evhtp\_\-request\_\-resume}}
+\index{evhtp\_\-request\_\-resume@{evhtp\_\-request\_\-resume}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-request\_\-resume}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-request\_\-resume (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a3f537cfe43afe795f575e4080d8a4f69}
+
+
+Wrapper around evhtp\_\-connection\_\-resume. 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{evhtp_8h_a450bcd53aa74128bbb658f8af6aff320}{evhtp\_\-connection\_\-resume}
+\end{DoxySeeAlso}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em request}]\end{DoxyParams}
+
+
+Definition at line 1572 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a207355af4b2d3e5211c4df0bbb8d195d}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-send\_\-reply@{evhtp\_\-send\_\-reply}}
+\index{evhtp\_\-send\_\-reply@{evhtp\_\-send\_\-reply}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-send\_\-reply}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-send\_\-reply (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{{\bf evhtp\_\-res}}]{ code}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a207355af4b2d3e5211c4df0bbb8d195d}
+
+
+Definition at line 1979 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a6bf7db125fda2c96491d2ebde9d40611}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-send\_\-reply\_\-body@{evhtp\_\-send\_\-reply\_\-body}}
+\index{evhtp\_\-send\_\-reply\_\-body@{evhtp\_\-send\_\-reply\_\-body}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-send\_\-reply\_\-body}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-send\_\-reply\_\-body (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{{\bf evbuf\_\-t} $\ast$}]{ buf}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a6bf7db125fda2c96491d2ebde9d40611}
+
+
+Definition at line 1962 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a233d1f64458e5f71658d7bc64c80d569}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-send\_\-reply\_\-end@{evhtp\_\-send\_\-reply\_\-end}}
+\index{evhtp\_\-send\_\-reply\_\-end@{evhtp\_\-send\_\-reply\_\-end}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-send\_\-reply\_\-end}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-send\_\-reply\_\-end (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a233d1f64458e5f71658d7bc64c80d569}
+
+
+Definition at line 1969 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a616801e5dd5e515f78f3b430910b22da}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-send\_\-reply\_\-start@{evhtp\_\-send\_\-reply\_\-start}}
+\index{evhtp\_\-send\_\-reply\_\-start@{evhtp\_\-send\_\-reply\_\-start}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-send\_\-reply\_\-start}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-send\_\-reply\_\-start (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{{\bf evhtp\_\-res}}]{ code}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a616801e5dd5e515f78f3b430910b22da}
+
+
+Definition at line 1949 of file evhtp.c.
+
+\hypertarget{evhtp_8h_ad5bb4aac3d544eb8a102c530b3b45fba}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-set\_\-cb@{evhtp\_\-set\_\-cb}}
+\index{evhtp\_\-set\_\-cb@{evhtp\_\-set\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-set\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-callback\_\-t}$\ast$ evhtp\_\-set\_\-cb (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{const char $\ast$}]{ path, }
+\item[{{\bf evhtp\_\-callback\_\-cb}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_ad5bb4aac3d544eb8a102c530b3b45fba}
+
+
+sets a callback to be executed on a specific path 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em htp}]the initialized evhtp\_\-t \item[{\em path}]the path to match \item[{\em cb}]the function to be executed \item[{\em arg}]user-\/defined argument passed to the callback\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-callback\_\-t $\ast$ on success, NULL on error. 
+\end{DoxyReturn}
+
+
+Definition at line 2227 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a39a5c7910a382f902c896b25854b742d}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-set\_\-gencb@{evhtp\_\-set\_\-gencb}}
+\index{evhtp\_\-set\_\-gencb@{evhtp\_\-set\_\-gencb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-set\_\-gencb}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-set\_\-gencb (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{{\bf evhtp\_\-callback\_\-cb}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a39a5c7910a382f902c896b25854b742d}
+
+
+sets a callback which is called if no other callbacks are matched 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em htp}]the initialized evhtp\_\-t \item[{\em cb}]the function to be executed \item[{\em arg}]user-\/defined argument passed to the callback \end{DoxyParams}
+
+
+Definition at line 2316 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a9760b5203a449e9ba54dc3e84dd76122}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-set\_\-hook@{evhtp\_\-set\_\-hook}}
+\index{evhtp\_\-set\_\-hook@{evhtp\_\-set\_\-hook}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-set\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-set\_\-hook (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-hooks\_\-t} $\ast$$\ast$}]{ hooks, }
+\item[{{\bf evhtp\_\-hook\_\-type}}]{ type, }
+\item[{void $\ast$}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a9760b5203a449e9ba54dc3e84dd76122}
+
+
+sets a callback hook for either a connection or a path/regex . 
+
+A user may set a variety of hooks either per-\/connection, or per-\/callback. This allows the developer to hook into various parts of the request processing cycle.
+
+a per-\/connection hook can be set at any time, but it is recommended to set these during either a pre-\/accept phase, or post-\/accept phase. This allows a developer to set hooks before any other hooks are called.
+
+a per-\/callback hook works differently. In this mode a developer can setup a set of hooks prior to starting the event loop for specific callbacks. For example if you wanted to hook something ONLY for a callback set by evhtp\_\-set\_\-cb or evhtp\_\-set\_\-regex\_\-cb this is the method of doing so.
+
+per-\/callback example:
+
+evhtp\_\-callback\_\-t $\ast$ cb = evhtp\_\-set\_\-regex\_\-cb(htp, \char`\"{}/anything/(.$\ast$)\char`\"{}, default\_\-cb, NULL);
+
+evhtp\_\-set\_\-hook(\&cb-\/$>$hooks, evhtp\_\-hook\_\-on\_\-headers, anything\_\-headers\_\-cb, NULL);
+
+evhtp\_\-set\_\-hook(\&cb-\/$>$hooks, evhtp\_\-hook\_\-on\_\-fini, anything\_\-fini\_\-cb, NULL);
+
+With the above example, once libevhtp has determined that it has a user-\/defined callback for /anything/.$\ast$; anything\_\-headers\_\-cb will be executed after all headers have been parsed, and anything\_\-fini\_\-cb will be executed before the request is free()'d.
+
+The same logic applies to per-\/connection hooks, but it should be noted that if a per-\/callback hook is set, the per-\/connection hook will be ignored.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em hooks}]double pointer to the evhtp\_\-hooks\_\-t structure \item[{\em type}]the hook type \item[{\em cb}]the callback to be executed. \item[{\em arg}]optional argument which is passed when the callback is executed\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success, -\/1 on error (if hooks is NULL, it is allocated) 
+\end{DoxyReturn}
+
+
+Definition at line 2171 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a62a30d19b80e2b7a0e04cabc47f189e0}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-set\_\-post\_\-accept\_\-cb@{evhtp\_\-set\_\-post\_\-accept\_\-cb}}
+\index{evhtp\_\-set\_\-post\_\-accept\_\-cb@{evhtp\_\-set\_\-post\_\-accept\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-set\_\-post\_\-accept\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-set\_\-post\_\-accept\_\-cb (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{{\bf evhtp\_\-post\_\-accept\_\-cb}}]{, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a62a30d19b80e2b7a0e04cabc47f189e0}
+
+
+Definition at line 2328 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a9d4dbcf6fa74b1c7ba6842dcf10b4607}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-set\_\-pre\_\-accept\_\-cb@{evhtp\_\-set\_\-pre\_\-accept\_\-cb}}
+\index{evhtp\_\-set\_\-pre\_\-accept\_\-cb@{evhtp\_\-set\_\-pre\_\-accept\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-set\_\-pre\_\-accept\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-set\_\-pre\_\-accept\_\-cb (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{{\bf evhtp\_\-pre\_\-accept\_\-cb}}]{, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a9d4dbcf6fa74b1c7ba6842dcf10b4607}
+
+
+Definition at line 2322 of file evhtp.c.
+
+\hypertarget{evhtp_8h_adfec10ef2ef458d0757d3c7f71eabfa9}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-set\_\-regex\_\-cb@{evhtp\_\-set\_\-regex\_\-cb}}
+\index{evhtp\_\-set\_\-regex\_\-cb@{evhtp\_\-set\_\-regex\_\-cb}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-set\_\-regex\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-callback\_\-t}$\ast$ evhtp\_\-set\_\-regex\_\-cb (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{const char $\ast$}]{ pattern, }
+\item[{{\bf evhtp\_\-callback\_\-cb}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_adfec10ef2ef458d0757d3c7f71eabfa9}
+
+
+sets a callback to be executed based on a regex pattern 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em htp}]the initialized evhtp\_\-t \item[{\em pattern}]a POSIX compat regular expression \item[{\em cb}]the function to be executed \item[{\em arg}]user-\/defined argument passed to the callback\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-callback\_\-t $\ast$ on success, NULL on error 
+\end{DoxyReturn}
+
+
+Definition at line 2288 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a0de8e77250bd6b49414f929df82d9a4b}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-set\_\-timeouts@{evhtp\_\-set\_\-timeouts}}
+\index{evhtp\_\-set\_\-timeouts@{evhtp\_\-set\_\-timeouts}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-set\_\-timeouts}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-set\_\-timeouts (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{struct timeval $\ast$}]{ r, }
+\item[{struct timeval $\ast$}]{ w}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a0de8e77250bd6b49414f929df82d9a4b}
+
+
+Definition at line 2468 of file evhtp.c.
+
+\hypertarget{evhtp_8h_ab5817633efbce07e2aaf91e5e4f50cf4}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-init@{evhtp\_\-ssl\_\-init}}
+\index{evhtp\_\-ssl\_\-init@{evhtp\_\-ssl\_\-init}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-ssl\_\-init (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{{\bf evhtp\_\-ssl\_\-cfg\_\-t} $\ast$}]{ ssl\_\-cfg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_ab5817633efbce07e2aaf91e5e4f50cf4}
+
+
+Definition at line 2358 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a50dcb68a596352bf44b90e507f5f4a04}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-ssl\_\-use\_\-threads@{evhtp\_\-ssl\_\-use\_\-threads}}
+\index{evhtp\_\-ssl\_\-use\_\-threads@{evhtp\_\-ssl\_\-use\_\-threads}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-ssl\_\-use\_\-threads}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-ssl\_\-use\_\-threads (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a50dcb68a596352bf44b90e507f5f4a04}
+
+
+Definition at line 2335 of file evhtp.c.
+
+\hypertarget{evhtp_8h_abadb1db7b98cd01c9856ebe55efe77b3}{
+\index{evhtp.h@{evhtp.h}!evhtp\_\-use\_\-threads@{evhtp\_\-use\_\-threads}}
+\index{evhtp\_\-use\_\-threads@{evhtp\_\-use\_\-threads}!evhtp.h@{evhtp.h}}
+\subsubsection[{evhtp\_\-use\_\-threads}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-use\_\-threads (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{{\bf evhtp\_\-thread\_\-init\_\-cb}}]{ init\_\-cb, }
+\item[{int}]{ nthreads, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_abadb1db7b98cd01c9856ebe55efe77b3}
+
+
+Definition at line 2265 of file evhtp.c.
+
+\hypertarget{evhtp_8h_a3dfe435a7358e1f4ac803aaac0d71c33}{
+\index{evhtp.h@{evhtp.h}!TAILQ\_\-HEAD@{TAILQ\_\-HEAD}}
+\index{TAILQ\_\-HEAD@{TAILQ\_\-HEAD}!evhtp.h@{evhtp.h}}
+\subsubsection[{TAILQ\_\-HEAD}]{\setlength{\rightskip}{0pt plus 5cm}TAILQ\_\-HEAD (
+\begin{DoxyParamCaption}
+\item[{evhtp\_\-kvs\_\-s}]{, }
+\item[{{\bf evhtp\_\-kv\_\-s}}]{}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8h_a3dfe435a7358e1f4ac803aaac0d71c33}

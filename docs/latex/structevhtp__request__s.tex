@@ -1,0 +1,207 @@
+\hypertarget{structevhtp__request__s}{
+\section{evhtp\_\-request\_\-s Struct Reference}
+\label{structevhtp__request__s}\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}}
+}
+
+
+a structure containing all information for a http request.  
+
+
+
+
+{\ttfamily \#include $<$evhtp.h$>$}
+
+\subsection*{Data Fields}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$ \hyperlink{structevhtp__request__s_ad2f5cc5c9e97f75f1fe923c57af9e875}{htp}
+\item 
+\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$ \hyperlink{structevhtp__request__s_a313e4d80c47517f02f2fe99e8840c280}{conn}
+\item 
+\hyperlink{structevhtp__hooks__s}{evhtp\_\-hooks\_\-t} $\ast$ \hyperlink{structevhtp__request__s_ac97663394f74c9030e57c771cfb7981e}{hooks}
+\item 
+\hyperlink{structevhtp__uri__s}{evhtp\_\-uri\_\-t} $\ast$ \hyperlink{structevhtp__request__s_adfdac9f1ecf15761c62699a52d855a49}{uri}
+\item 
+\hyperlink{evhtp_8h_a7c30b85cd8bba6ebbfe58c3fc81139c8}{evbuf\_\-t} $\ast$ \hyperlink{structevhtp__request__s_ad9e8b203574b6c44296b23b897206768}{buffer\_\-in}
+\item 
+\hyperlink{evhtp_8h_a7c30b85cd8bba6ebbfe58c3fc81139c8}{evbuf\_\-t} $\ast$ \hyperlink{structevhtp__request__s_aa2a97cf41f1776b60c84e31eb6778d05}{buffer\_\-out}
+\item 
+evhtp\_\-headers\_\-t $\ast$ \hyperlink{structevhtp__request__s_a231fb5c9d95add6d73b4500233a98de8}{headers\_\-in}
+\item 
+evhtp\_\-headers\_\-t $\ast$ \hyperlink{structevhtp__request__s_a139e220680f914ac7a44f3dac1b34be0}{headers\_\-out}
+\item 
+\hyperlink{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5}{evhtp\_\-proto} \hyperlink{structevhtp__request__s_a3acae974abf6e95063cab796fbe2a7f6}{proto}
+\item 
+htp\_\-method \hyperlink{structevhtp__request__s_a5322aefd6f774a31c7cbfaeee0d3a417}{method}
+\item 
+\hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} \hyperlink{structevhtp__request__s_a9342eb644f9122b975cf9e2aed3cc00c}{status}
+\item 
+int \hyperlink{structevhtp__request__s_ae314c4b48027be9feab52906b6313b73}{keepalive}
+\item 
+int \hyperlink{structevhtp__request__s_a49c6e6c75d41d6360253beb518425934}{finished}
+\item 
+\hyperlink{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}{evhtp\_\-callback\_\-cb} \hyperlink{structevhtp__request__s_a783ee29046d4ff3e8c75f811e80fd57b}{cb}
+\item 
+void $\ast$ \hyperlink{structevhtp__request__s_aafd3d1a6343925cb274875556a6faa0e}{cbarg}
+\item 
+int \hyperlink{structevhtp__request__s_a11614f44ef4d939bdd984953346a7572}{error}
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+a structure containing all information for a http request. 
+
+Definition at line 347 of file evhtp.h.
+
+
+
+\subsection{Field Documentation}
+\hypertarget{structevhtp__request__s_ad9e8b203574b6c44296b23b897206768}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!buffer\_\-in@{buffer\_\-in}}
+\index{buffer\_\-in@{buffer\_\-in}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{buffer\_\-in}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evbuf\_\-t}$\ast$ {\bf buffer\_\-in}}}
+\label{structevhtp__request__s_ad9e8b203574b6c44296b23b897206768}
+buffer containing data from client 
+
+Definition at line 352 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_aa2a97cf41f1776b60c84e31eb6778d05}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!buffer\_\-out@{buffer\_\-out}}
+\index{buffer\_\-out@{buffer\_\-out}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{buffer\_\-out}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evbuf\_\-t}$\ast$ {\bf buffer\_\-out}}}
+\label{structevhtp__request__s_aa2a97cf41f1776b60c84e31eb6778d05}
+buffer containing data to client 
+
+Definition at line 353 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_a783ee29046d4ff3e8c75f811e80fd57b}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!cb@{cb}}
+\index{cb@{cb}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{cb}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-callback\_\-cb} {\bf cb}}}
+\label{structevhtp__request__s_a783ee29046d4ff3e8c75f811e80fd57b}
+the function to call when fully processed 
+
+Definition at line 362 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_aafd3d1a6343925cb274875556a6faa0e}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!cbarg@{cbarg}}
+\index{cbarg@{cbarg}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{cbarg}]{\setlength{\rightskip}{0pt plus 5cm}void$\ast$ {\bf cbarg}}}
+\label{structevhtp__request__s_aafd3d1a6343925cb274875556a6faa0e}
+argument which is passed to the cb function 
+
+Definition at line 363 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_a313e4d80c47517f02f2fe99e8840c280}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!conn@{conn}}
+\index{conn@{conn}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{conn}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-connection\_\-t}$\ast$ {\bf conn}}}
+\label{structevhtp__request__s_a313e4d80c47517f02f2fe99e8840c280}
+the associated connection 
+
+Definition at line 349 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_a11614f44ef4d939bdd984953346a7572}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!error@{error}}
+\index{error@{error}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{error}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf error}}}
+\label{structevhtp__request__s_a11614f44ef4d939bdd984953346a7572}
+
+
+Definition at line 364 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_a49c6e6c75d41d6360253beb518425934}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!finished@{finished}}
+\index{finished@{finished}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{finished}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf finished}}}
+\label{structevhtp__request__s_a49c6e6c75d41d6360253beb518425934}
+set to 1 if the request is fully processed 
+
+Definition at line 360 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_a231fb5c9d95add6d73b4500233a98de8}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!headers\_\-in@{headers\_\-in}}
+\index{headers\_\-in@{headers\_\-in}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{headers\_\-in}]{\setlength{\rightskip}{0pt plus 5cm}evhtp\_\-headers\_\-t$\ast$ {\bf headers\_\-in}}}
+\label{structevhtp__request__s_a231fb5c9d95add6d73b4500233a98de8}
+headers from client 
+
+Definition at line 354 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_a139e220680f914ac7a44f3dac1b34be0}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!headers\_\-out@{headers\_\-out}}
+\index{headers\_\-out@{headers\_\-out}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{headers\_\-out}]{\setlength{\rightskip}{0pt plus 5cm}evhtp\_\-headers\_\-t$\ast$ {\bf headers\_\-out}}}
+\label{structevhtp__request__s_a139e220680f914ac7a44f3dac1b34be0}
+headers to client 
+
+Definition at line 355 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_ac97663394f74c9030e57c771cfb7981e}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!hooks@{hooks}}
+\index{hooks@{hooks}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{hooks}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-hooks\_\-t}$\ast$ {\bf hooks}}}
+\label{structevhtp__request__s_ac97663394f74c9030e57c771cfb7981e}
+request specific hooks 
+
+Definition at line 350 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_ad2f5cc5c9e97f75f1fe923c57af9e875}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!htp@{htp}}
+\index{htp@{htp}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{htp}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-t}$\ast$ {\bf htp}}}
+\label{structevhtp__request__s_ad2f5cc5c9e97f75f1fe923c57af9e875}
+the parent evhtp\_\-t structure 
+
+Definition at line 348 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_ae314c4b48027be9feab52906b6313b73}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!keepalive@{keepalive}}
+\index{keepalive@{keepalive}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{keepalive}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf keepalive}}}
+\label{structevhtp__request__s_ae314c4b48027be9feab52906b6313b73}
+set to 1 if the connection is keep-\/alive 
+
+Definition at line 359 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_a5322aefd6f774a31c7cbfaeee0d3a417}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!method@{method}}
+\index{method@{method}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{method}]{\setlength{\rightskip}{0pt plus 5cm}htp\_\-method {\bf method}}}
+\label{structevhtp__request__s_a5322aefd6f774a31c7cbfaeee0d3a417}
+HTTP method used 
+
+Definition at line 357 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_a3acae974abf6e95063cab796fbe2a7f6}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!proto@{proto}}
+\index{proto@{proto}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{proto}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-proto} {\bf proto}}}
+\label{structevhtp__request__s_a3acae974abf6e95063cab796fbe2a7f6}
+HTTP protocol used 
+
+Definition at line 356 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_a9342eb644f9122b975cf9e2aed3cc00c}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!status@{status}}
+\index{status@{status}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{status}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-res} {\bf status}}}
+\label{structevhtp__request__s_a9342eb644f9122b975cf9e2aed3cc00c}
+The HTTP response code or other error conditions 
+
+Definition at line 358 of file evhtp.h.
+
+\hypertarget{structevhtp__request__s_adfdac9f1ecf15761c62699a52d855a49}{
+\index{evhtp\_\-request\_\-s@{evhtp\_\-request\_\-s}!uri@{uri}}
+\index{uri@{uri}!evhtp_request_s@{evhtp\_\-request\_\-s}}
+\subsubsection[{uri}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-uri\_\-t}$\ast$ {\bf uri}}}
+\label{structevhtp__request__s_adfdac9f1ecf15761c62699a52d855a49}
+request URI information 
+
+Definition at line 351 of file evhtp.h.
+
+
+
+The documentation for this struct was generated from the following file:\begin{DoxyCompactItemize}
+\item 
+\hyperlink{evhtp_8h}{evhtp.h}\end{DoxyCompactItemize}

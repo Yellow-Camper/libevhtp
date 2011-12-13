@@ -163,6 +163,7 @@ test_bar_cb(evhtp_request_t * req, void * arg ) {
 
 static void
 test_default_cb(evhtp_request_t * req, void * arg ) {
+    printf("%s\n", req->uri->query_raw);
     evbuffer_add_reference(req->buffer_out,
                            "test_default_cb\n", 16, NULL, NULL);
 

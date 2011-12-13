@@ -1,0 +1,2316 @@
+\hypertarget{evhtp_8c}{
+\section{evhtp.c File Reference}
+\label{evhtp_8c}\index{evhtp.c@{evhtp.c}}
+}
+{\ttfamily \#include $<$stdlib.h$>$}\par
+{\ttfamily \#include $<$string.h$>$}\par
+{\ttfamily \#include $<$stdint.h$>$}\par
+{\ttfamily \#include $<$errno.h$>$}\par
+{\ttfamily \#include $<$signal.h$>$}\par
+{\ttfamily \#include $<$ctype.h$>$}\par
+{\ttfamily \#include $<$strings.h$>$}\par
+{\ttfamily \#include $<$inttypes.h$>$}\par
+{\ttfamily \#include $<$sys/socket.h$>$}\par
+{\ttfamily \#include $<$netinet/in.h$>$}\par
+{\ttfamily \#include $<$arpa/inet.h$>$}\par
+{\ttfamily \#include $<$alloca.h$>$}\par
+{\ttfamily \#include $<$sys/tree.h$>$}\par
+{\ttfamily \#include \char`\"{}evhtp.h\char`\"{}}\par
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structstatus__code}{status\_\-code}
+\begin{DoxyCompactList}\small\item\em An RBTREE entry for the status code -\/$>$ str matcher. \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Defines}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{evhtp_8c_a369266c24eacffb87046522897a570d5}{\_\-GNU\_\-SOURCE}
+\item 
+\#define \hyperlink{evhtp_8c_a6d2251778d27dd3e9c9a724b2c7dad37}{HOOK\_\-AVAIL}(var, hook\_\-name)~(var-\/$>$hooks \&\& var-\/$>$hooks-\/$>$hook\_\-name)
+\item 
+\#define \hyperlink{evhtp_8c_a500bf84a9e29e88d91e63c16806ecc2c}{HOOK\_\-FUNC}(var, hook\_\-name)~(var-\/$>$hooks-\/$>$hook\_\-name)
+\item 
+\#define \hyperlink{evhtp_8c_abbb114e65ec19420ba429a470fbebf9d}{HOOK\_\-ARGS}(var, hook\_\-name)~var-\/$>$hooks-\/$>$hook\_\-name \#\# \_\-arg
+\item 
+\#define \hyperlink{evhtp_8c_ae2c816de942c43b0ebb36a55f85c3224}{HOOK\_\-REQUEST\_\-RUN}(request, hook\_\-name,...)
+\item 
+\#define \hyperlink{evhtp_8c_aafbff8cb48657d9e39bf468e2afc9a62}{HOOK\_\-REQUEST\_\-RUN\_\-NARGS}(request, hook\_\-name)
+\item 
+\#define \hyperlink{evhtp_8c_a2569ebb7eb9999623be990f531ed47e9}{\_\-evhtp\_\-lock}(h)
+\item 
+\#define \hyperlink{evhtp_8c_abadfb0921fbf0ee1eaa8924956681849}{\_\-evhtp\_\-unlock}(h)
+\item 
+\#define \hyperlink{evhtp_8c_ab7cbb18f24acd27f62e6e332a9e65232}{scode\_\-add}(scode, cstr)
+\end{DoxyCompactItemize}
+\subsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \hyperlink{evhtp_8c_a028ccde064ada1006c2516e64585f215}{query\_\-parser\_\-state} \{ \par
+\hyperlink{evhtp_8c_a028ccde064ada1006c2516e64585f215ae59ced31d65d1c915dbcf3f899a20ecf}{s\_\-query\_\-start} =  0, 
+\hyperlink{evhtp_8c_a028ccde064ada1006c2516e64585f215adb95ac262aefe8d97c822c109f324b94}{s\_\-query\_\-question\_\-mark}, 
+\hyperlink{evhtp_8c_a028ccde064ada1006c2516e64585f215af07dc4f3c3927f8904c143a529c876ff}{s\_\-query\_\-separator}, 
+\hyperlink{evhtp_8c_a028ccde064ada1006c2516e64585f215aabd2e7b2224c4817021f790acd93972d}{s\_\-query\_\-key}, 
+\par
+\hyperlink{evhtp_8c_a028ccde064ada1006c2516e64585f215a119104ddac872444d438cfba5dc0df90}{s\_\-query\_\-val}, 
+\hyperlink{evhtp_8c_a028ccde064ada1006c2516e64585f215afbf2410bfa0fd953c9687b45bb31081c}{s\_\-query\_\-key\_\-hex\_\-1}, 
+\hyperlink{evhtp_8c_a028ccde064ada1006c2516e64585f215a77ac958b7304b517adab34d57b493541}{s\_\-query\_\-key\_\-hex\_\-2}, 
+\hyperlink{evhtp_8c_a028ccde064ada1006c2516e64585f215a691fc680c96d352bbc92cd45abf1688a}{s\_\-query\_\-val\_\-hex\_\-1}, 
+\par
+\hyperlink{evhtp_8c_a028ccde064ada1006c2516e64585f215aa5fd42a3c68c259995c2e1dbc94825f9}{s\_\-query\_\-val\_\-hex\_\-2}, 
+\hyperlink{evhtp_8c_a028ccde064ada1006c2516e64585f215a0635aac986be1b2332b30956216b0e61}{s\_\-query\_\-done}
+ \}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+static int \hyperlink{evhtp_8c_a58663d586f44301ab317c8dd5b4be3e6}{\_\-evhtp\_\-request\_\-parser\_\-start} (htparser $\ast$p)
+\item 
+static int \hyperlink{evhtp_8c_a1bc3142129054e8291294dac4a4b09bc}{\_\-evhtp\_\-request\_\-parser\_\-path} (htparser $\ast$p, const char $\ast$data, size\_\-t len)
+\item 
+static int \hyperlink{evhtp_8c_a9b2efd8988cf111433eb8f7aff520368}{\_\-evhtp\_\-request\_\-parser\_\-args} (htparser $\ast$p, const char $\ast$data, size\_\-t len)
+\item 
+static int \hyperlink{evhtp_8c_a74bf569aed627659f9c2da4d2917f94e}{\_\-evhtp\_\-request\_\-parser\_\-header\_\-key} (htparser $\ast$p, const char $\ast$data, size\_\-t len)
+\item 
+static int \hyperlink{evhtp_8c_ace9d3c03d8a93653ee8ba0dd023c19b1}{\_\-evhtp\_\-request\_\-parser\_\-header\_\-val} (htparser $\ast$p, const char $\ast$data, size\_\-t len)
+\item 
+static int \hyperlink{evhtp_8c_af0fd9193de0851f71633c8d534d8e95c}{\_\-evhtp\_\-request\_\-parser\_\-headers} (htparser $\ast$p)
+\item 
+static int \hyperlink{evhtp_8c_ae068a0fbec8deab8f5aece4f38540aa5}{\_\-evhtp\_\-request\_\-parser\_\-body} (htparser $\ast$p, const char $\ast$data, size\_\-t len)
+\item 
+static int \hyperlink{evhtp_8c_af1358f87bd161ec7956eb40785a4c94f}{\_\-evhtp\_\-request\_\-parser\_\-fini} (htparser $\ast$p)
+\item 
+static int \hyperlink{evhtp_8c_aa8d661194ad85e97ad4f7abadf92169b}{\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-new} (htparser $\ast$p)
+\item 
+static int \hyperlink{evhtp_8c_a568d0ca38c2b6f16d2ba7827026b6be8}{\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-fini} (htparser $\ast$p)
+\item 
+static int \hyperlink{evhtp_8c_aeb4b98d334e176bfa9714c3946f926ab}{\_\-evhtp\_\-request\_\-parser\_\-chunks\_\-fini} (htparser $\ast$p)
+\item 
+static void \hyperlink{evhtp_8c_ae4c1691af1bf2b75cec8d8dce75b0dcb}{\_\-evhtp\_\-connection\_\-readcb} (\hyperlink{evhtp_8h_af92ce7197ff545dc83b76f1650bc57e1}{evbev\_\-t} $\ast$bev, void $\ast$arg)
+\item 
+static void \hyperlink{evhtp_8c_a1e4efbb30930e9c0516e89f80ab59f4b}{\_\-evhtp\_\-connection\_\-free} (\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$connection)
+\item 
+static \hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$ \hyperlink{evhtp_8c_a92680d0af4677b8c5b83fe4dc06b4fb8}{\_\-evhtp\_\-connection\_\-new} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, int sock)
+\item 
+static \hyperlink{structevhtp__uri__s}{evhtp\_\-uri\_\-t} $\ast$ \hyperlink{evhtp_8c_ad88e62da3b491cfbe334a82f5151dc90}{\_\-evhtp\_\-uri\_\-new} (void)
+\begin{DoxyCompactList}\small\item\em create an overlay URI structure \item\end{DoxyCompactList}\item 
+static void \hyperlink{evhtp_8c_a4b730b06fe6a0093afb2f4f391e5455e}{\_\-evhtp\_\-uri\_\-free} (\hyperlink{structevhtp__uri__s}{evhtp\_\-uri\_\-t} $\ast$uri)
+\begin{DoxyCompactList}\small\item\em frees an overlay URI structure \item\end{DoxyCompactList}\item 
+static \hyperlink{structevhtp__path__s}{evhtp\_\-path\_\-t} $\ast$ \hyperlink{evhtp_8c_a7cbf32d32a6b49554759b5d8106e9f68}{\_\-evhtp\_\-path\_\-new} (const char $\ast$data, size\_\-t len)
+\begin{DoxyCompactList}\small\item\em parses the path and file from an input buffer \item\end{DoxyCompactList}\item 
+static void \hyperlink{evhtp_8c_a9ab2a6de89fce03b9543bdafa6f22db5}{\_\-evhtp\_\-path\_\-free} (\hyperlink{structevhtp__path__s}{evhtp\_\-path\_\-t} $\ast$path)
+\item 
+static int \hyperlink{evhtp_8c_a1ead5c92085e7fe20a3dc40a81371f1e}{status\_\-code\_\-cmp} (void $\ast$\_\-a, void $\ast$\_\-b)
+\item 
+\hyperlink{evhtp_8c_a75c2a3bfefd24bd9662464cf9356a6fc}{RB\_\-HEAD} (RB\_\-GENERATE(status\_\-code\_\-tree, RB\_\-GENERATE(\hyperlink{structstatus__code}{status\_\-code})
+\item 
+const char $\ast$ \hyperlink{evhtp_8c_aa589ac88e3469ce832c68120cad9b3c8}{status\_\-code\_\-to\_\-str} (\hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} code)
+\item 
+static unsigned int \hyperlink{evhtp_8c_acc338650342f065a4c64b40a9fed90be}{\_\-evhtp\_\-quick\_\-hash} (const char $\ast$str)
+\begin{DoxyCompactList}\small\item\em a weak hash function \item\end{DoxyCompactList}\item 
+static int \hyperlink{evhtp_8c_abc448ef20382265edd6422b4f6b1c803}{\_\-evhtp\_\-is\_\-http\_\-10} (const char major, const char minor)
+\begin{DoxyCompactList}\small\item\em helper function to determine if http version is HTTP/1.0 \item\end{DoxyCompactList}\item 
+static int \hyperlink{evhtp_8c_a16089371b45328e92739683d136b6482}{\_\-evhtp\_\-is\_\-http\_\-11} (const char major, const char minor)
+\begin{DoxyCompactList}\small\item\em helper function to determine if http version is HTTP/1.1 \item\end{DoxyCompactList}\item 
+static \hyperlink{evhtp_8h_ac3df0cb2556f57ad0bc8bb44ae126da5}{evhtp\_\-proto} \hyperlink{evhtp_8c_ab3d505dd3f9f0dfd926f3e8da13883d1}{\_\-evhtp\_\-protocol} (const char major, const char minor)
+\begin{DoxyCompactList}\small\item\em returns the HTTP protocol version \item\end{DoxyCompactList}\item 
+static \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} \hyperlink{evhtp_8c_a6b28453f5c4bc3f7cde03a365d4673c6}{\_\-evhtp\_\-path\_\-hook} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, \hyperlink{structevhtp__path__s}{evhtp\_\-path\_\-t} $\ast$path)
+\begin{DoxyCompactList}\small\item\em runs the user-\/defined on\_\-path hook for a request \item\end{DoxyCompactList}\item 
+static \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} \hyperlink{evhtp_8c_a492dabc4e7903c74ad3d9220e04476a3}{\_\-evhtp\_\-header\_\-hook} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, evhtp\_\-header\_\-t $\ast$header)
+\begin{DoxyCompactList}\small\item\em runs the user-\/defined on\_\-header hook for a request \item\end{DoxyCompactList}\item 
+static \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} \hyperlink{evhtp_8c_a60db8110685549d02f17218dac9fe1eb}{\_\-evhtp\_\-headers\_\-hook} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, evhtp\_\-headers\_\-t $\ast$headers)
+\begin{DoxyCompactList}\small\item\em runs the user-\/defined on\_\-Headers hook for a request after all headers have been parsed. \item\end{DoxyCompactList}\item 
+static \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} \hyperlink{evhtp_8c_a10232f66e19627b68bcd52892ab8a6ec}{\_\-evhtp\_\-body\_\-hook} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, \hyperlink{evhtp_8h_a7c30b85cd8bba6ebbfe58c3fc81139c8}{evbuf\_\-t} $\ast$buf)
+\begin{DoxyCompactList}\small\item\em runs the user-\/defined on\_\-body hook for requests containing a body. the data is stored in the request-\/$>$buffer\_\-in so the user may either leave it, or drain upon being called. \item\end{DoxyCompactList}\item 
+static \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} \hyperlink{evhtp_8c_ab82576a33f5888bec124961eaa86a9c0}{\_\-evhtp\_\-request\_\-fini\_\-hook} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request)
+\begin{DoxyCompactList}\small\item\em runs the user-\/defined hook called just prior to a request been free()'d \item\end{DoxyCompactList}\item 
+static \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} \hyperlink{evhtp_8c_af44a0c0da92135d88645bd51c5998b9d}{\_\-evhtp\_\-chunk\_\-new\_\-hook} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, uint64\_\-t len)
+\item 
+static \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} \hyperlink{evhtp_8c_aa9d40ad07e4f39561cfb6ad74b124f38}{\_\-evhtp\_\-chunk\_\-fini\_\-hook} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request)
+\item 
+static \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} \hyperlink{evhtp_8c_af2b193651b6957e7f9ffd2d504e07116}{\_\-evhtp\_\-chunks\_\-fini\_\-hook} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request)
+\item 
+static \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} \hyperlink{evhtp_8c_ae405ab595637e4078a9a01821d3df580}{\_\-evhtp\_\-connection\_\-fini\_\-hook} (\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$connection)
+\begin{DoxyCompactList}\small\item\em runs the user-\/definedhook called just prior to a connection being closed \item\end{DoxyCompactList}\item 
+static \hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$ \hyperlink{evhtp_8c_aea05e1a5cd1e3178edbe0e565dfde0d3}{\_\-evhtp\_\-callback\_\-hash\_\-find} (\hyperlink{structevhtp__callbacks__s}{evhtp\_\-callbacks\_\-t} $\ast$callbacks, const char $\ast$path)
+\begin{DoxyCompactList}\small\item\em attempts to find a callback via hashing the path \item\end{DoxyCompactList}\item 
+static \hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$ \hyperlink{evhtp_8c_a0d3d1a87355deb1dd74a2f2c1e7c56e8}{\_\-evhtp\_\-callback\_\-regex\_\-find} (\hyperlink{structevhtp__callbacks__s}{evhtp\_\-callbacks\_\-t} $\ast$callbacks, const char $\ast$path, unsigned int $\ast$soff, unsigned int $\ast$eoff)
+\begin{DoxyCompactList}\small\item\em iterate through a tailq of callback hooks defined as a regex until a match is found. \item\end{DoxyCompactList}\item 
+static \hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$ \hyperlink{evhtp_8c_aa93f0edd2ad61f91e5abde3d99907f3c}{\_\-evhtp\_\-callback\_\-find} (\hyperlink{structevhtp__callbacks__s}{evhtp\_\-callbacks\_\-t} $\ast$callbacks, const char $\ast$path, unsigned int $\ast$start\_\-offset, unsigned int $\ast$end\_\-offset)
+\begin{DoxyCompactList}\small\item\em A wrapper around both hash and regex hook lookups. \item\end{DoxyCompactList}\item 
+static \hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$ \hyperlink{evhtp_8c_abe671757ebcda7572cb17316d3df3301}{\_\-evhtp\_\-request\_\-new} (\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$c)
+\begin{DoxyCompactList}\small\item\em Creates a new evhtp\_\-request\_\-t. \item\end{DoxyCompactList}\item 
+static void \hyperlink{evhtp_8c_ac1b09ba3d872e8a0b93a60805996dae7}{\_\-evhtp\_\-request\_\-free} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request)
+\begin{DoxyCompactList}\small\item\em frees all data in an evhtp\_\-request\_\-t along with calling finished hooks \item\end{DoxyCompactList}\item 
+static int \hyperlink{evhtp_8c_a25a957881c47ce6d3e8b6119d664e9b7}{\_\-evhtp\_\-create\_\-headers} (evhtp\_\-header\_\-t $\ast$header, void $\ast$arg)
+\item 
+static \hyperlink{evhtp_8h_a7c30b85cd8bba6ebbfe58c3fc81139c8}{evbuf\_\-t} $\ast$ \hyperlink{evhtp_8c_a0fd9982ade86ed23ee41eadb33b0e3c1}{\_\-evhtp\_\-create\_\-reply} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} code)
+\item 
+static void \hyperlink{evhtp_8c_ab451e48a9a9e498641bd754a96c17776}{\_\-evhtp\_\-connection\_\-resumecb} (int fd, short events, void $\ast$arg)
+\item 
+static void \hyperlink{evhtp_8c_a342f7eb5f4aade7153b003c18ba0c865}{\_\-evhtp\_\-connection\_\-writecb} (\hyperlink{evhtp_8h_af92ce7197ff545dc83b76f1650bc57e1}{evbev\_\-t} $\ast$bev, void $\ast$arg)
+\item 
+static void \hyperlink{evhtp_8c_ac1b32dde3c8e0e4ecf7d2350dda47be7}{\_\-evhtp\_\-connection\_\-eventcb} (\hyperlink{evhtp_8h_af92ce7197ff545dc83b76f1650bc57e1}{evbev\_\-t} $\ast$bev, short events, void $\ast$arg)
+\item 
+static int \hyperlink{evhtp_8c_a87cc91fb2145c9e78765bfcf6e9ab89e}{\_\-evhtp\_\-connection\_\-accept} (evbase\_\-t $\ast$evbase, \hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$connection)
+\item 
+static void \hyperlink{evhtp_8c_a4f47eea3160e177e5fb74f0ded7c4b73}{\_\-evhtp\_\-default\_\-request\_\-cb} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, void $\ast$arg)
+\item 
+static void \hyperlink{evhtp_8c_aa01956293904a4b327117d5caa2dedbc}{\_\-evhtp\_\-shutdown\_\-eventcb} (\hyperlink{evhtp_8h_af92ce7197ff545dc83b76f1650bc57e1}{evbev\_\-t} $\ast$bev, short events, void $\ast$arg)
+\item 
+static int \hyperlink{evhtp_8c_a16cbc35a858e7afa29ea329867bd9c95}{\_\-evhtp\_\-run\_\-pre\_\-accept} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, int sock, struct sockaddr $\ast$s, int sl)
+\item 
+static int \hyperlink{evhtp_8c_aff54db2288eb11a543e3a41398bce612}{\_\-evhtp\_\-run\_\-post\_\-accept} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, \hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$connection)
+\item 
+static void \hyperlink{evhtp_8c_aa66c50a9faa2ae92643cae6d3aa8298e}{\_\-evhtp\_\-run\_\-in\_\-thread} (evthr\_\-t $\ast$thr, void $\ast$arg, void $\ast$shared)
+\item 
+static void \hyperlink{evhtp_8c_a01058d2a190e93744fcd8b38d3eec6c5}{\_\-evhtp\_\-accept\_\-cb} (\hyperlink{evhtp_8h_accea3745ada200d1acc361354315579c}{evserv\_\-t} $\ast$serv, int fd, struct sockaddr $\ast$s, int sl, void $\ast$arg)
+\item 
+static unsigned long \hyperlink{evhtp_8c_a7faf23f0dbc80766bca0af285a89751a}{\_\-evhtp\_\-ssl\_\-get\_\-thread\_\-id} (void)
+\item 
+static void \hyperlink{evhtp_8c_ab20a3f60ebc232a46f4462f2ff3c17b4}{\_\-evhtp\_\-ssl\_\-thread\_\-lock} (int mode, int type, const char $\ast$file, int line)
+\item 
+static void \hyperlink{evhtp_8c_aa73fc84760a220fe99eaa8d01bd9858c}{\_\-evhtp\_\-ssl\_\-delete\_\-scache\_\-ent} (\hyperlink{evhtp_8h_a3a45854457c03a9028160078945046da}{evhtp\_\-ssl\_\-ctx\_\-t} $\ast$ctx, \hyperlink{evhtp_8h_a50626a9b6079fb747f2cf946ea4d45d3}{evhtp\_\-ssl\_\-sess\_\-t} $\ast$sess)
+\item 
+static int \hyperlink{evhtp_8c_a7b3d073d6a31eb4e51feb0340d04f477}{\_\-evhtp\_\-ssl\_\-add\_\-scache\_\-ent} (\hyperlink{evhtp_8h_a85b31561e6827b118669d514fe00aa3d}{evhtp\_\-ssl\_\-t} $\ast$ssl, \hyperlink{evhtp_8h_a50626a9b6079fb747f2cf946ea4d45d3}{evhtp\_\-ssl\_\-sess\_\-t} $\ast$sess)
+\item 
+static \hyperlink{evhtp_8h_a50626a9b6079fb747f2cf946ea4d45d3}{evhtp\_\-ssl\_\-sess\_\-t} $\ast$ \hyperlink{evhtp_8c_aa2e2b017a83e75d46ca4fe41cbce5a10}{\_\-evhtp\_\-ssl\_\-get\_\-scache\_\-ent} (\hyperlink{evhtp_8h_a85b31561e6827b118669d514fe00aa3d}{evhtp\_\-ssl\_\-t} $\ast$ssl, unsigned char $\ast$sid, int sid\_\-len, int $\ast$copy)
+\item 
+htp\_\-method \hyperlink{evhtp_8c_af0bf99a2bf280b1cef1cec805bd433d0}{evhtp\_\-request\_\-get\_\-method} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$r)
+\begin{DoxyCompactList}\small\item\em returns the htp\_\-method enum version of the request method. \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8c_a411f8bd2a68359f2bfb457961f94db97}{evhtp\_\-connection\_\-pause} (\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$c)
+\begin{DoxyCompactList}\small\item\em pauses a connection (disables reading) \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8c_ac62f0e64aca4fca3648b67042a6c3646}{evhtp\_\-connection\_\-resume} (\hyperlink{structevhtp__connection__s}{evhtp\_\-connection\_\-t} $\ast$c)
+\begin{DoxyCompactList}\small\item\em resumes a connection (enables reading) and activates resume event. \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8c_ab35aec3adb697918e24b8ff966afe235}{evhtp\_\-request\_\-pause} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request)
+\begin{DoxyCompactList}\small\item\em Wrapper around evhtp\_\-connection\_\-pause. \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8c_a3f537cfe43afe795f575e4080d8a4f69}{evhtp\_\-request\_\-resume} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request)
+\begin{DoxyCompactList}\small\item\em Wrapper around evhtp\_\-connection\_\-resume. \item\end{DoxyCompactList}\item 
+evhtp\_\-header\_\-t $\ast$ \hyperlink{evhtp_8c_a371c397ed3001751650f4326e15a3eab}{evhtp\_\-header\_\-key\_\-add} (evhtp\_\-headers\_\-t $\ast$headers, const char $\ast$key, char kalloc)
+\begin{DoxyCompactList}\small\item\em creates a new evhtp\_\-header\_\-t, sets only the key, and adds to the evhtp\_\-headers TAILQ \item\end{DoxyCompactList}\item 
+evhtp\_\-header\_\-t $\ast$ \hyperlink{evhtp_8c_afb5aeb4995c7c20e774e6590b2a25512}{evhtp\_\-header\_\-val\_\-add} (evhtp\_\-headers\_\-t $\ast$headers, const char $\ast$val, char valloc)
+\begin{DoxyCompactList}\small\item\em finds the last header in the headers tailq and adds the value \item\end{DoxyCompactList}\item 
+\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$ \hyperlink{evhtp_8c_ae51f6f8596b24444cfd8c00f14143ff3}{evhtp\_\-kvs\_\-new} (void)
+\item 
+\hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t} $\ast$ \hyperlink{evhtp_8c_a8d67c39c09ef95018639ba82ba111efb}{evhtp\_\-kv\_\-new} (const char $\ast$key, const char $\ast$val, char kalloc, char valloc)
+\begin{DoxyCompactList}\small\item\em Allocates a new key/value structure. \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8c_a7939fc367080e65dae817a198b0329bb}{evhtp\_\-kv\_\-free} (\hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t} $\ast$kv)
+\item 
+void \hyperlink{evhtp_8c_a0ed832fa06fcce351bd4e294b01ca025}{evhtp\_\-kv\_\-rm\_\-and\_\-free} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs, \hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t} $\ast$kv)
+\item 
+void \hyperlink{evhtp_8c_a653c3af86d2d3dd3c11abadd71589edf}{evhtp\_\-kvs\_\-free} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs)
+\item 
+int \hyperlink{evhtp_8c_ab496e1fb070dd5c6830315e181f2f45f}{evhtp\_\-kvs\_\-for\_\-each} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs, \hyperlink{evhtp_8h_a1fd6217aa45d41584d016b480e07299a}{evhtp\_\-kvs\_\-iterator} cb, void $\ast$arg)
+\item 
+const char $\ast$ \hyperlink{evhtp_8c_a5ad3f9da9252228d496c757b7fcbd876}{evhtp\_\-kv\_\-find} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs, const char $\ast$key)
+\item 
+\hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t} $\ast$ \hyperlink{evhtp_8c_a478309d26255defca90bd42775dc89d4}{evhtp\_\-kvs\_\-find\_\-kv} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs, const char $\ast$key)
+\item 
+void \hyperlink{evhtp_8c_a0860e34e7b5b5977e01f28afded17d89}{evhtp\_\-kvs\_\-add\_\-kv} (\hyperlink{evhtp_8h_a69e21ab9ec0ddfd68d0bbe8609cc4b05}{evhtp\_\-kvs\_\-t} $\ast$kvs, \hyperlink{structevhtp__kv__s}{evhtp\_\-kv\_\-t} $\ast$kv)
+\begin{DoxyCompactList}\small\item\em appends a key/val structure to a evhtp\_\-kvs\_\-t tailq \item\end{DoxyCompactList}\item 
+evhtp\_\-query\_\-t $\ast$ \hyperlink{evhtp_8c_a2bf7b8937c27b654fccd27bf811aa2eb}{evhtp\_\-parse\_\-query} (const char $\ast$query, size\_\-t len)
+\begin{DoxyCompactList}\small\item\em Parses the query portion of the uri into a set of key/values. \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8c_a616801e5dd5e515f78f3b430910b22da}{evhtp\_\-send\_\-reply\_\-start} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} code)
+\item 
+void \hyperlink{evhtp_8c_a6bf7db125fda2c96491d2ebde9d40611}{evhtp\_\-send\_\-reply\_\-body} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, \hyperlink{evhtp_8h_a7c30b85cd8bba6ebbfe58c3fc81139c8}{evbuf\_\-t} $\ast$buf)
+\item 
+void \hyperlink{evhtp_8c_a233d1f64458e5f71658d7bc64c80d569}{evhtp\_\-send\_\-reply\_\-end} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request)
+\item 
+void \hyperlink{evhtp_8c_a207355af4b2d3e5211c4df0bbb8d195d}{evhtp\_\-send\_\-reply} (\hyperlink{structevhtp__request__s}{evhtp\_\-request\_\-t} $\ast$request, \hyperlink{evhtp_8h_ac6ada2a29bcb7a7ddcfdcabc0d37022a}{evhtp\_\-res} code)
+\item 
+int \hyperlink{evhtp_8c_a25b40b813f8a36cc383915b6ed3ec0ce}{evhtp\_\-bind\_\-socket} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, const char $\ast$baddr, uint16\_\-t port, int backlog)
+\item 
+\hyperlink{structevhtp__callbacks__s}{evhtp\_\-callbacks\_\-t} $\ast$ \hyperlink{evhtp_8c_a6064ac5acf3ed7e07ea4eb01a6230118}{evhtp\_\-callbacks\_\-new} (unsigned int buckets)
+\begin{DoxyCompactList}\small\item\em creates a new evhtp\_\-callbacks\_\-t structure \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8c_a4f5f66e5e371d0d34cc439b96b3a4862}{evhtp\_\-callbacks\_\-free} (\hyperlink{structevhtp__callbacks__s}{evhtp\_\-callbacks\_\-t} $\ast$callbacks)
+\item 
+\hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$ \hyperlink{evhtp_8c_a8d96790f46d2c063c5a2dd09ca0573a5}{evhtp\_\-callback\_\-new} (const char $\ast$path, \hyperlink{evhtp_8h_a6f45c416976c807084c7f71cb15c4f37}{evhtp\_\-callback\_\-type} type, \hyperlink{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}{evhtp\_\-callback\_\-cb} cb, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em creates a new evhtp\_\-callback\_\-t structure. \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8c_aa18103f43b36858a97e1eef80b0e4044}{evhtp\_\-callback\_\-free} (\hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$callback)
+\item 
+int \hyperlink{evhtp_8c_a36a4df86347439381efba472dbdd72e2}{evhtp\_\-callbacks\_\-add\_\-callback} (\hyperlink{structevhtp__callbacks__s}{evhtp\_\-callbacks\_\-t} $\ast$cbs, \hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$cb)
+\begin{DoxyCompactList}\small\item\em Adds a evhtp\_\-callback\_\-t to the evhtp\_\-callbacks\_\-t list. \item\end{DoxyCompactList}\item 
+int \hyperlink{evhtp_8c_a9760b5203a449e9ba54dc3e84dd76122}{evhtp\_\-set\_\-hook} (\hyperlink{structevhtp__hooks__s}{evhtp\_\-hooks\_\-t} $\ast$$\ast$hooks, \hyperlink{evhtp_8h_a85ac11e4887a6ffac8f6d3c26d25d143}{evhtp\_\-hook\_\-type} type, void $\ast$cb, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em sets a callback hook for either a connection or a path/regex . \item\end{DoxyCompactList}\item 
+\hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$ \hyperlink{evhtp_8c_ad5bb4aac3d544eb8a102c530b3b45fba}{evhtp\_\-set\_\-cb} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, const char $\ast$path, \hyperlink{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}{evhtp\_\-callback\_\-cb} cb, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em sets a callback to be executed on a specific path \item\end{DoxyCompactList}\item 
+static void \hyperlink{evhtp_8c_a8cd75d11eacdb8224357e400c1b2f607}{\_\-evhtp\_\-thread\_\-init} (evthr\_\-t $\ast$thr, void $\ast$arg)
+\item 
+int \hyperlink{evhtp_8c_abadb1db7b98cd01c9856ebe55efe77b3}{evhtp\_\-use\_\-threads} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, \hyperlink{evhtp_8h_a162b617e19f372264cc22388dce03f2e}{evhtp\_\-thread\_\-init\_\-cb} init\_\-cb, int nthreads, void $\ast$arg)
+\item 
+\hyperlink{structevhtp__callback__s}{evhtp\_\-callback\_\-t} $\ast$ \hyperlink{evhtp_8c_adfec10ef2ef458d0757d3c7f71eabfa9}{evhtp\_\-set\_\-regex\_\-cb} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, const char $\ast$pattern, \hyperlink{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}{evhtp\_\-callback\_\-cb} cb, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em sets a callback to be executed based on a regex pattern \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8c_a39a5c7910a382f902c896b25854b742d}{evhtp\_\-set\_\-gencb} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, \hyperlink{evhtp_8h_ae907dbe36b762aa2da912cedb57268d0}{evhtp\_\-callback\_\-cb} cb, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em sets a callback which is called if no other callbacks are matched \item\end{DoxyCompactList}\item 
+void \hyperlink{evhtp_8c_a0400c9688bb337360f04f9042eeb1c8d}{evhtp\_\-set\_\-pre\_\-accept\_\-cb} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, \hyperlink{evhtp_8h_a8b649d8f816f5e4a8dc162b3bb373644}{evhtp\_\-pre\_\-accept\_\-cb} cb, void $\ast$arg)
+\item 
+void \hyperlink{evhtp_8c_a818779c698e87679962aee9ed0e5f979}{evhtp\_\-set\_\-post\_\-accept\_\-cb} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, \hyperlink{evhtp_8h_a1fbba02d0b28d101592e5509703eddff}{evhtp\_\-post\_\-accept\_\-cb} cb, void $\ast$arg)
+\item 
+int \hyperlink{evhtp_8c_a50dcb68a596352bf44b90e507f5f4a04}{evhtp\_\-ssl\_\-use\_\-threads} (void)
+\item 
+int \hyperlink{evhtp_8c_afc778451d835c5a7e5929502d8413741}{evhtp\_\-ssl\_\-init} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, \hyperlink{structevhtp__ssl__cfg__s}{evhtp\_\-ssl\_\-cfg\_\-t} $\ast$cfg)
+\item 
+void \hyperlink{evhtp_8c_a07350846f0bc1645eb105845b4a53d43}{evhtp\_\-set\_\-timeouts} (\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$htp, struct timeval $\ast$r\_\-timeo, struct timeval $\ast$w\_\-timeo)
+\item 
+\hyperlink{structevhtp__s}{evhtp\_\-t} $\ast$ \hyperlink{evhtp_8c_a97bbe491064943a8d5e0d3e7a937209b}{evhtp\_\-new} (evbase\_\-t $\ast$evbase, void $\ast$arg)
+\begin{DoxyCompactList}\small\item\em creates a new evhtp\_\-t instance \item\end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+static int \hyperlink{evhtp_8c_a23cf41ac4ed4ec8b61b263c2dfd67149}{scode\_\-tree\_\-initialized} = 0
+\item 
+static htparse\_\-hooks \hyperlink{evhtp_8c_a3f39f09131afc2edc12dafb8330a37c9}{request\_\-psets}
+\begin{DoxyCompactList}\small\item\em callback definitions for request processing from libhtparse \item\end{DoxyCompactList}\item 
+static int \hyperlink{evhtp_8c_a3ac07bb21b54bb85366a2594e00872f6}{session\_\-id\_\-context} = 1
+\item 
+static int \hyperlink{evhtp_8c_ad1da05251953e4271d230bed11531631}{ssl\_\-num\_\-locks}
+\item 
+static \hyperlink{evhtp_8h_a0596c15be75c64f06caede909222ded8}{evhtp\_\-mutex\_\-t} $\ast$ \hyperlink{evhtp_8c_acd87603c047e8bb2900ffc9db9cba0eb}{ssl\_\-locks}
+\item 
+static int \hyperlink{evhtp_8c_a612ed7680b27f5cde167b8bc77caac11}{ssl\_\-locks\_\-initialized} = 0
+\end{DoxyCompactItemize}
+
+
+\subsection{Define Documentation}
+\hypertarget{evhtp_8c_a2569ebb7eb9999623be990f531ed47e9}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-lock@{\_\-evhtp\_\-lock}}
+\index{\_\-evhtp\_\-lock@{\_\-evhtp\_\-lock}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-lock}]{\setlength{\rightskip}{0pt plus 5cm}\#define \_\-evhtp\_\-lock(
+\begin{DoxyParamCaption}
+\item[{}]{h}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a2569ebb7eb9999623be990f531ed47e9}
+{\bfseries Value:}
+\begin{DoxyCode}
+do { \
+        if (h->lock) {                                  \
+            pthread_mutex_lock(h->lock);                \
+        }                                               \
+} while (0)
+\end{DoxyCode}
+
+
+Definition at line 69 of file evhtp.c.
+
+\hypertarget{evhtp_8c_abadfb0921fbf0ee1eaa8924956681849}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-unlock@{\_\-evhtp\_\-unlock}}
+\index{\_\-evhtp\_\-unlock@{\_\-evhtp\_\-unlock}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-unlock}]{\setlength{\rightskip}{0pt plus 5cm}\#define \_\-evhtp\_\-unlock(
+\begin{DoxyParamCaption}
+\item[{}]{h}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_abadfb0921fbf0ee1eaa8924956681849}
+{\bfseries Value:}
+\begin{DoxyCode}
+do { \
+        if (h->lock) {                                  \
+            pthread_mutex_unlock(h->lock);              \
+        }                                               \
+} while (0)
+\end{DoxyCode}
+
+
+Definition at line 75 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a369266c24eacffb87046522897a570d5}{
+\index{evhtp.c@{evhtp.c}!\_\-GNU\_\-SOURCE@{\_\-GNU\_\-SOURCE}}
+\index{\_\-GNU\_\-SOURCE@{\_\-GNU\_\-SOURCE}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-GNU\_\-SOURCE}]{\setlength{\rightskip}{0pt plus 5cm}\#define \_\-GNU\_\-SOURCE}}
+\label{evhtp_8c_a369266c24eacffb87046522897a570d5}
+
+
+Definition at line 1 of file evhtp.c.
+
+\hypertarget{evhtp_8c_abbb114e65ec19420ba429a470fbebf9d}{
+\index{evhtp.c@{evhtp.c}!HOOK\_\-ARGS@{HOOK\_\-ARGS}}
+\index{HOOK\_\-ARGS@{HOOK\_\-ARGS}!evhtp.c@{evhtp.c}}
+\subsubsection[{HOOK\_\-ARGS}]{\setlength{\rightskip}{0pt plus 5cm}\#define HOOK\_\-ARGS(
+\begin{DoxyParamCaption}
+\item[{}]{var, }
+\item[{}]{hook\_\-name}
+\end{DoxyParamCaption}
+)~var-\/$>$hooks-\/$>$hook\_\-name \#\# \_\-arg}}
+\label{evhtp_8c_abbb114e65ec19420ba429a470fbebf9d}
+
+
+Definition at line 43 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a6d2251778d27dd3e9c9a724b2c7dad37}{
+\index{evhtp.c@{evhtp.c}!HOOK\_\-AVAIL@{HOOK\_\-AVAIL}}
+\index{HOOK\_\-AVAIL@{HOOK\_\-AVAIL}!evhtp.c@{evhtp.c}}
+\subsubsection[{HOOK\_\-AVAIL}]{\setlength{\rightskip}{0pt plus 5cm}\#define HOOK\_\-AVAIL(
+\begin{DoxyParamCaption}
+\item[{}]{var, }
+\item[{}]{hook\_\-name}
+\end{DoxyParamCaption}
+)~(var-\/$>$hooks \&\& var-\/$>$hooks-\/$>$hook\_\-name)}}
+\label{evhtp_8c_a6d2251778d27dd3e9c9a724b2c7dad37}
+
+
+Definition at line 41 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a500bf84a9e29e88d91e63c16806ecc2c}{
+\index{evhtp.c@{evhtp.c}!HOOK\_\-FUNC@{HOOK\_\-FUNC}}
+\index{HOOK\_\-FUNC@{HOOK\_\-FUNC}!evhtp.c@{evhtp.c}}
+\subsubsection[{HOOK\_\-FUNC}]{\setlength{\rightskip}{0pt plus 5cm}\#define HOOK\_\-FUNC(
+\begin{DoxyParamCaption}
+\item[{}]{var, }
+\item[{}]{hook\_\-name}
+\end{DoxyParamCaption}
+)~(var-\/$>$hooks-\/$>$hook\_\-name)}}
+\label{evhtp_8c_a500bf84a9e29e88d91e63c16806ecc2c}
+
+
+Definition at line 42 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ae2c816de942c43b0ebb36a55f85c3224}{
+\index{evhtp.c@{evhtp.c}!HOOK\_\-REQUEST\_\-RUN@{HOOK\_\-REQUEST\_\-RUN}}
+\index{HOOK\_\-REQUEST\_\-RUN@{HOOK\_\-REQUEST\_\-RUN}!evhtp.c@{evhtp.c}}
+\subsubsection[{HOOK\_\-REQUEST\_\-RUN}]{\setlength{\rightskip}{0pt plus 5cm}\#define HOOK\_\-REQUEST\_\-RUN(
+\begin{DoxyParamCaption}
+\item[{}]{request, }
+\item[{}]{hook\_\-name, }
+\item[{}]{ ...}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_ae2c816de942c43b0ebb36a55f85c3224}
+{\bfseries Value:}
+\begin{DoxyCode}
+do {                                       \
+        if (HOOK_AVAIL(request, hook_name)) {                                    
+                   \
+            return HOOK_FUNC(request, hook_name) (request, __VA_ARGS__,          
+                   \
+                                                  HOOK_ARGS(request, hook_name));
+                   \
+        }                                                                        
+                   \
+                                                                                 
+                   \
+        if (HOOK_AVAIL(request->conn, hook_name)) {                              
+                   \
+            return HOOK_FUNC(request->conn, hook_name) (request, __VA_ARGS__,    
+                   \
+                                                        HOOK_ARGS(request->conn, 
+      hook_name)); \
+        }                                                                        
+                   \
+} while (0)
+\end{DoxyCode}
+
+
+Definition at line 45 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aafbff8cb48657d9e39bf468e2afc9a62}{
+\index{evhtp.c@{evhtp.c}!HOOK\_\-REQUEST\_\-RUN\_\-NARGS@{HOOK\_\-REQUEST\_\-RUN\_\-NARGS}}
+\index{HOOK\_\-REQUEST\_\-RUN\_\-NARGS@{HOOK\_\-REQUEST\_\-RUN\_\-NARGS}!evhtp.c@{evhtp.c}}
+\subsubsection[{HOOK\_\-REQUEST\_\-RUN\_\-NARGS}]{\setlength{\rightskip}{0pt plus 5cm}\#define HOOK\_\-REQUEST\_\-RUN\_\-NARGS(
+\begin{DoxyParamCaption}
+\item[{}]{request, }
+\item[{}]{hook\_\-name}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_aafbff8cb48657d9e39bf468e2afc9a62}
+{\bfseries Value:}
+\begin{DoxyCode}
+do {                                       \
+        if (HOOK_AVAIL(request, hook_name)) {                                    
+                   \
+            return HOOK_FUNC(request, hook_name) (request,                       
+                   \
+                                                  HOOK_ARGS(request, hook_name));
+                   \
+        }                                                                        
+                   \
+                                                                                 
+                   \
+        if (HOOK_AVAIL(request->conn, hook_name)) {                              
+                   \
+            return HOOK_FUNC(request->conn, hook_name) (request,                 
+                   \
+                                                        HOOK_ARGS(request->conn, 
+      hook_name)); \
+        }                                                                        
+                   \
+} while (0);
+\end{DoxyCode}
+
+
+Definition at line 57 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ab7cbb18f24acd27f62e6e332a9e65232}{
+\index{evhtp.c@{evhtp.c}!scode\_\-add@{scode\_\-add}}
+\index{scode\_\-add@{scode\_\-add}!evhtp.c@{evhtp.c}}
+\subsubsection[{scode\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}\#define scode\_\-add(
+\begin{DoxyParamCaption}
+\item[{}]{scode, }
+\item[{}]{cstr}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_ab7cbb18f24acd27f62e6e332a9e65232}
+{\bfseries Value:}
+\begin{DoxyCode}
+do {                                  \
+        struct status_code * c = malloc(sizeof(struct status_code)); \
+                                                                     \
+        c->code = scode;                                             \
+        c->str  = cstr;                                              \
+                                                                     \
+        RB_INSERT(status_code_tree, &status_code_head, c);           \
+} while (0)
+\end{DoxyCode}
+
+
+\subsection{Enumeration Type Documentation}
+\hypertarget{evhtp_8c_a028ccde064ada1006c2516e64585f215}{
+\index{evhtp.c@{evhtp.c}!query\_\-parser\_\-state@{query\_\-parser\_\-state}}
+\index{query\_\-parser\_\-state@{query\_\-parser\_\-state}!evhtp.c@{evhtp.c}}
+\subsubsection[{query\_\-parser\_\-state}]{\setlength{\rightskip}{0pt plus 5cm}enum {\bf query\_\-parser\_\-state}}}
+\label{evhtp_8c_a028ccde064ada1006c2516e64585f215}
+\begin{Desc}
+\item[Enumerator: ]\par
+\begin{description}
+\index{s\_\-query\_\-start@{s\_\-query\_\-start}!evhtp.c@{evhtp.c}}\index{evhtp.c@{evhtp.c}!s\_\-query\_\-start@{s\_\-query\_\-start}}\item[{\em 
+\hypertarget{evhtp_8c_a028ccde064ada1006c2516e64585f215ae59ced31d65d1c915dbcf3f899a20ecf}{
+s\_\-query\_\-start}
+\label{evhtp_8c_a028ccde064ada1006c2516e64585f215ae59ced31d65d1c915dbcf3f899a20ecf}
+}]\index{s\_\-query\_\-question\_\-mark@{s\_\-query\_\-question\_\-mark}!evhtp.c@{evhtp.c}}\index{evhtp.c@{evhtp.c}!s\_\-query\_\-question\_\-mark@{s\_\-query\_\-question\_\-mark}}\item[{\em 
+\hypertarget{evhtp_8c_a028ccde064ada1006c2516e64585f215adb95ac262aefe8d97c822c109f324b94}{
+s\_\-query\_\-question\_\-mark}
+\label{evhtp_8c_a028ccde064ada1006c2516e64585f215adb95ac262aefe8d97c822c109f324b94}
+}]\index{s\_\-query\_\-separator@{s\_\-query\_\-separator}!evhtp.c@{evhtp.c}}\index{evhtp.c@{evhtp.c}!s\_\-query\_\-separator@{s\_\-query\_\-separator}}\item[{\em 
+\hypertarget{evhtp_8c_a028ccde064ada1006c2516e64585f215af07dc4f3c3927f8904c143a529c876ff}{
+s\_\-query\_\-separator}
+\label{evhtp_8c_a028ccde064ada1006c2516e64585f215af07dc4f3c3927f8904c143a529c876ff}
+}]\index{s\_\-query\_\-key@{s\_\-query\_\-key}!evhtp.c@{evhtp.c}}\index{evhtp.c@{evhtp.c}!s\_\-query\_\-key@{s\_\-query\_\-key}}\item[{\em 
+\hypertarget{evhtp_8c_a028ccde064ada1006c2516e64585f215aabd2e7b2224c4817021f790acd93972d}{
+s\_\-query\_\-key}
+\label{evhtp_8c_a028ccde064ada1006c2516e64585f215aabd2e7b2224c4817021f790acd93972d}
+}]\index{s\_\-query\_\-val@{s\_\-query\_\-val}!evhtp.c@{evhtp.c}}\index{evhtp.c@{evhtp.c}!s\_\-query\_\-val@{s\_\-query\_\-val}}\item[{\em 
+\hypertarget{evhtp_8c_a028ccde064ada1006c2516e64585f215a119104ddac872444d438cfba5dc0df90}{
+s\_\-query\_\-val}
+\label{evhtp_8c_a028ccde064ada1006c2516e64585f215a119104ddac872444d438cfba5dc0df90}
+}]\index{s\_\-query\_\-key\_\-hex\_\-1@{s\_\-query\_\-key\_\-hex\_\-1}!evhtp.c@{evhtp.c}}\index{evhtp.c@{evhtp.c}!s\_\-query\_\-key\_\-hex\_\-1@{s\_\-query\_\-key\_\-hex\_\-1}}\item[{\em 
+\hypertarget{evhtp_8c_a028ccde064ada1006c2516e64585f215afbf2410bfa0fd953c9687b45bb31081c}{
+s\_\-query\_\-key\_\-hex\_\-1}
+\label{evhtp_8c_a028ccde064ada1006c2516e64585f215afbf2410bfa0fd953c9687b45bb31081c}
+}]\index{s\_\-query\_\-key\_\-hex\_\-2@{s\_\-query\_\-key\_\-hex\_\-2}!evhtp.c@{evhtp.c}}\index{evhtp.c@{evhtp.c}!s\_\-query\_\-key\_\-hex\_\-2@{s\_\-query\_\-key\_\-hex\_\-2}}\item[{\em 
+\hypertarget{evhtp_8c_a028ccde064ada1006c2516e64585f215a77ac958b7304b517adab34d57b493541}{
+s\_\-query\_\-key\_\-hex\_\-2}
+\label{evhtp_8c_a028ccde064ada1006c2516e64585f215a77ac958b7304b517adab34d57b493541}
+}]\index{s\_\-query\_\-val\_\-hex\_\-1@{s\_\-query\_\-val\_\-hex\_\-1}!evhtp.c@{evhtp.c}}\index{evhtp.c@{evhtp.c}!s\_\-query\_\-val\_\-hex\_\-1@{s\_\-query\_\-val\_\-hex\_\-1}}\item[{\em 
+\hypertarget{evhtp_8c_a028ccde064ada1006c2516e64585f215a691fc680c96d352bbc92cd45abf1688a}{
+s\_\-query\_\-val\_\-hex\_\-1}
+\label{evhtp_8c_a028ccde064ada1006c2516e64585f215a691fc680c96d352bbc92cd45abf1688a}
+}]\index{s\_\-query\_\-val\_\-hex\_\-2@{s\_\-query\_\-val\_\-hex\_\-2}!evhtp.c@{evhtp.c}}\index{evhtp.c@{evhtp.c}!s\_\-query\_\-val\_\-hex\_\-2@{s\_\-query\_\-val\_\-hex\_\-2}}\item[{\em 
+\hypertarget{evhtp_8c_a028ccde064ada1006c2516e64585f215aa5fd42a3c68c259995c2e1dbc94825f9}{
+s\_\-query\_\-val\_\-hex\_\-2}
+\label{evhtp_8c_a028ccde064ada1006c2516e64585f215aa5fd42a3c68c259995c2e1dbc94825f9}
+}]\index{s\_\-query\_\-done@{s\_\-query\_\-done}!evhtp.c@{evhtp.c}}\index{evhtp.c@{evhtp.c}!s\_\-query\_\-done@{s\_\-query\_\-done}}\item[{\em 
+\hypertarget{evhtp_8c_a028ccde064ada1006c2516e64585f215a0635aac986be1b2332b30956216b0e61}{
+s\_\-query\_\-done}
+\label{evhtp_8c_a028ccde064ada1006c2516e64585f215a0635aac986be1b2332b30956216b0e61}
+}]\end{description}
+\end{Desc}
+
+
+
+Definition at line 1770 of file evhtp.c.
+
+
+
+\subsection{Function Documentation}
+\hypertarget{evhtp_8c_a01058d2a190e93744fcd8b38d3eec6c5}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-accept\_\-cb@{\_\-evhtp\_\-accept\_\-cb}}
+\index{\_\-evhtp\_\-accept\_\-cb@{\_\-evhtp\_\-accept\_\-cb}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-accept\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-accept\_\-cb (
+\begin{DoxyParamCaption}
+\item[{{\bf evserv\_\-t} $\ast$}]{ serv, }
+\item[{int}]{ fd, }
+\item[{struct sockaddr $\ast$}]{ s, }
+\item[{int}]{ sl, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a01058d2a190e93744fcd8b38d3eec6c5}
+
+
+Definition at line 1409 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a10232f66e19627b68bcd52892ab8a6ec}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-body\_\-hook@{\_\-evhtp\_\-body\_\-hook}}
+\index{\_\-evhtp\_\-body\_\-hook@{\_\-evhtp\_\-body\_\-hook}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-body\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-res} \_\-evhtp\_\-body\_\-hook (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{{\bf evbuf\_\-t} $\ast$}]{ buf}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a10232f66e19627b68bcd52892ab8a6ec}
+
+
+runs the user-\/defined on\_\-body hook for requests containing a body. the data is stored in the request-\/$>$buffer\_\-in so the user may either leave it, or drain upon being called. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em request}]the request strucutre \item[{\em buf}]a evbuffer containing body data\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+EVHTP\_\-RES\_\-OK on success, otherwise something else. 
+\end{DoxyReturn}
+
+
+Definition at line 400 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aa93f0edd2ad61f91e5abde3d99907f3c}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-callback\_\-find@{\_\-evhtp\_\-callback\_\-find}}
+\index{\_\-evhtp\_\-callback\_\-find@{\_\-evhtp\_\-callback\_\-find}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-callback\_\-find}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-callback\_\-t}$\ast$ \_\-evhtp\_\-callback\_\-find (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-callbacks\_\-t} $\ast$}]{ callbacks, }
+\item[{const char $\ast$}]{ path, }
+\item[{unsigned int $\ast$}]{ start\_\-offset, }
+\item[{unsigned int $\ast$}]{ end\_\-offset}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_aa93f0edd2ad61f91e5abde3d99907f3c}
+
+
+A wrapper around both hash and regex hook lookups. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em callbacks}]\item[{\em path}]\item[{\em start\_\-offset}]\item[{\em end\_\-offset}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-callback\_\-t on success, otherwise NULL 
+\end{DoxyReturn}
+
+
+Definition at line 557 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aea05e1a5cd1e3178edbe0e565dfde0d3}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-callback\_\-hash\_\-find@{\_\-evhtp\_\-callback\_\-hash\_\-find}}
+\index{\_\-evhtp\_\-callback\_\-hash\_\-find@{\_\-evhtp\_\-callback\_\-hash\_\-find}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-callback\_\-hash\_\-find}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-callback\_\-t}$\ast$ \_\-evhtp\_\-callback\_\-hash\_\-find (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-callbacks\_\-t} $\ast$}]{ callbacks, }
+\item[{const char $\ast$}]{ path}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_aea05e1a5cd1e3178edbe0e565dfde0d3}
+
+
+attempts to find a callback via hashing the path 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em callbacks}]a evhtp\_\-callbacks\_\-t $\ast$ structure \item[{\em path}]a null terminated string to be hashed and searched\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-callback\_\-t $\ast$ if found, NULL if not found. 
+\end{DoxyReturn}
+
+
+Definition at line 480 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a0d3d1a87355deb1dd74a2f2c1e7c56e8}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-callback\_\-regex\_\-find@{\_\-evhtp\_\-callback\_\-regex\_\-find}}
+\index{\_\-evhtp\_\-callback\_\-regex\_\-find@{\_\-evhtp\_\-callback\_\-regex\_\-find}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-callback\_\-regex\_\-find}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-callback\_\-t}$\ast$ \_\-evhtp\_\-callback\_\-regex\_\-find (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-callbacks\_\-t} $\ast$}]{ callbacks, }
+\item[{const char $\ast$}]{ path, }
+\item[{unsigned int $\ast$}]{ soff, }
+\item[{unsigned int $\ast$}]{ eoff}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a0d3d1a87355deb1dd74a2f2c1e7c56e8}
+
+
+iterate through a tailq of callback hooks defined as a regex until a match is found. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em callbacks}]a evhtp\_\-callbacks\_\-t structure \item[{\em path}]a string containing a path to be matched against \item[{\em soff}]a pointer to an integer which will be filled with the start offset in the string if matched. \item[{\em eoff}]a pointer to an integer which will be filled with the end offset in the string if matched\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+an evhtp\_\-callback\_\-t function on success, otherwise NULL 
+\end{DoxyReturn}
+
+
+Definition at line 520 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aa9d40ad07e4f39561cfb6ad74b124f38}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-chunk\_\-fini\_\-hook@{\_\-evhtp\_\-chunk\_\-fini\_\-hook}}
+\index{\_\-evhtp\_\-chunk\_\-fini\_\-hook@{\_\-evhtp\_\-chunk\_\-fini\_\-hook}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-chunk\_\-fini\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-res} \_\-evhtp\_\-chunk\_\-fini\_\-hook (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_aa9d40ad07e4f39561cfb6ad74b124f38}
+
+
+Definition at line 440 of file evhtp.c.
+
+\hypertarget{evhtp_8c_af44a0c0da92135d88645bd51c5998b9d}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-chunk\_\-new\_\-hook@{\_\-evhtp\_\-chunk\_\-new\_\-hook}}
+\index{\_\-evhtp\_\-chunk\_\-new\_\-hook@{\_\-evhtp\_\-chunk\_\-new\_\-hook}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-chunk\_\-new\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-res} \_\-evhtp\_\-chunk\_\-new\_\-hook (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{uint64\_\-t}]{ len}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_af44a0c0da92135d88645bd51c5998b9d}
+
+
+Definition at line 433 of file evhtp.c.
+
+\hypertarget{evhtp_8c_af2b193651b6957e7f9ffd2d504e07116}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-chunks\_\-fini\_\-hook@{\_\-evhtp\_\-chunks\_\-fini\_\-hook}}
+\index{\_\-evhtp\_\-chunks\_\-fini\_\-hook@{\_\-evhtp\_\-chunks\_\-fini\_\-hook}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-chunks\_\-fini\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-res} \_\-evhtp\_\-chunks\_\-fini\_\-hook (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_af2b193651b6957e7f9ffd2d504e07116}
+
+
+Definition at line 447 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a87cc91fb2145c9e78765bfcf6e9ab89e}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-connection\_\-accept@{\_\-evhtp\_\-connection\_\-accept}}
+\index{\_\-evhtp\_\-connection\_\-accept@{\_\-evhtp\_\-connection\_\-accept}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-connection\_\-accept}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-connection\_\-accept (
+\begin{DoxyParamCaption}
+\item[{evbase\_\-t $\ast$}]{ evbase, }
+\item[{{\bf evhtp\_\-connection\_\-t} $\ast$}]{ connection}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a87cc91fb2145c9e78765bfcf6e9ab89e}
+
+
+Definition at line 1236 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ac1b32dde3c8e0e4ecf7d2350dda47be7}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-connection\_\-eventcb@{\_\-evhtp\_\-connection\_\-eventcb}}
+\index{\_\-evhtp\_\-connection\_\-eventcb@{\_\-evhtp\_\-connection\_\-eventcb}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-connection\_\-eventcb}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-connection\_\-eventcb (
+\begin{DoxyParamCaption}
+\item[{{\bf evbev\_\-t} $\ast$}]{ bev, }
+\item[{short}]{ events, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ac1b32dde3c8e0e4ecf7d2350dda47be7}
+
+
+Definition at line 1220 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ae405ab595637e4078a9a01821d3df580}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-connection\_\-fini\_\-hook@{\_\-evhtp\_\-connection\_\-fini\_\-hook}}
+\index{\_\-evhtp\_\-connection\_\-fini\_\-hook@{\_\-evhtp\_\-connection\_\-fini\_\-hook}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-connection\_\-fini\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-res} \_\-evhtp\_\-connection\_\-fini\_\-hook (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-connection\_\-t} $\ast$}]{ connection}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ae405ab595637e4078a9a01821d3df580}
+
+
+runs the user-\/definedhook called just prior to a connection being closed 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em connection}]the connection structure\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+EVHTP\_\-RES\_\-OK on success, but pretty much ignored in any case. 
+\end{DoxyReturn}
+
+
+Definition at line 462 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a1e4efbb30930e9c0516e89f80ab59f4b}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-connection\_\-free@{\_\-evhtp\_\-connection\_\-free}}
+\index{\_\-evhtp\_\-connection\_\-free@{\_\-evhtp\_\-connection\_\-free}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-connection\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-connection\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-connection\_\-t} $\ast$}]{ connection}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a1e4efbb30930e9c0516e89f80ab59f4b}
+
+
+Definition at line 1307 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a92680d0af4677b8c5b83fe4dc06b4fb8}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-connection\_\-new@{\_\-evhtp\_\-connection\_\-new}}
+\index{\_\-evhtp\_\-connection\_\-new@{\_\-evhtp\_\-connection\_\-new}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-connection\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-connection\_\-t} $\ast$ \_\-evhtp\_\-connection\_\-new (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{int}]{ sock}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a92680d0af4677b8c5b83fe4dc06b4fb8}
+
+
+Definition at line 1277 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ae4c1691af1bf2b75cec8d8dce75b0dcb}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-connection\_\-readcb@{\_\-evhtp\_\-connection\_\-readcb}}
+\index{\_\-evhtp\_\-connection\_\-readcb@{\_\-evhtp\_\-connection\_\-readcb}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-connection\_\-readcb}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-connection\_\-readcb (
+\begin{DoxyParamCaption}
+\item[{{\bf evbev\_\-t} $\ast$}]{ bev, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ae4c1691af1bf2b75cec8d8dce75b0dcb}
+
+
+Definition at line 1168 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ab451e48a9a9e498641bd754a96c17776}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-connection\_\-resumecb@{\_\-evhtp\_\-connection\_\-resumecb}}
+\index{\_\-evhtp\_\-connection\_\-resumecb@{\_\-evhtp\_\-connection\_\-resumecb}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-connection\_\-resumecb}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-connection\_\-resumecb (
+\begin{DoxyParamCaption}
+\item[{int}]{ fd, }
+\item[{short}]{ events, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ab451e48a9a9e498641bd754a96c17776}
+
+
+Definition at line 1157 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a342f7eb5f4aade7153b003c18ba0c865}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-connection\_\-writecb@{\_\-evhtp\_\-connection\_\-writecb}}
+\index{\_\-evhtp\_\-connection\_\-writecb@{\_\-evhtp\_\-connection\_\-writecb}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-connection\_\-writecb}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-connection\_\-writecb (
+\begin{DoxyParamCaption}
+\item[{{\bf evbev\_\-t} $\ast$}]{ bev, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a342f7eb5f4aade7153b003c18ba0c865}
+
+
+Definition at line 1195 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a25a957881c47ce6d3e8b6119d664e9b7}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-create\_\-headers@{\_\-evhtp\_\-create\_\-headers}}
+\index{\_\-evhtp\_\-create\_\-headers@{\_\-evhtp\_\-create\_\-headers}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-create\_\-headers}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-create\_\-headers (
+\begin{DoxyParamCaption}
+\item[{evhtp\_\-header\_\-t $\ast$}]{ header, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a25a957881c47ce6d3e8b6119d664e9b7}
+
+
+Definition at line 1076 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a0fd9982ade86ed23ee41eadb33b0e3c1}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-create\_\-reply@{\_\-evhtp\_\-create\_\-reply}}
+\index{\_\-evhtp\_\-create\_\-reply@{\_\-evhtp\_\-create\_\-reply}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-create\_\-reply}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evbuf\_\-t}$\ast$ \_\-evhtp\_\-create\_\-reply (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{{\bf evhtp\_\-res}}]{ code}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a0fd9982ade86ed23ee41eadb33b0e3c1}
+
+
+Definition at line 1087 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a4f47eea3160e177e5fb74f0ded7c4b73}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-default\_\-request\_\-cb@{\_\-evhtp\_\-default\_\-request\_\-cb}}
+\index{\_\-evhtp\_\-default\_\-request\_\-cb@{\_\-evhtp\_\-default\_\-request\_\-cb}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-default\_\-request\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-default\_\-request\_\-cb (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a4f47eea3160e177e5fb74f0ded7c4b73}
+
+
+Definition at line 1272 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a492dabc4e7903c74ad3d9220e04476a3}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-header\_\-hook@{\_\-evhtp\_\-header\_\-hook}}
+\index{\_\-evhtp\_\-header\_\-hook@{\_\-evhtp\_\-header\_\-hook}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-header\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-res} \_\-evhtp\_\-header\_\-hook (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{evhtp\_\-header\_\-t $\ast$}]{ header}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a492dabc4e7903c74ad3d9220e04476a3}
+
+
+runs the user-\/defined on\_\-header hook for a request 
+
+once a full key: value header has been parsed, this will call the hook
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em request}]the request strucutre \item[{\em header}]the header structure\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+EVHTP\_\-RES\_\-OK on success, otherwise something else. 
+\end{DoxyReturn}
+
+
+Definition at line 367 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a60db8110685549d02f17218dac9fe1eb}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-headers\_\-hook@{\_\-evhtp\_\-headers\_\-hook}}
+\index{\_\-evhtp\_\-headers\_\-hook@{\_\-evhtp\_\-headers\_\-hook}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-headers\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-res} \_\-evhtp\_\-headers\_\-hook (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{evhtp\_\-headers\_\-t $\ast$}]{ headers}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a60db8110685549d02f17218dac9fe1eb}
+
+
+runs the user-\/defined on\_\-Headers hook for a request after all headers have been parsed. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em request}]the request structure \item[{\em headers}]the headers tailq structure\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+EVHTP\_\-RES\_\-OK on success, otherwise something else. 
+\end{DoxyReturn}
+
+
+Definition at line 383 of file evhtp.c.
+
+\hypertarget{evhtp_8c_abc448ef20382265edd6422b4f6b1c803}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-is\_\-http\_\-10@{\_\-evhtp\_\-is\_\-http\_\-10}}
+\index{\_\-evhtp\_\-is\_\-http\_\-10@{\_\-evhtp\_\-is\_\-http\_\-10}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-is\_\-http\_\-10}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-is\_\-http\_\-10 (
+\begin{DoxyParamCaption}
+\item[{const char}]{ major, }
+\item[{const char}]{ minor}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_abc448ef20382265edd6422b4f6b1c803}
+
+
+helper function to determine if http version is HTTP/1.0 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em major}]the major version number \item[{\em minor}]the minor version number\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+1 if HTTP/1.0, else 0 
+\end{DoxyReturn}
+
+
+Definition at line 294 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a16089371b45328e92739683d136b6482}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-is\_\-http\_\-11@{\_\-evhtp\_\-is\_\-http\_\-11}}
+\index{\_\-evhtp\_\-is\_\-http\_\-11@{\_\-evhtp\_\-is\_\-http\_\-11}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-is\_\-http\_\-11}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-is\_\-http\_\-11 (
+\begin{DoxyParamCaption}
+\item[{const char}]{ major, }
+\item[{const char}]{ minor}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a16089371b45328e92739683d136b6482}
+
+
+helper function to determine if http version is HTTP/1.1 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em major}]the major version number \item[{\em minor}]the minor version number\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+1 if HTTP/1.1, else 0 
+\end{DoxyReturn}
+
+
+Definition at line 311 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a9ab2a6de89fce03b9543bdafa6f22db5}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-path\_\-free@{\_\-evhtp\_\-path\_\-free}}
+\index{\_\-evhtp\_\-path\_\-free@{\_\-evhtp\_\-path\_\-free}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-path\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-path\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-path\_\-t} $\ast$}]{ path}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a9ab2a6de89fce03b9543bdafa6f22db5}
+
+
+Definition at line 787 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a6b28453f5c4bc3f7cde03a365d4673c6}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-path\_\-hook@{\_\-evhtp\_\-path\_\-hook}}
+\index{\_\-evhtp\_\-path\_\-hook@{\_\-evhtp\_\-path\_\-hook}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-path\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-res} \_\-evhtp\_\-path\_\-hook (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{{\bf evhtp\_\-path\_\-t} $\ast$}]{ path}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a6b28453f5c4bc3f7cde03a365d4673c6}
+
+
+runs the user-\/defined on\_\-path hook for a request 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em request}]the request structure \item[{\em path}]the path structure\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+EVHTP\_\-RES\_\-OK on success, otherwise something else. 
+\end{DoxyReturn}
+
+
+Definition at line 350 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a7cbf32d32a6b49554759b5d8106e9f68}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-path\_\-new@{\_\-evhtp\_\-path\_\-new}}
+\index{\_\-evhtp\_\-path\_\-new@{\_\-evhtp\_\-path\_\-new}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-path\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-path\_\-t} $\ast$ \_\-evhtp\_\-path\_\-new (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{ data, }
+\item[{size\_\-t}]{ len}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a7cbf32d32a6b49554759b5d8106e9f68}
+
+
+parses the path and file from an input buffer 
+
+in order to properly create a structure that can match both a path and a file, this will parse a string into what it considers a path, and a file.
+
+if for example the input was \char`\"{}/a/b/c\char`\"{}, the parser will consider \char`\"{}/a/b/\char`\"{} as the path, and \char`\"{}c\char`\"{} as the file.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em data}]raw input data (assumes a /path/\mbox{[}file\mbox{]} structure) \item[{\em len}]length of the input data\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-request\_\-t $\ast$ on success, NULL on error. 
+\end{DoxyReturn}
+
+
+Definition at line 700 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ab3d505dd3f9f0dfd926f3e8da13883d1}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-protocol@{\_\-evhtp\_\-protocol}}
+\index{\_\-evhtp\_\-protocol@{\_\-evhtp\_\-protocol}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-protocol}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-proto} \_\-evhtp\_\-protocol (
+\begin{DoxyParamCaption}
+\item[{const char}]{ major, }
+\item[{const char}]{ minor}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ab3d505dd3f9f0dfd926f3e8da13883d1}
+
+
+returns the HTTP protocol version 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em major}]the major version number \item[{\em minor}]the minor version number\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+EVHTP\_\-PROTO\_\-10 if HTTP/1.0, EVHTP\_\-PROTO\_\-11 if HTTP/1.1, otherwise EVHTP\_\-PROTO\_\-INVALID 
+\end{DoxyReturn}
+
+
+Definition at line 329 of file evhtp.c.
+
+\hypertarget{evhtp_8c_acc338650342f065a4c64b40a9fed90be}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-quick\_\-hash@{\_\-evhtp\_\-quick\_\-hash}}
+\index{\_\-evhtp\_\-quick\_\-hash@{\_\-evhtp\_\-quick\_\-hash}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-quick\_\-hash}]{\setlength{\rightskip}{0pt plus 5cm}static unsigned int \_\-evhtp\_\-quick\_\-hash (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{ str}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_acc338650342f065a4c64b40a9fed90be}
+
+
+a weak hash function 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em str}]a null terminated string\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+an unsigned integer hash of str 
+\end{DoxyReturn}
+
+
+Definition at line 275 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ab82576a33f5888bec124961eaa86a9c0}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-fini\_\-hook@{\_\-evhtp\_\-request\_\-fini\_\-hook}}
+\index{\_\-evhtp\_\-request\_\-fini\_\-hook@{\_\-evhtp\_\-request\_\-fini\_\-hook}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-fini\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-res} \_\-evhtp\_\-request\_\-fini\_\-hook (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ab82576a33f5888bec124961eaa86a9c0}
+
+
+runs the user-\/defined hook called just prior to a request been free()'d 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em request}]therequest structure\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+EVHTP\_\-RES\_\-OK on success, otherwise treated as an error 
+\end{DoxyReturn}
+
+
+Definition at line 415 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ac1b09ba3d872e8a0b93a60805996dae7}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-free@{\_\-evhtp\_\-request\_\-free}}
+\index{\_\-evhtp\_\-request\_\-free@{\_\-evhtp\_\-request\_\-free}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-request\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ac1b09ba3d872e8a0b93a60805996dae7}
+
+
+frees all data in an evhtp\_\-request\_\-t along with calling finished hooks 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em request}]the request structure \end{DoxyParams}
+
+
+Definition at line 616 of file evhtp.c.
+
+\hypertarget{evhtp_8c_abe671757ebcda7572cb17316d3df3301}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-new@{\_\-evhtp\_\-request\_\-new}}
+\index{\_\-evhtp\_\-request\_\-new@{\_\-evhtp\_\-request\_\-new}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-request\_\-t}$\ast$ \_\-evhtp\_\-request\_\-new (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-connection\_\-t} $\ast$}]{ c}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_abe671757ebcda7572cb17316d3df3301}
+
+
+Creates a new evhtp\_\-request\_\-t. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em c}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-request\_\-t structure on success, otherwise NULL 
+\end{DoxyReturn}
+
+
+Definition at line 589 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a9b2efd8988cf111433eb8f7aff520368}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-parser\_\-args@{\_\-evhtp\_\-request\_\-parser\_\-args}}
+\index{\_\-evhtp\_\-request\_\-parser\_\-args@{\_\-evhtp\_\-request\_\-parser\_\-args}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-parser\_\-args}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-request\_\-parser\_\-args (
+\begin{DoxyParamCaption}
+\item[{htparser $\ast$}]{ p, }
+\item[{const char $\ast$}]{ data, }
+\item[{size\_\-t}]{ len}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a9b2efd8988cf111433eb8f7aff520368}
+
+
+Definition at line 835 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ae068a0fbec8deab8f5aece4f38540aa5}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-parser\_\-body@{\_\-evhtp\_\-request\_\-parser\_\-body}}
+\index{\_\-evhtp\_\-request\_\-parser\_\-body@{\_\-evhtp\_\-request\_\-parser\_\-body}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-parser\_\-body}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-request\_\-parser\_\-body (
+\begin{DoxyParamCaption}
+\item[{htparser $\ast$}]{ p, }
+\item[{const char $\ast$}]{ data, }
+\item[{size\_\-t}]{ len}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ae068a0fbec8deab8f5aece4f38540aa5}
+
+
+Definition at line 1008 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a568d0ca38c2b6f16d2ba7827026b6be8}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-fini@{\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-fini}}
+\index{\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-fini@{\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-fini}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-fini}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-request\_\-parser\_\-chunk\_\-fini (
+\begin{DoxyParamCaption}
+\item[{htparser $\ast$}]{ p}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a568d0ca38c2b6f16d2ba7827026b6be8}
+
+
+Definition at line 1041 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aa8d661194ad85e97ad4f7abadf92169b}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-new@{\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-new}}
+\index{\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-new@{\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-new}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-parser\_\-chunk\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-request\_\-parser\_\-chunk\_\-new (
+\begin{DoxyParamCaption}
+\item[{htparser $\ast$}]{ p}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_aa8d661194ad85e97ad4f7abadf92169b}
+
+
+Definition at line 1029 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aeb4b98d334e176bfa9714c3946f926ab}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-parser\_\-chunks\_\-fini@{\_\-evhtp\_\-request\_\-parser\_\-chunks\_\-fini}}
+\index{\_\-evhtp\_\-request\_\-parser\_\-chunks\_\-fini@{\_\-evhtp\_\-request\_\-parser\_\-chunks\_\-fini}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-parser\_\-chunks\_\-fini}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-request\_\-parser\_\-chunks\_\-fini (
+\begin{DoxyParamCaption}
+\item[{htparser $\ast$}]{ p}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_aeb4b98d334e176bfa9714c3946f926ab}
+
+
+Definition at line 1052 of file evhtp.c.
+
+\hypertarget{evhtp_8c_af1358f87bd161ec7956eb40785a4c94f}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-parser\_\-fini@{\_\-evhtp\_\-request\_\-parser\_\-fini}}
+\index{\_\-evhtp\_\-request\_\-parser\_\-fini@{\_\-evhtp\_\-request\_\-parser\_\-fini}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-parser\_\-fini}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-request\_\-parser\_\-fini (
+\begin{DoxyParamCaption}
+\item[{htparser $\ast$}]{ p}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_af1358f87bd161ec7956eb40785a4c94f}
+
+
+Definition at line 1063 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a74bf569aed627659f9c2da4d2917f94e}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-parser\_\-header\_\-key@{\_\-evhtp\_\-request\_\-parser\_\-header\_\-key}}
+\index{\_\-evhtp\_\-request\_\-parser\_\-header\_\-key@{\_\-evhtp\_\-request\_\-parser\_\-header\_\-key}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-parser\_\-header\_\-key}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-request\_\-parser\_\-header\_\-key (
+\begin{DoxyParamCaption}
+\item[{htparser $\ast$}]{ p, }
+\item[{const char $\ast$}]{ data, }
+\item[{size\_\-t}]{ len}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a74bf569aed627659f9c2da4d2917f94e}
+
+
+Definition at line 851 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ace9d3c03d8a93653ee8ba0dd023c19b1}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-parser\_\-header\_\-val@{\_\-evhtp\_\-request\_\-parser\_\-header\_\-val}}
+\index{\_\-evhtp\_\-request\_\-parser\_\-header\_\-val@{\_\-evhtp\_\-request\_\-parser\_\-header\_\-val}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-parser\_\-header\_\-val}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-request\_\-parser\_\-header\_\-val (
+\begin{DoxyParamCaption}
+\item[{htparser $\ast$}]{ p, }
+\item[{const char $\ast$}]{ data, }
+\item[{size\_\-t}]{ len}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ace9d3c03d8a93653ee8ba0dd023c19b1}
+
+
+Definition at line 870 of file evhtp.c.
+
+\hypertarget{evhtp_8c_af0fd9193de0851f71633c8d534d8e95c}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-parser\_\-headers@{\_\-evhtp\_\-request\_\-parser\_\-headers}}
+\index{\_\-evhtp\_\-request\_\-parser\_\-headers@{\_\-evhtp\_\-request\_\-parser\_\-headers}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-parser\_\-headers}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-request\_\-parser\_\-headers (
+\begin{DoxyParamCaption}
+\item[{htparser $\ast$}]{ p}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_af0fd9193de0851f71633c8d534d8e95c}
+
+
+Definition at line 976 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a1bc3142129054e8291294dac4a4b09bc}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-parser\_\-path@{\_\-evhtp\_\-request\_\-parser\_\-path}}
+\index{\_\-evhtp\_\-request\_\-parser\_\-path@{\_\-evhtp\_\-request\_\-parser\_\-path}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-parser\_\-path}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-request\_\-parser\_\-path (
+\begin{DoxyParamCaption}
+\item[{htparser $\ast$}]{ p, }
+\item[{const char $\ast$}]{ data, }
+\item[{size\_\-t}]{ len}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a1bc3142129054e8291294dac4a4b09bc}
+
+
+Definition at line 894 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a58663d586f44301ab317c8dd5b4be3e6}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-request\_\-parser\_\-start@{\_\-evhtp\_\-request\_\-parser\_\-start}}
+\index{\_\-evhtp\_\-request\_\-parser\_\-start@{\_\-evhtp\_\-request\_\-parser\_\-start}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-request\_\-parser\_\-start}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-request\_\-parser\_\-start (
+\begin{DoxyParamCaption}
+\item[{htparser $\ast$}]{ p}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a58663d586f44301ab317c8dd5b4be3e6}
+
+
+Definition at line 816 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aa66c50a9faa2ae92643cae6d3aa8298e}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-run\_\-in\_\-thread@{\_\-evhtp\_\-run\_\-in\_\-thread}}
+\index{\_\-evhtp\_\-run\_\-in\_\-thread@{\_\-evhtp\_\-run\_\-in\_\-thread}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-run\_\-in\_\-thread}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-run\_\-in\_\-thread (
+\begin{DoxyParamCaption}
+\item[{evthr\_\-t $\ast$}]{ thr, }
+\item[{void $\ast$}]{ arg, }
+\item[{void $\ast$}]{ shared}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_aa66c50a9faa2ae92643cae6d3aa8298e}
+
+
+Definition at line 1390 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aff54db2288eb11a543e3a41398bce612}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-run\_\-post\_\-accept@{\_\-evhtp\_\-run\_\-post\_\-accept}}
+\index{\_\-evhtp\_\-run\_\-post\_\-accept@{\_\-evhtp\_\-run\_\-post\_\-accept}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-run\_\-post\_\-accept}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-run\_\-post\_\-accept (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{{\bf evhtp\_\-connection\_\-t} $\ast$}]{ connection}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_aff54db2288eb11a543e3a41398bce612}
+
+
+Definition at line 1371 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a16cbc35a858e7afa29ea329867bd9c95}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-run\_\-pre\_\-accept@{\_\-evhtp\_\-run\_\-pre\_\-accept}}
+\index{\_\-evhtp\_\-run\_\-pre\_\-accept@{\_\-evhtp\_\-run\_\-pre\_\-accept}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-run\_\-pre\_\-accept}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-run\_\-pre\_\-accept (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{int}]{ sock, }
+\item[{struct sockaddr $\ast$}]{ s, }
+\item[{int}]{ sl}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a16cbc35a858e7afa29ea329867bd9c95}
+
+
+Definition at line 1352 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aa01956293904a4b327117d5caa2dedbc}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-shutdown\_\-eventcb@{\_\-evhtp\_\-shutdown\_\-eventcb}}
+\index{\_\-evhtp\_\-shutdown\_\-eventcb@{\_\-evhtp\_\-shutdown\_\-eventcb}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-shutdown\_\-eventcb}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-shutdown\_\-eventcb (
+\begin{DoxyParamCaption}
+\item[{{\bf evbev\_\-t} $\ast$}]{ bev, }
+\item[{short}]{ events, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_aa01956293904a4b327117d5caa2dedbc}
+
+
+Definition at line 1303 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a7b3d073d6a31eb4e51feb0340d04f477}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-ssl\_\-add\_\-scache\_\-ent@{\_\-evhtp\_\-ssl\_\-add\_\-scache\_\-ent}}
+\index{\_\-evhtp\_\-ssl\_\-add\_\-scache\_\-ent@{\_\-evhtp\_\-ssl\_\-add\_\-scache\_\-ent}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-ssl\_\-add\_\-scache\_\-ent}]{\setlength{\rightskip}{0pt plus 5cm}static int \_\-evhtp\_\-ssl\_\-add\_\-scache\_\-ent (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-ssl\_\-t} $\ast$}]{ ssl, }
+\item[{{\bf evhtp\_\-ssl\_\-sess\_\-t} $\ast$}]{ sess}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a7b3d073d6a31eb4e51feb0340d04f477}
+
+
+Definition at line 1476 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aa73fc84760a220fe99eaa8d01bd9858c}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-ssl\_\-delete\_\-scache\_\-ent@{\_\-evhtp\_\-ssl\_\-delete\_\-scache\_\-ent}}
+\index{\_\-evhtp\_\-ssl\_\-delete\_\-scache\_\-ent@{\_\-evhtp\_\-ssl\_\-delete\_\-scache\_\-ent}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-ssl\_\-delete\_\-scache\_\-ent}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-ssl\_\-delete\_\-scache\_\-ent (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-ssl\_\-ctx\_\-t} $\ast$}]{ ctx, }
+\item[{{\bf evhtp\_\-ssl\_\-sess\_\-t} $\ast$}]{ sess}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_aa73fc84760a220fe99eaa8d01bd9858c}
+
+
+Definition at line 1458 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aa2e2b017a83e75d46ca4fe41cbce5a10}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-ssl\_\-get\_\-scache\_\-ent@{\_\-evhtp\_\-ssl\_\-get\_\-scache\_\-ent}}
+\index{\_\-evhtp\_\-ssl\_\-get\_\-scache\_\-ent@{\_\-evhtp\_\-ssl\_\-get\_\-scache\_\-ent}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-ssl\_\-get\_\-scache\_\-ent}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-ssl\_\-sess\_\-t}$\ast$ \_\-evhtp\_\-ssl\_\-get\_\-scache\_\-ent (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-ssl\_\-t} $\ast$}]{ ssl, }
+\item[{unsigned char $\ast$}]{ sid, }
+\item[{int}]{ sid\_\-len, }
+\item[{int $\ast$}]{ copy}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_aa2e2b017a83e75d46ca4fe41cbce5a10}
+
+
+Definition at line 1498 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a7faf23f0dbc80766bca0af285a89751a}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-ssl\_\-get\_\-thread\_\-id@{\_\-evhtp\_\-ssl\_\-get\_\-thread\_\-id}}
+\index{\_\-evhtp\_\-ssl\_\-get\_\-thread\_\-id@{\_\-evhtp\_\-ssl\_\-get\_\-thread\_\-id}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-ssl\_\-get\_\-thread\_\-id}]{\setlength{\rightskip}{0pt plus 5cm}static unsigned long \_\-evhtp\_\-ssl\_\-get\_\-thread\_\-id (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a7faf23f0dbc80766bca0af285a89751a}
+
+
+Definition at line 1442 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ab20a3f60ebc232a46f4462f2ff3c17b4}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-ssl\_\-thread\_\-lock@{\_\-evhtp\_\-ssl\_\-thread\_\-lock}}
+\index{\_\-evhtp\_\-ssl\_\-thread\_\-lock@{\_\-evhtp\_\-ssl\_\-thread\_\-lock}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-ssl\_\-thread\_\-lock}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-ssl\_\-thread\_\-lock (
+\begin{DoxyParamCaption}
+\item[{int}]{ mode, }
+\item[{int}]{ type, }
+\item[{const char $\ast$}]{ file, }
+\item[{int}]{ line}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ab20a3f60ebc232a46f4462f2ff3c17b4}
+
+
+Definition at line 1447 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a8cd75d11eacdb8224357e400c1b2f607}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-thread\_\-init@{\_\-evhtp\_\-thread\_\-init}}
+\index{\_\-evhtp\_\-thread\_\-init@{\_\-evhtp\_\-thread\_\-init}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-thread\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-thread\_\-init (
+\begin{DoxyParamCaption}
+\item[{evthr\_\-t $\ast$}]{ thr, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a8cd75d11eacdb8224357e400c1b2f607}
+
+
+Definition at line 2256 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a4b730b06fe6a0093afb2f4f391e5455e}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-uri\_\-free@{\_\-evhtp\_\-uri\_\-free}}
+\index{\_\-evhtp\_\-uri\_\-free@{\_\-evhtp\_\-uri\_\-free}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-uri\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}static void \_\-evhtp\_\-uri\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-uri\_\-t} $\ast$}]{ uri}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a4b730b06fe6a0093afb2f4f391e5455e}
+
+
+frees an overlay URI structure 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em uri}]evhtp\_\-uri\_\-t \end{DoxyParams}
+
+
+Definition at line 665 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ad88e62da3b491cfbe334a82f5151dc90}{
+\index{evhtp.c@{evhtp.c}!\_\-evhtp\_\-uri\_\-new@{\_\-evhtp\_\-uri\_\-new}}
+\index{\_\-evhtp\_\-uri\_\-new@{\_\-evhtp\_\-uri\_\-new}!evhtp.c@{evhtp.c}}
+\subsubsection[{\_\-evhtp\_\-uri\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}static {\bf evhtp\_\-uri\_\-t} $\ast$ \_\-evhtp\_\-uri\_\-new (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ad88e62da3b491cfbe334a82f5151dc90}
+
+
+create an overlay URI structure 
+
+\begin{DoxyReturn}{Returns}
+evhtp\_\-uri\_\-t 
+\end{DoxyReturn}
+
+
+Definition at line 649 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a25b40b813f8a36cc383915b6ed3ec0ce}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-bind\_\-socket@{evhtp\_\-bind\_\-socket}}
+\index{evhtp\_\-bind\_\-socket@{evhtp\_\-bind\_\-socket}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-bind\_\-socket}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-bind\_\-socket (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{const char $\ast$}]{ baddr, }
+\item[{uint16\_\-t}]{ port, }
+\item[{int}]{ backlog}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a25b40b813f8a36cc383915b6ed3ec0ce}
+
+
+Definition at line 1994 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aa18103f43b36858a97e1eef80b0e4044}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-callback\_\-free@{evhtp\_\-callback\_\-free}}
+\index{evhtp\_\-callback\_\-free@{evhtp\_\-callback\_\-free}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-callback\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-callback\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-callback\_\-t} $\ast$}]{ callback}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_aa18103f43b36858a97e1eef80b0e4044}
+
+
+Definition at line 2121 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a8d96790f46d2c063c5a2dd09ca0573a5}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-callback\_\-new@{evhtp\_\-callback\_\-new}}
+\index{evhtp\_\-callback\_\-new@{evhtp\_\-callback\_\-new}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-callback\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-callback\_\-t}$\ast$ evhtp\_\-callback\_\-new (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{ path, }
+\item[{{\bf evhtp\_\-callback\_\-type}}]{ type, }
+\item[{{\bf evhtp\_\-callback\_\-cb}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a8d96790f46d2c063c5a2dd09ca0573a5}
+
+
+creates a new evhtp\_\-callback\_\-t structure. 
+
+All callbacks are stored in this structure which define what the final function to be called after all parsing is done. A callback can be either a static string or a regular expression.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em path}]can either be a static path (/path/to/resource/) or a POSIX compatible regular expression ($^\wedge$/resource/(.$\ast$)) \item[{\em type}]informs the function what type of of information is is contained within the path argument. This can either be callback\_\-type\_\-path, or callback\_\-type\_\-regex. \item[{\em cb}]the callback function to be invoked \item[{\em arg}]optional argument which is passed when the callback is executed.\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success, -\/1 on error. 
+\end{DoxyReturn}
+
+
+Definition at line 2087 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a36a4df86347439381efba472dbdd72e2}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-callbacks\_\-add\_\-callback@{evhtp\_\-callbacks\_\-add\_\-callback}}
+\index{evhtp\_\-callbacks\_\-add\_\-callback@{evhtp\_\-callbacks\_\-add\_\-callback}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-callbacks\_\-add\_\-callback}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-callbacks\_\-add\_\-callback (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-callbacks\_\-t} $\ast$}]{ cbs, }
+\item[{{\bf evhtp\_\-callback\_\-t} $\ast$}]{ cb}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a36a4df86347439381efba472dbdd72e2}
+
+
+Adds a evhtp\_\-callback\_\-t to the evhtp\_\-callbacks\_\-t list. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em cbs}]an allocated evhtp\_\-callbacks\_\-t structure \item[{\em cb}]an initialized evhtp\_\-callback\_\-t structure\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success, -\/1 on error 
+\end{DoxyReturn}
+
+
+Definition at line 2145 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a4f5f66e5e371d0d34cc439b96b3a4862}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-callbacks\_\-free@{evhtp\_\-callbacks\_\-free}}
+\index{evhtp\_\-callbacks\_\-free@{evhtp\_\-callbacks\_\-free}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-callbacks\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-callbacks\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-callbacks\_\-t} $\ast$}]{ callbacks}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a4f5f66e5e371d0d34cc439b96b3a4862}
+
+
+Definition at line 2049 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a6064ac5acf3ed7e07ea4eb01a6230118}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-callbacks\_\-new@{evhtp\_\-callbacks\_\-new}}
+\index{evhtp\_\-callbacks\_\-new@{evhtp\_\-callbacks\_\-new}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-callbacks\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-callbacks\_\-t}$\ast$ evhtp\_\-callbacks\_\-new (
+\begin{DoxyParamCaption}
+\item[{unsigned int}]{ buckets}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a6064ac5acf3ed7e07ea4eb01a6230118}
+
+
+creates a new evhtp\_\-callbacks\_\-t structure 
+
+this structure is used to store all known callbacks for a request.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em buckets}]the number of buckets to allocate for the path type hash.\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+an evhtp\_\-callbacks\_\-t structure 
+\end{DoxyReturn}
+
+
+Definition at line 2030 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a411f8bd2a68359f2bfb457961f94db97}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-connection\_\-pause@{evhtp\_\-connection\_\-pause}}
+\index{evhtp\_\-connection\_\-pause@{evhtp\_\-connection\_\-pause}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-connection\_\-pause}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-connection\_\-pause (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-connection\_\-t} $\ast$}]{ c}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a411f8bd2a68359f2bfb457961f94db97}
+
+
+pauses a connection (disables reading) 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em c}]a evhtp\_\-connection\_\-t $\ast$ structure \end{DoxyParams}
+
+
+Definition at line 1533 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ac62f0e64aca4fca3648b67042a6c3646}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-connection\_\-resume@{evhtp\_\-connection\_\-resume}}
+\index{evhtp\_\-connection\_\-resume@{evhtp\_\-connection\_\-resume}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-connection\_\-resume}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-connection\_\-resume (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-connection\_\-t} $\ast$}]{ c}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_ac62f0e64aca4fca3648b67042a6c3646}
+
+
+resumes a connection (enables reading) and activates resume event. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em c}]\end{DoxyParams}
+
+
+Definition at line 1545 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a371c397ed3001751650f4326e15a3eab}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-header\_\-key\_\-add@{evhtp\_\-header\_\-key\_\-add}}
+\index{evhtp\_\-header\_\-key\_\-add@{evhtp\_\-header\_\-key\_\-add}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-header\_\-key\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}evhtp\_\-header\_\-t$\ast$ evhtp\_\-header\_\-key\_\-add (
+\begin{DoxyParamCaption}
+\item[{evhtp\_\-headers\_\-t $\ast$}]{ headers, }
+\item[{const char $\ast$}]{ key, }
+\item[{char}]{ kalloc}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a371c397ed3001751650f4326e15a3eab}
+
+
+creates a new evhtp\_\-header\_\-t, sets only the key, and adds to the evhtp\_\-headers TAILQ 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em headers}]the evhtp\_\-headers\_\-t TAILQ (evhtp\_\-kv\_\-t) \item[{\em key}]a null terminated string \item[{\em kalloc}]if 1 the string will be copied, otherwise assigned\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+an evhtp\_\-header\_\-t pointer or NULL on error 
+\end{DoxyReturn}
+
+
+Definition at line 1577 of file evhtp.c.
+
+\hypertarget{evhtp_8c_afb5aeb4995c7c20e774e6590b2a25512}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-header\_\-val\_\-add@{evhtp\_\-header\_\-val\_\-add}}
+\index{evhtp\_\-header\_\-val\_\-add@{evhtp\_\-header\_\-val\_\-add}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-header\_\-val\_\-add}]{\setlength{\rightskip}{0pt plus 5cm}evhtp\_\-header\_\-t$\ast$ evhtp\_\-header\_\-val\_\-add (
+\begin{DoxyParamCaption}
+\item[{evhtp\_\-headers\_\-t $\ast$}]{ headers, }
+\item[{const char $\ast$}]{ val, }
+\item[{char}]{ valloc}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_afb5aeb4995c7c20e774e6590b2a25512}
+
+
+finds the last header in the headers tailq and adds the value 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em headers}]the evhtp\_\-headers\_\-t TAILQ (evhtp\_\-kv\_\-t) \item[{\em val}]a null terminated string \item[{\em valloc}]if 1 the string will be copied, otherwise assigned\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+an evhtp\_\-header\_\-t pointer or NULL on error 
+\end{DoxyReturn}
+
+
+Definition at line 1590 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a5ad3f9da9252228d496c757b7fcbd876}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-kv\_\-find@{evhtp\_\-kv\_\-find}}
+\index{evhtp\_\-kv\_\-find@{evhtp\_\-kv\_\-find}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-kv\_\-find}]{\setlength{\rightskip}{0pt plus 5cm}const char$\ast$ evhtp\_\-kv\_\-find (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs, }
+\item[{const char $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a5ad3f9da9252228d496c757b7fcbd876}
+
+
+Definition at line 1728 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a7939fc367080e65dae817a198b0329bb}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-kv\_\-free@{evhtp\_\-kv\_\-free}}
+\index{evhtp\_\-kv\_\-free@{evhtp\_\-kv\_\-free}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-kv\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-kv\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kv\_\-t} $\ast$}]{ kv}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a7939fc367080e65dae817a198b0329bb}
+
+
+Definition at line 1665 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a8d67c39c09ef95018639ba82ba111efb}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-kv\_\-new@{evhtp\_\-kv\_\-new}}
+\index{evhtp\_\-kv\_\-new@{evhtp\_\-kv\_\-new}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-kv\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-kv\_\-t}$\ast$ evhtp\_\-kv\_\-new (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{ key, }
+\item[{const char $\ast$}]{ val, }
+\item[{char}]{ kalloc, }
+\item[{char}]{ valloc}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a8d67c39c09ef95018639ba82ba111efb}
+
+
+Allocates a new key/value structure. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em key}]null terminated string \item[{\em val}]null terminated string \item[{\em kalloc}]if set to 1, the key will be copied, if 0 no copy is done. \item[{\em valloc}]if set to 1, the val will be copied, if 0 no copy is done.\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-kv\_\-t $\ast$ on success, NULL on error. 
+\end{DoxyReturn}
+
+
+Definition at line 1621 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a0ed832fa06fcce351bd4e294b01ca025}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-kv\_\-rm\_\-and\_\-free@{evhtp\_\-kv\_\-rm\_\-and\_\-free}}
+\index{evhtp\_\-kv\_\-rm\_\-and\_\-free@{evhtp\_\-kv\_\-rm\_\-and\_\-free}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-kv\_\-rm\_\-and\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-kv\_\-rm\_\-and\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs, }
+\item[{{\bf evhtp\_\-kv\_\-t} $\ast$}]{ kv}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a0ed832fa06fcce351bd4e294b01ca025}
+
+
+Definition at line 1682 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a0860e34e7b5b5977e01f28afded17d89}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-kvs\_\-add\_\-kv@{evhtp\_\-kvs\_\-add\_\-kv}}
+\index{evhtp\_\-kvs\_\-add\_\-kv@{evhtp\_\-kvs\_\-add\_\-kv}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-kvs\_\-add\_\-kv}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-kvs\_\-add\_\-kv (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs, }
+\item[{{\bf evhtp\_\-kv\_\-t} $\ast$}]{ kv}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a0860e34e7b5b5977e01f28afded17d89}
+
+
+appends a key/val structure to a evhtp\_\-kvs\_\-t tailq 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em kvs}]an evhtp\_\-kvs\_\-t structure \item[{\em kv}]an evhtp\_\-kv\_\-t structure \end{DoxyParams}
+
+
+Definition at line 1762 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a478309d26255defca90bd42775dc89d4}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-kvs\_\-find\_\-kv@{evhtp\_\-kvs\_\-find\_\-kv}}
+\index{evhtp\_\-kvs\_\-find\_\-kv@{evhtp\_\-kvs\_\-find\_\-kv}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-kvs\_\-find\_\-kv}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-kv\_\-t}$\ast$ evhtp\_\-kvs\_\-find\_\-kv (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs, }
+\item[{const char $\ast$}]{ key}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a478309d26255defca90bd42775dc89d4}
+
+
+Definition at line 1745 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ab496e1fb070dd5c6830315e181f2f45f}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-kvs\_\-for\_\-each@{evhtp\_\-kvs\_\-for\_\-each}}
+\index{evhtp\_\-kvs\_\-for\_\-each@{evhtp\_\-kvs\_\-for\_\-each}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-kvs\_\-for\_\-each}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-kvs\_\-for\_\-each (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs, }
+\item[{{\bf evhtp\_\-kvs\_\-iterator}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_ab496e1fb070dd5c6830315e181f2f45f}
+
+
+Definition at line 1713 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a653c3af86d2d3dd3c11abadd71589edf}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-kvs\_\-free@{evhtp\_\-kvs\_\-free}}
+\index{evhtp\_\-kvs\_\-free@{evhtp\_\-kvs\_\-free}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-kvs\_\-free}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-kvs\_\-free (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-kvs\_\-t} $\ast$}]{ kvs}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a653c3af86d2d3dd3c11abadd71589edf}
+
+
+Definition at line 1693 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ae51f6f8596b24444cfd8c00f14143ff3}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-kvs\_\-new@{evhtp\_\-kvs\_\-new}}
+\index{evhtp\_\-kvs\_\-new@{evhtp\_\-kvs\_\-new}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-kvs\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-kvs\_\-t}$\ast$ evhtp\_\-kvs\_\-new (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_ae51f6f8596b24444cfd8c00f14143ff3}
+
+
+Definition at line 1613 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a97bbe491064943a8d5e0d3e7a937209b}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-new@{evhtp\_\-new}}
+\index{evhtp\_\-new@{evhtp\_\-new}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-new}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-t}$\ast$ evhtp\_\-new (
+\begin{DoxyParamCaption}
+\item[{evbase\_\-t $\ast$}]{ evbase, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a97bbe491064943a8d5e0d3e7a937209b}
+
+
+creates a new evhtp\_\-t instance 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em evbase}]the initialized event base \item[{\em arg}]user-\/defined argument which is evhtp\_\-t specific\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+a new evhtp\_\-t structure or NULL on error 
+\end{DoxyReturn}
+
+
+Definition at line 2481 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a2bf7b8937c27b654fccd27bf811aa2eb}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-parse\_\-query@{evhtp\_\-parse\_\-query}}
+\index{evhtp\_\-parse\_\-query@{evhtp\_\-parse\_\-query}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-parse\_\-query}]{\setlength{\rightskip}{0pt plus 5cm}evhtp\_\-query\_\-t$\ast$ evhtp\_\-parse\_\-query (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{ query, }
+\item[{size\_\-t}]{ len}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a2bf7b8937c27b654fccd27bf811aa2eb}
+
+
+Parses the query portion of the uri into a set of key/values. 
+
+Parses query arguments like \char`\"{}?herp=derp\&foo=bar;blah=baz\char`\"{}
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em query}]data containing the uri query arguments \item[{\em len}]size of the data\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-query\_\-t $\ast$ on success, NULL on error 
+\end{DoxyReturn}
+
+
+Definition at line 1784 of file evhtp.c.
+
+\hypertarget{evhtp_8c_af0bf99a2bf280b1cef1cec805bd433d0}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-request\_\-get\_\-method@{evhtp\_\-request\_\-get\_\-method}}
+\index{evhtp\_\-request\_\-get\_\-method@{evhtp\_\-request\_\-get\_\-method}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-request\_\-get\_\-method}]{\setlength{\rightskip}{0pt plus 5cm}htp\_\-method evhtp\_\-request\_\-get\_\-method (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ r}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_af0bf99a2bf280b1cef1cec805bd433d0}
+
+
+returns the htp\_\-method enum version of the request method. 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em r}]\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+htp\_\-method enum 
+\end{DoxyReturn}
+
+
+Definition at line 1523 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ab35aec3adb697918e24b8ff966afe235}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-request\_\-pause@{evhtp\_\-request\_\-pause}}
+\index{evhtp\_\-request\_\-pause@{evhtp\_\-request\_\-pause}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-request\_\-pause}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-request\_\-pause (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_ab35aec3adb697918e24b8ff966afe235}
+
+
+Wrapper around evhtp\_\-connection\_\-pause. 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{evhtp_8h_affb4e79c7859189a0efc739344226d91}{evhtp\_\-connection\_\-pause}
+\end{DoxySeeAlso}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em request}]\end{DoxyParams}
+
+
+Definition at line 1560 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a3f537cfe43afe795f575e4080d8a4f69}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-request\_\-resume@{evhtp\_\-request\_\-resume}}
+\index{evhtp\_\-request\_\-resume@{evhtp\_\-request\_\-resume}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-request\_\-resume}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-request\_\-resume (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a3f537cfe43afe795f575e4080d8a4f69}
+
+
+Wrapper around evhtp\_\-connection\_\-resume. 
+
+\begin{DoxySeeAlso}{See also}
+\hyperlink{evhtp_8h_a450bcd53aa74128bbb658f8af6aff320}{evhtp\_\-connection\_\-resume}
+\end{DoxySeeAlso}
+
+\begin{DoxyParams}{Parameters}
+\item[{\em request}]\end{DoxyParams}
+
+
+Definition at line 1572 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a207355af4b2d3e5211c4df0bbb8d195d}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-send\_\-reply@{evhtp\_\-send\_\-reply}}
+\index{evhtp\_\-send\_\-reply@{evhtp\_\-send\_\-reply}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-send\_\-reply}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-send\_\-reply (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{{\bf evhtp\_\-res}}]{ code}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a207355af4b2d3e5211c4df0bbb8d195d}
+
+
+Definition at line 1979 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a6bf7db125fda2c96491d2ebde9d40611}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-send\_\-reply\_\-body@{evhtp\_\-send\_\-reply\_\-body}}
+\index{evhtp\_\-send\_\-reply\_\-body@{evhtp\_\-send\_\-reply\_\-body}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-send\_\-reply\_\-body}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-send\_\-reply\_\-body (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{{\bf evbuf\_\-t} $\ast$}]{ buf}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a6bf7db125fda2c96491d2ebde9d40611}
+
+
+Definition at line 1962 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a233d1f64458e5f71658d7bc64c80d569}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-send\_\-reply\_\-end@{evhtp\_\-send\_\-reply\_\-end}}
+\index{evhtp\_\-send\_\-reply\_\-end@{evhtp\_\-send\_\-reply\_\-end}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-send\_\-reply\_\-end}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-send\_\-reply\_\-end (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a233d1f64458e5f71658d7bc64c80d569}
+
+
+Definition at line 1969 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a616801e5dd5e515f78f3b430910b22da}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-send\_\-reply\_\-start@{evhtp\_\-send\_\-reply\_\-start}}
+\index{evhtp\_\-send\_\-reply\_\-start@{evhtp\_\-send\_\-reply\_\-start}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-send\_\-reply\_\-start}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-send\_\-reply\_\-start (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-request\_\-t} $\ast$}]{ request, }
+\item[{{\bf evhtp\_\-res}}]{ code}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a616801e5dd5e515f78f3b430910b22da}
+
+
+Definition at line 1949 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ad5bb4aac3d544eb8a102c530b3b45fba}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-set\_\-cb@{evhtp\_\-set\_\-cb}}
+\index{evhtp\_\-set\_\-cb@{evhtp\_\-set\_\-cb}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-set\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-callback\_\-t}$\ast$ evhtp\_\-set\_\-cb (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{const char $\ast$}]{ path, }
+\item[{{\bf evhtp\_\-callback\_\-cb}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_ad5bb4aac3d544eb8a102c530b3b45fba}
+
+
+sets a callback to be executed on a specific path 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em htp}]the initialized evhtp\_\-t \item[{\em path}]the path to match \item[{\em cb}]the function to be executed \item[{\em arg}]user-\/defined argument passed to the callback\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-callback\_\-t $\ast$ on success, NULL on error. 
+\end{DoxyReturn}
+
+
+Definition at line 2227 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a39a5c7910a382f902c896b25854b742d}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-set\_\-gencb@{evhtp\_\-set\_\-gencb}}
+\index{evhtp\_\-set\_\-gencb@{evhtp\_\-set\_\-gencb}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-set\_\-gencb}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-set\_\-gencb (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{{\bf evhtp\_\-callback\_\-cb}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a39a5c7910a382f902c896b25854b742d}
+
+
+sets a callback which is called if no other callbacks are matched 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em htp}]the initialized evhtp\_\-t \item[{\em cb}]the function to be executed \item[{\em arg}]user-\/defined argument passed to the callback \end{DoxyParams}
+
+
+Definition at line 2316 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a9760b5203a449e9ba54dc3e84dd76122}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-set\_\-hook@{evhtp\_\-set\_\-hook}}
+\index{evhtp\_\-set\_\-hook@{evhtp\_\-set\_\-hook}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-set\_\-hook}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-set\_\-hook (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-hooks\_\-t} $\ast$$\ast$}]{ hooks, }
+\item[{{\bf evhtp\_\-hook\_\-type}}]{ type, }
+\item[{void $\ast$}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a9760b5203a449e9ba54dc3e84dd76122}
+
+
+sets a callback hook for either a connection or a path/regex . 
+
+A user may set a variety of hooks either per-\/connection, or per-\/callback. This allows the developer to hook into various parts of the request processing cycle.
+
+a per-\/connection hook can be set at any time, but it is recommended to set these during either a pre-\/accept phase, or post-\/accept phase. This allows a developer to set hooks before any other hooks are called.
+
+a per-\/callback hook works differently. In this mode a developer can setup a set of hooks prior to starting the event loop for specific callbacks. For example if you wanted to hook something ONLY for a callback set by evhtp\_\-set\_\-cb or evhtp\_\-set\_\-regex\_\-cb this is the method of doing so.
+
+per-\/callback example:
+
+evhtp\_\-callback\_\-t $\ast$ cb = evhtp\_\-set\_\-regex\_\-cb(htp, \char`\"{}/anything/(.$\ast$)\char`\"{}, default\_\-cb, NULL);
+
+evhtp\_\-set\_\-hook(\&cb-\/$>$hooks, evhtp\_\-hook\_\-on\_\-headers, anything\_\-headers\_\-cb, NULL);
+
+evhtp\_\-set\_\-hook(\&cb-\/$>$hooks, evhtp\_\-hook\_\-on\_\-fini, anything\_\-fini\_\-cb, NULL);
+
+With the above example, once libevhtp has determined that it has a user-\/defined callback for /anything/.$\ast$; anything\_\-headers\_\-cb will be executed after all headers have been parsed, and anything\_\-fini\_\-cb will be executed before the request is free()'d.
+
+The same logic applies to per-\/connection hooks, but it should be noted that if a per-\/callback hook is set, the per-\/connection hook will be ignored.
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em hooks}]double pointer to the evhtp\_\-hooks\_\-t structure \item[{\em type}]the hook type \item[{\em cb}]the callback to be executed. \item[{\em arg}]optional argument which is passed when the callback is executed\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+0 on success, -\/1 on error (if hooks is NULL, it is allocated) 
+\end{DoxyReturn}
+
+
+Definition at line 2171 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a818779c698e87679962aee9ed0e5f979}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-set\_\-post\_\-accept\_\-cb@{evhtp\_\-set\_\-post\_\-accept\_\-cb}}
+\index{evhtp\_\-set\_\-post\_\-accept\_\-cb@{evhtp\_\-set\_\-post\_\-accept\_\-cb}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-set\_\-post\_\-accept\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-set\_\-post\_\-accept\_\-cb (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{{\bf evhtp\_\-post\_\-accept\_\-cb}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a818779c698e87679962aee9ed0e5f979}
+
+
+Definition at line 2328 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a0400c9688bb337360f04f9042eeb1c8d}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-set\_\-pre\_\-accept\_\-cb@{evhtp\_\-set\_\-pre\_\-accept\_\-cb}}
+\index{evhtp\_\-set\_\-pre\_\-accept\_\-cb@{evhtp\_\-set\_\-pre\_\-accept\_\-cb}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-set\_\-pre\_\-accept\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-set\_\-pre\_\-accept\_\-cb (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{{\bf evhtp\_\-pre\_\-accept\_\-cb}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a0400c9688bb337360f04f9042eeb1c8d}
+
+
+Definition at line 2322 of file evhtp.c.
+
+\hypertarget{evhtp_8c_adfec10ef2ef458d0757d3c7f71eabfa9}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-set\_\-regex\_\-cb@{evhtp\_\-set\_\-regex\_\-cb}}
+\index{evhtp\_\-set\_\-regex\_\-cb@{evhtp\_\-set\_\-regex\_\-cb}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-set\_\-regex\_\-cb}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-callback\_\-t}$\ast$ evhtp\_\-set\_\-regex\_\-cb (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{const char $\ast$}]{ pattern, }
+\item[{{\bf evhtp\_\-callback\_\-cb}}]{ cb, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_adfec10ef2ef458d0757d3c7f71eabfa9}
+
+
+sets a callback to be executed based on a regex pattern 
+
+
+\begin{DoxyParams}{Parameters}
+\item[{\em htp}]the initialized evhtp\_\-t \item[{\em pattern}]a POSIX compat regular expression \item[{\em cb}]the function to be executed \item[{\em arg}]user-\/defined argument passed to the callback\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+evhtp\_\-callback\_\-t $\ast$ on success, NULL on error 
+\end{DoxyReturn}
+
+
+Definition at line 2288 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a07350846f0bc1645eb105845b4a53d43}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-set\_\-timeouts@{evhtp\_\-set\_\-timeouts}}
+\index{evhtp\_\-set\_\-timeouts@{evhtp\_\-set\_\-timeouts}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-set\_\-timeouts}]{\setlength{\rightskip}{0pt plus 5cm}void evhtp\_\-set\_\-timeouts (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{struct timeval $\ast$}]{ r\_\-timeo, }
+\item[{struct timeval $\ast$}]{ w\_\-timeo}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a07350846f0bc1645eb105845b4a53d43}
+
+
+Definition at line 2468 of file evhtp.c.
+
+\hypertarget{evhtp_8c_afc778451d835c5a7e5929502d8413741}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-ssl\_\-init@{evhtp\_\-ssl\_\-init}}
+\index{evhtp\_\-ssl\_\-init@{evhtp\_\-ssl\_\-init}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-ssl\_\-init}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-ssl\_\-init (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{{\bf evhtp\_\-ssl\_\-cfg\_\-t} $\ast$}]{ cfg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_afc778451d835c5a7e5929502d8413741}
+
+
+Definition at line 2358 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a50dcb68a596352bf44b90e507f5f4a04}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-ssl\_\-use\_\-threads@{evhtp\_\-ssl\_\-use\_\-threads}}
+\index{evhtp\_\-ssl\_\-use\_\-threads@{evhtp\_\-ssl\_\-use\_\-threads}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-ssl\_\-use\_\-threads}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-ssl\_\-use\_\-threads (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a50dcb68a596352bf44b90e507f5f4a04}
+
+
+Definition at line 2335 of file evhtp.c.
+
+\hypertarget{evhtp_8c_abadb1db7b98cd01c9856ebe55efe77b3}{
+\index{evhtp.c@{evhtp.c}!evhtp\_\-use\_\-threads@{evhtp\_\-use\_\-threads}}
+\index{evhtp\_\-use\_\-threads@{evhtp\_\-use\_\-threads}!evhtp.c@{evhtp.c}}
+\subsubsection[{evhtp\_\-use\_\-threads}]{\setlength{\rightskip}{0pt plus 5cm}int evhtp\_\-use\_\-threads (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-t} $\ast$}]{ htp, }
+\item[{{\bf evhtp\_\-thread\_\-init\_\-cb}}]{ init\_\-cb, }
+\item[{int}]{ nthreads, }
+\item[{void $\ast$}]{ arg}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_abadb1db7b98cd01c9856ebe55efe77b3}
+
+
+Definition at line 2265 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a75c2a3bfefd24bd9662464cf9356a6fc}{
+\index{evhtp.c@{evhtp.c}!RB\_\-HEAD@{RB\_\-HEAD}}
+\index{RB\_\-HEAD@{RB\_\-HEAD}!evhtp.c@{evhtp.c}}
+\subsubsection[{RB\_\-HEAD}]{\setlength{\rightskip}{0pt plus 5cm}RB\_\-HEAD (
+\begin{DoxyParamCaption}
+\item[{RB\_\-GENERATE(}]{ status\_\-code\_\-tree, }
+\item[{RB\_\-GENERATE(}]{ status\_\-code}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_a75c2a3bfefd24bd9662464cf9356a6fc}
+
+
+Definition at line 103 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a1ead5c92085e7fe20a3dc40a81371f1e}{
+\index{evhtp.c@{evhtp.c}!status\_\-code\_\-cmp@{status\_\-code\_\-cmp}}
+\index{status\_\-code\_\-cmp@{status\_\-code\_\-cmp}!evhtp.c@{evhtp.c}}
+\subsubsection[{status\_\-code\_\-cmp}]{\setlength{\rightskip}{0pt plus 5cm}static int status\_\-code\_\-cmp (
+\begin{DoxyParamCaption}
+\item[{void $\ast$}]{ \_\-a, }
+\item[{void $\ast$}]{ \_\-b}
+\end{DoxyParamCaption}
+)\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a1ead5c92085e7fe20a3dc40a81371f1e}
+
+
+Definition at line 96 of file evhtp.c.
+
+\hypertarget{evhtp_8c_aa589ac88e3469ce832c68120cad9b3c8}{
+\index{evhtp.c@{evhtp.c}!status\_\-code\_\-to\_\-str@{status\_\-code\_\-to\_\-str}}
+\index{status\_\-code\_\-to\_\-str@{status\_\-code\_\-to\_\-str}!evhtp.c@{evhtp.c}}
+\subsubsection[{status\_\-code\_\-to\_\-str}]{\setlength{\rightskip}{0pt plus 5cm}const char$\ast$ status\_\-code\_\-to\_\-str (
+\begin{DoxyParamCaption}
+\item[{{\bf evhtp\_\-res}}]{ code}
+\end{DoxyParamCaption}
+)}}
+\label{evhtp_8c_aa589ac88e3469ce832c68120cad9b3c8}
+
+
+Definition at line 182 of file evhtp.c.
+
+
+
+\subsection{Variable Documentation}
+\hypertarget{evhtp_8c_a3f39f09131afc2edc12dafb8330a37c9}{
+\index{evhtp.c@{evhtp.c}!request\_\-psets@{request\_\-psets}}
+\index{request\_\-psets@{request\_\-psets}!evhtp.c@{evhtp.c}}
+\subsubsection[{request\_\-psets}]{\setlength{\rightskip}{0pt plus 5cm}htparse\_\-hooks {\bf request\_\-psets}\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a3f39f09131afc2edc12dafb8330a37c9}
+{\bfseries Initial value:}
+\begin{DoxyCode}
+ {
+    .on_msg_begin       = _evhtp_request_parser_start,
+    .method             = NULL,
+    .scheme             = NULL,
+    .host               = NULL,
+    .port               = NULL,
+    .path               = _evhtp_request_parser_path,
+    .args               = _evhtp_request_parser_args,
+    .uri                = NULL,
+    .on_hdrs_begin      = NULL,
+    .hdr_key            = _evhtp_request_parser_header_key,
+    .hdr_val            = _evhtp_request_parser_header_val,
+    .on_hdrs_complete   = _evhtp_request_parser_headers,
+    .on_new_chunk       = _evhtp_request_parser_chunk_new,
+    .on_chunk_complete  = _evhtp_request_parser_chunk_fini,
+    .on_chunks_complete = _evhtp_request_parser_chunks_fini,
+    .body               = _evhtp_request_parser_body,
+    .on_msg_complete    = _evhtp_request_parser_fini
+}
+\end{DoxyCode}
+
+
+callback definitions for request processing from libhtparse 
+
+
+
+Definition at line 198 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a23cf41ac4ed4ec8b61b263c2dfd67149}{
+\index{evhtp.c@{evhtp.c}!scode\_\-tree\_\-initialized@{scode\_\-tree\_\-initialized}}
+\index{scode\_\-tree\_\-initialized@{scode\_\-tree\_\-initialized}!evhtp.c@{evhtp.c}}
+\subsubsection[{scode\_\-tree\_\-initialized}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf scode\_\-tree\_\-initialized} = 0\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a23cf41ac4ed4ec8b61b263c2dfd67149}
+
+
+Definition at line 82 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a3ac07bb21b54bb85366a2594e00872f6}{
+\index{evhtp.c@{evhtp.c}!session\_\-id\_\-context@{session\_\-id\_\-context}}
+\index{session\_\-id\_\-context@{session\_\-id\_\-context}!evhtp.c@{evhtp.c}}
+\subsubsection[{session\_\-id\_\-context}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf session\_\-id\_\-context} = 1\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a3ac07bb21b54bb85366a2594e00872f6}
+
+
+Definition at line 219 of file evhtp.c.
+
+\hypertarget{evhtp_8c_acd87603c047e8bb2900ffc9db9cba0eb}{
+\index{evhtp.c@{evhtp.c}!ssl\_\-locks@{ssl\_\-locks}}
+\index{ssl\_\-locks@{ssl\_\-locks}!evhtp.c@{evhtp.c}}
+\subsubsection[{ssl\_\-locks}]{\setlength{\rightskip}{0pt plus 5cm}{\bf evhtp\_\-mutex\_\-t}$\ast$ {\bf ssl\_\-locks}\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_acd87603c047e8bb2900ffc9db9cba0eb}
+
+
+Definition at line 221 of file evhtp.c.
+
+\hypertarget{evhtp_8c_a612ed7680b27f5cde167b8bc77caac11}{
+\index{evhtp.c@{evhtp.c}!ssl\_\-locks\_\-initialized@{ssl\_\-locks\_\-initialized}}
+\index{ssl\_\-locks\_\-initialized@{ssl\_\-locks\_\-initialized}!evhtp.c@{evhtp.c}}
+\subsubsection[{ssl\_\-locks\_\-initialized}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf ssl\_\-locks\_\-initialized} = 0\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_a612ed7680b27f5cde167b8bc77caac11}
+
+
+Definition at line 222 of file evhtp.c.
+
+\hypertarget{evhtp_8c_ad1da05251953e4271d230bed11531631}{
+\index{evhtp.c@{evhtp.c}!ssl\_\-num\_\-locks@{ssl\_\-num\_\-locks}}
+\index{ssl\_\-num\_\-locks@{ssl\_\-num\_\-locks}!evhtp.c@{evhtp.c}}
+\subsubsection[{ssl\_\-num\_\-locks}]{\setlength{\rightskip}{0pt plus 5cm}int {\bf ssl\_\-num\_\-locks}\hspace{0.3cm}{\ttfamily  \mbox{[}static\mbox{]}}}}
+\label{evhtp_8c_ad1da05251953e4271d230bed11531631}
+
+
+Definition at line 220 of file evhtp.c.
+

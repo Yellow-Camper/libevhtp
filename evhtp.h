@@ -701,9 +701,54 @@ const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
  */
 htp_method evhtp_request_get_method(evhtp_request_t * r);
 
-void evhtp_connection_pause(evhtp_connection_t * connection);
-void evhtp_connection_resume(evhtp_connection_t * connection);
-void evhtp_request_pause(evhtp_request_t * request);
-void evhtp_request_resume(evhtp_request_t * request);
+void       evhtp_connection_pause(evhtp_connection_t * connection);
+void       evhtp_connection_resume(evhtp_connection_t * connection);
+void       evhtp_request_pause(evhtp_request_t * request);
+void       evhtp_request_resume(evhtp_request_t * request);
+
+
+
+/**
+ * @brief Sets the connections underlying bufferevent
+ *
+ * @param conn
+ * @param bev
+ */
+void evhtp_connection_set_bev(evhtp_connection_t * conn, evbev_t * bev);
+
+/**
+ * @brief sets the underlying bufferevent for a evhtp_request
+ *
+ * @param request
+ * @param bev
+ */
+void evhtp_request_set_bev(evhtp_request_t * request, evbev_t * bev);
+
+
+/**
+ * @brief returns the underlying connections bufferevent
+ *
+ * @param conn
+ *
+ * @return bufferevent on success, otherwise NULL
+ */
+evbev_t * evhtp_connection_get_bev(evhtp_connection_t * conn);
+
+/**
+ * @brief returns the underlying requests bufferevent
+ *
+ * @param request
+ *
+ * @return bufferevent on success, otherwise NULL
+ */
+evbev_t * evhtp_request_get_bev(evhtp_request_t * request);
+
+/**
+ * @brief free's all connection related resources, this will also call your
+ *        request fini hook and request fini hook.
+ *
+ * @param connection
+ */
+void evhtp_connection_free(evhtp_connection_t * connection);
 #endif /* __EVHTP__H__ */
 

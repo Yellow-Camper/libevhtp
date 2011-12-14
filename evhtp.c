@@ -8,7 +8,9 @@
 #include <strings.h>
 #include <inttypes.h>
 #include <sys/socket.h>
+#ifndef NO_SYS_UN
 #include <sys/un.h>
+#endif
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <alloca.h>
@@ -1938,9 +1940,12 @@ int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog) {
     struct sockaddr_in  sin;
     struct sockaddr_in6 sin6;
-    struct sockaddr_un  sun;
-    struct sockaddr   * sa;
-    size_t              sin_len;
+
+#ifndef NO_SYS_UN
+    struct sockaddr_un sun;
+#endif
+    struct sockaddr  * sa;
+    size_t             sin_len;
 
     memset(&sin, 0, sizeof(sin));
 
@@ -1954,6 +1959,7 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
         evutil_inet_pton(AF_INET6, baddr, &sin6.sin6_addr);
         sa = (struct sockaddr *)&sin6;
     } else if (*baddr == '/') {
+#ifndef NO_SYS_UN
         if (strlen(baddr) >= sizeof(sun.sun_path)) {
             return -1;
         }
@@ -1966,6 +1972,10 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
         strncpy(sun.sun_path, baddr, strlen(baddr));
 
         sa = (struct sockaddr *)&sun;
+#else
+        fprintf(stderr, "System does not support AF_UNIX sockets\n");
+        return -1;
+#endif
     } else {
         sin_len             = sizeof(struct sockaddr_in);
 

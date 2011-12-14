@@ -8,6 +8,9 @@
 #include <strings.h>
 #include <inttypes.h>
 #include <sys/socket.h>
+#ifndef NO_SYS_UN
+#include <sys/un.h>
+#endif
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <alloca.h>
@@ -1937,8 +1940,12 @@ int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog) {
     struct sockaddr_in  sin;
     struct sockaddr_in6 sin6;
-    struct sockaddr   * sa;
-    size_t              sin_len;
+
+#ifndef NO_SYS_UN
+    struct sockaddr_un sun;
+#endif
+    struct sockaddr  * sa;
+    size_t             sin_len;
 
     memset(&sin, 0, sizeof(sin));
 
@@ -1951,6 +1958,24 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 
         evutil_inet_pton(AF_INET6, baddr, &sin6.sin6_addr);
         sa = (struct sockaddr *)&sin6;
+    } else if (*baddr == '/') {
+#ifndef NO_SYS_UN
+        if (strlen(baddr) >= sizeof(sun.sun_path)) {
+            return -1;
+        }
+
+        memset(&sun, 0, sizeof(sun));
+
+        sin_len        = sizeof(struct sockaddr_un);
+        sun.sun_family = AF_UNIX;
+
+        strncpy(sun.sun_path, baddr, strlen(baddr));
+
+        sa = (struct sockaddr *)&sun;
+#else
+        fprintf(stderr, "System does not support AF_UNIX sockets\n");
+        return -1;
+#endif
     } else {
         sin_len             = sizeof(struct sockaddr_in);
 
@@ -1967,7 +1992,7 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
                                           LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
                                           backlog, sa, sin_len);
     return htp->server ? 0 : -1;
-}
+} /* evhtp_bind_socket */
 
 evhtp_callbacks_t *
 evhtp_callbacks_new(unsigned int buckets) {

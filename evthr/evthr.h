@@ -5,7 +5,7 @@
 #include <sched.h>
 #include <pthread.h>
 #include <sys/queue.h>
-#include <event.h>
+#include <event2/event.h>
 #include <event2/thread.h>
 
 struct evthr_pool;

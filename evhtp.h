@@ -8,8 +8,10 @@
 #include <htparse.h>
 #include <onigposix.h>
 #include <sys/queue.h>
-#include <event.h>
+#include <event2/event.h>
 #include <event2/listener.h>
+#include <event2/buffer.h>
+#include <event2/bufferevent.h>
 
 #ifndef DISABLE_SSL
 #include <event2/bufferevent_ssl.h>

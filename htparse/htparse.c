@@ -28,6 +28,10 @@
 #define htparse_log_debug(fmt, ...) do {} while (0)
 #endif
 
+#if '\n' != '\x0a' || 'A' != 65
+#error "You have somehow found a non-ASCII host. We can't build here."
+#endif
+
 #define PARSER_STACK_MAX 8192
 #define LF               (unsigned char)10
 #define CR               (unsigned char)13

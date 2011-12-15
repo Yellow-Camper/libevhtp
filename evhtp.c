@@ -1937,6 +1937,16 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
 }
 
 int
+evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int backlog) {
+    signal(SIGPIPE, SIG_IGN);
+
+    htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
+                                          LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
+                                          backlog, sa, sin_len);
+    return htp->server ? 0 : -1;
+}
+
+int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog) {
     struct sockaddr_in  sin;
     struct sockaddr_in6 sin6;
@@ -1949,17 +1959,20 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 
     memset(&sin, 0, sizeof(sin));
 
-    if (strstr(baddr, ":")) {
+    if (!strncmp(baddr, "ipv6:", 5)) {
         memset(&sin6, 0, sizeof(sin6));
 
+        baddr           += 5;
         sin_len          = sizeof(struct sockaddr_in6);
         sin6.sin6_port   = htons(port);
         sin6.sin6_family = AF_INET6;
 
         evutil_inet_pton(AF_INET6, baddr, &sin6.sin6_addr);
         sa = (struct sockaddr *)&sin6;
-    } else if (*baddr == '/') {
+    } else if (!strncmp(baddr, "unix:", 5)) {
 #ifndef NO_SYS_UN
+        baddr += 5;
+
         if (strlen(baddr) >= sizeof(sun.sun_path)) {
             return -1;
         }
@@ -1977,6 +1990,10 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
         return -1;
 #endif
     } else {
+        if (!strncmp(baddr, "ipv4:", 5)) {
+            baddr += 5;
+        }
+
         sin_len             = sizeof(struct sockaddr_in);
 
         sin.sin_family      = AF_INET;
@@ -1986,12 +2003,7 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
         sa = (struct sockaddr *)&sin;
     }
 
-    signal(SIGPIPE, SIG_IGN);
-
-    htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
-                                          LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
-                                          backlog, sa, sin_len);
-    return htp->server ? 0 : -1;
+    return evhtp_bind_sockaddr(htp, sa, sin_len, backlog);
 } /* evhtp_bind_socket */
 
 evhtp_callbacks_t *

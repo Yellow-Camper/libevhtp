@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <errno.h>
 #include <signal.h>
-#include <ctype.h>
 #include <strings.h>
 #include <inttypes.h>
 #include <sys/socket.h>
@@ -1729,6 +1728,31 @@ typedef enum {
     s_query_done
 } query_parser_state;
 
+static inline int
+evhtp_is_hex_query_char(unsigned char ch) {
+    switch (ch) {
+        case 'a': case 'A':
+        case 'b': case 'B':
+        case 'c': case 'C':
+        case 'd': case 'D':
+        case 'e': case 'E':
+        case 'f': case 'F':
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+            return 1;
+        default:
+            return 0;
+    }
+}
+
 evhtp_query_t *
 evhtp_parse_query(const char * query, size_t len) {
     evhtp_query_t    * query_args;
@@ -1807,7 +1831,7 @@ query_key:
                 }
                 break;
             case s_query_key_hex_1:
-                if (!isalnum(ch) || ispunct(ch)) {
+                if (!evhtp_is_hex_query_char(ch)) {
                     res = -1;
                     goto error;
                 }
@@ -1818,7 +1842,7 @@ query_key:
                 state = s_query_key_hex_2;
                 break;
             case s_query_key_hex_2:
-                if (!isalnum(ch) || ispunct(ch)) {
+                if (!evhtp_is_hex_query_char(ch)) {
                     res = -1;
                     goto error;
                 }
@@ -1857,7 +1881,7 @@ query_key:
                 }     /* switch */
                 break;
             case s_query_val_hex_1:
-                if (!isalnum(ch) || ispunct(ch)) {
+                if (!evhtp_is_hex_query_char(ch)) {
                     res = -1;
                     goto error;
                 }
@@ -1868,7 +1892,7 @@ query_key:
                 state = s_query_val_hex_2;
                 break;
             case s_query_val_hex_2:
-                if (!isalnum(ch) || ispunct(ch)) {
+                if (!evhtp_is_hex_query_char(ch)) {
                     res = -1;
                     goto error;
                 }

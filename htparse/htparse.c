@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <ctype.h>
 #include <errno.h>
 #include <unistd.h>
 
@@ -269,7 +268,7 @@ str_to_uint64(char * str, size_t n, int * err) {
     for (value = 0; n--; str++) {
         uint64_t check;
 
-        if (!isdigit(*str)) {
+        if (*str < '0' || *str > '9') {
             *err = 1;
             return 0;
         }

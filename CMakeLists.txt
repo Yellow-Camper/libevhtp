@@ -106,7 +106,7 @@ message("Rel CFLAGS: ${CMAKE_C_FLAGS_RELEASE}")
 
 find_package(LibEvent)
 find_package(OpenSSL)
-find_path(LIBEVENT_INCLUDE_DIR event.h)
+find_path(LIBEVENT_INCLUDE_DIR event2/event.h)
 
 include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}/compat

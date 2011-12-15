@@ -1,3 +1,143 @@
+v0.4.4
+=====================================
+2011-12-15  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * CMakeLists.txt, evhtp.h: Prepping release v0.4.4
+
+  * ChangeLog, README, contrib/git_changelog.py: Removed README and added
+  changelog generator.
+
+  * compat/sys/queue.h.in: compat queue.h BSD-only move.
+
+  * CMakeLists.txt, compat/sys/queue.h.in: Add checks for sys/queue.h and use
+  compat when missing
+
+2011-12-14  Nick Mathewson <nickm@torproject.org>
+
+  * evhtp.c, htparse/htparse.c: Eliminate use of ctype.h  The ctype.h
+  functions, unfortunately, depend on the current locale. This makes them
+  unsuitable for handling network data, since they can tell you different
+  answers depending on what locale is set.  This patch also changes the
+  behavior of % in queries in evhtp.c. Previously, any alphanumeric,
+  non-punctuation character was acceptable.  Now, it's only hex characters.  If
+  we should change it back for some reason, there is just one function to edit.
+
+  * htparse/htparse.c: Detect non-ascii hosts and refuse to build on them  The
+  htparse library makes some assumptions about characters that are not true for
+  non-ascii-based system.  (For example, that all upper-case letters are
+  numerically between 'A' and 'Z'; or that (int)'A' is the same as the encoding
+  of 'h' on the wire.)  This is always true in practice, except for some really
+  horrible places we will never want to build. But in theory, C allows (int)'A'
+  to be basically anything.  So let's put our pedantic hats on briefly and
+  detect non-ASCII environments, if only to give an error.
+
+2011-12-14  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * evhtp.c, evhtp.h: Picked DISABLE_SSL fixes from nmathewson into develop
+
+  * CMakeModules/BaseConfig.cmake: Set -fno-strict-aliasing using gcc
+
+2011-12-14  Nick Mathewson <nickm@torproject.org>
+
+  * CMakeLists.txt, evhtp.h, evthr/evthr.c, evthr/evthr.h: Stop using the
+  deprecated event.h; use event2/event.h instead
+
+  * .gitignore: Add a .gitignore file
+
+2011-12-14  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * evhtp.c, evhtp.h: Added evhtp_bind_sockaddr()
+
+  * CMakeLists.txt, evhtp.c: Adding sys/un.h checks.
+
+  * evhtp.c: added local PF_UNIX socket listen support
+
+2011-12-13  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * docs/html/annotated.html, docs/html/bc_s.png, docs/html/classes.html,
+  docs/html/closed.png, docs/html/doxygen.css, docs/html/doxygen.png,
+  docs/html/evhtp_8c.html, docs/html/evhtp_8c_source.html,
+  docs/html/evhtp_8h.html, docs/html/evhtp_8h_source.html,
+  docs/html/files.html, docs/html/functions.html,
+  docs/html/functions_func.html, docs/html/functions_vars.html,
+  docs/html/globals.html, docs/html/globals_0x65.html,
+  docs/html/globals_0x68.html, docs/html/globals_0x71.html,
+  docs/html/globals_0x72.html, docs/html/globals_0x73.html,
+  docs/html/globals_0x74.html, docs/html/globals_defs.html,
+  docs/html/globals_enum.html, docs/html/globals_eval.html,
+  docs/html/globals_func.html, docs/html/globals_type.html,
+  docs/html/globals_vars.html, docs/html/index.html, docs/html/nav_f.png,
+  docs/html/nav_h.png, docs/html/open.png,
+  docs/html/structevhtp__authority__s.html,
+  docs/html/structevhtp__callback__s.html,
+  docs/html/structevhtp__callbacks__s.html,
+  docs/html/structevhtp__connection__s.html,
+  docs/html/structevhtp__defaults__s.html,
+  docs/html/structevhtp__hooks__s.html, docs/html/structevhtp__kv__s.html,
+  docs/html/structevhtp__path__s.html, docs/html/structevhtp__request__s.html,
+  docs/html/structevhtp__s.html, docs/html/structevhtp__ssl__cfg__s.html,
+  docs/html/structevhtp__uri__s.html, docs/html/structstatus__code.html,
+  docs/html/tab_a.png, docs/html/tab_b.png, docs/html/tab_h.png,
+  docs/html/tab_s.png, docs/html/tabs.css, docs/latex/Makefile,
+  docs/latex/annotated.tex, docs/latex/doxygen.sty, docs/latex/evhtp_8c.tex,
+  docs/latex/evhtp_8h.tex, docs/latex/files.tex, docs/latex/refman.tex,
+  docs/latex/structevhtp__authority__s.tex,
+  docs/latex/structevhtp__callback__s.tex,
+  docs/latex/structevhtp__callbacks__s.tex,
+  docs/latex/structevhtp__connection__s.tex,
+  docs/latex/structevhtp__defaults__s.tex,
+  docs/latex/structevhtp__hooks__s.tex, docs/latex/structevhtp__kv__s.tex,
+  docs/latex/structevhtp__path__s.tex, docs/latex/structevhtp__request__s.tex,
+  docs/latex/structevhtp__s.tex, docs/latex/structevhtp__ssl__cfg__s.tex,
+  docs/latex/structevhtp__uri__s.tex, docs/latex/structstatus__code.tex:
+  Removing API docs. Generate yourself!
+
+  * evhtp.c, evhtp.h: Moved callback locking as optional via
+  evhtp_use_callback_locks()
+
+  * evhtp.c, evhtp.h: Added evhtp_request_get_connection()
+
+2011-12-12  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * docs/html/annotated.html, docs/html/bc_s.png, docs/html/classes.html,
+  docs/html/closed.png, docs/html/doxygen.css, docs/html/doxygen.png,
+  docs/html/evhtp_8c.html, docs/html/evhtp_8c_source.html,
+  docs/html/evhtp_8h.html, docs/html/evhtp_8h_source.html,
+  docs/html/files.html, docs/html/functions.html,
+  docs/html/functions_func.html, docs/html/functions_vars.html,
+  docs/html/globals.html, docs/html/globals_0x65.html,
+  docs/html/globals_0x68.html, docs/html/globals_0x71.html,
+  docs/html/globals_0x72.html, docs/html/globals_0x73.html,
+  docs/html/globals_0x74.html, docs/html/globals_defs.html,
+  docs/html/globals_enum.html, docs/html/globals_eval.html,
+  docs/html/globals_func.html, docs/html/globals_type.html,
+  docs/html/globals_vars.html, docs/html/index.html, docs/html/nav_f.png,
+  docs/html/nav_h.png, docs/html/open.png,
+  docs/html/structevhtp__authority__s.html,
+  docs/html/structevhtp__callback__s.html,
+  docs/html/structevhtp__callbacks__s.html,
+  docs/html/structevhtp__connection__s.html,
+  docs/html/structevhtp__defaults__s.html,
+  docs/html/structevhtp__hooks__s.html, docs/html/structevhtp__kv__s.html,
+  docs/html/structevhtp__path__s.html, docs/html/structevhtp__request__s.html,
+  docs/html/structevhtp__s.html, docs/html/structevhtp__ssl__cfg__s.html,
+  docs/html/structevhtp__uri__s.html, docs/html/structstatus__code.html,
+  docs/html/tab_a.png, docs/html/tab_b.png, docs/html/tab_h.png,
+  docs/html/tab_s.png, docs/html/tabs.css, docs/latex/Makefile,
+  docs/latex/annotated.tex, docs/latex/doxygen.sty, docs/latex/evhtp_8c.tex,
+  docs/latex/evhtp_8h.tex, docs/latex/files.tex, docs/latex/refman.tex,
+  docs/latex/structevhtp__authority__s.tex,
+  docs/latex/structevhtp__callback__s.tex,
+  docs/latex/structevhtp__callbacks__s.tex,
+  docs/latex/structevhtp__connection__s.tex,
+  docs/latex/structevhtp__defaults__s.tex,
+  docs/latex/structevhtp__hooks__s.tex, docs/latex/structevhtp__kv__s.tex,
+  docs/latex/structevhtp__path__s.tex, docs/latex/structevhtp__request__s.tex,
+  docs/latex/structevhtp__s.tex, docs/latex/structevhtp__ssl__cfg__s.tex,
+  docs/latex/structevhtp__uri__s.tex, docs/latex/structstatus__code.tex,
+  test.c: Added api docs
+
+
 v0.4.3
 =====================================
 2011-12-12  Mark Ellzey <mark.thomas@mandiant.com>

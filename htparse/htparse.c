@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <ctype.h>
 #include <errno.h>
 #include <unistd.h>
 
@@ -26,6 +25,10 @@
 #else
 #define htparse_debug_strlen(x)     0
 #define htparse_log_debug(fmt, ...) do {} while (0)
+#endif
+
+#if '\n' != '\x0a' || 'A' != 65
+#error "You have somehow found a non-ASCII host. We can't build here."
 #endif
 
 #define PARSER_STACK_MAX 8192
@@ -265,7 +268,7 @@ str_to_uint64(char * str, size_t n, int * err) {
     for (value = 0; n--; str++) {
         uint64_t check;
 
-        if (!isdigit(*str)) {
+        if (*str < '0' || *str > '9') {
             *err = 1;
             return 0;
         }

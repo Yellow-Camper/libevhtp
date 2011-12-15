@@ -24,10 +24,14 @@
 typedef SSL_SESSION                evhtp_ssl_sess_t;
 typedef SSL                        evhtp_ssl_t;
 typedef SSL_CTX                    evhtp_ssl_ctx_t;
+typedef X509                       evhtp_x509_t;
+typedef X509_STORE_CTX             evhtp_x509_store_ctx_t;
 #else
 typedef void                       evhtp_ssl_sess_t;
 typedef void                       evhtp_ssl_t;
 typedef void                       evhtp_ssl_ctx_t;
+typedef void                       evhtp_x509_t;
+typedef void                       evhtp_x509_store_ctx_t;
 #endif
 
 typedef struct evbuffer            evbuf_t;
@@ -92,18 +96,18 @@ typedef evhtp_res (*evhtp_hook_chunks_fini_cb)(evhtp_request_t * r, void * arg);
 typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
 typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
 
-typedef int (*evhtp_ssl_verify_cb)(int pre_verify, X509_STORE_CTX * ctx);
-typedef int (*evhtp_ssl_chk_issued_cb)(X509_STORE_CTX * ctx, X509 * x, X509 * issuer);
+typedef int (*evhtp_ssl_verify_cb)(int pre_verify, evhtp_x509_store_ctx_t * ctx);
+typedef int (*evhtp_ssl_chk_issued_cb)(evhtp_x509_store_ctx_t * ctx, evhtp_x509_t * x, evhtp_x509_t * issuer);
 
 typedef int (*evhtp_ssl_scache_add)(evhtp_connection_t * connection, unsigned char * sid, int sid_len, evhtp_ssl_sess_t * sess);
 typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid_len);
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION          "0.4.3"
+#define EVHTP_VERSION          "0.4.4"
 #define EVHTP_VERSION_MAJOR    0
 #define EVHTP_VERSION_MINOR    4
-#define EVHTP_VERSION_PATCH    3
+#define EVHTP_VERSION_PATCH    4
 
 #define evhtp_headers_iterator evhtp_kvs_iterator
 
@@ -443,6 +447,17 @@ void      evhtp_set_timeouts(evhtp_t * htp, struct timeval * r, struct timeval *
 int       evhtp_ssl_use_threads(void);
 int       evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
 
+
+/**
+ * @brief creates a lock around callbacks and hooks, allowing for threaded
+ * applications to add/remove/modify hooks & callbacks in a thread-safe manner.
+ *
+ * @param htp
+ *
+ * @return 0 on success, -1 on error
+ */
+int evhtp_use_callback_locks(evhtp_t * htp);
+
 /**
  * @brief sets a callback which is called if no other callbacks are matched
  *
@@ -523,6 +538,7 @@ evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp
 int  evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * arg);
 
 int  evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port, int backlog);
+int  evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *, size_t sin_len, int backlog);
 
 int  evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
 
@@ -703,9 +719,63 @@ const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
  */
 htp_method evhtp_request_get_method(evhtp_request_t * r);
 
-void evhtp_connection_pause(evhtp_connection_t * connection);
-void evhtp_connection_resume(evhtp_connection_t * connection);
-void evhtp_request_pause(evhtp_request_t * request);
-void evhtp_request_resume(evhtp_request_t * request);
+void       evhtp_connection_pause(evhtp_connection_t * connection);
+void       evhtp_connection_resume(evhtp_connection_t * connection);
+void       evhtp_request_pause(evhtp_request_t * request);
+void       evhtp_request_resume(evhtp_request_t * request);
+
+
+
+/**
+ * @brief returns the underlying evhtp_connection_t structure from a request
+ *
+ * @param request
+ *
+ * @return evhtp_connection_t on success, otherwise NULL
+ */
+evhtp_connection_t * evhtp_request_get_connection(evhtp_request_t * request);
+
+/**
+ * @brief Sets the connections underlying bufferevent
+ *
+ * @param conn
+ * @param bev
+ */
+void evhtp_connection_set_bev(evhtp_connection_t * conn, evbev_t * bev);
+
+/**
+ * @brief sets the underlying bufferevent for a evhtp_request
+ *
+ * @param request
+ * @param bev
+ */
+void evhtp_request_set_bev(evhtp_request_t * request, evbev_t * bev);
+
+
+/**
+ * @brief returns the underlying connections bufferevent
+ *
+ * @param conn
+ *
+ * @return bufferevent on success, otherwise NULL
+ */
+evbev_t * evhtp_connection_get_bev(evhtp_connection_t * conn);
+
+/**
+ * @brief returns the underlying requests bufferevent
+ *
+ * @param request
+ *
+ * @return bufferevent on success, otherwise NULL
+ */
+evbev_t * evhtp_request_get_bev(evhtp_request_t * request);
+
+/**
+ * @brief free's all connection related resources, this will also call your
+ *        request fini hook and request fini hook.
+ *
+ * @param connection
+ */
+void evhtp_connection_free(evhtp_connection_t * connection);
 #endif /* __EVHTP__H__ */
 

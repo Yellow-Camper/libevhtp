@@ -22,10 +22,14 @@
 typedef SSL_SESSION                evhtp_ssl_sess_t;
 typedef SSL                        evhtp_ssl_t;
 typedef SSL_CTX                    evhtp_ssl_ctx_t;
+typedef X509                       evhtp_x509_t;
+typedef X509_STORE_CTX             evhtp_x509_store_ctx_t;
 #else
 typedef void                       evhtp_ssl_sess_t;
 typedef void                       evhtp_ssl_t;
 typedef void                       evhtp_ssl_ctx_t;
+typedef void                       evhtp_x509_t;
+typedef void                       evhtp_x509_store_ctx_t;
 #endif
 
 typedef struct evbuffer            evbuf_t;
@@ -90,8 +94,8 @@ typedef evhtp_res (*evhtp_hook_chunks_fini_cb)(evhtp_request_t * r, void * arg);
 typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
 typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
 
-typedef int (*evhtp_ssl_verify_cb)(int pre_verify, X509_STORE_CTX * ctx);
-typedef int (*evhtp_ssl_chk_issued_cb)(X509_STORE_CTX * ctx, X509 * x, X509 * issuer);
+typedef int (*evhtp_ssl_verify_cb)(int pre_verify, evhtp_x509_store_ctx_t * ctx);
+typedef int (*evhtp_ssl_chk_issued_cb)(evhtp_x509_store_ctx_t * ctx, evhtp_x509_t * x, evhtp_x509_t * issuer);
 
 typedef int (*evhtp_ssl_scache_add)(evhtp_connection_t * connection, unsigned char * sid, int sid_len, evhtp_ssl_sess_t * sess);
 typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid_len);

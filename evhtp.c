@@ -1083,7 +1083,7 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
         if (!evhtp_header_find(request->headers_out, "Content-Length")) {
             char lstr[23];
 
-            snprintf(lstr, sizeof(lstr), "%" PRIuMAX,
+            snprintf(lstr, sizeof(lstr), "%zu",
                      evbuffer_get_length(request->buffer_out));
 
             evhtp_headers_add_header(request->headers_out,
@@ -1294,6 +1294,7 @@ _evhtp_connection_new(evhtp_t * htp, int sock) {
 static void
 _evhtp_shutdown_eventcb(evbev_t * bev, short events, void * arg) {
 }
+
 #endif
 
 static int
@@ -1750,7 +1751,7 @@ evhtp_is_hex_query_char(unsigned char ch) {
             return 1;
         default:
             return 0;
-    }
+    } /* switch */
 }
 
 evhtp_query_t *

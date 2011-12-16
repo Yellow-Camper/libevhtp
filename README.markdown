@@ -43,6 +43,13 @@ Libevhtp attempts to address these problems along with a wide variety of cool me
 6.	Optionally morph your server to HTTPS.
 7.	Start the evhtp listener.
 
+#### Request handling.
+
+1.	Optionally deal with pre-accept and post-accept callbacks if they exist, allowing for a connection to be rejected if the function deems it as unacceptable.
+2.	Optionally assign per-request hooks (see hooks) for a request (the most optimal place for setting these hooks is on a post-accept callback).
+3.	Deal with either per-connection or per-request hook callbacks if they exist.
+4.	Once the request has been fully processed, inform evhtp to send a reply.
+
 ##### A very basic example with no optional conditions.
 
 	#include <stdio.h>
@@ -66,9 +73,3 @@ Libevhtp attempts to address these problems along with a wide variety of cool me
 	}
 
 
-#### Request handling.
-
-1.	Optionally deal with pre-accept and post-accept callbacks if they exist, allowing for a connection to be rejected if the function deems it as unacceptable.
-2.	Optionally assign per-request hooks (see hooks) for a request (the most optimal place for setting these hooks is on a post-accept callback).
-3.	Deal with either per-connection or per-request hook callbacks if they exist.
-4.	Once the request has been fully processed, inform evhtp to send a reply.

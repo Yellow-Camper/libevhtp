@@ -1,4 +1,5 @@
 # Libevhtp
+*****
 
 This document describes details on using the evhtp API
 
@@ -11,10 +12,12 @@ This document describes details on using the evhtp API
 * pthreads
 
 ## Overview
+***
 
 Libevhtp was created as a replacement API for Libevent's current HTTP API.  The reality of libevent's http interface is that it was created as a JIT server, meaning the developer never thought of it being used for creating a full-fledged HTTP service. Infact I am under the impression that the libevent http API was designed almost as an example of what you can do with libevent. It's not Apache in a box, but more and more developers are attempting to use it as so.
 
 ### Libevent's HTTP pitfalls
+***
 
 * It was not designed to be a fully functional HTTP server.
 * The code is messy, abstractions are almost non-existent, and feature-creep has made long-term maintainability very hard.
@@ -28,6 +31,7 @@ Libevhtp was created as a replacement API for Libevent's current HTTP API.  The 
 Libevhtp attempts to address these problems along with a wide variety of cool mechanisms allowing a developer to have complete control over your server operations. This is not to say the API cannot be used in a very simplistic manner - a developer can easily create a backwards compatible version of libevent's HTTP server to libevhtp.
 
 ### A bit about the architecture of libevhtp
+***
 
 #### Bootstrapping 
 
@@ -39,9 +43,32 @@ Libevhtp attempts to address these problems along with a wide variety of cool me
 6.	Optionally morph your server to HTTPS.
 7.	Start the evhtp listener.
 
+##### A very basic example with no optional conditions.
+
+	#include <stdio.h>
+	#include <evhtp.h>
+
+	void
+	testcb(evhtp_request_t * req, void * a) {
+	    evbuffer_add_reference(req->buffer_out, "foobar", 6, NULL, NULL);
+	    evhtp_send_reply(req, EVHTP_RES_OK);
+	}
+
+	int
+	main(int argc, char ** argv) {
+	    evbase_t * evbase = event_base_new();
+	    evhtp_t  * htp    = evhtp_new(evbase, NULL);
+	
+	    evhtp_set_cb(htp, "/test", testcb, NULL);
+	    evhtp_bind_socket(htp, "0.0.0.0", 8080, 1024);
+	    event_base_loop(evbase, 0);
+	    return 0;
+	}
+
+
 #### Request handling.
 
-1.	Optionally assign per-request hooks (see hooks) for request.
-2.	Optionally deal with pre-accept and post-accept callbacks if they exist, allowing for a connection to be rejected if the function deems it as unacceptable.
-2.	Deal with either per-connection or per-request hook callbacks if they exist.
-3.	Once the request has been fully processed, inform evhtp to send a reply.
+1.	Optionally deal with pre-accept and post-accept callbacks if they exist, allowing for a connection to be rejected if the function deems it as unacceptable.
+2.	Optionally assign per-request hooks (see hooks) for a request (the most optimal place for setting these hooks is on a post-accept callback).
+3.	Deal with either per-connection or per-request hook callbacks if they exist.
+4.	Once the request has been fully processed, inform evhtp to send a reply.

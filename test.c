@@ -299,7 +299,7 @@ dummy_check_issued_cb(X509_STORE_CTX * ctx, X509 * x, X509 * issuer) {
 
 #endif
 
-const char * optstr = "htn:a:p:r:s:c:";
+const char * optstr = "htn:a:p:r:s:c:C:";
 
 const char * help   =
     "Options: \n"
@@ -351,6 +351,9 @@ parse_args(int argc, char ** argv) {
                 break;
             case 'c':
                 ssl_ca      = strdup(optarg);
+                break;
+            case 'C':
+                ssl_capath  = strdup(optarg);
                 break;
 #endif
             default:

@@ -643,6 +643,17 @@ evhtp_query_t * evhtp_parse_query(const char * query, size_t len);
 
 
 /**
+ * @brief Unescapes strings like '%7B1,%202,%203%7D' would become '{1, 2, 3}'
+ *
+ * @param out double pointer where output is stored. This is allocated by the user.
+ * @param str the string to unescape
+ * @param str_len the length of the string to unescape
+ *
+ * @return 0 on success, -1 on error
+ */
+int evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len);
+
+/**
  * @brief creates a new evhtp_header_t key/val structure
  *
  * @param key a null terminated string

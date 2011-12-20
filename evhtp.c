@@ -1754,6 +1754,87 @@ evhtp_is_hex_query_char(unsigned char ch) {
     } /* switch */
 }
 
+static enum unscape_state {
+    unscape_state_start = 0,
+    unscape_state_hex1,
+    unscape_state_hex2
+};
+
+int
+evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len) {
+    unsigned char    * optr;
+    unsigned char    * sptr;
+    unsigned char      d;
+    unsigned char      ch;
+    unsigned char      c;
+    size_t             i;
+    enum unscape_state state;
+
+    if (out == NULL || *out == NULL) {
+        return -1;
+    }
+
+    state = unscape_state_start;
+    optr  = *out;
+    sptr  = str;
+    d     = 0;
+
+    for (i = 0; i < str_len; i++) {
+        ch = *sptr++;
+
+        switch (state) {
+            case unscape_state_start:
+                if (ch == '%') {
+                    state = unscape_state_hex1;
+                    break;
+                }
+
+                *optr++ = ch;
+
+                break;
+            case unscape_state_hex1:
+                if (ch >= '0' && ch <= '9') {
+                    d     = (unsigned char)(ch - '0');
+                    state = unscape_state_hex2;
+                    break;
+                }
+
+                c = (unsigned char)(ch | 0x20);
+
+                if (c >= 'a' && c <= 'f') {
+                    d     = (unsigned char)(c - 'a' + 10);
+                    state = unscape_state_hex2;
+                    break;
+                }
+
+                state   = unscape_state_start;
+                *optr++ = ch;
+                break;
+            case unscape_state_hex2:
+                state   = unscape_state_start;
+
+                if (ch >= '0' && ch <= '9') {
+                    ch      = (unsigned char)((d << 4) + ch - '0');
+
+                    *optr++ = ch;
+                    break;
+                }
+
+                c = (unsigned char)(ch | 0x20);
+
+                if (c >= 'a' && c <= 'f') {
+                    ch      = (unsigned char)((d << 4) + c - 'a' + 10);
+                    *optr++ = ch;
+                    break;
+                }
+
+                break;
+        } /* switch */
+    }
+
+    return 0;
+}         /* evhtp_unescape_string */
+
 evhtp_query_t *
 evhtp_parse_query(const char * query, size_t len) {
     evhtp_query_t    * query_args;

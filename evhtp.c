@@ -1777,7 +1777,7 @@ evhtp_is_hex_query_char(unsigned char ch) {
     } /* switch */
 }
 
-static enum unscape_state {
+enum unscape_state {
     unscape_state_start = 0,
     unscape_state_hex1,
     unscape_state_hex2

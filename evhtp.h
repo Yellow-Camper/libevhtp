@@ -92,6 +92,7 @@ typedef evhtp_res (*evhtp_hook_connection_fini_cb)(evhtp_connection_t * connecti
 typedef evhtp_res (*evhtp_hook_chunk_new_cb)(evhtp_request_t * r, uint64_t len, void * arg);
 typedef evhtp_res (*evhtp_hook_chunk_fini_cb)(evhtp_request_t * r, void * arg);
 typedef evhtp_res (*evhtp_hook_chunks_fini_cb)(evhtp_request_t * r, void * arg);
+typedef evhtp_res (*evhtp_hook_headers_start_cb)(evhtp_request_t * r, void * arg);
 
 typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
 typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
@@ -184,16 +185,17 @@ enum evhtp_ssl_scache_type {
  *        during the request processing cycle.
  */
 enum evhtp_hook_type {
-    evhtp_hook_on_header,       /**< type which defines to hook after one header has been parsed */
-    evhtp_hook_on_headers,      /**< type which defines to hook after all headers have been parsed */
-    evhtp_hook_on_path,         /**< type which defines to hook once a path has been parsed */
-    evhtp_hook_on_read,         /**< type which defines to hook whenever the parser recieves data in a body */
-    evhtp_hook_on_request_fini, /**< type which defines to hook before the request is free'd */
+    evhtp_hook_on_header,        /**< type which defines to hook after one header has been parsed */
+    evhtp_hook_on_headers,       /**< type which defines to hook after all headers have been parsed */
+    evhtp_hook_on_path,          /**< type which defines to hook once a path has been parsed */
+    evhtp_hook_on_read,          /**< type which defines to hook whenever the parser recieves data in a body */
+    evhtp_hook_on_request_fini,  /**< type which defines to hook before the request is free'd */
     evhtp_hook_on_connection_fini,
     evhtp_hook_on_new_chunk,
     evhtp_hook_on_chunk_complete,
     evhtp_hook_on_chunks_complete,
-    evhtp_hook_on_error         /**< type which defines to hook whenever an error occurs */
+    evhtp_hook_on_headers_start, /**< called right after full request, but before headers */
+    evhtp_hook_on_error          /**< type which defines to hook whenever an error occurs */
 };
 
 enum evhtp_callback_type {
@@ -388,6 +390,7 @@ struct evhtp_connection_s {
 };
 
 struct evhtp_hooks_s {
+    evhtp_hook_headers_start_cb   on_headers_start;
     evhtp_hook_header_cb          on_header;
     evhtp_hook_headers_cb         on_headers;
     evhtp_hook_path_cb            on_path;
@@ -399,6 +402,7 @@ struct evhtp_hooks_s {
     evhtp_hook_chunk_fini_cb      on_chunk_fini;
     evhtp_hook_chunks_fini_cb     on_chunks_fini;
 
+    void * on_headers_start_arg;
     void * on_header_arg;
     void * on_headers_arg;
     void * on_path_arg;

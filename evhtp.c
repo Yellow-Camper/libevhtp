@@ -28,6 +28,7 @@ static int                  _evhtp_request_parser_fini(htparser * p);
 static int                  _evhtp_request_parser_chunk_new(htparser * p);
 static int                  _evhtp_request_parser_chunk_fini(htparser * p);
 static int                  _evhtp_request_parser_chunks_fini(htparser * p);
+static int                  _evhtp_request_parser_headers_start(htparser * p);
 
 static void                 _evhtp_connection_readcb(evbev_t * bev, void * arg);
 
@@ -205,7 +206,7 @@ static htparse_hooks request_psets = {
     .path               = _evhtp_request_parser_path,
     .args               = _evhtp_request_parser_args,
     .uri                = NULL,
-    .on_hdrs_begin      = NULL,
+    .on_hdrs_begin      = _evhtp_request_parser_headers_start,
     .hdr_key            = _evhtp_request_parser_header_key,
     .hdr_val            = _evhtp_request_parser_header_val,
     .on_hdrs_complete   = _evhtp_request_parser_headers,
@@ -436,6 +437,13 @@ _evhtp_chunk_fini_hook(evhtp_request_t * request) {
 static evhtp_res
 _evhtp_chunks_fini_hook(evhtp_request_t * request) {
     HOOK_REQUEST_RUN_NARGS(request, on_chunks_fini);
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
+_evhtp_headers_start_hook(evhtp_request_t * request) {
+    HOOK_REQUEST_RUN_NARGS(request, on_headers_start);
 
     return EVHTP_RES_OK;
 }
@@ -838,6 +846,17 @@ _evhtp_request_parser_args(htparser * p, const char * data, size_t len) {
 }
 
 static int
+_evhtp_request_parser_headers_start(htparser * p) {
+    evhtp_connection_t * c = htparser_get_userdata(p);
+
+    if ((c->request->status = _evhtp_headers_start_hook(c->request)) != EVHTP_RES_OK) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
 _evhtp_request_parser_header_key(htparser * p, const char * data, size_t len) {
     evhtp_connection_t * c = htparser_get_userdata(p);
     char               * key_s;     /* = strndup(data, len); */
@@ -1124,6 +1143,8 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
             }
             break;
         default:
+            /* this sometimes happens when a response is made but paused before
+             * the method has been parsed */
             break;
     }
 
@@ -2266,8 +2287,12 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * a
     }
 
     switch (type) {
+        case evhtp_hook_on_headers_start:
+            (*hooks)->on_headers_start       = (evhtp_hook_headers_start_cb)cb;
+            (*hooks)->on_headers_start_arg   = arg;
+            break;
         case evhtp_hook_on_header:
-            (*hooks)->on_header              = (evhtp_hook_header_cb)cb;
+            (*hooks)->on_header = (evhtp_hook_header_cb)cb;
             (*hooks)->on_header_arg          = arg;
             break;
         case evhtp_hook_on_headers:
@@ -2275,11 +2300,11 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * a
             (*hooks)->on_headers_arg         = arg;
             break;
         case evhtp_hook_on_path:
-            (*hooks)->on_path                = (evhtp_hook_path_cb)cb;
+            (*hooks)->on_path = (evhtp_hook_path_cb)cb;
             (*hooks)->on_path_arg            = arg;
             break;
         case evhtp_hook_on_read:
-            (*hooks)->on_read                = (evhtp_hook_read_cb)cb;
+            (*hooks)->on_read = (evhtp_hook_read_cb)cb;
             (*hooks)->on_read_arg            = arg;
             break;
         case evhtp_hook_on_request_fini:
@@ -2291,7 +2316,7 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * a
             (*hooks)->on_connection_fini_arg = arg;
             break;
         case evhtp_hook_on_error:
-            (*hooks)->on_error               = (evhtp_hook_err_cb)cb;
+            (*hooks)->on_error = (evhtp_hook_err_cb)cb;
             (*hooks)->on_error_arg           = arg;
             break;
         case evhtp_hook_on_new_chunk:

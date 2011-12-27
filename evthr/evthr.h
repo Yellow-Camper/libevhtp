@@ -1,4 +1,6 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1
+#endif
 #ifndef __EVTHR_H__
 #define __EVTHR_H__
 

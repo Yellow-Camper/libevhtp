@@ -1,7 +1,7 @@
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
 
-#ifndef DISABLE_EVTHR
+#ifndef EVHTP_DISABLE_EVTHR
 #include <evthr.h>
 #endif
 
@@ -13,7 +13,7 @@
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
 #include <event2/bufferevent_ssl.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
 typedef SSL_SESSION               evhtp_ssl_sess_t;
 typedef SSL                       evhtp_ssl_t;
 typedef SSL_CTX                   evhtp_ssl_ctx_t;
@@ -42,7 +42,7 @@ typedef struct evbuffer           evbuf_t;
 typedef struct event              event_t;
 typedef struct evconnlistener     evserv_t;
 typedef struct bufferevent        evbev_t;
-#ifdef DISABLE_EVTHR
+#ifdef EVHTP_DISABLE_EVTHR
 typedef struct event_base         evbase_t;
 typedef void                      evthr_t;
 typedef void                      evthr_pool_t;
@@ -98,6 +98,7 @@ enum evhtp_hook_type {
     evhtp_hook_on_new_chunk,
     evhtp_hook_on_chunk_complete,
     evhtp_hook_on_chunks_complete,
+    evhtp_hook_on_headers_start,
     evhtp_hook_on_error         /**< type which defines to hook whenever an error occurs */
 };
 

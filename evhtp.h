@@ -382,7 +382,7 @@ struct evhtp_connection_s {
     evbase_t        * evbase;
     evbev_t         * bev;
     evthr_t         * thread;
-    evhtp_ssl_t     * ssl_ctx;
+    evhtp_ssl_t     * ssl;
     evhtp_hooks_t   * hooks;
     htparser        * parser;
     event_t         * resume_ev;

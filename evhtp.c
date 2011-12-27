@@ -1248,12 +1248,12 @@ static int
 _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
 #ifndef DISABLE_SSL
     if (connection->htp->ssl_ctx != NULL) {
-        connection->ssl_ctx = SSL_new(connection->htp->ssl_ctx);
-        connection->bev     = bufferevent_openssl_socket_new(evbase,
-                                                             connection->sock, connection->ssl_ctx,
-                                                             BUFFEREVENT_SSL_ACCEPTING,
-                                                             BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
-        SSL_set_app_data(connection->ssl_ctx, connection);
+        connection->ssl = SSL_new(connection->htp->ssl_ctx);
+        connection->bev = bufferevent_openssl_socket_new(evbase,
+                                                         connection->sock, connection->ssl,
+                                                         BUFFEREVENT_SSL_ACCEPTING,
+                                                         BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
+        SSL_set_app_data(connection->ssl, connection);
         goto end;
     }
 #endif
@@ -1298,7 +1298,7 @@ _evhtp_connection_new(evhtp_t * htp, int sock) {
     connection->evbase    = NULL;
     connection->bev       = NULL;
     connection->thread    = NULL;
-    connection->ssl_ctx   = NULL;
+    connection->ssl       = NULL;
     connection->hooks     = NULL;
     connection->request   = NULL;
     connection->resume_ev = NULL;
@@ -2635,10 +2635,10 @@ evhtp_connection_free(evhtp_connection_t * connection) {
         bufferevent_shutdown(connection->bev, _evhtp_shutdown_eventcb);
 #else
 #ifndef DISABLE_SSL
-        if (connection->ssl_ctx != NULL) {
-            SSL_set_shutdown(connection->ssl_ctx,
+        if (connection->ssl != NULL) {
+            SSL_set_shutdown(connection->ssl,
                              SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
-            SSL_shutdown(connection->ssl_ctx);
+            SSL_shutdown(connection->ssl);
         }
 #endif
         bufferevent_free(connection->bev);

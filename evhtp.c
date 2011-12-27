@@ -1145,8 +1145,10 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
         default:
             /* this sometimes happens when a response is made but paused before
              * the method has been parsed */
+            htparser_set_major(request->conn->parser, 1);
+            htparser_set_minor(request->conn->parser, 0);
             break;
-    }
+    } /* switch */
 
     /* add the status line */
     evbuffer_add_printf(buf, "HTTP/%d.%d %d %s\r\n",

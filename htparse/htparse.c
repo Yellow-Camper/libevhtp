@@ -370,7 +370,6 @@ htparser_get_methodstr(htparser * p) {
     return method_strmap[p->method];
 }
 
-
 void
 htparser_set_major(htparser * p, unsigned char major) {
     p->major = major;

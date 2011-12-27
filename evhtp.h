@@ -20,6 +20,10 @@
 #include <openssl/rand.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef DISABLE_SSL
 typedef SSL_SESSION                evhtp_ssl_sess_t;
 typedef SSL                        evhtp_ssl_t;
@@ -72,6 +76,41 @@ typedef uint8_t                    evhtp_error_flags;
 #define evhtp_header_t  evhtp_kv_t
 #define evhtp_headers_t evhtp_kvs_t
 #define evhtp_query_t   evhtp_kvs_t
+
+enum evhtp_ssl_scache_type {
+    evhtp_ssl_scache_type_disabled = 0,
+    evhtp_ssl_scache_type_internal,
+    evhtp_ssl_scache_type_user,
+    evhtp_ssl_scache_type_builtin
+};
+
+/**
+ * @brief types associated with where a developer can hook into
+ *        during the request processing cycle.
+ */
+enum evhtp_hook_type {
+    evhtp_hook_on_header,       /**< type which defines to hook after one header has been parsed */
+    evhtp_hook_on_headers,      /**< type which defines to hook after all headers have been parsed */
+    evhtp_hook_on_path,         /**< type which defines to hook once a path has been parsed */
+    evhtp_hook_on_read,         /**< type which defines to hook whenever the parser recieves data in a body */
+    evhtp_hook_on_request_fini, /**< type which defines to hook before the request is free'd */
+    evhtp_hook_on_connection_fini,
+    evhtp_hook_on_new_chunk,
+    evhtp_hook_on_chunk_complete,
+    evhtp_hook_on_chunks_complete,
+    evhtp_hook_on_error         /**< type which defines to hook whenever an error occurs */
+};
+
+enum evhtp_callback_type {
+    evhtp_callback_type_hash,
+    evhtp_callback_type_regex
+};
+
+enum evhtp_proto {
+    EVHTP_PROTO_INVALID,
+    EVHTP_PROTO_10,
+    EVHTP_PROTO_11
+};
 
 typedef enum evhtp_hook_type       evhtp_hook_type;
 typedef enum evhtp_callback_type   evhtp_callback_type;
@@ -171,42 +210,6 @@ typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_GWTIMEOUT    504
 #define EVHTP_RES_VERNSUPPORT  505
 #define EVHTP_RES_BWEXEED      509
-
-enum evhtp_ssl_scache_type {
-    evhtp_ssl_scache_type_disabled = 0,
-    evhtp_ssl_scache_type_internal,
-    evhtp_ssl_scache_type_user,
-    evhtp_ssl_scache_type_builtin
-};
-
-/**
- * @brief types associated with where a developer can hook into
- *        during the request processing cycle.
- */
-enum evhtp_hook_type {
-    evhtp_hook_on_header,       /**< type which defines to hook after one header has been parsed */
-    evhtp_hook_on_headers,      /**< type which defines to hook after all headers have been parsed */
-    evhtp_hook_on_path,         /**< type which defines to hook once a path has been parsed */
-    evhtp_hook_on_read,         /**< type which defines to hook whenever the parser recieves data in a body */
-    evhtp_hook_on_request_fini, /**< type which defines to hook before the request is free'd */
-    evhtp_hook_on_connection_fini,
-    evhtp_hook_on_new_chunk,
-    evhtp_hook_on_chunk_complete,
-    evhtp_hook_on_chunks_complete,
-    evhtp_hook_on_error         /**< type which defines to hook whenever an error occurs */
-};
-
-enum evhtp_callback_type {
-    evhtp_callback_type_hash,
-    evhtp_callback_type_regex
-};
-
-enum evhtp_proto {
-    EVHTP_PROTO_INVALID,
-    EVHTP_PROTO_10,
-    EVHTP_PROTO_11
-};
-
 
 struct evhtp_defaults_s {
     evhtp_callback_cb    cb;
@@ -777,5 +780,9 @@ evbev_t * evhtp_request_get_bev(evhtp_request_t * request);
  * @param connection
  */
 void evhtp_connection_free(evhtp_connection_t * connection);
-#endif /* __EVHTP__H__ */
 
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __EVHTP__H__ */

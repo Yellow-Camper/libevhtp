@@ -1,4 +1,4 @@
-#define _GNU_SOURCE
+#define _GNU_SOURCE 1
 #ifndef __EVTHR_H__
 #define __EVTHR_H__
 
@@ -7,6 +7,14 @@
 #include <sys/queue.h>
 #include <event2/event.h>
 #include <event2/thread.h>
+
+enum evthr_res {
+    EVTHR_RES_OK = 0,
+    EVTHR_RES_BACKLOG,
+    EVTHR_RES_RETRY,
+    EVTHR_RES_NOCB,
+    EVTHR_RES_FATAL
+};
 
 struct evthr_pool;
 struct evthr;
@@ -20,14 +28,6 @@ typedef enum evthr_res    evthr_res;
 
 typedef void (*evthr_cb)(evthr_t * thr, void * cmd_arg, void * shared);
 typedef void (*evthr_init_cb)(evthr_t * thr, void * shared);
-
-enum evthr_res {
-    EVTHR_RES_OK = 0,
-    EVTHR_RES_BACKLOG,
-    EVTHR_RES_RETRY,
-    EVTHR_RES_NOCB,
-    EVTHR_RES_FATAL
-};
 
 evthr_t      * evthr_new(evthr_init_cb init_cb, void * arg);
 evbase_t     * evthr_get_base(evthr_t * thr);

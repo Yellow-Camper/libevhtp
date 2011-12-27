@@ -3,17 +3,6 @@
 
 struct htparser;
 
-typedef struct htparser      htparser;
-typedef struct htparse_hooks htparse_hooks;
-
-typedef enum htp_scheme      htp_scheme;
-typedef enum htp_method      htp_method;
-typedef enum htp_type        htp_type;
-typedef enum htpparse_error  htpparse_error;
-
-typedef int (*htparse_hook)(htparser *);
-typedef int (*htparse_data_hook)(htparser *, const char *, size_t);
-
 enum htp_type {
     htp_type_request = 0,
     htp_type_response
@@ -61,6 +50,17 @@ enum htpparse_error {
     htparse_error_user,
     htparse_error_generic
 };
+
+typedef struct htparser      htparser;
+typedef struct htparse_hooks htparse_hooks;
+
+typedef enum htp_scheme      htp_scheme;
+typedef enum htp_method      htp_method;
+typedef enum htp_type        htp_type;
+typedef enum htpparse_error  htpparse_error;
+
+typedef int (*htparse_hook)(htparser *);
+typedef int (*htparse_data_hook)(htparser *, const char *, size_t);
 
 
 struct htparse_hooks {

@@ -3,17 +3,6 @@
 
 struct htparser;
 
-typedef struct htparser      htparser;
-typedef struct htparse_hooks htparse_hooks;
-
-typedef enum htp_scheme      htp_scheme;
-typedef enum htp_method      htp_method;
-typedef enum htp_type        htp_type;
-typedef enum htpparse_error  htpparse_error;
-
-typedef int (*htparse_hook)(htparser *);
-typedef int (*htparse_data_hook)(htparser *, const char *, size_t);
-
 enum htp_type {
     htp_type_request = 0,
     htp_type_response
@@ -62,6 +51,17 @@ enum htpparse_error {
     htparse_error_generic
 };
 
+typedef struct htparser      htparser;
+typedef struct htparse_hooks htparse_hooks;
+
+typedef enum htp_scheme      htp_scheme;
+typedef enum htp_method      htp_method;
+typedef enum htp_type        htp_type;
+typedef enum htpparse_error  htpparse_error;
+
+typedef int (*htparse_hook)(htparser *);
+typedef int (*htparse_data_hook)(htparser *, const char *, size_t);
+
 
 struct htparse_hooks {
     htparse_hook      on_msg_begin;
@@ -89,6 +89,8 @@ int            htparser_should_keep_alive(htparser * p);
 htp_scheme     htparser_get_scheme(htparser *);
 htp_method     htparser_get_method(htparser *);
 const char   * htparser_get_methodstr(htparser *);
+void           htparser_set_major(htparser *, unsigned char);
+void           htparser_set_minor(htparser *, unsigned char);
 unsigned char  htparser_get_major(htparser *);
 unsigned char  htparser_get_minor(htparser *);
 unsigned int   htparser_get_status(htparser *);

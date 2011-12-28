@@ -1,7 +1,7 @@
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
 
-#ifndef DISABLE_EVTHR
+#ifndef EVHTP_DISABLE_EVTHR
 #include <evthr.h>
 #endif
 
@@ -13,56 +13,60 @@
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
 #include <event2/bufferevent_ssl.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
 #endif
 
-#ifndef DISABLE_SSL
-typedef SSL_SESSION                evhtp_ssl_sess_t;
-typedef SSL                        evhtp_ssl_t;
-typedef SSL_CTX                    evhtp_ssl_ctx_t;
-typedef X509                       evhtp_x509_t;
-typedef X509_STORE_CTX             evhtp_x509_store_ctx_t;
-#else
-typedef void                       evhtp_ssl_sess_t;
-typedef void                       evhtp_ssl_t;
-typedef void                       evhtp_ssl_ctx_t;
-typedef void                       evhtp_x509_t;
-typedef void                       evhtp_x509_store_ctx_t;
+#ifdef __cplusplus
+extern "C" {
 #endif
 
-typedef struct evbuffer            evbuf_t;
-typedef struct event               event_t;
-typedef struct evconnlistener      evserv_t;
-typedef struct bufferevent         evbev_t;
-#ifdef DISABLE_EVTHR
-typedef struct event_base          evbase_t;
-typedef void                       evthr_t;
-typedef void                       evthr_pool_t;
-typedef void                       evhtp_mutex_t;
+#ifndef EVHTP_DISABLE_SSL
+typedef SSL_SESSION               evhtp_ssl_sess_t;
+typedef SSL                       evhtp_ssl_t;
+typedef SSL_CTX                   evhtp_ssl_ctx_t;
+typedef X509                      evhtp_x509_t;
+typedef X509_STORE_CTX            evhtp_x509_store_ctx_t;
 #else
-typedef pthread_mutex_t            evhtp_mutex_t;
+typedef void                      evhtp_ssl_sess_t;
+typedef void                      evhtp_ssl_t;
+typedef void                      evhtp_ssl_ctx_t;
+typedef void                      evhtp_x509_t;
+typedef void                      evhtp_x509_store_ctx_t;
 #endif
 
-typedef struct evhtp_s             evhtp_t;
-typedef struct evhtp_defaults_s    evhtp_defaults_t;
-typedef struct evhtp_callbacks_s   evhtp_callbacks_t;
-typedef struct evhtp_callback_s    evhtp_callback_t;
-typedef struct evhtp_defaults_s    evhtp_defaults_5;
-typedef struct evhtp_kv_s          evhtp_kv_t;
-typedef struct evhtp_kvs_s         evhtp_kvs_t;
-typedef struct evhtp_uri_s         evhtp_uri_t;
-typedef struct evhtp_path_s        evhtp_path_t;
-typedef struct evhtp_authority_s   evhtp_authority_t;
-typedef struct evhtp_request_s     evhtp_request_t;
-typedef struct evhtp_hooks_s       evhtp_hooks_t;
-typedef struct evhtp_connection_s  evhtp_connection_t;
-typedef struct evhtp_ssl_cfg_s     evhtp_ssl_cfg_t;
-typedef uint16_t                   evhtp_res;
-typedef uint8_t                    evhtp_error_flags;
+typedef struct evbuffer           evbuf_t;
+typedef struct event              event_t;
+typedef struct evconnlistener     evserv_t;
+typedef struct bufferevent        evbev_t;
+#ifdef EVHTP_DISABLE_EVTHR
+typedef struct event_base         evbase_t;
+typedef void                      evthr_t;
+typedef void                      evthr_pool_t;
+typedef void                      evhtp_mutex_t;
+#else
+typedef pthread_mutex_t           evhtp_mutex_t;
+#endif
+
+typedef struct evhtp_s            evhtp_t;
+typedef struct evhtp_defaults_s   evhtp_defaults_t;
+typedef struct evhtp_callbacks_s  evhtp_callbacks_t;
+typedef struct evhtp_callback_s   evhtp_callback_t;
+typedef struct evhtp_defaults_s   evhtp_defaults_5;
+typedef struct evhtp_kv_s         evhtp_kv_t;
+typedef struct evhtp_kvs_s        evhtp_kvs_t;
+typedef struct evhtp_uri_s        evhtp_uri_t;
+typedef struct evhtp_path_s       evhtp_path_t;
+typedef struct evhtp_authority_s  evhtp_authority_t;
+typedef struct evhtp_request_s    evhtp_request_t;
+typedef struct evhtp_hooks_s      evhtp_hooks_t;
+typedef struct evhtp_connection_s evhtp_connection_t;
+typedef struct evhtp_ssl_cfg_s    evhtp_ssl_cfg_t;
+typedef uint16_t                  evhtp_res;
+typedef uint8_t                   evhtp_error_flags;
 
 
 #define evhtp_header_s  evhtp_kv_s
@@ -72,6 +76,42 @@ typedef uint8_t                    evhtp_error_flags;
 #define evhtp_header_t  evhtp_kv_t
 #define evhtp_headers_t evhtp_kvs_t
 #define evhtp_query_t   evhtp_kvs_t
+
+enum evhtp_ssl_scache_type {
+    evhtp_ssl_scache_type_disabled = 0,
+    evhtp_ssl_scache_type_internal,
+    evhtp_ssl_scache_type_user,
+    evhtp_ssl_scache_type_builtin
+};
+
+/**
+ * @brief types associated with where a developer can hook into
+ *        during the request processing cycle.
+ */
+enum evhtp_hook_type {
+    evhtp_hook_on_header,       /**< type which defines to hook after one header has been parsed */
+    evhtp_hook_on_headers,      /**< type which defines to hook after all headers have been parsed */
+    evhtp_hook_on_path,         /**< type which defines to hook once a path has been parsed */
+    evhtp_hook_on_read,         /**< type which defines to hook whenever the parser recieves data in a body */
+    evhtp_hook_on_request_fini, /**< type which defines to hook before the request is free'd */
+    evhtp_hook_on_connection_fini,
+    evhtp_hook_on_new_chunk,
+    evhtp_hook_on_chunk_complete,
+    evhtp_hook_on_chunks_complete,
+    evhtp_hook_on_headers_start,
+    evhtp_hook_on_error         /**< type which defines to hook whenever an error occurs */
+};
+
+enum evhtp_callback_type {
+    evhtp_callback_type_hash,
+    evhtp_callback_type_regex
+};
+
+enum evhtp_proto {
+    EVHTP_PROTO_INVALID,
+    EVHTP_PROTO_10,
+    EVHTP_PROTO_11
+};
 
 typedef enum evhtp_hook_type       evhtp_hook_type;
 typedef enum evhtp_callback_type   evhtp_callback_type;
@@ -92,6 +132,7 @@ typedef evhtp_res (*evhtp_hook_connection_fini_cb)(evhtp_connection_t * connecti
 typedef evhtp_res (*evhtp_hook_chunk_new_cb)(evhtp_request_t * r, uint64_t len, void * arg);
 typedef evhtp_res (*evhtp_hook_chunk_fini_cb)(evhtp_request_t * r, void * arg);
 typedef evhtp_res (*evhtp_hook_chunks_fini_cb)(evhtp_request_t * r, void * arg);
+typedef evhtp_res (*evhtp_hook_headers_start_cb)(evhtp_request_t * r, void * arg);
 
 typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
 typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
@@ -104,10 +145,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION          "0.4.4"
+#define EVHTP_VERSION          "0.4.5"
 #define EVHTP_VERSION_MAJOR    0
 #define EVHTP_VERSION_MINOR    4
-#define EVHTP_VERSION_PATCH    4
+#define EVHTP_VERSION_PATCH    5
 
 #define evhtp_headers_iterator evhtp_kvs_iterator
 
@@ -171,42 +212,6 @@ typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_GWTIMEOUT    504
 #define EVHTP_RES_VERNSUPPORT  505
 #define EVHTP_RES_BWEXEED      509
-
-enum evhtp_ssl_scache_type {
-    evhtp_ssl_scache_type_disabled = 0,
-    evhtp_ssl_scache_type_internal,
-    evhtp_ssl_scache_type_user,
-    evhtp_ssl_scache_type_builtin
-};
-
-/**
- * @brief types associated with where a developer can hook into
- *        during the request processing cycle.
- */
-enum evhtp_hook_type {
-    evhtp_hook_on_header,       /**< type which defines to hook after one header has been parsed */
-    evhtp_hook_on_headers,      /**< type which defines to hook after all headers have been parsed */
-    evhtp_hook_on_path,         /**< type which defines to hook once a path has been parsed */
-    evhtp_hook_on_read,         /**< type which defines to hook whenever the parser recieves data in a body */
-    evhtp_hook_on_request_fini, /**< type which defines to hook before the request is free'd */
-    evhtp_hook_on_connection_fini,
-    evhtp_hook_on_new_chunk,
-    evhtp_hook_on_chunk_complete,
-    evhtp_hook_on_chunks_complete,
-    evhtp_hook_on_error         /**< type which defines to hook whenever an error occurs */
-};
-
-enum evhtp_callback_type {
-    evhtp_callback_type_hash,
-    evhtp_callback_type_regex
-};
-
-enum evhtp_proto {
-    EVHTP_PROTO_INVALID,
-    EVHTP_PROTO_10,
-    EVHTP_PROTO_11
-};
-
 
 struct evhtp_defaults_s {
     evhtp_callback_cb    cb;
@@ -377,7 +382,7 @@ struct evhtp_connection_s {
     evbase_t        * evbase;
     evbev_t         * bev;
     evthr_t         * thread;
-    evhtp_ssl_t     * ssl_ctx;
+    evhtp_ssl_t     * ssl;
     evhtp_hooks_t   * hooks;
     htparser        * parser;
     event_t         * resume_ev;
@@ -388,6 +393,7 @@ struct evhtp_connection_s {
 };
 
 struct evhtp_hooks_s {
+    evhtp_hook_headers_start_cb   on_headers_start;
     evhtp_hook_header_cb          on_header;
     evhtp_hook_headers_cb         on_headers;
     evhtp_hook_path_cb            on_path;
@@ -399,6 +405,7 @@ struct evhtp_hooks_s {
     evhtp_hook_chunk_fini_cb      on_chunk_fini;
     evhtp_hook_chunks_fini_cb     on_chunks_fini;
 
+    void * on_headers_start_arg;
     void * on_header_arg;
     void * on_headers_arg;
     void * on_path_arg;
@@ -643,6 +650,17 @@ evhtp_query_t * evhtp_parse_query(const char * query, size_t len);
 
 
 /**
+ * @brief Unescapes strings like '%7B1,%202,%203%7D' would become '{1, 2, 3}'
+ *
+ * @param out double pointer where output is stored. This is allocated by the user.
+ * @param str the string to unescape
+ * @param str_len the length of the string to unescape
+ *
+ * @return 0 on success, -1 on error
+ */
+int evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len);
+
+/**
  * @brief creates a new evhtp_header_t key/val structure
  *
  * @param key a null terminated string
@@ -777,5 +795,9 @@ evbev_t * evhtp_request_get_bev(evhtp_request_t * request);
  * @param connection
  */
 void evhtp_connection_free(evhtp_connection_t * connection);
-#endif /* __EVHTP__H__ */
 
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __EVHTP__H__ */

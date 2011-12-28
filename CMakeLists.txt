@@ -114,9 +114,9 @@ message("Std CFLAGS: ${CMAKE_C_FLAGS}")
 message("Dbg CFLAGS: ${CMAKE_C_FLAGS_DEBUG}")
 message("Rel CFLAGS: ${CMAKE_C_FLAGS_RELEASE}")
 
-find_package(LibEvent)
+find_package(LibEvent REQUIRED)
 find_package(OpenSSL)
-find_path(LIBEVENT_INCLUDE_DIR event2/event.h)
+find_path(LIBEVENT_INCLUDE_DIR event2/event.h REQUIRED)
 
 include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}/compat

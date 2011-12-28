@@ -1,3 +1,47 @@
+v0.4.5
+=====================================
+
+NOTE: Any code which accesses connection->ssl_ctx directly must change to use connection->ssl.
+
+2011-12-28  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * CMakeLists.txt: Set libevent as a required dependency
+
+2011-12-27  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * evhtp.c: inline enum's should not be static.
+
+  * CMakeLists.txt, CMakeModules/BaseConfig.cmake, evhtp.h: Changes to DISABLE
+  to EVHTP_DISABLE, also fixed enum hook missing from last merge.
+
+  * evthr/evthr.h: Added #ifndef _GNU_SOURCE before setting it again.
+
+2011-12-27  Andy Hochhaus <ahochhaus@samegoal.com>
+
+  * evhtp.h, evthr/evthr.h, htparse/htparse.h: Fix C++/clang++ build.
+
+2011-12-27  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * evhtp.c, htparse/htparse.c, htparse/htparse.h: Added
+  htparser_set_(major|minor). fixed edgecase where major/minor is not yet set.
+
+  * evhtp.c, evhtp.h, htparse/htparse.c: added on_headers_start hook (before
+  header parsing, post requestline parsing).
+
+2011-12-20  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * evhtp.c, evhtp.h: Added evhtp_unescape_string() to unescape query type
+  strings.
+
+2011-12-16  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * README.markdown: Documentation updates
+
+  * README.markdown: Documentation updates.
+
+  * README.markdown: Initial markdown-based API documentation.
+
+
 v0.4.4
 =====================================
 2011-12-15  Mark Ellzey <mark.thomas@mandiant.com>

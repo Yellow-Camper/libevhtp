@@ -101,6 +101,7 @@ test_pause_cb(evhtp_request_t * request, void * arg) {
     evhtp_send_reply(request, EVHTP_RES_OK);
 }
 
+#ifndef EVHTP_DISABLE_REGEX
 static void
 test_regex(evhtp_request_t * req, void * arg) {
     evbuffer_add_printf(req->buffer_out,
@@ -110,6 +111,7 @@ test_regex(evhtp_request_t * req, void * arg) {
 
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
+#endif
 
 static void
 dynamic_cb(evhtp_request_t * r, void * arg) {
@@ -247,10 +249,12 @@ print_chunks_complete(evhtp_request_t * req, void * arg) {
     return EVHTP_RES_OK;
 }
 
+#ifndef EVHTP_DISABLE_REGEX
 static evhtp_res
 test_regex_hdrs_cb(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
     return EVHTP_RES_OK;
 }
+#endif
 
 static evhtp_res
 test_pre_accept(int fd, struct sockaddr * sin, int sl, void * arg) {
@@ -404,15 +408,21 @@ main(int argc, char ** argv) {
     cb_3   = evhtp_set_cb(htp, "/foo/", test_foo_cb, "bar");
     cb_4   = evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
     cb_5   = evhtp_set_cb(htp, "/500", test_500_cb, "500");
+#ifndef EVHTP_DISABLE_REGEX
     cb_6   = evhtp_set_regex_cb(htp, "^(/anything/).*", test_regex, NULL);
+#endif
     cb_7   = evhtp_set_cb(htp, "/pause", test_pause_cb, NULL);
+#ifndef EVHTP_DISABLE_REGEX
     cb_8   = evhtp_set_regex_cb(htp, "^/create/(.*)", create_callback, NULL);
+#endif
 
     /* set a callback to pause on each header for cb_7 */
     evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, NULL);
 
     /* set a callback to set hooks specifically for the cb_6 callback */
+#ifndef EVHTP_DISABLE_REGEX
     evhtp_set_hook(&cb_6->hooks, evhtp_hook_on_headers, test_regex_hdrs_cb, NULL);
+#endif
 
     /* set a default request handler */
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");

@@ -153,7 +153,8 @@ test_500_cb(evhtp_request_t * req, void * arg ) {
     evbuffer_add_reference(req->buffer_out,
                            "test_500_cb\n", 12, NULL, NULL);
 
-    evhtp_send_reply(req, EVHTP_RES_SERVERR);
+    evhtp_send_reply(req, 404);
+    //evhtp_send_reply(req, EVHTP_RES_SERVERR);
 }
 
 static void

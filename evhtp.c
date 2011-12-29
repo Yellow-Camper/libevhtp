@@ -1230,15 +1230,20 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
 
 static void
 _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
+    evhtp_connection_t * c;
+
     if ((events & BEV_EVENT_CONNECTED)) {
         return;
     }
 
-    evhtp_connection_t * c = arg;
-    c->error = 1;
+    c = arg;
 
-    if (c->request) {
-        c->request->error = 1;
+    if (c->ssl && !(events & BEV_EVENT_EOF)) {
+        c->error = 1;
+
+        if (c->request) {
+            c->request->error = 1;
+        }
     }
 
     return evhtp_connection_free((evhtp_connection_t *)arg);

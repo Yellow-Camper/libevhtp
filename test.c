@@ -157,10 +157,10 @@ test_500_cb(evhtp_request_t * req, void * arg ) {
 }
 
 const char * chunk_strings[] = {
-    "I give you the light of Eärendil, ",
-    "our most beloved star.",
-    "May it be a light for you in dark places, ",
-    "when all other lights go out.",
+    "I give you the light of Eärendil,\n",
+    "our most beloved star.\n",
+    "May it be a light for you in dark places,\n",
+    "when all other lights go out.\n",
     NULL
 };
 

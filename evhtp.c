@@ -1096,14 +1096,22 @@ static evbuf_t *
 _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
     evbuf_t * buf = evbuffer_new();
 
-    if (evbuffer_get_length(request->buffer_out)) {
+    if (evbuffer_get_length(request->buffer_out) && request->chunked == 0) {
         /* add extra headers (like content-length/type) if not already present */
 
         if (!evhtp_header_find(request->headers_out, "Content-Length")) {
-            char lstr[23];
+            char lstr[128];
+            int  sres;
 
-            snprintf(lstr, sizeof(lstr), "%zu",
-                     evbuffer_get_length(request->buffer_out));
+            sres = snprintf(lstr, sizeof(lstr), "%zu",
+                            evbuffer_get_length(request->buffer_out));
+
+            if (sres >= sizeof(lstr) || sres < 0) {
+                /* overflow condition, this should never happen, but if it does,
+                 * well lets just shut the connection down */
+                request->keepalive = 0;
+                goto check_proto;
+            }
 
             evhtp_headers_add_header(request->headers_out,
                                      evhtp_header_new("Content-Length", lstr, 0, 1));
@@ -1125,7 +1133,7 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
         }
     }
 
-
+check_proto:
     /* add the proper keep-alive type headers based on http version */
     switch (request->proto) {
         case EVHTP_PROTO_11:
@@ -2076,59 +2084,108 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
 
 int
 evhtp_response_needs_body(const evhtp_res code, const htp_method method) {
-  return (code != EVHTP_RES_NOCONTENT &&
-          code != EVHTP_RES_NOTMOD &&
-          (code < 100 || code >= 200) &&
-          method != htp_method_HEAD);
+    return code != EVHTP_RES_NOCONTENT &&
+           code != EVHTP_RES_NOTMOD &&
+           (code < 100 || code >= 200) &&
+           method != htp_method_HEAD;
 }
 
 void
 evhtp_send_reply_chunk_start(evhtp_request_t * request, evhtp_res code) {
-  if (!evhtp_header_find(request->headers_out, "Content-Length") &&
-      request->proto == EVHTP_PROTO_11 &&
-      evhtp_response_needs_body(code, request->method)) {
-    /*
-     * prefer HTTP/1.1 chunked encoding to closing the connection;
-     * note RFC 2616 section 4.4 forbids it with Content-Length:
-     * and it's not necessary then anyway.
-     */
-    evhtp_headers_add_header(
-        request->headers_out,
-        evhtp_header_new("Transfer-Encoding", "chunked", 0, 0));
-    request->chunked = 1;
-  } else {
-    request->chunked = 0;
-  }
-  evhtp_send_reply_start(request, code);
-}
+    evhtp_header_t * content_len;
+
+    if (evhtp_response_needs_body(code, request->method)) {
+        content_len = evhtp_headers_find_header(request->headers_out, "Content-Length");
+
+        switch (request->proto) {
+            case EVHTP_PROTO_11:
+
+                /*
+                 * prefer HTTP/1.1 chunked encoding to closing the connection;
+                 * note RFC 2616 section 4.4 forbids it with Content-Length:
+                 * and it's not necessary then anyway.
+                 */
+
+                evhtp_kv_rm_and_free(request->headers_out, content_len);
+                request->chunked = 1;
+                break;
+            case EVHTP_PROTO_10:
+                /*
+                 * HTTP/1.0 can be chunked as long as the Content-Length header
+                 * is set to 0
+                 */
+                evhtp_kv_rm_and_free(request->headers_out, content_len);
+
+                evhtp_headers_add_header(request->headers_out,
+                                         evhtp_header_new("Content-Length", "0", 0, 0));
+
+                request->chunked = 1;
+                break;
+            default:
+                request->chunked = 0;
+                break;
+        } /* switch */
+    } else {
+        request->chunked = 0;
+    }
+
+    if (request->chunked == 1) {
+        evhtp_headers_add_header(request->headers_out,
+                                 evhtp_header_new("Transfer-Encoding", "chunked", 0, 0));
+
+        /*
+         * if data already exists on the output buffer, we automagically convert
+         * it to the first chunk.
+         */
+        if (evbuffer_get_length(request->buffer_out) > 0) {
+            char lstr[128];
+            int  sres;
+
+            sres = snprintf(lstr, sizeof(lstr), "%x\r\n",
+                            (unsigned)evbuffer_get_length(request->buffer_out));
+
+            if (sres >= sizeof(lstr) || sres < 0) {
+                /* overflow condition, shouldn't ever get here, but lets
+                 * terminate the connection asap */
+                goto end;
+            }
+
+            evbuffer_prepend(request->buffer_out, lstr, strlen(lstr));
+            evbuffer_add(request->buffer_out, "\r\n", 2);
+        }
+    }
+
+end:
+    evhtp_send_reply_start(request, code);
+} /* evhtp_send_reply_chunk_start */
 
 void
 evhtp_send_reply_chunk(evhtp_request_t * request, evbuf_t * buf) {
-  evbuf_t *output;
+    evbuf_t * output;
 
-  output = bufferevent_get_output(request->conn->bev);
+    output = bufferevent_get_output(request->conn->bev);
 
-  if (evbuffer_get_length(buf) == 0) {
-    return;
-  }
-  if (request->chunked) {
-    evbuffer_add_printf(output, "%x\r\n",
-                        (unsigned)evbuffer_get_length(buf));
-  }
-  evhtp_send_reply_body(request, buf);
-  if (request->chunked) {
-    evbuffer_add(output, "\r\n", 2);
-  }
-  bufferevent_flush(request->conn->bev, EV_WRITE, BEV_FLUSH);
+    if (evbuffer_get_length(buf) == 0) {
+        return;
+    }
+    if (request->chunked) {
+        evbuffer_add_printf(output, "%x\r\n",
+                            (unsigned)evbuffer_get_length(buf));
+    }
+    evhtp_send_reply_body(request, buf);
+    if (request->chunked) {
+        evbuffer_add(output, "\r\n", 2);
+    }
+    bufferevent_flush(request->conn->bev, EV_WRITE, BEV_FLUSH);
 }
 
 void
 evhtp_send_reply_chunk_end(evhtp_request_t * request) {
-  if (request->chunked) {
-    evbuffer_add(bufferevent_get_output(evhtp_request_get_bev(request)),
-                 "0\r\n\r\n", 5);
-  }
-  evhtp_send_reply_end(request);
+    if (request->chunked) {
+        evbuffer_add(bufferevent_get_output(evhtp_request_get_bev(request)),
+                     "0\r\n\r\n", 5);
+    }
+    evhtp_send_reply_end(request);
 }
 
 int

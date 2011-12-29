@@ -369,6 +369,7 @@ struct evhtp_request_s {
     evhtp_res            status;      /**< The HTTP response code or other error conditions */
     int                  keepalive;   /**< set to 1 if the connection is keep-alive */
     int                  finished;    /**< set to 1 if the request is fully processed */
+    int                  chunked;     /**< set to 1 if the request is chunked */
 
     evhtp_callback_cb cb;             /**< the function to call when fully processed */
     void            * cbarg;          /**< argument which is passed to the cb function */
@@ -554,6 +555,17 @@ void evhtp_send_reply(evhtp_request_t * request, evhtp_res code);
 void evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code);
 void evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf);
 void evhtp_send_reply_end(evhtp_request_t * request);
+
+/**
+ * @brief Determine if a response should have a body.
+ * Follows the rules in RFC 2616 section 4.3.
+ * @return 1 if the response MUST have a body; 0 if the response MUST NOT have
+ *     a body.
+ */
+int  evhtp_response_needs_body(const evhtp_res code, const htp_method method);
+void evhtp_send_reply_chunk_start(evhtp_request_t * request, evhtp_res code);
+void evhtp_send_reply_chunk(evhtp_request_t * request, evbuf_t * buf);
+void evhtp_send_reply_chunk_end(evhtp_request_t * request);
 
 
 /**

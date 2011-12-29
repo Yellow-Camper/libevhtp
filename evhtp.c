@@ -2075,6 +2075,63 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
 }
 
 int
+evhtp_response_needs_body(const evhtp_res code, const htp_method method) {
+  return (code != EVHTP_RES_NOCONTENT &&
+          code != EVHTP_RES_NOTMOD &&
+          (code < 100 || code >= 200) &&
+          method != htp_method_HEAD);
+}
+
+void
+evhtp_send_reply_chunk_start(evhtp_request_t * request, evhtp_res code) {
+  if (!evhtp_header_find(request->headers_out, "Content-Length") &&
+      request->proto == EVHTP_PROTO_11 &&
+      evhtp_response_needs_body(code, request->method)) {
+    /*
+     * prefer HTTP/1.1 chunked encoding to closing the connection;
+     * note RFC 2616 section 4.4 forbids it with Content-Length:
+     * and it's not necessary then anyway.
+     */
+    evhtp_headers_add_header(
+        request->headers_out,
+        evhtp_header_new("Transfer-Encoding", "chunked", 0, 0));
+    request->chunked = 1;
+  } else {
+    request->chunked = 0;
+  }
+  evhtp_send_reply_start(request, code);
+}
+
+void
+evhtp_send_reply_chunk(evhtp_request_t * request, evbuf_t * buf) {
+  evbuf_t *output;
+
+  output = bufferevent_get_output(request->conn->bev);
+
+  if (evbuffer_get_length(buf) == 0) {
+    return;
+  }
+  if (request->chunked) {
+    evbuffer_add_printf(output, "%x\r\n",
+                        (unsigned)evbuffer_get_length(buf));
+  }
+  evhtp_send_reply_body(request, buf);
+  if (request->chunked) {
+    evbuffer_add(output, "\r\n", 2);
+  }
+  bufferevent_flush(request->conn->bev, EV_WRITE, BEV_FLUSH);
+}
+
+void
+evhtp_send_reply_chunk_end(evhtp_request_t * request) {
+  if (request->chunked) {
+    evbuffer_add(bufferevent_get_output(evhtp_request_get_bev(request)),
+                 "0\r\n\r\n", 5);
+  }
+  evhtp_send_reply_end(request);
+}
+
+int
 evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int backlog) {
     signal(SIGPIPE, SIG_IGN);
 

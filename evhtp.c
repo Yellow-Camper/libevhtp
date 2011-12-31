@@ -2512,10 +2512,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
 
     SSL_CTX_load_verify_locations(htp->ssl_ctx, cfg->cafile, cfg->capath);
     X509_STORE_set_flags(SSL_CTX_get_cert_store(htp->ssl_ctx), cfg->store_flags);
-
-    if (cfg->x509_verify_cb != NULL) {
-        SSL_CTX_set_verify(htp->ssl_ctx, cfg->verify_peer, cfg->x509_verify_cb);
-    }
+    SSL_CTX_set_verify(htp->ssl_ctx, cfg->verify_peer, cfg->x509_verify_cb);
 
     if (cfg->x509_chk_issued_cb != NULL) {
         htp->ssl_ctx->cert_store->check_issued = cfg->x509_chk_issued_cb;

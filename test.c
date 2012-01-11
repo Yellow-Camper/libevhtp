@@ -156,13 +156,43 @@ test_500_cb(evhtp_request_t * req, void * arg ) {
     evhtp_send_reply(req, EVHTP_RES_SERVERR);
 }
 
+const char * chunk_strings[] = {
+    "I give you the light of Eärendil,\n",
+    "our most beloved star.\n",
+    "May it be a light for you in dark places,\n",
+    "when all other lights go out.\n",
+    NULL
+};
+
 static void
-test_bar_cb(evhtp_request_t * req, void * arg ) {
+test_chunking(evhtp_request_t * req, void * arg) {
+    const char * chunk_str;
+    evbuf_t    * buf;
+    int          i = 0;
+
+    buf = evbuffer_new();
+
+    evhtp_send_reply_chunk_start(req, EVHTP_RES_OK);
+
+    while ((chunk_str = chunk_strings[i++]) != NULL) {
+        evbuffer_add(buf, chunk_str, strlen(chunk_str));
+
+        evhtp_send_reply_chunk(req, buf);
+
+        evbuffer_drain(buf, -1);
+    }
+
+    evhtp_send_reply_chunk_end(req);
+    evbuffer_free(buf);
+}
+
+static void
+test_bar_cb(evhtp_request_t * req, void * arg) {
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
 static void
-test_default_cb(evhtp_request_t * req, void * arg ) {
+test_default_cb(evhtp_request_t * req, void * arg) {
     evbuffer_add_reference(req->buffer_out,
                            "test_default_cb\n", 16, NULL, NULL);
 
@@ -406,6 +436,9 @@ main(int argc, char ** argv) {
     cb_6   = evhtp_set_regex_cb(htp, "^(/anything/).*", test_regex, NULL);
     cb_7   = evhtp_set_cb(htp, "/pause", test_pause_cb, NULL);
     cb_8   = evhtp_set_regex_cb(htp, "^/create/(.*)", create_callback, NULL);
+
+    /* set a callback to test out chunking API */
+    evhtp_set_cb(htp, "/chunkme", test_chunking, NULL);
 
     /* set a callback to pause on each header for cb_7 */
     evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, NULL);

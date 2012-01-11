@@ -1,3 +1,35 @@
+v0.5.6
+=====================================
+2012-01-11  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * evhtp.c: Added SSL_CTX_set_timeout() for openssl >= 1.0
+
+2011-12-29  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * evhtp.c, test.c: Chunk API modifications, formatting cleanup.  * Added the
+  ability to send chunked responses for HTTP/1.0 and conform to RFC  * If the
+  request has data in the output buffer, evhtp_send_reply_chunk_start() will
+  now convert that data to the first chunk.
+
+  * test.c: Added test-case for chunking API usage.
+
+2011-12-29  Andy Hochhaus <ahochhaus@samegoal.com>
+
+  * evhtp.c, evhtp.h: Add HTTP/1.1 chunked encoding interface.  Logic based off
+  the code in libevent's http.c: * When supported, automatically set
+  Transfer-Encoding: chunked * Prefix each chunk with it's hex-encoded size. *
+  Terminate the chunked response with a zero sized chunk.  This code is based
+  off of: https://github.com/libevent/libevent/blob/master/http.c#L2549 
+  Currently, this change only sends chunked replies for HTTP1.1 (not 1.0). I
+  did this to match rfc2616 which states:  """ A server MUST NOT send
+  transfer-codings to an HTTP/1.0 client. """ 
+  http://tools.ietf.org/html/rfc2616#section-3.6
+
+2011-12-29 Mark Ellzey <mark.thomas@mandiant.com>
+
+    * evhtp.c: Don't treat EOF eventcb flags for ssl enabled connections as errors.
+
+
 v0.4.5
 =====================================
 

@@ -464,6 +464,7 @@ main(int argc, char ** argv) {
             .capath             = ssl_capath,
             .ciphers            = "RC4+RSA:HIGH:+MEDIUM:+LOW",
             .ssl_opts           = SSL_OP_NO_SSLv2,
+            .ssl_ctx_timeout    = 60 * 60 * 48,
             .verify_peer        = SSL_VERIFY_PEER,
             .verify_depth       = 42,
             .x509_verify_cb     = dummy_ssl_verify_callback,

@@ -426,6 +426,7 @@ struct evhtp_ssl_cfg_s {
     char                  * capath;
     char                  * ciphers;
     long                    ssl_opts;
+    long                    ssl_ctx_timeout;
     int                     verify_peer;
     int                     verify_depth;
     evhtp_ssl_verify_cb     x509_verify_cb;

@@ -941,7 +941,7 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
         cbarg = c->htp->defaults.cbarg;
 
         path->matched_soff = 0;
-        path->matched_soff = (unsigned int)strlen(path->full);
+        path->matched_eoff = (unsigned int)strlen(path->full);
     }
 
     _evhtp_unlock(c->htp);

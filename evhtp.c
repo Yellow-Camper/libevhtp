@@ -941,7 +941,7 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
         cbarg = c->htp->defaults.cbarg;
 
         path->matched_soff = 0;
-        path->matched_soff = (unsigned int)strlen(path->full);
+        path->matched_eoff = (unsigned int)strlen(path->full);
     }
 
     _evhtp_unlock(c->htp);
@@ -1543,6 +1543,7 @@ evhtp_connection_resume(evhtp_connection_t * c) {
  */
 void
 evhtp_request_pause(evhtp_request_t * request) {
+    request->status = EVHTP_RES_PAUSE;
     return evhtp_connection_pause(request->conn);
 }
 
@@ -1874,9 +1875,9 @@ evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len)
 evhtp_query_t *
 evhtp_parse_query(const char * query, size_t len) {
     evhtp_query_t    * query_args;
-    query_parser_state state = s_query_start;
-    char               key_buf[1024];
-    char               val_buf[1024];
+    query_parser_state state   = s_query_start;
+    char             * key_buf = NULL;
+    char             * val_buf = NULL;
     int                key_idx;
     int                val_idx;
     int                res;
@@ -1885,22 +1886,31 @@ evhtp_parse_query(const char * query, size_t len) {
 
     query_args = evhtp_query_new();
 
-    key_idx    = 0;
-    val_idx    = 0;
+    if (!(key_buf = malloc(len))) {
+        return NULL;
+    }
+
+    if (!(val_buf = malloc(len))) {
+        free(key_buf);
+        return NULL;
+    }
+
+    key_idx = 0;
+    val_idx = 0;
 
     for (i = 0; i < len; i++) {
         res = 0;
         ch  = query[i];
 
-        if (key_idx >= sizeof(key_buf) || val_idx >= sizeof(val_buf)) {
+        if (key_idx >= len || val_idx >= len) {
             res = -1;
             goto error;
         }
 
         switch (state) {
             case s_query_start:
-                memset(key_buf, 0, sizeof(key_buf));
-                memset(val_buf, 0, sizeof(val_buf));
+                memset(key_buf, 0, len);
+                memset(val_buf, 0, len);
 
                 key_idx = 0;
                 val_idx = 0;
@@ -1976,8 +1986,8 @@ query_key:
                     case '&':
                         evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1));
 
-                        memset(key_buf, 0, sizeof(key_buf));
-                        memset(val_buf, 0, sizeof(val_buf));
+                        memset(key_buf, 0, len);
+                        memset(val_buf, 0, len);
 
                         key_idx            = 0;
                         val_idx            = 0;
@@ -2031,8 +2041,24 @@ query_key:
         evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1));
     }
 
+    if (key_buf) {
+        free(key_buf);
+    }
+
+    if (val_buf) {
+        free(val_buf);
+    }
+
     return query_args;
 error:
+    if (key_buf) {
+        free(key_buf);
+    }
+
+    if (val_buf) {
+        free(val_buf);
+    }
+
     return NULL;
 }     /* evhtp_parse_query */
 

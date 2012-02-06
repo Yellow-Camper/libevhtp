@@ -1,4 +1,25 @@
-v0.5.6
+v0.4.7
+=====================================
+2012-02-06  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * evhtp.c: set request status to PAUSE if evhtp_request_pause() is called
+  manually.
+
+2012-01-29  Mark Ellzey <socket@gmail.com>
+
+  * evhtp.c: evhtp_parse_query() is no longer limited to 1024 byte key/val
+
+  * evhtp.c: Fixed issue with _evhtp_request_parser_path with no matched
+  callbacks where the end offset was never being set. (Reported by
+  snnn119@gmail.com)
+
+2012-01-24  Stephen Cox <stephen.cox@mandiant.com>
+
+  * evhtp.c, evhtp.h, test.c: Allow SSL_CTX_set_timeout value to be passed in
+  via config.
+
+
+v0.4.6
 =====================================
 2012-01-11  Mark Ellzey <mark.thomas@mandiant.com>
 

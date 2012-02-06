@@ -1258,7 +1258,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
 }
 
 static int
-_evhtp_run_pre_accept(evhtp_t * htp, int sock, struct sockaddr * s, int sl) {
+_evhtp_run_pre_accept(evhtp_t * htp, evhtp_connection_t * conn) {
     void    * args;
     evhtp_res res;
 
@@ -1267,7 +1267,7 @@ _evhtp_run_pre_accept(evhtp_t * htp, int sock, struct sockaddr * s, int sl) {
     }
 
     args = htp->defaults.pre_accept_cbarg;
-    res  = htp->defaults.pre_accept(sock, s, sl, args);
+    res  = htp->defaults.pre_accept(conn, args);
 
     if (res != EVHTP_RES_OK) {
         return -1;
@@ -1278,8 +1278,8 @@ _evhtp_run_pre_accept(evhtp_t * htp, int sock, struct sockaddr * s, int sl) {
 
 static int
 _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
-    if (_evhtp_run_pre_accept(connection->htp, connection->sock,
-                              connection->saddr, sizeof(struct sockaddr)) < 0) {
+    if (_evhtp_run_pre_accept(connection->htp, connection) < 0) {
+        evutil_closesocket(connection->sock);
         return -1;
     }
 

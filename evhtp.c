@@ -1258,7 +1258,31 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
 }
 
 static int
+_evhtp_run_pre_accept(evhtp_t * htp, int sock, struct sockaddr * s, int sl) {
+    void    * args;
+    evhtp_res res;
+
+    if (htp->defaults.pre_accept == NULL) {
+        return 0;
+    }
+
+    args = htp->defaults.pre_accept_cbarg;
+    res  = htp->defaults.pre_accept(sock, s, sl, args);
+
+    if (res != EVHTP_RES_OK) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
 _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
+    if (_evhtp_run_pre_accept(connection->htp, connection->sock,
+                              connection->saddr, sizeof(struct sockaddr)) < 0) {
+        return -1;
+    }
+
 #ifndef DISABLE_SSL
     if (connection->htp->ssl_ctx != NULL) {
         connection->ssl = SSL_new(connection->htp->ssl_ctx);
@@ -1334,25 +1358,6 @@ _evhtp_shutdown_eventcb(evbev_t * bev, short events, void * arg) {
 #endif
 
 static int
-_evhtp_run_pre_accept(evhtp_t * htp, int sock, struct sockaddr * s, int sl) {
-    void    * args;
-    evhtp_res res;
-
-    if (htp->defaults.pre_accept == NULL) {
-        return 0;
-    }
-
-    args = htp->defaults.pre_accept_cbarg;
-    res  = htp->defaults.pre_accept(sock, s, sl, args);
-
-    if (res != EVHTP_RES_OK) {
-        return -1;
-    }
-
-    return 0;
-}
-
-static int
 _evhtp_run_post_accept(evhtp_t * htp, evhtp_connection_t * connection) {
     void    * args;
     evhtp_res res;
@@ -1394,10 +1399,6 @@ static void
 _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg) {
     evhtp_t            * htp = arg;
     evhtp_connection_t * connection;
-
-    if (_evhtp_run_pre_accept(htp, fd, s, sl) < 0) {
-        return;
-    }
 
     if (!(connection = _evhtp_connection_new(htp, fd))) {
         return;

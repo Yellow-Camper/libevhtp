@@ -282,7 +282,7 @@ test_regex_hdrs_cb(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
 }
 
 static evhtp_res
-test_pre_accept(int fd, struct sockaddr * sin, int sl, void * arg) {
+test_pre_accept(evhtp_connection_t * c, void * arg) {
     uint16_t port = *(uint16_t *)arg;
 
     if (port > 8081) {

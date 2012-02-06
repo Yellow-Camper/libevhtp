@@ -1543,6 +1543,7 @@ evhtp_connection_resume(evhtp_connection_t * c) {
  */
 void
 evhtp_request_pause(evhtp_request_t * request) {
+    request->status = EVHTP_RES_PAUSE;
     return evhtp_connection_pause(request->conn);
 }
 

@@ -613,6 +613,7 @@ _evhtp_request_new(evhtp_connection_t * c) {
 static void
 _evhtp_request_free(evhtp_request_t * request) {
     if (request == NULL) {
+	printf("JFKDSJFLDSJFKLDLSFSD\n");
         return;
     }
 
@@ -1247,6 +1248,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     c = arg;
 
     if (c->ssl && !(events & BEV_EVENT_EOF)) {
+	printf("ssl client error...\n");
         c->error = 1;
 
         if (c->request) {
@@ -1289,7 +1291,7 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
         connection->bev = bufferevent_openssl_socket_new(evbase,
                                                          connection->sock, connection->ssl,
                                                          BUFFEREVENT_SSL_ACCEPTING,
-                                                         BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
+                                                         BEV_OPT_THREADSAFE | BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
         SSL_set_app_data(connection->ssl, connection);
         goto end;
     }
@@ -1387,6 +1389,7 @@ _evhtp_run_in_thread(evthr_t * thr, void * arg, void * shared) {
     evthr_inc_backlog(connection->thread);
 
     if (_evhtp_connection_accept(connection->evbase, connection) < 0) {
+	printf("..._evhtp_run_in_thread() accept < 0\n");
         return evhtp_connection_free(connection);
     }
 
@@ -2220,7 +2223,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     signal(SIGPIPE, SIG_IGN);
 
     htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
-                                          LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
+                                          LEV_OPT_THREADSAFE | LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
                                           backlog, sa, sin_len);
     return htp->server ? 0 : -1;
 }
@@ -2760,9 +2763,11 @@ evhtp_request_get_connection(evhtp_request_t * request) {
 void
 evhtp_connection_free(evhtp_connection_t * connection) {
     if (connection == NULL) {
+	printf("connection == NULL????\n");
         return;
     }
 
+    printf("FREE\n");
     _evhtp_request_free(connection->request);
     _evhtp_connection_fini_hook(connection);
 

@@ -242,10 +242,10 @@ print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
 
 static evhtp_res
 print_data(evhtp_request_t * req, evbuf_t * buf, void * arg ) {
+#if 0
     evbuffer_add_printf(req->buffer_out,
                         "got %zu bytes of data\n",
                         evbuffer_get_length(buf));
-#if 0
     printf("%.*s", evbuffer_get_length(buf), (char *)evbuffer_pullup(buf,
                                                                      evbuffer_get_length(buf)));
 #endif
@@ -285,7 +285,7 @@ static evhtp_res
 test_pre_accept(evhtp_connection_t * c, void * arg) {
     uint16_t port = *(uint16_t *)arg;
 
-    if (port > 8081) {
+    if (port > 8089) {
         return EVHTP_RES_ERROR;
     }
 

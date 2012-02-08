@@ -1248,11 +1248,14 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
 
     if (c->ssl && !(events & BEV_EVENT_EOF)) {
 	printf("ssl client error...\n");
+#if 0
+	/* XXX need to do better error handling for SSL specific errors */
         c->error = 1;
 
         if (c->request) {
             c->request->error = 1;
         }
+#endif
     }
 
     return evhtp_connection_free((evhtp_connection_t *)arg);

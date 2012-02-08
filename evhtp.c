@@ -613,7 +613,6 @@ _evhtp_request_new(evhtp_connection_t * c) {
 static void
 _evhtp_request_free(evhtp_request_t * request) {
     if (request == NULL) {
-	printf("JFKDSJFLDSJFKLDLSFSD\n");
         return;
     }
 
@@ -2767,7 +2766,6 @@ evhtp_connection_free(evhtp_connection_t * connection) {
         return;
     }
 
-    printf("FREE\n");
     _evhtp_request_free(connection->request);
     _evhtp_connection_fini_hook(connection);
 

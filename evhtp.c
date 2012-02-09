@@ -818,6 +818,8 @@ _evhtp_request_parser_start(htparser * p) {
         if (c->request->finished == 1) {
             _evhtp_request_free(c->request);
         } else {
+	    printf("parser_start but request not finished...\n");
+	    exit(1);
             return -1;
         }
     }
@@ -1389,7 +1391,6 @@ _evhtp_run_in_thread(evthr_t * thr, void * arg, void * shared) {
     evthr_inc_backlog(connection->thread);
 
     if (_evhtp_connection_accept(connection->evbase, connection) < 0) {
-	printf("..._evhtp_run_in_thread() accept < 0\n");
         return evhtp_connection_free(connection);
     }
 

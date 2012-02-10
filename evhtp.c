@@ -818,8 +818,8 @@ _evhtp_request_parser_start(htparser * p) {
         if (c->request->finished == 1) {
             _evhtp_request_free(c->request);
         } else {
-	    printf("parser_start but request not finished...\n");
-	    exit(1);
+            printf("parser_start but request not finished...\n");
+            exit(1);
             return -1;
         }
     }
@@ -1194,13 +1194,16 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
     size_t               nread;
     size_t               avail;
 
+    avail = evbuffer_get_length(bufferevent_get_input(bev));
+
     if (c->request) {
         c->request->status = EVHTP_RES_OK;
     }
 
-    avail = evbuffer_get_length(bufferevent_get_input(bev));
+
     buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
     nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
+
 
     if (avail != nread) {
         if (c->request && c->request->status == EVHTP_RES_PAUSE) {
@@ -1249,8 +1252,8 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     c = arg;
 
     if (c->ssl && !(events & BEV_EVENT_EOF)) {
-	printf("ssl client error... %d\n", events);
-	/* XXX need to do better error handling for SSL specific errors */
+        printf("ssl client error... %d\n", events);
+        /* XXX need to do better error handling for SSL specific errors */
         c->error = 1;
 
         if (c->request) {
@@ -1258,6 +1261,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
         }
     }
 
+    c->error = 1;
     return evhtp_connection_free((evhtp_connection_t *)arg);
 }
 
@@ -2764,7 +2768,7 @@ evhtp_request_get_connection(evhtp_request_t * request) {
 void
 evhtp_connection_free(evhtp_connection_t * connection) {
     if (connection == NULL) {
-	printf("connection == NULL????\n");
+        printf("connection == NULL????\n");
         return;
     }
 

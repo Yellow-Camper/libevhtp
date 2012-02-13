@@ -1192,13 +1192,16 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
     size_t               nread;
     size_t               avail;
 
+    avail = evbuffer_get_length(bufferevent_get_input(bev));
+
     if (c->request) {
         c->request->status = EVHTP_RES_OK;
     }
 
-    avail = evbuffer_get_length(bufferevent_get_input(bev));
+
     buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
     nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
+
 
     if (avail != nread) {
         if (c->request && c->request->status == EVHTP_RES_PAUSE) {
@@ -1247,6 +1250,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     c = arg;
 
     if (c->ssl && !(events & BEV_EVENT_EOF)) {
+        /* XXX need to do better error handling for SSL specific errors */
         c->error = 1;
 
         if (c->request) {
@@ -1254,18 +1258,43 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
         }
     }
 
+    c->error = 1;
     return evhtp_connection_free((evhtp_connection_t *)arg);
 }
 
 static int
+_evhtp_run_pre_accept(evhtp_t * htp, evhtp_connection_t * conn) {
+    void    * args;
+    evhtp_res res;
+
+    if (htp->defaults.pre_accept == NULL) {
+        return 0;
+    }
+
+    args = htp->defaults.pre_accept_cbarg;
+    res  = htp->defaults.pre_accept(conn, args);
+
+    if (res != EVHTP_RES_OK) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
 _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
+    if (_evhtp_run_pre_accept(connection->htp, connection) < 0) {
+        evutil_closesocket(connection->sock);
+        return -1;
+    }
+
 #ifndef DISABLE_SSL
     if (connection->htp->ssl_ctx != NULL) {
         connection->ssl = SSL_new(connection->htp->ssl_ctx);
         connection->bev = bufferevent_openssl_socket_new(evbase,
                                                          connection->sock, connection->ssl,
                                                          BUFFEREVENT_SSL_ACCEPTING,
-                                                         BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
+                                                         BEV_OPT_THREADSAFE | BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
         SSL_set_app_data(connection->ssl, connection);
         goto end;
     }
@@ -1334,25 +1363,6 @@ _evhtp_shutdown_eventcb(evbev_t * bev, short events, void * arg) {
 #endif
 
 static int
-_evhtp_run_pre_accept(evhtp_t * htp, int sock, struct sockaddr * s, int sl) {
-    void    * args;
-    evhtp_res res;
-
-    if (htp->defaults.pre_accept == NULL) {
-        return 0;
-    }
-
-    args = htp->defaults.pre_accept_cbarg;
-    res  = htp->defaults.pre_accept(sock, s, sl, args);
-
-    if (res != EVHTP_RES_OK) {
-        return -1;
-    }
-
-    return 0;
-}
-
-static int
 _evhtp_run_post_accept(evhtp_t * htp, evhtp_connection_t * connection) {
     void    * args;
     evhtp_res res;
@@ -1394,10 +1404,6 @@ static void
 _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg) {
     evhtp_t            * htp = arg;
     evhtp_connection_t * connection;
-
-    if (_evhtp_run_pre_accept(htp, fd, s, sl) < 0) {
-        return;
-    }
 
     if (!(connection = _evhtp_connection_new(htp, fd))) {
         return;
@@ -2219,7 +2225,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     signal(SIGPIPE, SIG_IGN);
 
     htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
-                                          LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
+                                          LEV_OPT_THREADSAFE | LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
                                           backlog, sa, sin_len);
     return htp->server ? 0 : -1;
 }
@@ -2759,6 +2765,7 @@ evhtp_request_get_connection(evhtp_request_t * request) {
 void
 evhtp_connection_free(evhtp_connection_t * connection) {
     if (connection == NULL) {
+        printf("connection == NULL????\n");
         return;
     }
 

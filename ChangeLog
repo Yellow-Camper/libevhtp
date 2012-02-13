@@ -1,3 +1,37 @@
+v0.4.8
+=====================================
+2012-02-13  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * evhtp.c: Remove debug msg.
+
+  * evhtp.c: Remove debug abort.
+
+2012-02-09  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * evhtp.c: adding error to connection on eventcb
+
+  * evhtp.c: removed some dbg msgs
+
+2012-02-08  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * evhtp.c: err
+
+  * evhtp.c: SSL client error handling debugging.
+
+  * evhtp.c: Remove some extra logging.
+
+  * evhtp.c, test.c: testing client ssl socket error log for debugging.
+
+2012-02-06  Mark Ellzey <mark.thomas@mandiant.com>
+
+  * test.c: Fixed test.c for pre_accept changes.
+
+  * evhtp.c, evhtp.h: pre_accept_cb argument changes.  - pre_accept_cb is now
+  evhtp_res (*evhtp_pre_accept_cb)(evhtp_connection_t * conn, void * arg); the
+  connection_t structure is allocated, but the connection hasn't yet been
+  accept()'d. This allows for thread-safe operations to be done on the socket.
+
+
 v0.4.7
 =====================================
 2012-02-06  Mark Ellzey <mark.thomas@mandiant.com>

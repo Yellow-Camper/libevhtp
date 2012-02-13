@@ -818,8 +818,6 @@ _evhtp_request_parser_start(htparser * p) {
         if (c->request->finished == 1) {
             _evhtp_request_free(c->request);
         } else {
-            printf("parser_start but request not finished...\n");
-            exit(1);
             return -1;
         }
     }

@@ -1250,7 +1250,6 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     c = arg;
 
     if (c->ssl && !(events & BEV_EVENT_EOF)) {
-        printf("ssl client error... %d\n", events);
         /* XXX need to do better error handling for SSL specific errors */
         c->error = 1;
 

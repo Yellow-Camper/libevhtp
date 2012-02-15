@@ -249,7 +249,7 @@ strndup(const char * s, size_t n) {
     size_t len = strnlen(s, n);
     char * ret;
 
-    if (len <= n) {
+    if (len < n) {
         return strdup(s);
     }
 

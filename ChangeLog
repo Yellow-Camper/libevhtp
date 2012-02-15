@@ -1,3 +1,9 @@
+v0.4.9
+=====================================
+2012-02-15  Mark Ellzey <mark.thomas@mandiant.com>
+
+	* evhtp.c: Fix for non-system strndup
+
 v0.4.8
 =====================================
 2012-02-13  Mark Ellzey <mark.thomas@mandiant.com>

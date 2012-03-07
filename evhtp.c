@@ -1294,7 +1294,7 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
         connection->bev = bufferevent_openssl_socket_new(evbase,
                                                          connection->sock, connection->ssl,
                                                          BUFFEREVENT_SSL_ACCEPTING,
-                                                         BEV_OPT_THREADSAFE | BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
+                                                         BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
         SSL_set_app_data(connection->ssl, connection);
         goto end;
     }
@@ -2786,8 +2786,7 @@ evhtp_connection_free(evhtp_connection_t * connection) {
 #else
 #ifndef DISABLE_SSL
         if (connection->ssl != NULL) {
-            SSL_set_shutdown(connection->ssl,
-                             SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
+            SSL_set_shutdown(connection->ssl, SSL_RECEIVED_SHUTDOWN);
             SSL_shutdown(connection->ssl);
         }
 #endif

@@ -248,9 +248,9 @@ print_data(evhtp_request_t * req, evbuf_t * buf, void * arg ) {
                         evbuffer_get_length(buf));
     printf("%.*s", evbuffer_get_length(buf), (char *)evbuffer_pullup(buf,
                                                                      evbuffer_get_length(buf)));
+    printf("Got %zu bytes....\n", evbuffer_get_length(buf));
 #endif
     evbuffer_drain(buf, -1);
-
     return EVHTP_RES_OK;
 }
 
@@ -285,7 +285,7 @@ static evhtp_res
 test_pre_accept(evhtp_connection_t * c, void * arg) {
     uint16_t port = *(uint16_t *)arg;
 
-    if (port > 8089) {
+    if (port > 10000) {
         return EVHTP_RES_ERROR;
     }
 

@@ -2786,7 +2786,7 @@ evhtp_connection_free(evhtp_connection_t * connection) {
 #else
 #ifndef DISABLE_SSL
         if (connection->ssl != NULL) {
-            SSL_set_shutdown(connection->ssl, SSL_RECEIVED_SHUTDOWN);
+            SSL_set_shutdown(connection->ssl, SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
             SSL_shutdown(connection->ssl);
         }
 #endif

@@ -16,6 +16,7 @@ uint16_t bind_port   = 8081;
 char   * ssl_pem     = NULL;
 char   * ssl_ca      = NULL;
 char   * ssl_capath  = NULL;
+size_t   bw_limit    = 0;
 
 struct pauser {
     event_t         * timer_ev;
@@ -294,16 +295,20 @@ test_pre_accept(evhtp_connection_t * c, void * arg) {
 
 static evhtp_res
 test_fini(evhtp_request_t * r, void * arg) {
-#if 0
-    fprintf(stderr, ".");
-    fflush(stderr);
-#endif
+    struct ev_token_bucket_cfg * tcfg = arg;
+
+    if (tcfg) {
+        ev_token_bucket_cfg_free(tcfg);
+    }
 
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
-set_my_connection_handlers(evhtp_connection_t * conn, void * arg ) {
+set_my_connection_handlers(evhtp_connection_t * conn, void * arg) {
+    struct timeval               tick;
+    struct ev_token_bucket_cfg * tcfg = NULL;
+
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_header, print_kv, "foo");
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_headers, print_kvs, "bar");
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_path, print_path, "baz");
@@ -311,7 +316,17 @@ set_my_connection_handlers(evhtp_connection_t * conn, void * arg ) {
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_new_chunk, print_new_chunk_len, NULL);
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunk_complete, print_chunk_complete, NULL);
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunks_complete, print_chunks_complete, NULL);
-    evhtp_set_hook(&conn->hooks, evhtp_hook_on_request_fini, test_fini, NULL);
+
+    if (bw_limit > 0) {
+        tick.tv_sec  = 0;
+        tick.tv_usec = 500 * 100;
+
+        tcfg         = ev_token_bucket_cfg_new(bw_limit, bw_limit, bw_limit, bw_limit, &tick);
+
+        bufferevent_set_rate_limit(conn->bev, tcfg);
+    }
+
+    evhtp_set_hook(&conn->hooks, evhtp_hook_on_request_fini, test_fini, tcfg);
 
     return EVHTP_RES_OK;
 }
@@ -329,7 +344,7 @@ dummy_check_issued_cb(X509_STORE_CTX * ctx, X509 * x, X509 * issuer) {
 
 #endif
 
-const char * optstr = "htn:a:p:r:s:c:C:";
+const char * optstr = "htn:a:p:r:s:c:C:l:";
 
 const char * help   =
     "Options: \n"
@@ -343,6 +358,7 @@ const char * help   =
     "  -c <ca>  : CA cert file             (default: NULL)\n"
     "  -C <path>: CA Path                  (default: NULL)\n"
 #endif
+    "  -l <int> : Max bandwidth (in bytes) (default: NULL)\n"
     "  -r <str> : Document root            (default: .)\n"
     "  -a <str> : Bind Address             (default: 0.0.0.0)\n"
     "  -p <int> : Bind Port                (default: 8081)\n";
@@ -386,6 +402,9 @@ parse_args(int argc, char ** argv) {
                 ssl_capath  = strdup(optarg);
                 break;
 #endif
+            case 'l':
+                bw_limit    = atoll(optarg);
+                break;
             default:
                 printf("Unknown opt %s\n", optarg);
                 return -1;

@@ -1094,7 +1094,13 @@ _evhtp_create_headers(evhtp_header_t * header, void * arg) {
 
 static evbuf_t *
 _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
-    evbuf_t * buf = evbuffer_new();
+    evbuf_t    * buf          = evbuffer_new();
+    const char * content_type = evhtp_header_find(request->headers_out, "Content-Type");
+
+    if (content_type && strstr(content_type, "multipart")) {
+        /* multipart messages should not get any extra headers */
+        goto check_proto;
+    }
 
     if (evbuffer_get_length(request->buffer_out) && request->chunked == 0) {
         /* add extra headers (like content-length/type) if not already present */
@@ -1117,7 +1123,7 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
                                      evhtp_header_new("Content-Length", lstr, 0, 1));
         }
 
-        if (!evhtp_header_find(request->headers_out, "Content-Type")) {
+        if (!content_type) {
             evhtp_headers_add_header(request->headers_out,
                                      evhtp_header_new("Content-Type", "text/plain", 0, 0));
         }

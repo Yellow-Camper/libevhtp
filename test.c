@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <signal.h>
+#include <inttypes.h>
 #include <evhtp.h>
 
 #ifndef DISABLE_EVTHR
@@ -242,14 +243,12 @@ print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
 }
 
 static evhtp_res
-print_data(evhtp_request_t * req, evbuf_t * buf, void * arg ) {
-#if 0
+print_data(evhtp_request_t * req, evbuf_t * buf, void * arg) {
+#ifndef NDEBUG
     evbuffer_add_printf(req->buffer_out,
                         "got %zu bytes of data\n",
                         evbuffer_get_length(buf));
-    printf("%.*s", evbuffer_get_length(buf), (char *)evbuffer_pullup(buf,
-                                                                     evbuffer_get_length(buf)));
-    printf("Got %zu bytes....\n", evbuffer_get_length(buf));
+    printf("%.*s", evbuffer_get_length(buf), (char *)evbuffer_pullup(buf, evbuffer_get_length(buf)));
 #endif
     evbuffer_drain(buf, -1);
     return EVHTP_RES_OK;
@@ -257,8 +256,7 @@ print_data(evhtp_request_t * req, evbuf_t * buf, void * arg ) {
 
 static evhtp_res
 print_new_chunk_len(evhtp_request_t * req, uint64_t len, void * arg) {
-    evbuffer_add_printf(req->buffer_out,
-                        "started new chunk, %zu bytes\n", len);
+    evbuffer_add_printf(req->buffer_out, "started new chunk, %" PRId64 "u bytes\n", len);
 
     return EVHTP_RES_OK;
 }

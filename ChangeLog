@@ -1,958 +1,142 @@
-v0.4.9
-=====================================
-2012-02-15  Mark Ellzey <mark.thomas@mandiant.com>
+v0.4.10
+ o Fixed memleak with evthr_free() (10ad15a Mark Ellzey)
+ o Correct SSL_Shutdown() usage. (f5f97ee Mark Ellzey)
+ o Added total bytes read function in htparser. (4a9eefb Mark Ellzey)
+ o Added rate-limiting option in test.c (b9e10c1 Mark Ellzey)
+ o Don't add aux headers if content-type is multipart. (6be91ca Mark Ellzey)
+ o Removed silly compile-time flags for OSX (0dd14a9 Mark Ellzey)
+ o Ignore deprecated ssl warnings on OSX until further notice. (0aa4fb6 Mark Ellzey)
 
-	* evhtp.c: Fix for non-system strndup
+v0.4.9
+ o Fix for non-system strndup. (d7486b4 Mark Ellzey)
+ o Prepping release v0.4.9 (4ef6362 Mark Ellzey)
 
 v0.4.8
-=====================================
-2012-02-13  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: Remove debug msg.
-
-  * evhtp.c: Remove debug abort.
-
-2012-02-09  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: adding error to connection on eventcb
-
-  * evhtp.c: removed some dbg msgs
-
-2012-02-08  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: err
-
-  * evhtp.c: SSL client error handling debugging.
-
-  * evhtp.c: Remove some extra logging.
-
-  * evhtp.c, test.c: testing client ssl socket error log for debugging.
-
-2012-02-06  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * test.c: Fixed test.c for pre_accept changes.
-
-  * evhtp.c, evhtp.h: pre_accept_cb argument changes.  - pre_accept_cb is now
-  evhtp_res (*evhtp_pre_accept_cb)(evhtp_connection_t * conn, void * arg); the
-  connection_t structure is allocated, but the connection hasn't yet been
-  accept()'d. This allows for thread-safe operations to be done on the socket.
-
+ o Place _evhtp_run_pre_accept() into _evhtp_connection_accept() (e45adbd Mark Ellzey)
+ o pre_accept_cb argument changes. (c2fbb86 Mark Ellzey)
+ o Fixed test.c for pre_accept changes. (671a911 Mark Ellzey)
+ o testing client ssl socket error log for debugging. (265437b Mark Ellzey)
+ o Remove some extra logging. (dd45fb8 Mark Ellzey)
+ o SSL client error handling debugging. (5c26eaf Mark Ellzey)
+ o err (8f5013e Mark Ellzey)
+ o removed some dbg msgs (84bec53 Mark Ellzey)
+ o adding error to connection on eventcb (0c9690c Mark Ellzey)
+ o Remove debug abort. (ca8089f Mark Ellzey)
+ o Remove debug msg. (9a41148 Mark Ellzey)
+ o Prepping release v0.4.8 (c140e2f Mark Ellzey)
 
 v0.4.7
-=====================================
-2012-02-06  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: set request status to PAUSE if evhtp_request_pause() is called
-  manually.
-
-2012-01-29  Mark Ellzey <socket@gmail.com>
-
-  * evhtp.c: evhtp_parse_query() is no longer limited to 1024 byte key/val
-
-  * evhtp.c: Fixed issue with _evhtp_request_parser_path with no matched
-  callbacks where the end offset was never being set. (Reported by
-  snnn119@gmail.com)
-
-2012-01-24  Stephen Cox <stephen.cox@mandiant.com>
-
-  * evhtp.c, evhtp.h, test.c: Allow SSL_CTX_set_timeout value to be passed in
-  via config.
-
+ o Fix to be able to set a verification "mode" to the SSL_CTX_set_verify() function without having to set a custom (*verify_callback). (f3c3f37 Oscar Koeroo)
+ o Allow SSL_CTX_set_timeout value to be passed in via config. (4f775bd Stephen Cox)
+ o Fixed issue with _evhtp_request_parser_path with no matched callbacks where the end offset was never being set. (Reported by snnn119@gmail.com) (0d20de9 Mark Ellzey)
+ o evhtp_parse_query() is no longer limited to 1024 byte key/val (a8179a2 Mark Ellzey)
+ o set request status to PAUSE if evhtp_request_pause() is called manually. (4d64111 Mark Ellzey)
+ o Prepping release v0.4.7 (12d7cc4 Mark Ellzey)
 
 v0.4.6
-=====================================
-2012-01-11  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: Added SSL_CTX_set_timeout() for openssl >= 1.0
-
-2011-12-29  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, test.c: Chunk API modifications, formatting cleanup.  * Added the
-  ability to send chunked responses for HTTP/1.0 and conform to RFC  * If the
-  request has data in the output buffer, evhtp_send_reply_chunk_start() will
-  now convert that data to the first chunk.
-
-  * test.c: Added test-case for chunking API usage.
-
-2011-12-29  Andy Hochhaus <ahochhaus@samegoal.com>
-
-  * evhtp.c, evhtp.h: Add HTTP/1.1 chunked encoding interface.  Logic based off
-  the code in libevent's http.c: * When supported, automatically set
-  Transfer-Encoding: chunked * Prefix each chunk with it's hex-encoded size. *
-  Terminate the chunked response with a zero sized chunk.  This code is based
-  off of: https://github.com/libevent/libevent/blob/master/http.c#L2549 
-  Currently, this change only sends chunked replies for HTTP1.1 (not 1.0). I
-  did this to match rfc2616 which states:  """ A server MUST NOT send
-  transfer-codings to an HTTP/1.0 client. """ 
-  http://tools.ietf.org/html/rfc2616#section-3.6
-
-2011-12-29 Mark Ellzey <mark.thomas@mandiant.com>
-
-    * evhtp.c: Don't treat EOF eventcb flags for ssl enabled connections as errors.
-
+ o Don't treat EOF eventcb flags for ssl enabled connections as errors. (49c98b1 Mark Ellzey)
+ o Add HTTP/1.1 chunked encoding interface. (69a29d3 Andy Hochhaus)
+ o Added test-case for chunking API usage. (939517a Mark Ellzey)
+ o Chunk API modifications, formatting cleanup. (b805dbd Mark Ellzey)
+ o Added SSL_CTX_set_timeout() for openssl >= 1.0 (e6fa029 Mark Ellzey)
+ o Prepping release 0.4.6 (81c493d Mark Ellzey)
 
 v0.4.5
-=====================================
-
-NOTE: Any code which accesses connection->ssl_ctx directly must change to use connection->ssl.
-
-2011-12-28  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt: Set libevent as a required dependency
-
-2011-12-27  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: inline enum's should not be static.
-
-  * CMakeLists.txt, CMakeModules/BaseConfig.cmake, evhtp.h: Changes to DISABLE
-  to EVHTP_DISABLE, also fixed enum hook missing from last merge.
-
-  * evthr/evthr.h: Added #ifndef _GNU_SOURCE before setting it again.
-
-2011-12-27  Andy Hochhaus <ahochhaus@samegoal.com>
-
-  * evhtp.h, evthr/evthr.h, htparse/htparse.h: Fix C++/clang++ build.
-
-2011-12-27  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, htparse/htparse.c, htparse/htparse.h: Added
-  htparser_set_(major|minor). fixed edgecase where major/minor is not yet set.
-
-  * evhtp.c, evhtp.h, htparse/htparse.c: added on_headers_start hook (before
-  header parsing, post requestline parsing).
-
-2011-12-20  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h: Added evhtp_unescape_string() to unescape query type
-  strings.
-
-2011-12-16  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * README.markdown: Documentation updates
-
-  * README.markdown: Documentation updates.
-
-  * README.markdown: Initial markdown-based API documentation.
-
+ o Fixing size_t printf format issues. (c75bc5b Mark Ellzey)
+ o Added support for the -C option in the test.c The internals were there, it just covers the getops. (e3636d5 Oscar Koeroo)
+ o The struct evhtp_connection_s has a member ssl_ctx of type evhtp_ssl_t (a typedef of an SSL*) which by name is confusing with respect to the evhtp_ssl_ctx_t (a typedef of an SSL_CTX*). The member of stru
+ o Initial markdown-based API documentation. (c16b551 Mark Ellzey)
+ o Documentation updates. (f097558 Mark Ellzey)
+ o Documentation updates (98c8ff0 Mark Ellzey)
+ o Added evhtp_unescape_string() to unescape query type strings. (d75904f Mark Ellzey)
+ o added on_headers_start hook (before header parsing, post requestline parsing). (7076b8e Mark Ellzey)
+ o Added htparser_set_(major|minor). fixed edgecase where major/minor is not yet set. (137aa19 Mark Ellzey)
+ o Fix C++/clang++ build. (af2a0dd Andy Hochhaus)
+ o Added #ifndef _GNU_SOURCE before setting it again. (f8a2308 Mark Ellzey)
+ o Changes to DISABLE to EVHTP_DISABLE, also fixed enum hook missing from last merge. (0ab23de Mark Ellzey)
+ o inline enum's should not be static. (5efd199 Mark Ellzey)
+ o Set libevent as a required dependency (d08f4fd Mark Ellzey)
+ o Prepping release v0.4.5 (a3731d7 Mark Ellzey)
 
 v0.4.4
-=====================================
-2011-12-15  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt, evhtp.h: Prepping release v0.4.4
-
-  * ChangeLog, README, contrib/git_changelog.py: Removed README and added
-  changelog generator.
-
-  * compat/sys/queue.h.in: compat queue.h BSD-only move.
-
-  * CMakeLists.txt, compat/sys/queue.h.in: Add checks for sys/queue.h and use
-  compat when missing
-
-2011-12-14  Nick Mathewson <nickm@torproject.org>
-
-  * evhtp.c, htparse/htparse.c: Eliminate use of ctype.h  The ctype.h
-  functions, unfortunately, depend on the current locale. This makes them
-  unsuitable for handling network data, since they can tell you different
-  answers depending on what locale is set.  This patch also changes the
-  behavior of % in queries in evhtp.c. Previously, any alphanumeric,
-  non-punctuation character was acceptable.  Now, it's only hex characters.  If
-  we should change it back for some reason, there is just one function to edit.
-
-  * htparse/htparse.c: Detect non-ascii hosts and refuse to build on them  The
-  htparse library makes some assumptions about characters that are not true for
-  non-ascii-based system.  (For example, that all upper-case letters are
-  numerically between 'A' and 'Z'; or that (int)'A' is the same as the encoding
-  of 'h' on the wire.)  This is always true in practice, except for some really
-  horrible places we will never want to build. But in theory, C allows (int)'A'
-  to be basically anything.  So let's put our pedantic hats on briefly and
-  detect non-ASCII environments, if only to give an error.
-
-2011-12-14  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h: Picked DISABLE_SSL fixes from nmathewson into develop
-
-  * CMakeModules/BaseConfig.cmake: Set -fno-strict-aliasing using gcc
-
-2011-12-14  Nick Mathewson <nickm@torproject.org>
-
-  * CMakeLists.txt, evhtp.h, evthr/evthr.c, evthr/evthr.h: Stop using the
-  deprecated event.h; use event2/event.h instead
-
-  * .gitignore: Add a .gitignore file
-
-2011-12-14  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h: Added evhtp_bind_sockaddr()
-
-  * CMakeLists.txt, evhtp.c: Adding sys/un.h checks.
-
-  * evhtp.c: added local PF_UNIX socket listen support
-
-2011-12-13  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * docs/html/annotated.html, docs/html/bc_s.png, docs/html/classes.html,
-  docs/html/closed.png, docs/html/doxygen.css, docs/html/doxygen.png,
-  docs/html/evhtp_8c.html, docs/html/evhtp_8c_source.html,
-  docs/html/evhtp_8h.html, docs/html/evhtp_8h_source.html,
-  docs/html/files.html, docs/html/functions.html,
-  docs/html/functions_func.html, docs/html/functions_vars.html,
-  docs/html/globals.html, docs/html/globals_0x65.html,
-  docs/html/globals_0x68.html, docs/html/globals_0x71.html,
-  docs/html/globals_0x72.html, docs/html/globals_0x73.html,
-  docs/html/globals_0x74.html, docs/html/globals_defs.html,
-  docs/html/globals_enum.html, docs/html/globals_eval.html,
-  docs/html/globals_func.html, docs/html/globals_type.html,
-  docs/html/globals_vars.html, docs/html/index.html, docs/html/nav_f.png,
-  docs/html/nav_h.png, docs/html/open.png,
-  docs/html/structevhtp__authority__s.html,
-  docs/html/structevhtp__callback__s.html,
-  docs/html/structevhtp__callbacks__s.html,
-  docs/html/structevhtp__connection__s.html,
-  docs/html/structevhtp__defaults__s.html,
-  docs/html/structevhtp__hooks__s.html, docs/html/structevhtp__kv__s.html,
-  docs/html/structevhtp__path__s.html, docs/html/structevhtp__request__s.html,
-  docs/html/structevhtp__s.html, docs/html/structevhtp__ssl__cfg__s.html,
-  docs/html/structevhtp__uri__s.html, docs/html/structstatus__code.html,
-  docs/html/tab_a.png, docs/html/tab_b.png, docs/html/tab_h.png,
-  docs/html/tab_s.png, docs/html/tabs.css, docs/latex/Makefile,
-  docs/latex/annotated.tex, docs/latex/doxygen.sty, docs/latex/evhtp_8c.tex,
-  docs/latex/evhtp_8h.tex, docs/latex/files.tex, docs/latex/refman.tex,
-  docs/latex/structevhtp__authority__s.tex,
-  docs/latex/structevhtp__callback__s.tex,
-  docs/latex/structevhtp__callbacks__s.tex,
-  docs/latex/structevhtp__connection__s.tex,
-  docs/latex/structevhtp__defaults__s.tex,
-  docs/latex/structevhtp__hooks__s.tex, docs/latex/structevhtp__kv__s.tex,
-  docs/latex/structevhtp__path__s.tex, docs/latex/structevhtp__request__s.tex,
-  docs/latex/structevhtp__s.tex, docs/latex/structevhtp__ssl__cfg__s.tex,
-  docs/latex/structevhtp__uri__s.tex, docs/latex/structstatus__code.tex:
-  Removing API docs. Generate yourself!
-
-  * evhtp.c, evhtp.h: Moved callback locking as optional via
-  evhtp_use_callback_locks()
-
-  * evhtp.c, evhtp.h: Added evhtp_request_get_connection()
-
-2011-12-12  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * docs/html/annotated.html, docs/html/bc_s.png, docs/html/classes.html,
-  docs/html/closed.png, docs/html/doxygen.css, docs/html/doxygen.png,
-  docs/html/evhtp_8c.html, docs/html/evhtp_8c_source.html,
-  docs/html/evhtp_8h.html, docs/html/evhtp_8h_source.html,
-  docs/html/files.html, docs/html/functions.html,
-  docs/html/functions_func.html, docs/html/functions_vars.html,
-  docs/html/globals.html, docs/html/globals_0x65.html,
-  docs/html/globals_0x68.html, docs/html/globals_0x71.html,
-  docs/html/globals_0x72.html, docs/html/globals_0x73.html,
-  docs/html/globals_0x74.html, docs/html/globals_defs.html,
-  docs/html/globals_enum.html, docs/html/globals_eval.html,
-  docs/html/globals_func.html, docs/html/globals_type.html,
-  docs/html/globals_vars.html, docs/html/index.html, docs/html/nav_f.png,
-  docs/html/nav_h.png, docs/html/open.png,
-  docs/html/structevhtp__authority__s.html,
-  docs/html/structevhtp__callback__s.html,
-  docs/html/structevhtp__callbacks__s.html,
-  docs/html/structevhtp__connection__s.html,
-  docs/html/structevhtp__defaults__s.html,
-  docs/html/structevhtp__hooks__s.html, docs/html/structevhtp__kv__s.html,
-  docs/html/structevhtp__path__s.html, docs/html/structevhtp__request__s.html,
-  docs/html/structevhtp__s.html, docs/html/structevhtp__ssl__cfg__s.html,
-  docs/html/structevhtp__uri__s.html, docs/html/structstatus__code.html,
-  docs/html/tab_a.png, docs/html/tab_b.png, docs/html/tab_h.png,
-  docs/html/tab_s.png, docs/html/tabs.css, docs/latex/Makefile,
-  docs/latex/annotated.tex, docs/latex/doxygen.sty, docs/latex/evhtp_8c.tex,
-  docs/latex/evhtp_8h.tex, docs/latex/files.tex, docs/latex/refman.tex,
-  docs/latex/structevhtp__authority__s.tex,
-  docs/latex/structevhtp__callback__s.tex,
-  docs/latex/structevhtp__callbacks__s.tex,
-  docs/latex/structevhtp__connection__s.tex,
-  docs/latex/structevhtp__defaults__s.tex,
-  docs/latex/structevhtp__hooks__s.tex, docs/latex/structevhtp__kv__s.tex,
-  docs/latex/structevhtp__path__s.tex, docs/latex/structevhtp__request__s.tex,
-  docs/latex/structevhtp__s.tex, docs/latex/structevhtp__ssl__cfg__s.tex,
-  docs/latex/structevhtp__uri__s.tex, docs/latex/structstatus__code.tex,
-  test.c: Added api docs
-
+ o Added api docs (57370c1 Mark Ellzey)
+ o Added various accessor functions, see full commitlog (16d3fdc Mark Ellzey)
+ o Added evhtp_request_get_connection() (db1f023 Mark Ellzey)
+ o Moved callback locking as optional via evhtp_use_callback_locks() (7a028eb Mark Ellzey)
+ o Removing API docs. Generate yourself! (5bc036d Mark Ellzey)
+ o added local PF_UNIX socket listen support (f6ef167 Mark Ellzey)
+ o Adding sys/un.h checks. (6ec70e5 Mark Ellzey)
+ o Added evhtp_bind_sockaddr() (8f38b01 Mark Ellzey)
+ o Add a .gitignore file (09ac468 Nick Mathewson)
+ o Stop using the deprecated event.h; use event2/event.h instead (c60715d Nick Mathewson)
+ o Set -fno-strict-aliasing using gcc (4a43c0b Mark Ellzey)
+ o Picked DISABLE_SSL fixes from nmathewson into develop (b2bfb2f Mark Ellzey)
+ o Detect non-ascii hosts and refuse to build on them (b0c2267 Nick Mathewson)
+ o Eliminate use of ctype.h (7d0084e Nick Mathewson)
+ o Add checks for sys/queue.h and use compat when missing (f05b54a Mark Ellzey)
+ o compat queue.h BSD-only move. (2b49db6 Mark Ellzey)
+ o Removed README and added changelog generator. (219f2eb Mark Ellzey)
+ o Prepping release v0.4.4 (d335798 Mark Ellzey)
+ o ChangeLog for v0.4.4 (c5c6d19 Mark Ellzey)
 
 v0.4.3
-=====================================
-2011-12-12  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * ChangeLog, evhtp.h: Prepping release v0.4.3
-
-  * evhtp.c: Added IPv6 listener support.
-
-  * CMakeLists.txt, contrib/perftest.sh, test_basic.c: Added a basic example
-
-  * evhtp.c: arg parsing fixes
-
-  * evhtp.c, evhtp.h, htparse/htparse.c, test.c: Fixed issue with OPTIONS
-  requests.
-
-2011-12-02  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: strn* compat functions set to static
-
-2011-11-23  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, test.c: Thread-safe add/remove callback additions.
-
-  * CMakeLists.txt, htparse/Makefile, htparse/htparse.c, htparse/htparse.h,
-  htparse/test.c, libhtparse/Makefile, libhtparse/htparse.c,
-  libhtparse/htparse.h, libhtparse/test.c: Moving libhtparse to just htparse
-
+ o Moving libhtparse to just htparse (bf2e43a Mark Ellzey)
+ o Thread-safe add/remove callback additions. (d916366 Mark Ellzey)
+ o strn* compat functions set to static (cab9503 Mark Ellzey)
+ o Fixed issue with OPTIONS requests. (a3487fd Mark Ellzey)
+ o arg parsing fixes (8627d0d Mark Ellzey)
+ o Added a basic example (c06ef72 Mark Ellzey)
+ o Added IPv6 listener support. (c1482a2 Mark Ellzey)
+ o Prepping release v0.4.3 (952baa9 Mark Ellzey)
 
 v0.4.2
-=====================================
-2011-11-23  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt, ChangeLog, evhtp.h: Prepping release v0.4.2
-
-  * CMakeLists.txt, htparse/Makefile, htparse/htparse.c, htparse/htparse.h,
-  htparse/test.c, libhtparse/Makefile, libhtparse/htparse.c,
-  libhtparse/htparse.h, libhtparse/test.c: Moved ./libhtparse to ./htparse
-
-2011-11-15  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * libhtparse/htparse.c: Increased default stack limit in htparse
-
-  * evhtp.c, test.c: Reworked SSL Thread initialization
-
-2011-11-12  Jason L. Shiffer <jshiffer@zerotao.org>
-
-  * CMakeModules/BaseConfig.cmake: Fix strdup build warnings/errors on OSX
-
-  * CMakeLists.txt, compat/sys/tree.h.in: Add checks for sys/tree.h and compat
-  when missing
-
-2011-11-21  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: x509 updates
-
-2011-11-20  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, test.c: jfdsla
-
-2011-11-16  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, test.c: Added chunk hooking stuff.
-
-2011-11-15  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * libhtparse/htparse.c: Increasing the parser stack size.
-
-  * evhtp.c, test.c: SSL Threading changes
-
-2011-11-12  Jason L. Shiffer <jshiffer@zerotao.org>
-
-  * CMakeModules/BaseConfig.cmake: Fix strdup build warnings/errors on OSX
-
-  * CMakeLists.txt, compat/sys/tree.h.in: Add checks for sys/tree.h and compat
-  when missing
-
+ o Removing tabs from ChangeLog (3f6f220 Mark Ellzey)
+ o Add checks for sys/tree.h and compat when missing (40c87e5 Jason L. Shiffer)
+ o Fix strdup build warnings/errors on OSX (84e17c1 Jason L. Shiffer)
+ o SSL Threading changes (2631e7f Mark Ellzey)
+ o Increasing the parser stack size. (b0df5a8 Mark Ellzey)
+ o Added chunk hooking stuff. (2bcba66 Mark Ellzey)
+ o jfdsla (1fa36b9 Mark Ellzey)
+ o x509 updates (089bd8a Mark Ellzey)
+ o Revert "x509 updates" (2cc9195 Mark Ellzey)
+ o Add checks for sys/tree.h and compat when missing (8fa7e11 Jason L. Shiffer)
+ o Fix strdup build warnings/errors on OSX (95cbcf3 Jason L. Shiffer)
+ o Reworked SSL Thread initialization (38aee17 Mark Ellzey)
+ o Increased default stack limit in htparse (48f338a Mark Ellzey)
+ o chunk hooks, proper status code strings. (dbca386 Mark Ellzey)
+ o Moved ./libhtparse to ./htparse (44c77d3 Mark Ellzey)
+ o Prepping release v0.4.2 (815b023 Mark Ellzey)
 
 v0.4.1
-=====================================
-2011-11-11  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * ChangeLog, evhtp.h: Prepping release v0.4.1
-
-  * evhtp.c: default cb now returns 404
-
-  * CMakeLists.txt: Include RT and DL if avail when linking test. SSL needs
-  them.
-
-  * evhtp.c, evhtp.h, test.c: Added correct status code string definitions.
-
-  * evhtp.h, libhtparse/htparse.c, test.c: Fixed incorrect integer conversion
-  which misses zero edge case.
-
-2011-10-18  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt: added static rt
-
-  * libhtparse/htparse.c: Fixed issue with state transition into read_body
-
-2011-10-17  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * libhtparse/htparse.c: Fixed over/underflow condition in str_to_uint64
-
-2011-10-11  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, test2.c: Changing static len checks with sizeof()
-
-  * evhtp.c: Re-added user-set timeouts
-
-2011-09-22  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * libhtparse/htparse.c: htparser fix
-
-2011-09-21  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, test.c: blerp
-
-  * evhtp.c: Adding backlog to bufferevent
-
-  * evhtp.c, evhtp.h, test.c: added backlog arg to evhtp_bind_socket()
-
-2011-09-20  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: hrm
-
-  * evhtp.c: blerp
-
-  * LICENSE: Adding LICENSE
-
-2011-09-19  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, test.c: SSL 1.x optimizations / timeouts  - Added
-  SSL_MODE_RELEASE_BUFFERS if openssl version >= 1 - Added evhtp_set_timeouts()
-  for read/write timeouts
-
-2011-09-15  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: more timeout tests
-
-  * evhtp.c: fix
-
-  * evhtp.c: testing timeouts
-
-  * CMakeLists.txt: static again
-
-  * evhtp.c: Cleanup
-
-  * CMakeLists.txt, evhtp.c: turn off compression by default
-
-2011-09-13  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt: Added include_dir for libevent pathing
-
-  * CMakeLists.txt: Adding -lpthread for thread enabled configuration
-
-  * evhtp.c: Swapping around SSL init globals
-
-2011-09-12  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h: Adding struct sockaddr to connection_t
-
-2011-09-08  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * libhtparse/htparse.c: updates
-
-  * libhtparse/htparse.c: hert pup
-
-  * libhtparse/htparse.c: more 100 fixes
-
-
-v0.4.0
-=====================================
-2011-09-07  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt, ChangeLog: Updating for release 0.4.0
-
-  * evhtp.c: Rebase fix for htparser_init()
-
-2011-09-06  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt: Modified so that libevhtp creates a static library instead
-  of shared.
-
-2011-09-01  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, libhtparse/htparse.c: libhtparse fixes when dealing with requests
-  with schema data.
-
-2011-08-29  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: Fixed conditional bug for chunked responses  -
-  _evhtp_create_reply() was adding a Content-Length: 0 header even if the
-  response is chunked (this breaks RFC).
-
-  * CMakeLists.txt, contrib/perftest.sh, evhtp.c, evhtp.h,
-  libhtparse/htparse.c: Additions for HTTP/1.1 / other additions / fixes  - If
-  Content-Length is 0, while transfer-encoding includes "chunked",
-  _evhtp_create_reply will no longer include a zero length content-length
-  header.  - Added evhtp_kv_rm_and_free which will take a evhtp_kvs_t and
-  evhtp_kv_t set of arguments, remove the kv_t from kvs_t and free the kv_t
-  structure.  - Added evhtp_kvs_find_kv which acts like kv_find but instead
-  returns an evhtp_kv_t structure.
-
-2011-08-26  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * libhtparse/htparse.c: libhtparse on_new_chunk bugfix  - the on_new_chunk
-  callback was being called in the wrong area. The hook was moved into the
-  right area.
-
-  * contrib/perftest.sh, evhtp.c, test.c: fixed issue with bufferevent SSL
-  events  - SSL bufferevents will call your eventcb with BEV_EVENT_CONNECTED
-  once the SSL handshake is completed. This was not being checked previously
-  and resulted in connections being dropped.
-
-2011-08-25  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, libhtparse/htparse.c, libhtparse/htparse.h,
-  libhtparse/test.c: Additional libevhtparse chunk-specific hooks and
-  documentation.  - Added an on_chunk_complete hook in htparse which is called
-  when a single chunk has been fully parsed. - Added an on_chunks_complete hook
-  in htparse which is called after all chunks in a request have been parsed. -
-  Added more documentation
-
-2011-08-24  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: Content-Length duplicate header fix  - fixed a case where the
-  Content-Length header in a reply would be added twice.
-
-  * evhtp.c, evhtp.h, evthr/evthr.c, evthr/evthr.h, test.c: thread
-  initialization functionality
-
-2011-08-22  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, evthr/evthr.c: Added streaming reply functionality  - If
-  a user wants to stream data back to a client the following functions
-  facilitate this: * evhtp_send_reply_start() - creates the initial reply and
-  sends * evhtp_send_reply_body()  - sends a chunk of data to the client *
-  evhtp_send_reply_end()   - informs evhtp that the user is done streaming data
-  and figures out whether to keep the connection alive or not.
-
-2011-09-07  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * contrib/perftest.sh, evhtp.c, evthr/evthr.c, libhtparse/htparse.c,
-  libhtparse/htparse.h, libhtparse/test.c: Added htparser_get_status to
-  libhtparse
-
-2011-08-15  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evthr/evthr.c: evthr bugfix in evthr_new() args
-
-2011-09-07  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, libhtparse/htparse.c, libhtparse/htparse.h, libhtparse/test.c:
-  HTTP response parsing in libhtparser  Conflicts:  evhtp.c
-
-2011-08-15  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, test.c: Created verify and verify depth callbacks types
-  (instead of using void *)  - Setting callbacks to a void * is actually bad,
-  which was the case in some ssl cfg stuff. Fixed that.
-
-  * CMakeLists.txt, evhtp.c, evthr/evthr.c, libhtparse/htparse.c: OSX
-  Compatability fixes  - Cmake checks for various functions needed - Added
-  strnlen compatability function is not available. - Removed need for
-  specifying number of processors for evthr
-
-2011-08-13  Oscar Koeroo <okoeroo@gmail.com>
-
-  * evhtp.c, evhtp.h, libhtparse/htparse.c, test.c: SSL verification
-  configuration options  - Added x509_verify_cb, max_verify_depth, verify_peer
-  and store_flags option to the struct evhtp_ssl_cfg_s. And also added HTTP
-  return code 418 - Added dummy callbacks and values to the test.c program. -
-  Added more documentation
-
-2011-08-12  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, test.c: Added CA Path option for ssl_cfg. (Thanks Oscar
-  Koeroo)
-
-2011-08-08  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, test.c: bugfix in kv_add
-
-2011-07-25  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * README: linking ChangeLog to README
-
-2011-09-06  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt: Making static
-
-2011-09-01  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, libhtparse/htparse.c: fixed some bugs dealing with parsing and
-  schemes
-
-2011-08-29  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: Fixed conditional bug
-
-  * CMakeLists.txt, contrib/perftest.sh, evhtp.c, evhtp.h,
-  libhtparse/htparse.c: Additions for HTTP/1.1 / other additions / fixes  - If
-  Content-Length is 0, while transfer-encoding includes "chunked",
-  _evhtp_create_reply will no longer include a zero length content-length
-  header.  - Added evhtp_kv_rm_and_free which will take a evhtp_kvs_t and
-  evhtp_kv_t set of arguments, remove the kv_t from kvs_t and free the kv_t
-  structure.  - Added evhtp_kvs_find_kv which acts like kv_find but instead
-  returns an evhtp_kv_t structure.  - Fixed on_new_chunk bug in htparser
-
-2011-08-26  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * libhtparse/htparse.c: on_new_chunk bugfix
-
-  * contrib/perftest.sh, evhtp.c, test.c: fixed issue with bufferevent SSL
-  events
-
-2011-08-25  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h: Added some documentation
-
-  * evhtp.c, libhtparse/htparse.c, libhtparse/htparse.h, libhtparse/test.c:
-  Added chunk_complete and chunks_complete callback hooks
-
-2011-08-24  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: Content-Length duplicate header fix
-
-  * evhtp.c, evhtp.h, evthr/evthr.c, evthr/evthr.h, test.c: thread
-  initialization functionality
-
-2011-08-22  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, evthr/evthr.c: send_reply start/body/end
-
-2011-08-18  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * contrib/perftest.sh, evhtp.c, evthr/evthr.c, libhtparse/htparse.c,
-  libhtparse/test.c: fixes
-
-2011-08-15  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * libhtparse/htparse.c, libhtparse/htparse.h: Added htparser_get_status
-
-  * evthr/evthr.c: fix with evthr
-
-  * evhtp.c, libhtparse/htparse.c, libhtparse/htparse.h, libhtparse/test.c:
-  HTTP response parsing in libhtparser
-
-  * test.c: cleanup
-
-  * evhtp.c, evhtp.h, test.c: created verify and verify depth callbacks types
-  (instead of using void *)  - Setting callbacks to a void * is actually bad,
-  which was the case in some ssl cfg stuff. Fixed that.
-
-2011-08-15  Mark Ellzey <socket@gmail.com>
-
-  * evhtp.c, libhtparse/htparse.c: docs, cleanup
-
-2011-08-15  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: cleanup
-
-  * CMakeLists.txt, evhtp.c, evthr/evthr.c, libhtparse/htparse.c: OSX Compat /
-  fixes
-
-2011-08-13  Mark Ellzey <socket@gmail.com>
-
-  * evhtp.c, test.c: max_verify_depth -> verify_depth
-
-2011-08-13  Oscar Koeroo <okoeroo@gmail.com>
-
-  * evhtp.c, evhtp.h, test.c: Adding dummy callbacks and values to the test.c
-  program.
-
-  * evhtp.c, evhtp.h: Added x509_verify_cb, max_verify_depth, verify_peer and
-  store_flags option to the struct evhtp_ssl_cfg_s. And also added HTTP return
-  code 418
-
-2011-08-12  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, test.c: Added CA Path option for ssl_cfg. (Thanks Oscar
-  Koeroo)
-
-  * CMakeLists.txt, evhtp.c, test.c: blerp
-
-  * evhtp.c, evhtp.h, evthr/evthr.c, test.c: some optimizations
-
-2011-08-11  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, test.c: threading fixes
-
-2011-08-11  Mark Ellzey <socket@gmail.com>
-
-  * CMakeLists.txt, evhtp.c, evhtp.h, test.c: fixed all the pause issues..
-
-2011-08-09  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, test.c: pausing / fixes / request and connection fini
-  hooks
-
-2011-08-08  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, test.c: bugfix in kv_add
-
-  * CMakeLists.txt, contrib/perftest.sh, evhtp.c, evhtp.h, test.c: updating ssl
-  and test.c
-
-  * evhtp.c, evhtp.h, evthr/evthr.c, test2.c: More updates - perf updates - bug
-  fixes
-
-2011-08-05  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt, evhtp.c, evhtp.h: Added Basic reply functions
-
-2011-08-04  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h: documentation updates
-
-  * evhtp.c, evhtp.h: Added some more documentation
-
-  * CMakeModules/BaseConfig.cmake, evhtp.c: fixups
-
-  * CMakeLists.txt, Doxyfile, evhtp.c, evhtp.h: Major cleanup / re-factor
-
-2011-07-28  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: Fixed an issue with the body parser callback
-
-2011-07-27  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * test.c: cruft
-
-  * evhtp.c: derpityderp
-
-  * evhtp.c: Request pipeline now functional.
-
-  * evhtp.c, test.c: getting better
-
-  * evhtp.c, libhtparse/htparse.c, test.c: blerp
-
-2011-07-25  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: cleanup
-
-  * evhtp.c, test.c: More logical structure
-
-  * evhtp.c, libhtparse/htparse.c: killkillkill
-
-  * libhtparse/htparse.c: removing cruft
-
-  * evhtp.c, libhtparse/htparse.c, test.c: updated htparse
-
-  * README: linking ChangeLog to README
-
-
-v0.3.7
-=====================================
-2011-07-25  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt, ChangeLog, evhtp.h: Prepping release v0.3.7
-
-  * libhtparse/Makefile, libhtparse/htparse.c, libhtparse/htparse.h,
-  libhtparse/test.c: Adding libhtparse....
-
-  * .gitignore, CMakeLists.txt, CMakeModules/BaseConfig.cmake,
-  contrib/release_prep.sh, evhtp.c, evhtp.h, http_parser/.gitignore,
-  http_parser/CONTRIBUTIONS, http_parser/LICENSE-MIT, http_parser/Makefile,
-  http_parser/README.md, http_parser/http_parser.c, http_parser/http_parser.h,
-  http_parser/test.c, test.c: Removing dep for http_parser over to my
-  libhtparse codebase
-
-2011-07-22  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * .gitignore: adding gitignore
-
-  * evhtp.c: a bit broken
-
-2011-07-20  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, evthr/Makefile, evthr/evthr.c, test.c: More -Wextra mods
-
-  * CMakeLists.txt, CMakeModules/BaseConfig.cmake, evhtp.c, test.c: Mods to
-  pass -Wextra
-
-2011-07-19  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt, CMakeModules/BaseConfig.cmake, evhtp.c, test.c: If
-  compiling as debug, http-parser will be pre-processed then compiled. (easier
-  to debug the shitty and unnecessary macro-based function prototypes).
-
-2011-07-15  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h: added evhtp_request_set_cbargs()
-
-  * evhtp.c, evhtp.h: added a finished hook  finish hooks will run just prior
-  to the request being free'd
-
-2011-07-12  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h: added some more requests accessors
-
-2011-07-11  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: Drop connection with invalid requests.
-
-
-v0.3.6
-=====================================
-2011-07-08  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * ChangeLog: Updated ChangeLog
-
-  * CMakeLists.txt, evhtp.h: Prepping release v0.3.6
-
-  * contrib/release_prep.sh: updating release_prep
-
-  * evthr/Makefile, evthr/README, evthr/evthr.c, evthr/evthr.h, evthr/test.c,
-  http_parser/.gitignore, http_parser/CONTRIBUTIONS, http_parser/LICENSE-MIT,
-  http_parser/Makefile, http_parser/README.md, http_parser/http_parser.c,
-  http_parser/http_parser.h, http_parser/test.c, oniguruma/AUTHORS,
-  oniguruma/CMakeLists.txt, oniguruma/COPYING, oniguruma/HISTORY,
-  oniguruma/INSTALL, oniguruma/Makefile.am, oniguruma/Makefile.in,
-  oniguruma/README, oniguruma/README.ja, oniguruma/config.h.in,
-  oniguruma/enc/ascii.c, oniguruma/enc/big5.c, oniguruma/enc/cp1251.c,
-  oniguruma/enc/euc_jp.c, oniguruma/enc/euc_kr.c, oniguruma/enc/euc_tw.c,
-  oniguruma/enc/gb18030.c, oniguruma/enc/iso8859_1.c,
-  oniguruma/enc/iso8859_10.c, oniguruma/enc/iso8859_11.c,
-  oniguruma/enc/iso8859_13.c, oniguruma/enc/iso8859_14.c,
-  oniguruma/enc/iso8859_15.c, oniguruma/enc/iso8859_16.c,
-  oniguruma/enc/iso8859_2.c, oniguruma/enc/iso8859_3.c,
-  oniguruma/enc/iso8859_4.c, oniguruma/enc/iso8859_5.c,
-  oniguruma/enc/iso8859_6.c, oniguruma/enc/iso8859_7.c,
-  oniguruma/enc/iso8859_8.c, oniguruma/enc/iso8859_9.c, oniguruma/enc/koi8.c,
-  oniguruma/enc/koi8_r.c, oniguruma/enc/mktable.c, oniguruma/enc/sjis.c,
-  oniguruma/enc/utf16_be.c, oniguruma/enc/utf16_le.c, oniguruma/enc/utf32_be.c,
-  oniguruma/enc/utf32_le.c, oniguruma/enc/utf8.c, oniguruma/onig-config.in,
-  oniguruma/oniggnu.h, oniguruma/onigposix.h, oniguruma/oniguruma.h,
-  oniguruma/regcomp.c, oniguruma/regenc.c, oniguruma/regenc.h,
-  oniguruma/regerror.c, oniguruma/regexec.c, oniguruma/regext.c,
-  oniguruma/reggnu.c, oniguruma/regint.h, oniguruma/regparse.c,
-  oniguruma/regparse.h, oniguruma/regposerr.c, oniguruma/regposix.c,
-  oniguruma/regsyntax.c, oniguruma/regtrav.c, oniguruma/regversion.c,
-  oniguruma/sample/Makefile.am, oniguruma/sample/Makefile.in,
-  oniguruma/sample/crnl.c, oniguruma/sample/encode.c,
-  oniguruma/sample/listcap.c, oniguruma/sample/names.c,
-  oniguruma/sample/posix.c, oniguruma/sample/simple.c, oniguruma/sample/sql.c,
-  oniguruma/sample/syntax.c, oniguruma/st.c, oniguruma/st.h, oniguruma/testc.c,
-  oniguruma/testu.c, oniguruma/win32/Makefile, oniguruma/win32/config.h,
-  oniguruma/win32/testc.c: No more submodules
-
-  * .gitmodules, contrib/perftest.sh, contrib/release_prep.sh, evthr,
-  http_parser, oniguruma, perftest.sh: Prepping the removal of submodules
-
-  * evhtp.c, evhtp.h: evhtp_hdr functions / default 404 cb / fixes  - Added
-  evhtp_hdrs_new() - Added evhtp_hdr_copy() - Added evhtp_hdrs_copy() - Added
-  htp_default_404() which is called on any request without a default gencb
-
-
-v0.3.5
-=====================================
-2011-07-06  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt, ChangeLog, evhtp.h: Prepping release v0.3.5
-
-  * evhtp.c, evhtp.h, test.c: Better error / response handling.  - Callbacks
-  requiring evhtp_res return can now use EVHTP_RES_* status codes. This will
-  send the proper response (if not 200) along with terminating any further
-  request processing.  - EVHTP_CODE_* has now been replaced with EVHTP_RES_*  -
-  Removed _htp prefix for static functions.
-
-2011-07-01  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h: Even more evhtp_request_t accessors. 
-  +evhtp_request_get_cb +evhtp_request_get_cbarg +evhtp_request_method_str
-  +evhtp_request_content_length +evhtp_method_str
-
-  * evhtp.c, evhtp.h: added various request accessors
-
-2011-06-29  Mark Ellzey <socket@gmail.com>
-
-  * evhtp.c, evhtp.h, test.c: evhtp_request_t is now private.
-
-2011-06-28  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, test.c: Added find_callbacks_woffsets  woffsets will
-  return a matched uri along with setting the offsets of where the match was
-  found. Useful for regex uris.
-
-  * CMakeLists.txt, evhtp.c: cmake onig test compile
-
-2011-06-24  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt, evhtp.c, perftest.sh, test.c: make install rules, cleanup
-  of dependencies
-
-2011-06-23  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * http_parser: httparser updates
-
-  * evthr: updates
-
-  * CMakeLists.txt, evhtp.c: Switched over to oniguruma for regex
-
-  * oniguruma: ..
-
-  * .gitmodules, oniguruma: Adding oniguruma submodule
-
-
-v0.3.4
-=====================================
-2011-06-30  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c: Fixing up problems with the conflict resolution
-
-  * build/contrib/ab_wsesscache.README, build/contrib/ab_wsesscache.diff,
-  contrib/ab_wsesscache.README, contrib/ab_wsesscache.diff: And place it in the
-  right directory :)
-
-  * build/contrib/ab_wsesscache.README, build/contrib/ab_wsesscache.diff: Added
-  contrib section with misc patches.
-
-  * CMakeLists.txt, ChangeLog, evhtp.h: Updated version information.
-
-  * ChangeLog: Added ChangeLog
-
-
-v0.3.3
-=====================================
-2011-06-22  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt, evhtp.h: Prepping v0.3.3
-
-  * evhtp.c, test.c: Cleanup
-
-  * evhtp.c, test.c: Properly expire cache entries.
-
-2011-06-21  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, test.c: cleanup
-
-  * evhtp.c, test.c: Added SSL thread-safe functionality.
-
-2011-06-20  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, test.c: Adding a builtin cache
-
-2011-06-17  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, evhtp.h, test.c: SSL session caching.
-
-  * evhtp.c, evhtp.h: not working as intended, REBASE THIS JUNK
-
-2011-06-15  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.c, test.c: cleanup
-
-
-v0.3.2
-=====================================
-2011-06-15  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt, README, evhtp.c, evhtp.h: Prepping release 0.3.2
-
-  * evhtp.c, evhtp.h, test.c: Converting back to bevents after perf issue
-  solved
-
-
-v0.3.1
-=====================================
-2011-06-14  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * evhtp.h: Prep release 0.3.1
-
-  * CMakeLists.txt, README, evhtp.h: Prep v0.3.1
-
-2011-06-13  Mark Ellzey <mark.thomas@mandiant.com>
-
-  * CMakeLists.txt, CMakeModules/BaseConfig.cmake, evhtp.c, evhtp.h, evthr,
-  perftest.sh, test.c: Optional evthr support
-
-
+ o Deal with 100 return status with responses correctly (bb86d09 Mark Ellzey)
+ o more 100 fixes (3ef168a Mark Ellzey)
+ o hert pup (a637672 Mark Ellzey)
+ o updates (83abb12 Mark Ellzey)
+ o Adding struct sockaddr to connection_t (45c30c7 Mark Ellzey)
+ o Swapping around SSL init globals (3327f44 Mark Ellzey)
+ o Adding -lpthread for thread enabled configuration (80fff45 Mark Ellzey)
+ o Added include_dir for libevent pathing (4c6dbc2 Mark Ellzey)
+ o turn off compression by default (6244108 Mark Ellzey)
+ o Cleanup (275329a Mark Ellzey)
+ o static again (8796e10 Mark Ellzey)
+ o testing timeouts (ac70f3c Mark Ellzey)
+ o fix (1aa2d79 Mark Ellzey)
+ o more timeout tests (7f29ff6 Mark Ellzey)
+ o SSL 1.x optimizations / timeouts (b693c7f Mark Ellzey)
+ o Adding LICENSE (c1ba152 Mark Ellzey)
+ o blerp (1623480 Mark Ellzey)
+ o hrm (964aab3 Mark Ellzey)
+ o added backlog arg to evhtp_bind_socket() (584e73e Mark Ellzey)
+ o Adding backlog to bufferevent (c740b0c Mark Ellzey)
+ o blerp (7c8fe61 Mark Ellzey)
+ o htparser fix (c76e3ea Mark Ellzey)
+ o Re-added user-set timeouts (ec246ff Mark Ellzey)
+ o Changing static len checks with sizeof() (7c3a79f Mark Ellzey)
+ o Fixed over/underflow condition in str_to_uint64 (c72deee Mark Ellzey)
+ o Fixed issue with state transition into read_body (0fc1897 Mark Ellzey)
+ o added static rt (1910c19 Mark Ellzey)
+ o Fixed incorrect integer conversion which misses zero edge case. (c562ede Mark Ellzey)
+ o Added correct status code string definitions. (a5bc03d Mark Ellzey)
+ o Include RT and DL if avail when linking test. SSL needs them. (29e35fb Mark Ellzey)
+ o default cb now returns 404 (fd4e3cb Mark Ellzey)
+ o Prepping release v0.4.1 (246a5da Mark Ellzey)

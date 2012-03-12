@@ -297,6 +297,8 @@ evthr_new(evthr_init_cb init_cb, void * args) {
 
 int
 evthr_start(evthr_t * thread) {
+    int res;
+
     if (thread == NULL || thread->thr == NULL) {
         return -1;
     }
@@ -305,7 +307,9 @@ evthr_start(evthr_t * thread) {
         return -1;
     }
 
-    return pthread_detach(*thread->thr);
+    res = pthread_detach(*thread->thr);
+
+    return res;
 }
 
 void
@@ -329,10 +333,12 @@ evthr_free(evthr_t * thread) {
 
     if (thread->stat_lock) {
         pthread_mutex_destroy(thread->stat_lock);
+        free(thread->stat_lock);
     }
 
     if (thread->rlock) {
         pthread_mutex_destroy(thread->rlock);
+        free(thread->rlock);
     }
 
     if (thread->thr) {
@@ -348,7 +354,7 @@ evthr_free(evthr_t * thread) {
     }
 
     free(thread);
-}
+} /* evthr_free */
 
 void
 evthr_pool_free(evthr_pool_t * pool) {

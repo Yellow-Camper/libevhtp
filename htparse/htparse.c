@@ -113,6 +113,7 @@ struct htparser {
     unsigned char minor;
     uint64_t      content_len;
     uint64_t      bytes_read;
+    uint64_t      total_bytes_read;
     unsigned int  status;       /* only for responses */
     unsigned int  status_count; /* only for responses */
 
@@ -410,6 +411,11 @@ htparser_get_bytes_read(htparser * p) {
     return p->bytes_read;
 }
 
+uint64_t
+htparser_get_total_bytes_read(htparser * p) {
+    return p->total_bytes_read;
+}
+
 void
 htparser_init(htparser * p, htp_type type) {
     memset(p, 0, sizeof(htparser));
@@ -447,7 +453,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             return i + 1;
         }
 
-        p->bytes_read += 1;
+        p->total_bytes_read += 1;
+        p->bytes_read       += 1;
 
         switch (p->state) {
             case s_start:
@@ -1319,7 +1326,7 @@ hdrline_start:
                             case eval_hdr_val_none:
                                 break;
                             case eval_hdr_val_content_length:
-                                p->content_len = str_to_uint64(p->buf, p->buf_idx, &err);
+                                p->content_len      = str_to_uint64(p->buf, p->buf_idx, &err);
 
                                 if (err == 1) {
                                     p->error = htparse_error_too_big;

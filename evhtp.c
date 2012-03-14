@@ -1171,7 +1171,7 @@ check_proto:
                         code, status_code_to_str(code));
 
     evhtp_headers_for_each(request->headers_out, _evhtp_create_headers, buf);
-    evbuffer_add_reference(buf, "\r\n", 2, NULL, NULL);
+    evbuffer_add(buf, "\r\n", 2);
 
     if (evbuffer_get_length(request->buffer_out)) {
         evbuffer_add_buffer(buf, request->buffer_out);

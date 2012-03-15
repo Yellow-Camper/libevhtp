@@ -6,7 +6,11 @@
 #endif
 
 #include <htparse.h>
+
+#ifndef EVHTP_DISABLE_REGEX
 #include <onigposix.h>
+#endif
+
 #include <sys/queue.h>
 #include <event2/event.h>
 #include <event2/listener.h>
@@ -104,7 +108,9 @@ enum evhtp_hook_type {
 
 enum evhtp_callback_type {
     evhtp_callback_type_hash,
+#ifndef EVHTP_DISABLE_REGEX
     evhtp_callback_type_regex
+#endif
 };
 
 enum evhtp_proto {
@@ -255,7 +261,9 @@ struct evhtp_s {
  */
 struct evhtp_callbacks_s {
     evhtp_callback_t ** callbacks;       /**< hash of path callbacks */
+#ifndef EVHTP_DISABLE_REGEX
     evhtp_callback_t  * regex_callbacks; /**< list of regex callbacks */
+#endif
     unsigned int        count;           /**< number of callbacks defined */
     unsigned int        buckets;         /**< buckets allocated for hash */
 };
@@ -283,7 +291,9 @@ struct evhtp_callback_s {
 
     union {
         char    * path;
+#ifndef EVHTP_DISABLE_REGEX
         regex_t * regex;
+#endif
     } val;
 
     evhtp_callback_t * next;
@@ -502,7 +512,9 @@ evhtp_callback_t * evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback
  *
  * @return evhtp_callback_t * on success, NULL on error
  */
+#ifndef EVHTP_DISABLE_REGEX
 evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, void * arg);
+#endif
 
 
 /**

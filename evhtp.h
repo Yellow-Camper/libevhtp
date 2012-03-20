@@ -390,6 +390,7 @@ struct evhtp_connection_s {
     struct sockaddr * saddr;
     int               sock;
     int               error;
+    int               owner; /*< set to 1 if this structure owns the bufferevent */
     evhtp_request_t * request;
 };
 
@@ -756,7 +757,6 @@ void       evhtp_request_pause(evhtp_request_t * request);
 void       evhtp_request_resume(evhtp_request_t * request);
 
 
-
 /**
  * @brief returns the underlying evhtp_connection_t structure from a request
  *
@@ -801,6 +801,22 @@ evbev_t * evhtp_connection_get_bev(evhtp_connection_t * conn);
  */
 evbev_t * evhtp_request_get_bev(evhtp_request_t * request);
 
+
+/**
+ * @brief let a user take ownership of the underlying bufferevent and free
+ *        all other underlying resources.
+ *
+ * Warning: this will free all evhtp_connection/request structures, remove all
+ * associated hooks and reset the bufferevent to defaults, i.e., disable
+ * EV_READ, and set all callbacks to NULL.
+ *
+ * @param connection
+ *
+ * @return underlying connections bufferevent.
+ */
+evbev_t * evhtp_connection_take_ownership(evhtp_connection_t * connection);
+
+
 /**
  * @brief free's all connection related resources, this will also call your
  *        request fini hook and request fini hook.
@@ -808,6 +824,7 @@ evbev_t * evhtp_request_get_bev(evhtp_request_t * request);
  * @param connection
  */
 void evhtp_connection_free(evhtp_connection_t * connection);
+
 
 #ifdef __cplusplus
 }

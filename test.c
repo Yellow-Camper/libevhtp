@@ -104,6 +104,28 @@ test_pause_cb(evhtp_request_t * request, void * arg) {
 }
 
 static void
+_owned_readcb(evbev_t * bev, void * arg) {
+    /* echo the input back to the client */
+    bufferevent_write_buffer(bev, bufferevent_get_input(bev));
+}
+
+static void
+_owned_eventcb(evbev_t * bev, short events, void * arg) {
+    bufferevent_free(bev);
+}
+
+static void
+test_ownership(evhtp_request_t * request, void * arg) {
+    evhtp_connection_t * conn = evhtp_request_get_connection(request);
+    evbev_t            * bev  = evhtp_connection_take_ownership(conn);
+
+    bufferevent_enable(bev, EV_READ);
+    bufferevent_setcb(bev,
+                      _owned_readcb, NULL,
+                      _owned_eventcb, NULL);
+}
+
+static void
 test_regex(evhtp_request_t * req, void * arg) {
     evbuffer_add_printf(req->buffer_out,
                         "start = '%s', end = '%s\n",
@@ -456,6 +478,11 @@ main(int argc, char ** argv) {
 
     /* set a callback to test out chunking API */
     evhtp_set_cb(htp, "/chunkme", test_chunking, NULL);
+
+    /* set a callback which takes ownership of the underlying bufferevent and
+     * just starts echoing things
+     */
+    evhtp_set_cb(htp, "/ownme", test_ownership, NULL);
 
     /* set a callback to pause on each header for cb_7 */
     evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, NULL);

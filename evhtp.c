@@ -514,6 +514,7 @@ _evhtp_callback_hash_find(evhtp_callbacks_t * callbacks, const char * path) {
  *
  * @return an evhtp_callback_t function on success, otherwise NULL
  */
+#ifndef EVHTP_DISABLE_REGEX
 static evhtp_callback_t *
 _evhtp_callback_regex_find(evhtp_callbacks_t * callbacks, const char * path,
                            unsigned int * soff, unsigned int * eoff) {
@@ -540,6 +541,7 @@ _evhtp_callback_regex_find(evhtp_callbacks_t * callbacks, const char * path,
 
     return NULL;
 }
+#endif
 
 /**
  * @brief A wrapper around both hash and regex hook lookups
@@ -568,10 +570,12 @@ _evhtp_callback_find(evhtp_callbacks_t * callbacks,
         return callback;
     }
 
+#ifndef EVHTP_DISABLE_REGEX
     if ((callback = _evhtp_callback_regex_find(callbacks, path,
                                                start_offset, end_offset)) != NULL) {
         return callback;
     }
+#endif
 
     return NULL;
 }
@@ -2345,6 +2349,7 @@ evhtp_callbacks_free(evhtp_callbacks_t * callbacks) {
         free(callbacks->callbacks);
     }
 
+#ifndef EVHTP_DISABLE_REGEX
     callback = callbacks->regex_callbacks;
 
     while (callback != NULL) {
@@ -2352,6 +2357,7 @@ evhtp_callbacks_free(evhtp_callbacks_t * callbacks) {
         evhtp_callback_free(callback);
         callback = next;
     }
+#endif
 
     free(callbacks);
 }
@@ -2373,6 +2379,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
             hcb->hash      = _evhtp_quick_hash(path);
             hcb->val.path  = strdup(path);
             break;
+#ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             hcb->val.regex = malloc(sizeof(regex_t));
 
@@ -2382,6 +2389,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
                 return NULL;
             }
             break;
+#endif
         default:
             free(hcb);
             return NULL;
@@ -2402,11 +2410,13 @@ evhtp_callback_free(evhtp_callback_t * callback) {
                 free(callback->val.path);
             }
             break;
+#ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             if (callback->val.regex) {
                 regfree(callback->val.regex);
             }
             break;
+#endif
     }
 
     free(callback);
@@ -2429,10 +2439,12 @@ evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb) {
                 cbs->callbacks[hkey] = cb;
             }
             break;
+#ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             cb->next = cbs->regex_callbacks;
             cbs->regex_callbacks = cb;
             break;
+#endif
         default:
             return -1;
     }
@@ -2624,6 +2636,7 @@ evhtp_use_callback_locks(evhtp_t * htp) {
     return pthread_mutex_init(htp->lock, NULL);
 }
 
+#ifndef EVHTP_DISABLE_REGEX
 evhtp_callback_t *
 evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, void * arg) {
     evhtp_callback_t * hcb;
@@ -2651,6 +2664,7 @@ evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, vo
     _evhtp_unlock(htp);
     return hcb;
 }
+#endif
 
 void
 evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * arg) {

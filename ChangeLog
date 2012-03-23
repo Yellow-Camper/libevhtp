@@ -1,3 +1,8 @@
+v0.4.11
+ o Add compile time EVHTP_DISABLE_REGEX option. (eab0d0f Andy Hochhaus)
+ o Use evbuffer_add in lieu of add_reference for short writes. (2df5fbd Joe Nardone)
+ o Added take_ownership functionality which frees resources but gives the underlying bufferevent to the caller. (75050f8 Mark Ellzey)
+
 v0.4.10
  o Fixed memleak with evthr_free() (10ad15a Mark Ellzey)
  o Correct SSL_Shutdown() usage. (f5f97ee Mark Ellzey)

@@ -150,6 +150,10 @@ if (NOT EVHTP_DISABLE_EVTHR)
 	set (LIBEVHTP_SOURCES ${LIBEVHTP_SOURCES} evthr/evthr.c)
 endif(NOT EVHTP_DISABLE_EVTHR)
 
+if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG")
+endif (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+
 add_library(libevhtp STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
 

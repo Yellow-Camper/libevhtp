@@ -249,7 +249,7 @@ strndup(const char * s, size_t n) {
     size_t len = strnlen(s, n);
     char * ret;
 
-    if (len <= n) {
+    if (len < n) {
         return strdup(s);
     }
 
@@ -514,6 +514,7 @@ _evhtp_callback_hash_find(evhtp_callbacks_t * callbacks, const char * path) {
  *
  * @return an evhtp_callback_t function on success, otherwise NULL
  */
+#ifndef EVHTP_DISABLE_REGEX
 static evhtp_callback_t *
 _evhtp_callback_regex_find(evhtp_callbacks_t * callbacks, const char * path,
                            unsigned int * soff, unsigned int * eoff) {
@@ -540,6 +541,7 @@ _evhtp_callback_regex_find(evhtp_callbacks_t * callbacks, const char * path,
 
     return NULL;
 }
+#endif
 
 /**
  * @brief A wrapper around both hash and regex hook lookups
@@ -568,10 +570,12 @@ _evhtp_callback_find(evhtp_callbacks_t * callbacks,
         return callback;
     }
 
+#ifndef EVHTP_DISABLE_REGEX
     if ((callback = _evhtp_callback_regex_find(callbacks, path,
                                                start_offset, end_offset)) != NULL) {
         return callback;
     }
+#endif
 
     return NULL;
 }
@@ -1094,7 +1098,13 @@ _evhtp_create_headers(evhtp_header_t * header, void * arg) {
 
 static evbuf_t *
 _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
-    evbuf_t * buf = evbuffer_new();
+    evbuf_t    * buf          = evbuffer_new();
+    const char * content_type = evhtp_header_find(request->headers_out, "Content-Type");
+
+    if (content_type && strstr(content_type, "multipart")) {
+        /* multipart messages should not get any extra headers */
+        goto check_proto;
+    }
 
     if (evbuffer_get_length(request->buffer_out) && request->chunked == 0) {
         /* add extra headers (like content-length/type) if not already present */
@@ -1117,7 +1127,7 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
                                      evhtp_header_new("Content-Length", lstr, 0, 1));
         }
 
-        if (!evhtp_header_find(request->headers_out, "Content-Type")) {
+        if (!content_type) {
             evhtp_headers_add_header(request->headers_out,
                                      evhtp_header_new("Content-Type", "text/plain", 0, 0));
         }
@@ -1165,7 +1175,7 @@ check_proto:
                         code, status_code_to_str(code));
 
     evhtp_headers_for_each(request->headers_out, _evhtp_create_headers, buf);
-    evbuffer_add_reference(buf, "\r\n", 2, NULL, NULL);
+    evbuffer_add(buf, "\r\n", 2);
 
     if (evbuffer_get_length(request->buffer_out)) {
         evbuffer_add_buffer(buf, request->buffer_out);
@@ -1198,10 +1208,12 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
         c->request->status = EVHTP_RES_OK;
     }
 
-
     buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
     nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
 
+    if (c->owner != 1) {
+        return evhtp_connection_free(c);
+    }
 
     if (avail != nread) {
         if (c->request && c->request->status == EVHTP_RES_PAUSE) {
@@ -1294,7 +1306,7 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
         connection->bev = bufferevent_openssl_socket_new(evbase,
                                                          connection->sock, connection->ssl,
                                                          BUFFEREVENT_SSL_ACCEPTING,
-                                                         BEV_OPT_THREADSAFE | BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
+                                                         BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
         SSL_set_app_data(connection->ssl, connection);
         goto end;
     }
@@ -1345,6 +1357,7 @@ _evhtp_connection_new(evhtp_t * htp, int sock) {
     connection->request   = NULL;
     connection->resume_ev = NULL;
     connection->error     = 0;
+    connection->owner     = 1;
     connection->sock      = sock;
     connection->htp       = htp;
     connection->parser    = htparser_new();
@@ -2336,6 +2349,7 @@ evhtp_callbacks_free(evhtp_callbacks_t * callbacks) {
         free(callbacks->callbacks);
     }
 
+#ifndef EVHTP_DISABLE_REGEX
     callback = callbacks->regex_callbacks;
 
     while (callback != NULL) {
@@ -2343,6 +2357,7 @@ evhtp_callbacks_free(evhtp_callbacks_t * callbacks) {
         evhtp_callback_free(callback);
         callback = next;
     }
+#endif
 
     free(callbacks);
 }
@@ -2364,6 +2379,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
             hcb->hash      = _evhtp_quick_hash(path);
             hcb->val.path  = strdup(path);
             break;
+#ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             hcb->val.regex = malloc(sizeof(regex_t));
 
@@ -2373,6 +2389,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
                 return NULL;
             }
             break;
+#endif
         default:
             free(hcb);
             return NULL;
@@ -2393,11 +2410,13 @@ evhtp_callback_free(evhtp_callback_t * callback) {
                 free(callback->val.path);
             }
             break;
+#ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             if (callback->val.regex) {
                 regfree(callback->val.regex);
             }
             break;
+#endif
     }
 
     free(callback);
@@ -2420,10 +2439,12 @@ evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb) {
                 cbs->callbacks[hkey] = cb;
             }
             break;
+#ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             cb->next = cbs->regex_callbacks;
             cbs->regex_callbacks = cb;
             break;
+#endif
         default:
             return -1;
     }
@@ -2490,6 +2511,62 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * a
 
     return 0;
 }         /* evhtp_set_hook */
+
+int
+evhtp_unset_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type) {
+    return evhtp_set_hook(hooks, type, NULL, NULL);
+}
+
+int
+evhtp_unset_all_hooks(evhtp_hooks_t ** hooks) {
+    int res = 0;
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_headers_start)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_header)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_headers)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_path)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_read)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_request_fini)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_connection_fini)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_error)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_new_chunk)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_chunk_complete)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_chunks_complete)) {
+        res -= 1;
+    }
+
+    return res;
+} /* evhtp_unset_all_hooks */
 
 evhtp_callback_t *
 evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg) {
@@ -2559,6 +2636,7 @@ evhtp_use_callback_locks(evhtp_t * htp) {
     return pthread_mutex_init(htp->lock, NULL);
 }
 
+#ifndef EVHTP_DISABLE_REGEX
 evhtp_callback_t *
 evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, void * arg) {
     evhtp_callback_t * hcb;
@@ -2586,6 +2664,7 @@ evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, vo
     _evhtp_unlock(htp);
     return hcb;
 }
+#endif
 
 void
 evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * arg) {
@@ -2743,8 +2822,35 @@ evhtp_connection_get_bev(evhtp_connection_t * connection) {
 }
 
 evbev_t *
+evhtp_connection_take_ownership(evhtp_connection_t * connection) {
+    evbev_t * bev = evhtp_connection_get_bev(connection);
+
+    if (connection->hooks) {
+        evhtp_unset_all_hooks(&connection->hooks);
+    }
+
+    if (connection->request && connection->request->hooks) {
+        evhtp_unset_all_hooks(&connection->request->hooks);
+    }
+
+    evhtp_connection_set_bev(connection, NULL);
+
+    connection->owner = 0;
+
+    bufferevent_disable(bev, EV_READ);
+    bufferevent_setcb(bev, NULL, NULL, NULL, NULL);
+
+    return bev;
+}
+
+evbev_t *
 evhtp_request_get_bev(evhtp_request_t * request) {
     return evhtp_connection_get_bev(request->conn);
+}
+
+evbev_t *
+evhtp_request_take_ownership(evhtp_request_t * request) {
+    return evhtp_connection_take_ownership(evhtp_request_get_connection(request));
 }
 
 void
@@ -2786,8 +2892,7 @@ evhtp_connection_free(evhtp_connection_t * connection) {
 #else
 #ifndef DISABLE_SSL
         if (connection->ssl != NULL) {
-            SSL_set_shutdown(connection->ssl,
-                             SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
+            SSL_set_shutdown(connection->ssl, SSL_SENT_SHUTDOWN | SSL_RECEIVED_SHUTDOWN);
             SSL_shutdown(connection->ssl);
         }
 #endif

@@ -6,7 +6,11 @@
 #endif
 
 #include <htparse.h>
+
+#ifndef EVHTP_DISABLE_REGEX
 #include <onigposix.h>
+#endif
+
 #include <sys/queue.h>
 #include <event2/event.h>
 #include <event2/listener.h>
@@ -104,7 +108,9 @@ enum evhtp_hook_type {
 
 enum evhtp_callback_type {
     evhtp_callback_type_hash,
+#ifndef EVHTP_DISABLE_REGEX
     evhtp_callback_type_regex
+#endif
 };
 
 enum evhtp_proto {
@@ -145,10 +151,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION          "0.4.9"
+#define EVHTP_VERSION          "0.4.10"
 #define EVHTP_VERSION_MAJOR    0
 #define EVHTP_VERSION_MINOR    4
-#define EVHTP_VERSION_PATCH    9
+#define EVHTP_VERSION_PATCH    10
 
 #define evhtp_headers_iterator evhtp_kvs_iterator
 
@@ -255,7 +261,9 @@ struct evhtp_s {
  */
 struct evhtp_callbacks_s {
     evhtp_callback_t ** callbacks;       /**< hash of path callbacks */
+#ifndef EVHTP_DISABLE_REGEX
     evhtp_callback_t  * regex_callbacks; /**< list of regex callbacks */
+#endif
     unsigned int        count;           /**< number of callbacks defined */
     unsigned int        buckets;         /**< buckets allocated for hash */
 };
@@ -283,7 +291,9 @@ struct evhtp_callback_s {
 
     union {
         char    * path;
+#ifndef EVHTP_DISABLE_REGEX
         regex_t * regex;
+#endif
     } val;
 
     evhtp_callback_t * next;
@@ -390,6 +400,7 @@ struct evhtp_connection_s {
     struct sockaddr * saddr;
     int               sock;
     int               error;
+    int               owner; /*< set to 1 if this structure owns the bufferevent */
     evhtp_request_t * request;
 };
 
@@ -502,7 +513,9 @@ evhtp_callback_t * evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback
  *
  * @return evhtp_callback_t * on success, NULL on error
  */
+#ifndef EVHTP_DISABLE_REGEX
 evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, void * arg);
+#endif
 
 
 /**
@@ -756,7 +769,6 @@ void       evhtp_request_pause(evhtp_request_t * request);
 void       evhtp_request_resume(evhtp_request_t * request);
 
 
-
 /**
  * @brief returns the underlying evhtp_connection_t structure from a request
  *
@@ -801,6 +813,22 @@ evbev_t * evhtp_connection_get_bev(evhtp_connection_t * conn);
  */
 evbev_t * evhtp_request_get_bev(evhtp_request_t * request);
 
+
+/**
+ * @brief let a user take ownership of the underlying bufferevent and free
+ *        all other underlying resources.
+ *
+ * Warning: this will free all evhtp_connection/request structures, remove all
+ * associated hooks and reset the bufferevent to defaults, i.e., disable
+ * EV_READ, and set all callbacks to NULL.
+ *
+ * @param connection
+ *
+ * @return underlying connections bufferevent.
+ */
+evbev_t * evhtp_connection_take_ownership(evhtp_connection_t * connection);
+
+
 /**
  * @brief free's all connection related resources, this will also call your
  *        request fini hook and request fini hook.
@@ -808,6 +836,7 @@ evbev_t * evhtp_request_get_bev(evhtp_request_t * request);
  * @param connection
  */
 void evhtp_connection_free(evhtp_connection_t * connection);
+
 
 #ifdef __cplusplus
 }

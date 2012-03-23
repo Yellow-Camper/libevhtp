@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <signal.h>
+#include <inttypes.h>
 #include <evhtp.h>
 
 #ifndef DISABLE_EVTHR
@@ -16,6 +17,7 @@ uint16_t bind_port   = 8081;
 char   * ssl_pem     = NULL;
 char   * ssl_ca      = NULL;
 char   * ssl_capath  = NULL;
+size_t   bw_limit    = 0;
 
 struct pauser {
     event_t         * timer_ev;
@@ -101,6 +103,29 @@ test_pause_cb(evhtp_request_t * request, void * arg) {
     evhtp_send_reply(request, EVHTP_RES_OK);
 }
 
+#ifndef EVHTP_DISABLE_REGEX
+static void
+_owned_readcb(evbev_t * bev, void * arg) {
+    /* echo the input back to the client */
+    bufferevent_write_buffer(bev, bufferevent_get_input(bev));
+}
+
+static void
+_owned_eventcb(evbev_t * bev, short events, void * arg) {
+    bufferevent_free(bev);
+}
+
+static void
+test_ownership(evhtp_request_t * request, void * arg) {
+    evhtp_connection_t * conn = evhtp_request_get_connection(request);
+    evbev_t            * bev  = evhtp_connection_take_ownership(conn);
+
+    bufferevent_enable(bev, EV_READ);
+    bufferevent_setcb(bev,
+                      _owned_readcb, NULL,
+                      _owned_eventcb, NULL);
+}
+
 static void
 test_regex(evhtp_request_t * req, void * arg) {
     evbuffer_add_printf(req->buffer_out,
@@ -110,6 +135,7 @@ test_regex(evhtp_request_t * req, void * arg) {
 
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
+#endif
 
 static void
 dynamic_cb(evhtp_request_t * r, void * arg) {
@@ -241,23 +267,20 @@ print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
 }
 
 static evhtp_res
-print_data(evhtp_request_t * req, evbuf_t * buf, void * arg ) {
-#if 0
+print_data(evhtp_request_t * req, evbuf_t * buf, void * arg) {
+#ifndef NDEBUG
     evbuffer_add_printf(req->buffer_out,
                         "got %zu bytes of data\n",
                         evbuffer_get_length(buf));
-    printf("%.*s", evbuffer_get_length(buf), (char *)evbuffer_pullup(buf,
-                                                                     evbuffer_get_length(buf)));
+    printf("%.*s", evbuffer_get_length(buf), (char *)evbuffer_pullup(buf, evbuffer_get_length(buf)));
 #endif
     evbuffer_drain(buf, -1);
-
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
 print_new_chunk_len(evhtp_request_t * req, uint64_t len, void * arg) {
-    evbuffer_add_printf(req->buffer_out,
-                        "started new chunk, %zu bytes\n", len);
+    evbuffer_add_printf(req->buffer_out, "started new chunk, %" PRId64 "u bytes\n", len);
 
     return EVHTP_RES_OK;
 }
@@ -276,16 +299,18 @@ print_chunks_complete(evhtp_request_t * req, void * arg) {
     return EVHTP_RES_OK;
 }
 
+#ifndef EVHTP_DISABLE_REGEX
 static evhtp_res
 test_regex_hdrs_cb(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
     return EVHTP_RES_OK;
 }
+#endif
 
 static evhtp_res
 test_pre_accept(evhtp_connection_t * c, void * arg) {
     uint16_t port = *(uint16_t *)arg;
 
-    if (port > 8089) {
+    if (port > 10000) {
         return EVHTP_RES_ERROR;
     }
 
@@ -294,16 +319,20 @@ test_pre_accept(evhtp_connection_t * c, void * arg) {
 
 static evhtp_res
 test_fini(evhtp_request_t * r, void * arg) {
-#if 0
-    fprintf(stderr, ".");
-    fflush(stderr);
-#endif
+    struct ev_token_bucket_cfg * tcfg = arg;
+
+    if (tcfg) {
+        ev_token_bucket_cfg_free(tcfg);
+    }
 
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
-set_my_connection_handlers(evhtp_connection_t * conn, void * arg ) {
+set_my_connection_handlers(evhtp_connection_t * conn, void * arg) {
+    struct timeval               tick;
+    struct ev_token_bucket_cfg * tcfg = NULL;
+
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_header, print_kv, "foo");
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_headers, print_kvs, "bar");
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_path, print_path, "baz");
@@ -311,7 +340,17 @@ set_my_connection_handlers(evhtp_connection_t * conn, void * arg ) {
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_new_chunk, print_new_chunk_len, NULL);
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunk_complete, print_chunk_complete, NULL);
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunks_complete, print_chunks_complete, NULL);
-    evhtp_set_hook(&conn->hooks, evhtp_hook_on_request_fini, test_fini, NULL);
+
+    if (bw_limit > 0) {
+        tick.tv_sec  = 0;
+        tick.tv_usec = 500 * 100;
+
+        tcfg         = ev_token_bucket_cfg_new(bw_limit, bw_limit, bw_limit, bw_limit, &tick);
+
+        bufferevent_set_rate_limit(conn->bev, tcfg);
+    }
+
+    evhtp_set_hook(&conn->hooks, evhtp_hook_on_request_fini, test_fini, tcfg);
 
     return EVHTP_RES_OK;
 }
@@ -329,7 +368,7 @@ dummy_check_issued_cb(X509_STORE_CTX * ctx, X509 * x, X509 * issuer) {
 
 #endif
 
-const char * optstr = "htn:a:p:r:s:c:C:";
+const char * optstr = "htn:a:p:r:s:c:C:l:";
 
 const char * help   =
     "Options: \n"
@@ -343,6 +382,7 @@ const char * help   =
     "  -c <ca>  : CA cert file             (default: NULL)\n"
     "  -C <path>: CA Path                  (default: NULL)\n"
 #endif
+    "  -l <int> : Max bandwidth (in bytes) (default: NULL)\n"
     "  -r <str> : Document root            (default: .)\n"
     "  -a <str> : Bind Address             (default: 0.0.0.0)\n"
     "  -p <int> : Bind Port                (default: 8081)\n";
@@ -386,6 +426,9 @@ parse_args(int argc, char ** argv) {
                 ssl_capath  = strdup(optarg);
                 break;
 #endif
+            case 'l':
+                bw_limit    = atoll(optarg);
+                break;
             default:
                 printf("Unknown opt %s\n", optarg);
                 return -1;
@@ -433,18 +476,29 @@ main(int argc, char ** argv) {
     cb_3   = evhtp_set_cb(htp, "/foo/", test_foo_cb, "bar");
     cb_4   = evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
     cb_5   = evhtp_set_cb(htp, "/500", test_500_cb, "500");
+#ifndef EVHTP_DISABLE_REGEX
     cb_6   = evhtp_set_regex_cb(htp, "^(/anything/).*", test_regex, NULL);
+#endif
     cb_7   = evhtp_set_cb(htp, "/pause", test_pause_cb, NULL);
+#ifndef EVHTP_DISABLE_REGEX
     cb_8   = evhtp_set_regex_cb(htp, "^/create/(.*)", create_callback, NULL);
+#endif
 
     /* set a callback to test out chunking API */
     evhtp_set_cb(htp, "/chunkme", test_chunking, NULL);
+
+    /* set a callback which takes ownership of the underlying bufferevent and
+     * just starts echoing things
+     */
+    evhtp_set_cb(htp, "/ownme", test_ownership, NULL);
 
     /* set a callback to pause on each header for cb_7 */
     evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, NULL);
 
     /* set a callback to set hooks specifically for the cb_6 callback */
+#ifndef EVHTP_DISABLE_REGEX
     evhtp_set_hook(&cb_6->hooks, evhtp_hook_on_headers, test_regex_hdrs_cb, NULL);
+#endif
 
     /* set a default request handler */
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");

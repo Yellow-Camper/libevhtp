@@ -240,9 +240,9 @@ struct evhtp_s {
     evhtp_ssl_ctx_t * ssl_ctx;    /**< if ssl enabled, this is the servers CTX */
     evhtp_ssl_cfg_t * ssl_cfg;
 
-    evthr_pool_t      * thr_pool; /**< connection threadpool */
+    evthr_pool_t * thr_pool;      /**< connection threadpool */
 #ifndef EVHTP_DISABLE_EVTHR
-    pthread_mutex_t   * lock;     /**< parent lock for add/del cbs in threads */
+    pthread_mutex_t * lock;       /**< parent lock for add/del cbs in threads */
 #endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
@@ -264,10 +264,10 @@ struct evhtp_s {
 struct evhtp_callbacks_s {
     evhtp_callback_t ** callbacks;       /**< hash of path callbacks */
 #ifndef EVHTP_DISABLE_REGEX
-    evhtp_callback_t  * regex_callbacks; /**< list of regex callbacks */
+    evhtp_callback_t * regex_callbacks;  /**< list of regex callbacks */
 #endif
-    unsigned int        count;           /**< number of callbacks defined */
-    unsigned int        buckets;         /**< buckets allocated for hash */
+    unsigned int count;                  /**< number of callbacks defined */
+    unsigned int buckets;                /**< buckets allocated for hash */
 };
 
 /**
@@ -292,7 +292,7 @@ struct evhtp_callback_s {
     evhtp_hooks_t     * hooks;           /**< per-callback hooks */
 
     union {
-        char    * path;
+        char * path;
 #ifndef EVHTP_DISABLE_REGEX
         regex_t * regex;
 #endif
@@ -559,7 +559,28 @@ evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp
  *
  * @return 0 on success, -1 on error (if hooks is NULL, it is allocated)
  */
-int  evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * arg);
+int evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * arg);
+
+
+/**
+ * @brief remove a specific hook from being called.
+ *
+ * @param hooks
+ * @param type
+ *
+ * @return
+ */
+int evhtp_unset_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type);
+
+
+/**
+ * @brief removes all hooks.
+ *
+ * @param hooks
+ *
+ * @return
+ */
+int  evhtp_unset_all_hooks(evhtp_hooks_t ** hooks);
 
 int  evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port, int backlog);
 int  evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *, size_t sin_len, int backlog);

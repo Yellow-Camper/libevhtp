@@ -561,6 +561,7 @@ main(int argc, char ** argv) {
     signal(SIGINT, sigint);
 
     event_base_loop(evbase, 0);
+
     return 0;
 } /* main */
 

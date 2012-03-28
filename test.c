@@ -8,7 +8,7 @@
 #include <inttypes.h>
 #include <evhtp.h>
 
-#ifndef DISABLE_EVTHR
+#ifndef EVHTP_DISABLE_EVTHR
 int      use_threads = 0;
 int      num_threads = 0;
 #endif
@@ -373,7 +373,7 @@ const char * optstr = "htn:a:p:r:s:c:C:l:";
 const char * help   =
     "Options: \n"
     "  -h       : This help text\n"
-#ifndef DISABLE_EVTHR
+#ifndef EVHTP_DISABLE_EVTHR
     "  -t       : Run requests in a thread (default: off)\n"
     "  -n <int> : Number of threads        (default: 0 if -t is off, 4 if -t is on)\n"
 #endif
@@ -407,7 +407,7 @@ parse_args(int argc, char ** argv) {
             case 'p':
                 bind_port   = atoi(optarg);
                 break;
-#ifndef DISABLE_EVTHR
+#ifndef EVHTP_DISABLE_EVTHR
             case 't':
                 use_threads = 1;
                 break;
@@ -435,7 +435,7 @@ parse_args(int argc, char ** argv) {
         } /* switch */
     }
 
-#ifndef DISABLE_EVTHR
+#ifndef EVHTP_DISABLE_EVTHR
     if (use_threads && num_threads == 0) {
         num_threads = 4;
     }
@@ -533,7 +533,7 @@ main(int argc, char ** argv) {
         };
 
         evhtp_ssl_init(htp, &scfg);
-
+#ifndef EVHTP_DISABLE_EVTHR
         if (use_threads) {
             #define OPENSSL_THREAD_DEFINES
 #include <openssl/opensslconf.h>
@@ -543,10 +543,11 @@ main(int argc, char ** argv) {
             exit(-1);
 #endif
         }
+#endif
     }
 #endif
 
-#ifndef DISABLE_EVTHR
+#ifndef EVHTP_DISABLE_EVTHR
     if (use_threads) {
         evhtp_use_threads(htp, NULL, num_threads, NULL);
     }

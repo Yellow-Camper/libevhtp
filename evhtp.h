@@ -241,7 +241,9 @@ struct evhtp_s {
     evhtp_ssl_cfg_t * ssl_cfg;
 
     evthr_pool_t      * thr_pool; /**< connection threadpool */
+#ifndef EVHTP_DISABLE_EVTHR
     pthread_mutex_t   * lock;     /**< parent lock for add/del cbs in threads */
+#endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
 

@@ -951,9 +951,9 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
         path->matched_soff = 0;
         path->matched_eoff = (unsigned int)strlen(path->full);
     }
-#ifndef EVHTP_DISABLE_EVTHR
+
     _evhtp_unlock(c->htp);
-#endif
+
     match_start = calloc(strlen(path->full) + 1, 1);
     match_end   = calloc(strlen(path->full) + 1, 1);
 
@@ -2591,22 +2591,17 @@ evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
     }
 
     if (!(hcb = evhtp_callback_new(path, evhtp_callback_type_hash, cb, arg))) {
-#ifndef EVHTP_DISABLE_EVTHR
         _evhtp_unlock(htp);
-#endif
         return NULL;
     }
 
     if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
         evhtp_callback_free(hcb);
-#ifndef EVHTP_DISABLE_EVTHR
         _evhtp_unlock(htp);
-#endif
         return NULL;
     }
-#ifndef EVHTP_DISABLE_EVTHR
+
     _evhtp_unlock(htp);
-#endif
     return hcb;
 }
 
@@ -2674,14 +2669,11 @@ evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, vo
 
     if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
         evhtp_callback_free(hcb);
-#ifndef EVHTP_DISABLE_EVTHR
         _evhtp_unlock(htp);
-#endif
         return NULL;
     }
-#ifndef EVHTP_DISABLE_EVTHR
+
     _evhtp_unlock(htp);
-#endif
     return hcb;
 }
 #endif

@@ -68,6 +68,7 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
         }                                                                                     \
 } while (0);
 
+#ifndef EVHTP_DISABLE_EVTHR
 #define _evhtp_lock(h)                             do { \
         if (h->lock) {                                  \
             pthread_mutex_lock(h->lock);                \
@@ -79,7 +80,7 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
             pthread_mutex_unlock(h->lock);              \
         }                                               \
 } while (0)
-
+#endif
 
 static int scode_tree_initialized = 0;
 
@@ -924,9 +925,9 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
         c->request->status = EVHTP_RES_FATAL;
         return -1;
     }
-
+#ifndef EVHTP_DISABLE_EVTHR
     _evhtp_lock(c->htp);
-
+#endif
     if ((callback = _evhtp_callback_find(c->htp->callbacks, path->path,
                                          &path->matched_soff, &path->matched_eoff))) {
         /* matched a callback using *just* the path (/a/b/c/) */
@@ -947,9 +948,9 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
         path->matched_soff = 0;
         path->matched_eoff = (unsigned int)strlen(path->full);
     }
-
+#ifndef EVHTP_DISABLE_EVTHR
     _evhtp_unlock(c->htp);
-
+#endif
     match_start = calloc(strlen(path->full) + 1, 1);
     match_end   = calloc(strlen(path->full) + 1, 1);
 
@@ -1394,6 +1395,7 @@ _evhtp_run_post_accept(evhtp_t * htp, evhtp_connection_t * connection) {
     return 0;
 }
 
+#ifndef EVHTP_DISABLE_EVTHR
 static void
 _evhtp_run_in_thread(evthr_t * thr, void * arg, void * shared) {
     evhtp_t            * htp        = shared;
@@ -1412,6 +1414,7 @@ _evhtp_run_in_thread(evthr_t * thr, void * arg, void * shared) {
         return evhtp_connection_free(connection);
     }
 }
+#endif
 
 static void
 _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * arg) {
@@ -1425,11 +1428,12 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
     connection->saddr = malloc(sl);
     memcpy(connection->saddr, s, sl);
 
+#ifndef EVHTP_DISABLE_EVTHR
     if (htp->thr_pool != NULL) {
         evthr_pool_defer(htp->thr_pool, _evhtp_run_in_thread, connection);
         return;
     }
-
+#endif
     connection->evbase = htp->evbase;
 
     if (_evhtp_connection_accept(htp->evbase, connection) < 0) {
@@ -1442,6 +1446,8 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
 }
 
 #ifndef DISABLE_SSL
+
+#ifndef EVHTP_DISABLE_EVTHR
 static unsigned long
 _evhtp_ssl_get_thread_id(void) {
     return (unsigned long)pthread_self();
@@ -1457,7 +1463,7 @@ _evhtp_ssl_thread_lock(int mode, int type, const char * file, int line) {
         }
     }
 }
-
+#endif
 static void
 _evhtp_ssl_delete_scache_ent(evhtp_ssl_ctx_t * ctx, evhtp_ssl_sess_t * sess) {
     evhtp_t         * htp;
@@ -2572,31 +2578,39 @@ evhtp_callback_t *
 evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg) {
     evhtp_callback_t * hcb;
 
+#ifndef EVHTP_DISABLE_EVTHR
     _evhtp_lock(htp);
-
+#endif
     if (htp->callbacks == NULL) {
         if (!(htp->callbacks = evhtp_callbacks_new(1024))) {
+#ifndef EVHTP_DISABLE_EVTHR
             _evhtp_unlock(htp);
+#endif
             return NULL;
         }
     }
 
     if (!(hcb = evhtp_callback_new(path, evhtp_callback_type_hash, cb, arg))) {
+#ifndef EVHTP_DISABLE_EVTHR
         _evhtp_unlock(htp);
+#endif
         return NULL;
     }
 
     if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
         evhtp_callback_free(hcb);
+#ifndef EVHTP_DISABLE_EVTHR
         _evhtp_unlock(htp);
+#endif
         return NULL;
     }
-
+#ifndef EVHTP_DISABLE_EVTHR
     _evhtp_unlock(htp);
-
+#endif
     return hcb;
 }
 
+#ifndef EVHTP_DISABLE_EVTHR
 static void
 _evhtp_thread_init(evthr_t * thr, void * arg) {
     evhtp_t * htp = (evhtp_t *)arg;
@@ -2622,7 +2636,9 @@ evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, voi
     evthr_pool_start(htp->thr_pool);
     return 0;
 }
+#endif
 
+#ifndef EVHTP_DISABLE_EVTHR
 int
 evhtp_use_callback_locks(evhtp_t * htp) {
     if (htp == NULL) {
@@ -2635,33 +2651,42 @@ evhtp_use_callback_locks(evhtp_t * htp) {
 
     return pthread_mutex_init(htp->lock, NULL);
 }
+#endif
 
 #ifndef EVHTP_DISABLE_REGEX
 evhtp_callback_t *
 evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, void * arg) {
     evhtp_callback_t * hcb;
 
+#ifndef EVHTP_DISABLE_EVTHR 
     _evhtp_lock(htp);
-
+#endif
     if (htp->callbacks == NULL) {
         if (!(htp->callbacks = evhtp_callbacks_new(1024))) {
+#ifndef EVHTP_DISABLE_EVTHR
             _evhtp_unlock(htp);
+#endif
             return NULL;
         }
     }
 
     if (!(hcb = evhtp_callback_new(pattern, evhtp_callback_type_regex, cb, arg))) {
+#ifndef EVHTP_DISABLE_EVTHR
         _evhtp_unlock(htp);
+#endif
         return NULL;
     }
 
     if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
         evhtp_callback_free(hcb);
+#ifndef EVHTP_DISABLE_EVTHR
         _evhtp_unlock(htp);
+#endif
         return NULL;
     }
-
+#ifndef EVHTP_DISABLE_EVTHR
     _evhtp_unlock(htp);
+#endif
     return hcb;
 }
 #endif
@@ -2685,6 +2710,7 @@ evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept_cb cb, void * arg) {
 }
 
 #ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_EVTHR
 int
 evhtp_ssl_use_threads(void) {
     int i;
@@ -2707,6 +2733,7 @@ evhtp_ssl_use_threads(void) {
 
     return 0;
 }
+#endif
 
 int
 evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
@@ -2903,11 +2930,11 @@ evhtp_connection_free(evhtp_connection_t * connection) {
     if (connection->hooks) {
         free(connection->hooks);
     }
-
+#ifndef EVHTP_DISABLE_EVTHR
     if (connection->thread) {
         evthr_dec_backlog(connection->thread);
     }
-
+#endif
     if (connection->saddr) {
         free(connection->saddr);
     }

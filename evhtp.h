@@ -561,6 +561,7 @@ int  evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, voi
 
 int  evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port, int backlog);
 int  evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *, size_t sin_len, int backlog);
+void evhtp_unbind_socket(evhtp_t * htp, int deinit_status_codes);
 
 int  evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
 

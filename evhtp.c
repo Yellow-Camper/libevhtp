@@ -180,6 +180,20 @@ status_code_init(void) {
     scode_tree_initialized = 1;
 }     /* status_code_init */
 
+static void
+status_code_deinit(void) {
+    struct status_code *c;
+    struct status_code *nxt;
+
+    for(c = RB_MIN(status_code_tree, &status_code_head); c != NULL; c = nxt) {
+        nxt = RB_NEXT(status_code_tree, &status_code_head, c);
+        RB_REMOVE(status_code_tree, &status_code_head, c);
+        free(c);
+    }
+    
+    scode_tree_initialized = 0;
+}
+
 const char *
 status_code_to_str(evhtp_res code) {
     struct status_code   c;
@@ -2302,6 +2316,15 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 
     return evhtp_bind_sockaddr(htp, sa, sin_len, backlog);
 } /* evhtp_bind_socket */
+
+void
+evhtp_unbind_socket(evhtp_t * htp, int deinit_status_codes) {
+    if (deinit_status_codes) {
+        status_code_deinit();
+    }
+
+    evconnlistener_free(htp->server);
+}
 
 evhtp_callbacks_t *
 evhtp_callbacks_new(unsigned int buckets) {

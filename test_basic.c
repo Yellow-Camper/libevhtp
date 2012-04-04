@@ -17,8 +17,10 @@ main(int argc, char ** argv) {
     evhtp_t  * htp    = evhtp_new(evbase, NULL);
 
     evhtp_set_cb(htp, "/test", testcb, NULL);
+#ifndef EVHTP_DISABLE_EVTHR
     evhtp_use_threads(htp, NULL, 4, NULL);
-    evhtp_bind_socket(htp, "0.0.0.0", 8080, 1024);
+#endif
+    evhtp_bind_socket(htp, "0.0.0.0", 8081, 1024);
     event_base_loop(evbase, 0);
     return 0;
 }

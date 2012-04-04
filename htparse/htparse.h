@@ -48,6 +48,7 @@ enum htpparse_error {
     htparse_error_inval_chunk,
     htparse_error_inval_state,
     htparse_error_user,
+    htparse_error_status,
     htparse_error_generic
 };
 

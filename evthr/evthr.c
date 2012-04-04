@@ -261,6 +261,9 @@ evthr_new(evthr_init_cb init_cb, void * args) {
         return NULL;
     }
 
+    evutil_make_socket_nonblocking(fds[0]);
+    evutil_make_socket_nonblocking(fds[1]);
+
     if (!(thread = calloc(sizeof(evthr_t), sizeof(char)))) {
         return NULL;
     }
@@ -288,9 +291,6 @@ evthr_new(evthr_init_cb init_cb, void * args) {
         evthr_free(thread);
         return NULL;
     }
-
-    fcntl(thread->rdr, F_SETFL, O_NONBLOCK);
-    fcntl(thread->wdr, F_SETFL, O_NONBLOCK);
 
     return thread;
 } /* evthr_new */

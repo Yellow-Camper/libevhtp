@@ -151,10 +151,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION          "0.4.11"
+#define EVHTP_VERSION          "0.4.12"
 #define EVHTP_VERSION_MAJOR    0
 #define EVHTP_VERSION_MINOR    4
-#define EVHTP_VERSION_PATCH    11
+#define EVHTP_VERSION_PATCH    12
 
 #define evhtp_headers_iterator evhtp_kvs_iterator
 
@@ -232,16 +232,19 @@ struct evhtp_defaults_s {
  * @brief main structure containing all configuration information
  */
 struct evhtp_s {
-    evbase_t * evbase;            /**< the initialized event_base */
-    evserv_t * server;            /**< the libevent listener struct */
-    char     * server_name;       /**< the name included in Host: responses */
-    void     * arg;               /**< user-defined evhtp_t specific arguments */
+    evbase_t * evbase;         /**< the initialized event_base */
+    evserv_t * server;         /**< the libevent listener struct */
+    char     * server_name;    /**< the name included in Host: responses */
+    void     * arg;            /**< user-defined evhtp_t specific arguments */
+    int        bev_flags;      /**< bufferevent flags to use on bufferevent_*_socket_new() */
 
-    evhtp_ssl_ctx_t * ssl_ctx;    /**< if ssl enabled, this is the servers CTX */
+    evhtp_ssl_ctx_t * ssl_ctx; /**< if ssl enabled, this is the servers CTX */
     evhtp_ssl_cfg_t * ssl_cfg;
 
-    evthr_pool_t      * thr_pool; /**< connection threadpool */
-    pthread_mutex_t   * lock;     /**< parent lock for add/del cbs in threads */
+    evthr_pool_t * thr_pool;   /**< connection threadpool */
+#ifndef EVHTP_DISABLE_EVTHR
+    pthread_mutex_t * lock;    /**< parent lock for add/del cbs in threads */
+#endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
 
@@ -262,10 +265,10 @@ struct evhtp_s {
 struct evhtp_callbacks_s {
     evhtp_callback_t ** callbacks;       /**< hash of path callbacks */
 #ifndef EVHTP_DISABLE_REGEX
-    evhtp_callback_t  * regex_callbacks; /**< list of regex callbacks */
+    evhtp_callback_t * regex_callbacks;  /**< list of regex callbacks */
 #endif
-    unsigned int        count;           /**< number of callbacks defined */
-    unsigned int        buckets;         /**< buckets allocated for hash */
+    unsigned int count;                  /**< number of callbacks defined */
+    unsigned int buckets;                /**< buckets allocated for hash */
 };
 
 /**
@@ -290,7 +293,7 @@ struct evhtp_callback_s {
     evhtp_hooks_t     * hooks;           /**< per-callback hooks */
 
     union {
-        char    * path;
+        char * path;
 #ifndef EVHTP_DISABLE_REGEX
         regex_t * regex;
 #endif
@@ -464,6 +467,7 @@ struct evhtp_ssl_cfg_s {
 evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
 
 void      evhtp_set_timeouts(evhtp_t * htp, struct timeval * r, struct timeval * w);
+void      evhtp_set_bev_flags(evhtp_t * htp, int flags);
 int       evhtp_ssl_use_threads(void);
 int       evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
 
@@ -557,7 +561,28 @@ evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp
  *
  * @return 0 on success, -1 on error (if hooks is NULL, it is allocated)
  */
-int  evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * arg);
+int evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * arg);
+
+
+/**
+ * @brief remove a specific hook from being called.
+ *
+ * @param hooks
+ * @param type
+ *
+ * @return
+ */
+int evhtp_unset_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type);
+
+
+/**
+ * @brief removes all hooks.
+ *
+ * @param hooks
+ *
+ * @return
+ */
+int  evhtp_unset_all_hooks(evhtp_hooks_t ** hooks);
 
 int  evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port, int backlog);
 int  evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *, size_t sin_len, int backlog);

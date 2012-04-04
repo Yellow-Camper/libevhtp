@@ -1129,11 +1129,14 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_status:
                 /* http response status code */
                 if (ch == ' ') {
+		    if (p->status) {
+			p->state = s_status_text;
+		    }
                     break;
                 }
 
                 if (ch < '0' || ch > '9') {
-                    p->error = htparse_error_generic;
+                    p->error = htparse_error_status;
                     return i + 1;
                 }
 

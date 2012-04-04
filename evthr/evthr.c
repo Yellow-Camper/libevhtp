@@ -207,6 +207,7 @@ evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
     pthread_mutex_lock(thread->rlock);
 
     if (send(thread->wdr, &cmd, sizeof(cmd), 0) <= 0) {
+        evthr_dec_backlog(thread);
         pthread_mutex_unlock(thread->rlock);
         return EVTHR_RES_RETRY;
     }

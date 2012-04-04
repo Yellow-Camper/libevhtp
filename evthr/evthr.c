@@ -292,11 +292,6 @@ evthr_new(evthr_init_cb init_cb, void * args) {
         return NULL;
     }
 
-#if 0
-    fcntl(thread->rdr, F_SETFL, O_NONBLOCK);
-    fcntl(thread->wdr, F_SETFL, O_NONBLOCK);
-#endif
-
     return thread;
 } /* evthr_new */
 

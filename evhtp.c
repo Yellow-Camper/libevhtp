@@ -1004,12 +1004,6 @@ _evhtp_request_parser_headers(htparser * p) {
         return -1;
     }
 
-#if 0
-    if (!evhtp_header_find(c->request->headers_in, "Content-Length")) {
-        return 0;
-    }
-#endif
-
     if (!(expect_val = evhtp_header_find(c->request->headers_in, "Expect"))) {
         return 0;
     }
@@ -1315,16 +1309,18 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
     if (connection->htp->ssl_ctx != NULL) {
         connection->ssl = SSL_new(connection->htp->ssl_ctx);
         connection->bev = bufferevent_openssl_socket_new(evbase,
-                                                         connection->sock, connection->ssl, BUFFEREVENT_SSL_ACCEPTING,
-                                                         BEV_OPT_CLOSE_ON_FREE);
-        /* | BEV_OPT_DEFER_CALLBACKS); */
+                                                         connection->sock,
+                                                         connection->ssl,
+                                                         BUFFEREVENT_SSL_ACCEPTING,
+                                                         connection->htp->bev_flags);
         SSL_set_app_data(connection->ssl, connection);
         goto end;
     }
 #endif
 
-    connection->bev = bufferevent_socket_new(evbase, connection->sock,
-                                             BEV_OPT_CLOSE_ON_FREE);
+    connection->bev = bufferevent_socket_new(evbase,
+                                             connection->sock,
+                                             connection->htp->bev_flags);
 #ifndef DISABLE_SSL
 end:
 #endif
@@ -1341,8 +1337,7 @@ end:
     bufferevent_setcb(connection->bev,
                       _evhtp_connection_readcb,
                       _evhtp_connection_writecb,
-                      _evhtp_connection_eventcb,
-                      connection);
+                      _evhtp_connection_eventcb, connection);
 
     return 0;
 }     /* _evhtp_connection_accept */
@@ -2962,6 +2957,11 @@ evhtp_set_timeouts(evhtp_t * htp, struct timeval * r_timeo, struct timeval * w_t
     }
 }
 
+void
+evhtp_set_bev_flags(evhtp_t * htp, int flags) {
+    htp->bev_flags = flags;
+}
+
 evhtp_t *
 evhtp_new(evbase_t * evbase, void * arg) {
     evhtp_t * htp;
@@ -2979,6 +2979,7 @@ evhtp_new(evbase_t * evbase, void * arg) {
     htp->arg         = arg;
     htp->evbase      = evbase;
     htp->server_name = "evhtp, sucka";
+    htp->bev_flags   = BEV_OPT_CLOSE_ON_FREE;
 
     evhtp_set_gencb(htp, _evhtp_default_request_cb, (void *)htp);
 

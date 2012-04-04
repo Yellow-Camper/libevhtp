@@ -232,17 +232,18 @@ struct evhtp_defaults_s {
  * @brief main structure containing all configuration information
  */
 struct evhtp_s {
-    evbase_t * evbase;            /**< the initialized event_base */
-    evserv_t * server;            /**< the libevent listener struct */
-    char     * server_name;       /**< the name included in Host: responses */
-    void     * arg;               /**< user-defined evhtp_t specific arguments */
+    evbase_t * evbase;         /**< the initialized event_base */
+    evserv_t * server;         /**< the libevent listener struct */
+    char     * server_name;    /**< the name included in Host: responses */
+    void     * arg;            /**< user-defined evhtp_t specific arguments */
+    int        bev_flags;      /**< bufferevent flags to use on bufferevent_*_socket_new() */
 
-    evhtp_ssl_ctx_t * ssl_ctx;    /**< if ssl enabled, this is the servers CTX */
+    evhtp_ssl_ctx_t * ssl_ctx; /**< if ssl enabled, this is the servers CTX */
     evhtp_ssl_cfg_t * ssl_cfg;
 
-    evthr_pool_t * thr_pool;      /**< connection threadpool */
+    evthr_pool_t * thr_pool;   /**< connection threadpool */
 #ifndef EVHTP_DISABLE_EVTHR
-    pthread_mutex_t * lock;       /**< parent lock for add/del cbs in threads */
+    pthread_mutex_t * lock;    /**< parent lock for add/del cbs in threads */
 #endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
@@ -466,6 +467,7 @@ struct evhtp_ssl_cfg_s {
 evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
 
 void      evhtp_set_timeouts(evhtp_t * htp, struct timeval * r, struct timeval * w);
+void      evhtp_set_bev_flags(evhtp_t * htp, int flags);
 int       evhtp_ssl_use_threads(void);
 int       evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
 

@@ -1,4 +1,8 @@
-v0.4.12
+v0.4.13
+ o Decrement pending count when defer fails. (4e99de9 Mark Ellzey)
+ o Updating documentation to say there is not much documentation. (184f33e Mark Ellzey)
+
+v0.4.11
  o Added #ifndef EVHTP_DISABLE_EVTHR flags for compilation withotu threading support (d5bcc33 Thibaut Le Guilly)
  o Modify evthr_lock() macro previous patch for less ifdefs. (c800fe9 Mark Ellzey)
  o Took out more disable thread ifdefs. (b5de21e Mark Ellzey)
@@ -7,6 +11,7 @@ v0.4.12
  o Took out more disable thread ifdefs. (accbe88 Mark Ellzey)
  o Bugfixes, additions, cleanup, see full commit msg. (e6155d8 Mark Ellzey)
  o Added evhtp_set_bev_flags() (a342903 Mark Ellzey)
+ o Prep release v0.4.12 (acda3c8 Mark Ellzey)
 
 v0.4.10
  o Add compile time EVHTP_DISABLE_REGEX option. (eab0d0f Andy Hochhaus)

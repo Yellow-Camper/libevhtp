@@ -1,7 +1,8 @@
 # Libevhtp
 *****
 
-This document describes details on using the evhtp API
+This document describes details on using the evhtp API. This document is
+probably not very awesome, it's best to look at test.c to see advanced usage.
 
 ## Required Dependencies
 * [gcc](http://gcc.gnu.org/)

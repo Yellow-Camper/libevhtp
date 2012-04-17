@@ -109,8 +109,9 @@ enum evhtp_hook_type {
 enum evhtp_callback_type {
     evhtp_callback_type_hash,
 #ifndef EVHTP_DISABLE_REGEX
-    evhtp_callback_type_regex
+    evhtp_callback_type_regex,
 #endif
+    evhtp_callback_type_glob
 };
 
 enum evhtp_proto {
@@ -263,12 +264,13 @@ struct evhtp_s {
  *
  */
 struct evhtp_callbacks_s {
-    evhtp_callback_t ** callbacks;       /**< hash of path callbacks */
+    evhtp_callback_t ** callbacks;      /**< hash of path callbacks */
 #ifndef EVHTP_DISABLE_REGEX
-    evhtp_callback_t * regex_callbacks;  /**< list of regex callbacks */
+    evhtp_callback_t * regex_callbacks; /**< list of regex callbacks */
 #endif
-    unsigned int count;                  /**< number of callbacks defined */
-    unsigned int buckets;                /**< buckets allocated for hash */
+    evhtp_callback_t * glob_callbacks;  /**< list of wildcard callbacks */
+    unsigned int       count;           /**< number of callbacks defined */
+    unsigned int       buckets;         /**< buckets allocated for hash */
 };
 
 /**
@@ -286,14 +288,15 @@ struct evhtp_callbacks_s {
  *
  */
 struct evhtp_callback_s {
-    evhtp_callback_type type;            /**< the type of callback (regex|path) */
-    evhtp_callback_cb   cb;              /**< the actual callback function */
-    unsigned int        hash;            /**< the full hash generated integer */
-    void              * cbarg;           /**< user-defind arguments passed to the cb */
-    evhtp_hooks_t     * hooks;           /**< per-callback hooks */
+    evhtp_callback_type type;           /**< the type of callback (regex|path) */
+    evhtp_callback_cb   cb;             /**< the actual callback function */
+    unsigned int        hash;           /**< the full hash generated integer */
+    void              * cbarg;          /**< user-defind arguments passed to the cb */
+    evhtp_hooks_t     * hooks;          /**< per-callback hooks */
 
     union {
         char * path;
+        char * glob;
 #ifndef EVHTP_DISABLE_REGEX
         regex_t * regex;
 #endif
@@ -521,6 +524,21 @@ evhtp_callback_t * evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback
 evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, void * arg);
 #endif
 
+
+
+/**
+ * @brief sets a callback to to be executed on simple glob/wildcard patterns
+ *        this is useful if the app does not care about what was matched, but
+ *        just that it matched. This is technically faster than regex.
+ *
+ * @param htp
+ * @param pattern wildcard pattern, the '*' can be set at either or both the front or end.
+ * @param cb
+ * @param arg
+ *
+ * @return
+ */
+evhtp_callback_t * evhtp_set_glob_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, void * arg);
 
 /**
  * @brief sets a callback hook for either a connection or a path/regex .

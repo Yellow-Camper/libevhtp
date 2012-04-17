@@ -135,6 +135,7 @@ test_regex(evhtp_request_t * req, void * arg) {
 
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
+
 #endif
 
 static void
@@ -214,6 +215,12 @@ test_chunking(evhtp_request_t * req, void * arg) {
 
 static void
 test_bar_cb(evhtp_request_t * req, void * arg) {
+    evhtp_send_reply(req, EVHTP_RES_OK);
+}
+
+static void
+test_glob_cb(evhtp_request_t * req, void * arg) {
+    evbuffer_add(req->buffer_out, "test_glob_cb\n", 13);
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
@@ -304,6 +311,7 @@ static evhtp_res
 test_regex_hdrs_cb(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
     return EVHTP_RES_OK;
 }
+
 #endif
 
 static evhtp_res
@@ -461,6 +469,7 @@ main(int argc, char ** argv) {
     evhtp_callback_t * cb_6   = NULL;
     evhtp_callback_t * cb_7   = NULL;
     evhtp_callback_t * cb_8   = NULL;
+    evhtp_callback_t * cb_9   = NULL;
 
     if (parse_args(argc, argv) < 0) {
         exit(1);
@@ -483,6 +492,7 @@ main(int argc, char ** argv) {
 #ifndef EVHTP_DISABLE_REGEX
     cb_8   = evhtp_set_regex_cb(htp, "^/create/(.*)", create_callback, NULL);
 #endif
+    cb_9   = evhtp_set_glob_cb(htp, "*/glob/*", test_glob_cb, NULL);
 
     /* set a callback to test out chunking API */
     evhtp_set_cb(htp, "/chunkme", test_chunking, NULL);

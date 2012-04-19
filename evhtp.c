@@ -1026,9 +1026,9 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
     evhtp_hooks_t      * hooks    = NULL;
     evhtp_callback_t   * callback = NULL;
     evhtp_callback_cb    cb       = NULL;
+    void               * cbarg    = NULL;
     evhtp_uri_t        * uri;
     evhtp_path_t       * path;
-    void               * cbarg    = NULL;
     char               * match_start;
     char               * match_end;
 
@@ -1070,9 +1070,13 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
     match_start = calloc(strlen(path->full) + 1, 1);
     match_end   = calloc(strlen(path->full) + 1, 1);
 
-    memcpy(match_start,
-           (void *)(path->full + path->matched_soff),
-           path->matched_eoff);
+    if (path->matched_eoff - path->matched_soff) {
+        memcpy(match_start, (void *)(path->full + path->matched_soff),
+               path->matched_eoff - path->matched_soff);
+    } else {
+        memcpy(match_start, (void *)(path->full + path->matched_soff),
+               strlen((const char *)(path->full + path->matched_soff)));
+    }
 
     memcpy(match_end,
            (void *)(path->full + path->matched_eoff),

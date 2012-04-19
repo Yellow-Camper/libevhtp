@@ -14,6 +14,7 @@ int      num_threads = 0;
 #endif
 char   * bind_addr   = "0.0.0.0";
 uint16_t bind_port   = 8081;
+char   * ext_body    = NULL;
 char   * ssl_pem     = NULL;
 char   * ssl_ca      = NULL;
 char   * ssl_capath  = NULL;
@@ -259,6 +260,10 @@ print_kvs(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
 
 static evhtp_res
 print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
+    if (ext_body) {
+        evbuffer_add_printf(req->buffer_out, "ext_body: '%s'\n", ext_body);
+    }
+
     evbuffer_add_printf(req->buffer_out,
                         "print_path() full        = '%s'\n"
                         "             path        = '%s'\n"
@@ -376,7 +381,7 @@ dummy_check_issued_cb(X509_STORE_CTX * ctx, X509 * x, X509 * issuer) {
 
 #endif
 
-const char * optstr = "htn:a:p:r:s:c:C:l:";
+const char * optstr = "htn:a:p:r:s:c:C:l:N:";
 
 const char * help   =
     "Options: \n"
@@ -392,6 +397,7 @@ const char * help   =
 #endif
     "  -l <int> : Max bandwidth (in bytes) (default: NULL)\n"
     "  -r <str> : Document root            (default: .)\n"
+    "  -N <str> : Add this string to body. (default: NULL)\n"
     "  -a <str> : Bind Address             (default: 0.0.0.0)\n"
     "  -p <int> : Bind Port                (default: 8081)\n";
 
@@ -409,6 +415,9 @@ parse_args(int argc, char ** argv) {
             case 'h':
                 printf("Usage: %s [opts]\n%s", argv[0], help);
                 return -1;
+            case 'N':
+                ext_body    = strdup(optarg);
+                break;
             case 'a':
                 bind_addr   = strdup(optarg);
                 break;

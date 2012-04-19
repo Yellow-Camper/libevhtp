@@ -74,3 +74,20 @@ Libevhtp attempts to address these problems along with a wide variety of cool me
 	}
 
 
+## Is evhtp thread-safe?
+
+For simple usage with evhtp_use_threads(), yes. But for more extreme cases:
+sorta, you are bound to the thread mechanisms of libevent itself. 
+
+But with proper design around libevhtp, thread issues can be out-of-sight,
+out-of-mind. 
+
+What do you mean by this "proper design" statement? 
+
+Refer to the code in ./examples/thread_design.c. The comments go into great detail
+of the hows and whys for proper design using libevhtp's threading model.
+
+This example uses redis, mainly because most people who have asked me "is evhtp
+thread-safe" were attempting to *other things* before sending a response to a
+request. And on more than one occasion, those *other things* were communicating
+with redis.

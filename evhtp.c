@@ -506,6 +506,108 @@ _evhtp_callback_hash_find(evhtp_callbacks_t * callbacks, const char * path) {
 }
 
 /**
+ * @brief glob/wildcard type pattern matching.
+ *
+ * Note: This code was derived from redis's (v2.6) stringmatchlen() function.
+ *
+ * @param pattern
+ * @param string
+ *
+ * @return
+ */
+static int
+_evhtp_glob_match(const char * pattern, const char * string) {
+    size_t pat_len;
+    size_t str_len;
+
+    if (!pattern || !string) {
+        return 0;
+    }
+
+    pat_len = strlen(pattern);
+    str_len = strlen(string);
+
+    while (pat_len) {
+        if (pattern[0] == '*') {
+            while (pattern[1] == '*') {
+                pattern++;
+                pat_len--;
+            }
+
+            if (pat_len == 1) {
+                return 1;
+            }
+
+            while (str_len) {
+                if (_evhtp_glob_match(pattern + 1, string)) {
+                    return 1;
+                }
+
+                string++;
+                str_len--;
+            }
+
+            return 0;
+        } else {
+            if (pattern[0] != string[0]) {
+                return 0;
+            }
+
+            string++;
+            str_len--;
+        }
+
+        pattern++;
+        pat_len--;
+
+        if (str_len == 0) {
+            while (*pattern == '*') {
+                pattern++;
+                pat_len--;
+            }
+            break;
+        }
+    }
+
+    if (pat_len == 0 && str_len == 0) {
+        return 1;
+    }
+
+    return 0;
+} /* _evhtp_glob_match */
+
+/**
+ * @brief iterate through a list of glob/wildcard defined callbacks.
+ *
+ * @param callbacks
+ * @param path
+ *
+ * @return
+ */
+static evhtp_callback_t *
+_evhtp_callback_glob_find(evhtp_callbacks_t * callbacks, const char * path) {
+    evhtp_callback_t * callback;
+
+    if (!callbacks || !path) {
+        return NULL;
+    }
+
+    callback = callbacks->glob_callbacks;
+
+    while (callback != NULL) {
+        if (callback->type == evhtp_callback_type_glob) {
+            if (_evhtp_glob_match(callback->val.glob, path) == 1) {
+                return callback;
+            }
+        }
+
+        callback = callback->next;
+    }
+
+    return NULL;
+}
+
+/**
  * @brief iterate through a tailq of callback hooks defined as a regex until a
  *        match is found.
  *
@@ -549,7 +651,11 @@ _evhtp_callback_regex_find(evhtp_callbacks_t * callbacks, const char * path,
 #endif
 
 /**
- * @brief A wrapper around both hash and regex hook lookups
+ * @brief A wrapper around hash, glob, and regex hook lookups
+ *        Search is done in this order:
+ *          hash
+ *          glob
+ *          regex
  *
  * @param callbacks
  * @param path
@@ -570,6 +676,12 @@ _evhtp_callback_find(evhtp_callbacks_t * callbacks,
     }
 
     if ((callback = _evhtp_callback_hash_find(callbacks, path)) != NULL) {
+        *start_offset = 0;
+        *end_offset   = (unsigned int)strlen(path);
+        return callback;
+    }
+
+    if ((callback = _evhtp_callback_glob_find(callbacks, path)) != NULL) {
         *start_offset = 0;
         *end_offset   = (unsigned int)strlen(path);
         return callback;
@@ -914,9 +1026,9 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
     evhtp_hooks_t      * hooks    = NULL;
     evhtp_callback_t   * callback = NULL;
     evhtp_callback_cb    cb       = NULL;
+    void               * cbarg    = NULL;
     evhtp_uri_t        * uri;
     evhtp_path_t       * path;
-    void               * cbarg    = NULL;
     char               * match_start;
     char               * match_end;
 
@@ -958,9 +1070,13 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
     match_start = calloc(strlen(path->full) + 1, 1);
     match_end   = calloc(strlen(path->full) + 1, 1);
 
-    memcpy(match_start,
-           (void *)(path->full + path->matched_soff),
-           path->matched_eoff);
+    if (path->matched_eoff - path->matched_soff) {
+        memcpy(match_start, (void *)(path->full + path->matched_soff),
+               path->matched_eoff - path->matched_soff);
+    } else {
+        memcpy(match_start, (void *)(path->full + path->matched_soff),
+               strlen((const char *)(path->full + path->matched_soff)));
+    }
 
     memcpy(match_end,
            (void *)(path->full + path->matched_eoff),
@@ -2409,10 +2525,13 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
             }
             break;
 #endif
+        case evhtp_callback_type_glob:
+            hcb->val.glob = strdup(path);
+            break;
         default:
             free(hcb);
             return NULL;
-    }
+    } /* switch */
 
     return hcb;
 }
@@ -2427,6 +2546,11 @@ evhtp_callback_free(evhtp_callback_t * callback) {
         case evhtp_callback_type_hash:
             if (callback->val.path) {
                 free(callback->val.path);
+            }
+            break;
+        case evhtp_callback_type_glob:
+            if (callback->val.glob) {
+                free(callback->val.glob);
             }
             break;
 #ifndef EVHTP_DISABLE_REGEX
@@ -2464,9 +2588,13 @@ evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb) {
             cbs->regex_callbacks = cb;
             break;
 #endif
+        case evhtp_callback_type_glob:
+            cb->next = cbs->glob_callbacks;
+            cbs->glob_callbacks = cb;
+            break;
         default:
             return -1;
-    }
+    } /* switch */
 
     return 0;
 }
@@ -2690,6 +2818,34 @@ evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, vo
 }
 
 #endif
+
+evhtp_callback_t *
+evhtp_set_glob_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, void * arg) {
+    evhtp_callback_t * hcb;
+
+    _evhtp_lock(htp);
+
+    if (htp->callbacks == NULL) {
+        if (!(htp->callbacks = evhtp_callbacks_new(1024))) {
+            _evhtp_unlock(htp);
+            return NULL;
+        }
+    }
+
+    if (!(hcb = evhtp_callback_new(pattern, evhtp_callback_type_glob, cb, arg))) {
+        _evhtp_unlock(htp);
+        return NULL;
+    }
+
+    if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
+        evhtp_callback_free(hcb);
+        _evhtp_unlock(htp);
+        return NULL;
+    }
+
+    _evhtp_unlock(htp);
+    return hcb;
+}
 
 void
 evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * arg) {

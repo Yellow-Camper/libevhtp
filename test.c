@@ -14,6 +14,7 @@ int      num_threads = 0;
 #endif
 char   * bind_addr   = "0.0.0.0";
 uint16_t bind_port   = 8081;
+char   * ext_body    = NULL;
 char   * ssl_pem     = NULL;
 char   * ssl_ca      = NULL;
 char   * ssl_capath  = NULL;
@@ -135,6 +136,7 @@ test_regex(evhtp_request_t * req, void * arg) {
 
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
+
 #endif
 
 static void
@@ -218,6 +220,12 @@ test_bar_cb(evhtp_request_t * req, void * arg) {
 }
 
 static void
+test_glob_cb(evhtp_request_t * req, void * arg) {
+    evbuffer_add(req->buffer_out, "test_glob_cb\n", 13);
+    evhtp_send_reply(req, EVHTP_RES_OK);
+}
+
+static void
 test_default_cb(evhtp_request_t * req, void * arg) {
     evbuffer_add_reference(req->buffer_out,
                            "test_default_cb\n", 16, NULL, NULL);
@@ -252,6 +260,10 @@ print_kvs(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
 
 static evhtp_res
 print_path(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
+    if (ext_body) {
+        evbuffer_add_printf(req->buffer_out, "ext_body: '%s'\n", ext_body);
+    }
+
     evbuffer_add_printf(req->buffer_out,
                         "print_path() full        = '%s'\n"
                         "             path        = '%s'\n"
@@ -304,6 +316,7 @@ static evhtp_res
 test_regex_hdrs_cb(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
     return EVHTP_RES_OK;
 }
+
 #endif
 
 static evhtp_res
@@ -368,7 +381,7 @@ dummy_check_issued_cb(X509_STORE_CTX * ctx, X509 * x, X509 * issuer) {
 
 #endif
 
-const char * optstr = "htn:a:p:r:s:c:C:l:";
+const char * optstr = "htn:a:p:r:s:c:C:l:N:";
 
 const char * help   =
     "Options: \n"
@@ -384,6 +397,7 @@ const char * help   =
 #endif
     "  -l <int> : Max bandwidth (in bytes) (default: NULL)\n"
     "  -r <str> : Document root            (default: .)\n"
+    "  -N <str> : Add this string to body. (default: NULL)\n"
     "  -a <str> : Bind Address             (default: 0.0.0.0)\n"
     "  -p <int> : Bind Port                (default: 8081)\n";
 
@@ -401,6 +415,9 @@ parse_args(int argc, char ** argv) {
             case 'h':
                 printf("Usage: %s [opts]\n%s", argv[0], help);
                 return -1;
+            case 'N':
+                ext_body    = strdup(optarg);
+                break;
             case 'a':
                 bind_addr   = strdup(optarg);
                 break;
@@ -461,6 +478,7 @@ main(int argc, char ** argv) {
     evhtp_callback_t * cb_6   = NULL;
     evhtp_callback_t * cb_7   = NULL;
     evhtp_callback_t * cb_8   = NULL;
+    evhtp_callback_t * cb_9   = NULL;
 
     if (parse_args(argc, argv) < 0) {
         exit(1);
@@ -483,6 +501,7 @@ main(int argc, char ** argv) {
 #ifndef EVHTP_DISABLE_REGEX
     cb_8   = evhtp_set_regex_cb(htp, "^/create/(.*)", create_callback, NULL);
 #endif
+    cb_9   = evhtp_set_glob_cb(htp, "*/glob/*", test_glob_cb, NULL);
 
     /* set a callback to test out chunking API */
     evhtp_set_cb(htp, "/chunkme", test_chunking, NULL);

@@ -1456,7 +1456,7 @@ end:
         c_send_timeo = connection->htp->send_timeo;
     }
 
-    bufferevent_set_timeouts(connection->bev, c_recv_timeo, c_send_timeo);
+    evhtp_connection_set_timeouts(connection, c_recv_timeo, c_send_timeo);
 
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
                                       _evhtp_connection_resumecb, connection);

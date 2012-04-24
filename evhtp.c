@@ -1416,6 +1416,9 @@ _evhtp_run_pre_accept(evhtp_t * htp, evhtp_connection_t * conn) {
 
 static int
 _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
+    struct timeval * c_recv_timeo;
+    struct timeval * c_send_timeo;
+
     if (_evhtp_run_pre_accept(connection->htp, connection) < 0) {
         evutil_closesocket(connection->sock);
         return -1;
@@ -1441,9 +1444,19 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
 end:
 #endif
 
-    bufferevent_set_timeouts(connection->bev,
-                             connection->htp->recv_timeo,
-                             connection->htp->send_timeo);
+    if (connection->recv_timeo.tv_sec || connection->recv_timeo.tv_usec) {
+        c_recv_timeo = &connection->recv_timeo;
+    } else {
+        c_recv_timeo = connection->htp->recv_timeo;
+    }
+
+    if (connection->send_timeo.tv_sec || connection->send_timeo.tv_usec) {
+        c_send_timeo = &connection->send_timeo;
+    } else {
+        c_send_timeo = connection->htp->send_timeo;
+    }
+
+    bufferevent_set_timeouts(connection->bev, c_recv_timeo, c_send_timeo);
 
     connection->resume_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
                                       _evhtp_connection_resumecb, connection);
@@ -1471,6 +1484,11 @@ _evhtp_connection_new(evhtp_t * htp, int sock) {
         return NULL;
     }
 
+    connection->recv_timeo.tv_sec  = 0;
+    connection->recv_timeo.tv_usec = 0;
+    connection->send_timeo.tv_sec  = 0;
+    connection->send_timeo.tv_usec = 0;
+
     connection->evbase    = NULL;
     connection->bev       = NULL;
     connection->thread    = NULL;
@@ -1490,11 +1508,13 @@ _evhtp_connection_new(evhtp_t * htp, int sock) {
     return connection;
 }
 
+#ifdef LIBEVENT_HAS_SHUTDOWN
 #ifndef DISABLE_SSL
 static void
 _evhtp_shutdown_eventcb(evbev_t * bev, short events, void * arg) {
 }
 
+#endif
 #endif
 
 static int
@@ -3051,6 +3071,17 @@ evhtp_request_set_bev(evhtp_request_t * request, evbev_t * bev) {
 evhtp_connection_t *
 evhtp_request_get_connection(evhtp_request_t * request) {
     return request->conn;
+}
+
+void
+evhtp_connection_set_timeouts(evhtp_connection_t * c,
+                              struct timeval     * rtimeo,
+                              struct timeval     * wtimeo) {
+    if (!c) {
+        return;
+    }
+
+    bufferevent_set_timeouts(c->bev, rtimeo, wtimeo);
 }
 
 void

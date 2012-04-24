@@ -404,9 +404,11 @@ struct evhtp_connection_s {
     htparser        * parser;
     event_t         * resume_ev;
     struct sockaddr * saddr;
+    struct timeval    recv_timeo; /**< conn read timeouts (overrides global) */
+    struct timeval    send_timeo; /**< conn write timeouts (overrides global) */
     int               sock;
     int               error;
-    int               owner; /*< set to 1 if this structure owns the bufferevent */
+    int               owner;      /*< set to 1 if this structure owns the bufferevent */
     evhtp_request_t * request;
 };
 
@@ -846,6 +848,17 @@ void evhtp_request_set_bev(evhtp_request_t * request, evbev_t * bev);
  * @return bufferevent on success, otherwise NULL
  */
 evbev_t * evhtp_connection_get_bev(evhtp_connection_t * conn);
+
+
+/**
+ * @brief sets a connection-specific read/write timeout which overrides the
+ *        global read/write settings.
+ *
+ * @param conn
+ * @param r timeval for read
+ * @param w timeval for write
+ */
+void evhtp_connection_set_timeouts(evhtp_connection_t * conn, struct timeval * r, struct timeval * w);
 
 /**
  * @brief returns the underlying requests bufferevent

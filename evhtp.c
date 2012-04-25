@@ -12,7 +12,6 @@
 #endif
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <alloca.h>
 #include <sys/tree.h>
 
 #include "evhtp.h"

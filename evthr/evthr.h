@@ -42,12 +42,14 @@ void           evthr_free(evthr_t * evthr);
 void           evthr_inc_backlog(evthr_t * evthr);
 void           evthr_dec_backlog(evthr_t * evthr);
 int            evthr_get_backlog(evthr_t * evthr);
+void           evthr_set_max_backlog(evthr_t * evthr, int max);
 
 evthr_pool_t * evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared);
 int            evthr_pool_start(evthr_pool_t * pool);
 evthr_res      evthr_pool_stop(evthr_pool_t * pool);
 evthr_res      evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg);
 void           evthr_pool_free(evthr_pool_t * pool);
+void           evthr_pool_set_max_backlog(evthr_pool_t * evthr, int max);
 
 #endif /* __EVTHR_H__ */
 

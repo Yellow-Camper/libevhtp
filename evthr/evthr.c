@@ -45,6 +45,7 @@ struct evthr_pool {
 
 struct evthr {
     int               cur_backlog;
+    int               max_backlog;
     int               rdr;
     int               wdr;
     char              err;
@@ -74,6 +75,11 @@ evthr_dec_backlog(evthr_t * evthr) {
 int
 evthr_get_backlog(evthr_t * evthr) {
     return __sync_add_and_fetch(&evthr->cur_backlog, 0);
+}
+
+void
+evthr_set_max_backlog(evthr_t * evthr, int max) {
+    evthr->max_backlog = max;
 }
 
 static void
@@ -192,6 +198,12 @@ evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
     evthr_cmd_t cmd;
 
     cur_backlog = evthr_get_backlog(thread);
+
+    if (thread->max_backlog) {
+        if (cur_backlog + 1 > thread->max_backlog) {
+            return EVTHR_RES_BACKLOG;
+        }
+    }
 
     if (cur_backlog == -1) {
         return EVTHR_RES_FATAL;
@@ -467,6 +479,15 @@ evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared) {
     }
 
     return pool;
+}
+
+void
+evthr_pool_set_max_backlog(evthr_pool_t * pool, int max) {
+    evthr_t * thr;
+
+    TAILQ_FOREACH(thr, &pool->threads, next) {
+        evthr_set_max_backlog(thr, max);
+    }
 }
 
 int

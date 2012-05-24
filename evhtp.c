@@ -998,7 +998,7 @@ _evhtp_request_parser_header_key(htparser * p, const char * data, size_t len) {
 static int
 _evhtp_request_parser_header_val(htparser * p, const char * data, size_t len) {
     evhtp_connection_t * c = htparser_get_userdata(p);
-    char               * val_s;     /* = strndup(data, len); */
+    char               * val_s;
     evhtp_header_t     * header;
 
     val_s      = malloc(len + 1);
@@ -1109,6 +1109,7 @@ static int
 _evhtp_request_parser_headers(htparser * p) {
     evhtp_connection_t * c = htparser_get_userdata(p);
     const char         * expect_val;
+    const char         * host;
 
     /* XXX proto should be set with htparsers on_hdrs_begin hook */
     c->request->keepalive = htparser_should_keep_alive(p);
@@ -1117,6 +1118,12 @@ _evhtp_request_parser_headers(htparser * p) {
 
     if (c->request->status != EVHTP_RES_OK) {
         return -1;
+    }
+
+    if ((host = evhtp_header_find(c->request->headers_in, "Host"))) {
+	    /* check to see if we have any virtual hosts, and if we do, search
+	     * for a match. If there is a match, we have to overwrite the
+	     * current callbacks / hooks */
     }
 
     if (!(expect_val = evhtp_header_find(c->request->headers_in, "Expect"))) {
@@ -1544,7 +1551,7 @@ _evhtp_run_in_thread(evthr_t * thr, void * arg, void * shared) {
     connection->evbase = evthr_get_base(thr);
     connection->thread = thr;
 
-    //evthr_inc_backlog(connection->thread);
+    /* evthr_inc_backlog(connection->thread); */
 
     if (_evhtp_connection_accept(connection->evbase, connection) < 0) {
         return evhtp_connection_free(connection);
@@ -3120,7 +3127,7 @@ evhtp_connection_free(evhtp_connection_t * connection) {
     }
 #ifndef EVHTP_DISABLE_EVTHR
     if (connection->thread) {
-        //evthr_dec_backlog(connection->thread);
+        /* evthr_dec_backlog(connection->thread); */
     }
 #endif
     if (connection->saddr) {
@@ -3146,6 +3153,25 @@ evhtp_set_timeouts(evhtp_t * htp, struct timeval * r_timeo, struct timeval * w_t
 void
 evhtp_set_bev_flags(evhtp_t * htp, int flags) {
     htp->bev_flags = flags;
+}
+
+evhtp_t *
+evhtp_vhost_new(evhtp_t * htp, const char * name) {
+    evhtp_t * vhost;
+
+    if (htp == NULL || name == NULL) {
+        return NULL;
+    }
+
+    if (!(vhost = evhtp_new(htp->evbase, htp))) {
+        return NULL;
+    }
+
+    htp->server_name = strdup(name);
+
+    TAILQ_INSERT_TAIL(&htp->vhosts, vhost, next_vhost);
+
+    return htp;
 }
 
 evhtp_t *

@@ -254,6 +254,9 @@ struct evhtp_s {
 
     struct timeval * recv_timeo;
     struct timeval * send_timeo;
+
+    TAILQ_ENTRY(evhtp_s) next_vhost;
+    TAILQ_HEAD(, evhtp_s) vhosts;
 };
 
 /**

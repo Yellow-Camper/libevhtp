@@ -233,24 +233,29 @@ struct evhtp_defaults_s {
  * @brief main structure containing all configuration information
  */
 struct evhtp_s {
+    evhtp_t  * parent;         /**< only when this is a vhost */
     evbase_t * evbase;         /**< the initialized event_base */
     evserv_t * server;         /**< the libevent listener struct */
     char     * server_name;    /**< the name included in Host: responses */
     void     * arg;            /**< user-defined evhtp_t specific arguments */
     int        bev_flags;      /**< bufferevent flags to use on bufferevent_*_socket_new() */
 
+#ifndef DISABLE_SSL
     evhtp_ssl_ctx_t * ssl_ctx; /**< if ssl enabled, this is the servers CTX */
     evhtp_ssl_cfg_t * ssl_cfg;
+#endif
 
-    evthr_pool_t * thr_pool;   /**< connection threadpool */
 #ifndef EVHTP_DISABLE_EVTHR
-    pthread_mutex_t * lock;    /**< parent lock for add/del cbs in threads */
+    evthr_pool_t * thr_pool;   /**< connection threadpool */
+#endif
+
+#ifndef EVHTP_DISABLE_EVTHR
+    pthread_mutex_t    * lock; /**< parent lock for add/del cbs in threads */
+    evhtp_thread_init_cb thread_init_cb;
+    void               * thread_init_cbarg;
 #endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
-
-    evhtp_thread_init_cb thread_init_cb;
-    void               * thread_init_cbarg;
 
     struct timeval * recv_timeo;
     struct timeval * send_timeo;
@@ -678,6 +683,7 @@ void               evhtp_callback_free(evhtp_callback_t * callback);
  */
 int evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb);
 
+int evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost);
 
 /**
  * @brief Allocates a new key/value structure.

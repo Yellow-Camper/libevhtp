@@ -1699,7 +1699,7 @@ _evhtp_ssl_servername(evhtp_ssl_t * ssl, int * unused, void * arg) {
             continue;
         }
 
-        if (!strcmp(evhtp_vhost->server_name, sname)) {
+        if (_evhtp_glob_match(evhtp_vhost->server_name, sname) == 1) {
             SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
             connection->htp = evhtp_vhost;
             return SSL_TLSEXT_ERR_OK;

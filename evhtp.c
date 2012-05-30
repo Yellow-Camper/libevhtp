@@ -1551,7 +1551,7 @@ _evhtp_run_in_thread(evthr_t * thr, void * arg, void * shared) {
     connection->evbase = evthr_get_base(thr);
     connection->thread = thr;
 
-    /* evthr_inc_backlog(connection->thread); */
+    evthr_inc_backlog(connection->thread);
 
     if (_evhtp_connection_accept(connection->evbase, connection) < 0) {
         return evhtp_connection_free(connection);
@@ -3180,12 +3180,10 @@ evhtp_connection_free(evhtp_connection_t * connection) {
         free(connection->hooks);
     }
 
-#if 0
 #ifndef EVHTP_DISABLE_EVTHR
     if (connection->thread) {
-        /* evthr_dec_backlog(connection->thread); */
+        evthr_dec_backlog(connection->thread);
     }
-#endif
 #endif
 
     if (connection->saddr) {

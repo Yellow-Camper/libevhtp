@@ -998,7 +998,7 @@ _evhtp_request_parser_header_key(htparser * p, const char * data, size_t len) {
 static int
 _evhtp_request_parser_header_val(htparser * p, const char * data, size_t len) {
     evhtp_connection_t * c = htparser_get_userdata(p);
-    char               * val_s;     /* = strndup(data, len); */
+    char               * val_s;
     evhtp_header_t     * header;
 
     val_s      = malloc(len + 1);
@@ -1109,6 +1109,7 @@ static int
 _evhtp_request_parser_headers(htparser * p) {
     evhtp_connection_t * c = htparser_get_userdata(p);
     const char         * expect_val;
+    const char         * host;
 
     /* XXX proto should be set with htparsers on_hdrs_begin hook */
     c->request->keepalive = htparser_should_keep_alive(p);
@@ -1117,6 +1118,12 @@ _evhtp_request_parser_headers(htparser * p) {
 
     if (c->request->status != EVHTP_RES_OK) {
         return -1;
+    }
+
+    if ((host = evhtp_header_find(c->request->headers_in, "Host"))) {
+        /* check to see if we have any virtual hosts, and if we do, search
+         * for a match. If there is a match, we have to overwrite the
+         * current callbacks / hooks */
     }
 
     if (!(expect_val = evhtp_header_find(c->request->headers_in, "Expect"))) {
@@ -1544,7 +1551,7 @@ _evhtp_run_in_thread(evthr_t * thr, void * arg, void * shared) {
     connection->evbase = evthr_get_base(thr);
     connection->thread = thr;
 
-    //evthr_inc_backlog(connection->thread);
+    /* evthr_inc_backlog(connection->thread); */
 
     if (_evhtp_connection_accept(connection->evbase, connection) < 0) {
         return evhtp_connection_free(connection);
@@ -1666,6 +1673,40 @@ _evhtp_ssl_get_scache_ent(evhtp_ssl_t * ssl, unsigned char * sid, int sid_len, i
     *copy = 0;
 
     return sess;
+}
+
+static int
+_evhtp_ssl_servername(evhtp_ssl_t * ssl, int * unused, void * arg) {
+    const char         * sname;
+    evhtp_connection_t * connection;
+    evhtp_t            * evhtp;
+    evhtp_t            * evhtp_vhost;
+
+    if (!(sname = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))) {
+        return SSL_TLSEXT_ERR_NOACK;
+    }
+
+    if (!(connection = SSL_get_app_data(ssl))) {
+        return SSL_TLSEXT_ERR_NOACK;
+    }
+
+    if (!(evhtp = connection->htp)) {
+        return SSL_TLSEXT_ERR_NOACK;
+    }
+
+    TAILQ_FOREACH(evhtp_vhost, &evhtp->vhosts, next_vhost) {
+        if (evhtp_vhost->server_name == NULL) {
+            continue;
+        }
+
+        if (_evhtp_glob_match(evhtp_vhost->server_name, sname) == 1) {
+            SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
+            connection->htp = evhtp_vhost;
+            return SSL_TLSEXT_ERR_OK;
+        }
+    }
+
+    return SSL_TLSEXT_ERR_NOACK;
 }
 
 #endif
@@ -3015,6 +3056,10 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         }
     }
 
+    if (TAILQ_FIRST(&htp->vhosts) != NULL) {
+        SSL_CTX_set_tlsext_servername_callback(htp->ssl_ctx, _evhtp_ssl_servername);
+    }
+
     return 0;
 }     /* evhtp_use_ssl */
 
@@ -3118,11 +3163,15 @@ evhtp_connection_free(evhtp_connection_t * connection) {
     if (connection->hooks) {
         free(connection->hooks);
     }
+
+#if 0
 #ifndef EVHTP_DISABLE_EVTHR
     if (connection->thread) {
-        //evthr_dec_backlog(connection->thread);
+        /* evthr_dec_backlog(connection->thread); */
     }
 #endif
+#endif
+
     if (connection->saddr) {
         free(connection->saddr);
     }
@@ -3143,9 +3192,48 @@ evhtp_set_timeouts(evhtp_t * htp, struct timeval * r_timeo, struct timeval * w_t
     }
 }
 
+/**
+ * @brief set bufferevent flags, defaults to BEV_OPT_CLOSE_ON_FREE
+ *
+ * @param htp
+ * @param flags
+ */
 void
 evhtp_set_bev_flags(evhtp_t * htp, int flags) {
     htp->bev_flags = flags;
+}
+
+/**
+ * @brief add a virtual host.
+ *
+ * XXX: This currently only applies to SSL SNI. This is due to the current
+ *      architecture where determining a vhost via the Host header can break
+ *      callbacks defined before the header is found.
+ *
+ * @param evhtp
+ * @param name
+ * @param vhost
+ *
+ * @return
+ */
+int
+evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost) {
+    if (evhtp == NULL || name == NULL || vhost == NULL) {
+        return -1;
+    }
+
+    if (TAILQ_FIRST(&vhost->vhosts) != NULL) {
+        /* vhosts cannot have secondary vhosts defined */
+        return -1;
+    }
+
+    if (!(vhost->server_name = strdup(name))) {
+        return -1;
+    }
+
+    TAILQ_INSERT_TAIL(&evhtp->vhosts, vhost, next_vhost);
+
+    return 0;
 }
 
 evhtp_t *
@@ -3162,10 +3250,11 @@ evhtp_new(evbase_t * evbase, void * arg) {
 
     status_code_init();
 
-    htp->arg         = arg;
-    htp->evbase      = evbase;
-    htp->server_name = "evhtp, sucka";
-    htp->bev_flags   = BEV_OPT_CLOSE_ON_FREE;
+    htp->arg       = arg;
+    htp->evbase    = evbase;
+    htp->bev_flags = BEV_OPT_CLOSE_ON_FREE;
+
+    TAILQ_INIT(&htp->vhosts);
 
     evhtp_set_gencb(htp, _evhtp_default_request_cb, (void *)htp);
 

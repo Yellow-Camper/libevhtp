@@ -1681,6 +1681,7 @@ _evhtp_ssl_servername(evhtp_ssl_t * ssl, int * unused, void * arg) {
     evhtp_connection_t * connection;
     evhtp_t            * evhtp;
     evhtp_t            * evhtp_vhost;
+    evhtp_alias_t      * evhtp_alias;
 
     if (!(sname = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))) {
         return SSL_TLSEXT_ERR_NOACK;
@@ -1702,12 +1703,27 @@ _evhtp_ssl_servername(evhtp_ssl_t * ssl, int * unused, void * arg) {
         if (_evhtp_glob_match(evhtp_vhost->server_name, sname) == 1) {
             SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
             connection->htp = evhtp_vhost;
+
             return SSL_TLSEXT_ERR_OK;
+        }
+
+        /* check to see if any of the aliases match */
+        TAILQ_FOREACH(evhtp_alias, &evhtp_vhost->aliases, next) {
+            if (evhtp_alias->alias == NULL) {
+                continue;
+            }
+
+            if (_evhtp_glob_match(evhtp_alias->alias, sname) == 1) {
+                SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
+                connection->htp = evhtp_vhost;
+
+                return SSL_TLSEXT_ERR_OK;
+            }
         }
     }
 
     return SSL_TLSEXT_ERR_NOACK;
-}
+} /* _evhtp_ssl_servername */
 
 #endif
 
@@ -3203,6 +3219,25 @@ evhtp_set_bev_flags(evhtp_t * htp, int flags) {
     htp->bev_flags = flags;
 }
 
+int
+evhtp_add_alias(evhtp_t * evhtp, const char * name) {
+    evhtp_alias_t * alias;
+
+    if (evhtp == NULL || name == NULL) {
+        return -1;
+    }
+
+    if (!(alias = calloc(sizeof(evhtp_alias_t), 1))) {
+        return -1;
+    }
+
+    alias->alias = strdup(name);
+
+    TAILQ_INSERT_TAIL(&evhtp->aliases, alias, next);
+
+    return 0;
+}
+
 /**
  * @brief add a virtual host.
  *
@@ -3231,6 +3266,8 @@ evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost) {
         return -1;
     }
 
+    vhost->parent = evhtp;
+
     TAILQ_INSERT_TAIL(&evhtp->vhosts, vhost, next_vhost);
 
     return 0;
@@ -3255,6 +3292,7 @@ evhtp_new(evbase_t * evbase, void * arg) {
     htp->bev_flags = BEV_OPT_CLOSE_ON_FREE;
 
     TAILQ_INIT(&htp->vhosts);
+    TAILQ_INIT(&htp->aliases);
 
     evhtp_set_gencb(htp, _evhtp_default_request_cb, (void *)htp);
 

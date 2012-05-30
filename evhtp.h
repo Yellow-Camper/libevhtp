@@ -69,6 +69,7 @@ typedef struct evhtp_request_s    evhtp_request_t;
 typedef struct evhtp_hooks_s      evhtp_hooks_t;
 typedef struct evhtp_connection_s evhtp_connection_t;
 typedef struct evhtp_ssl_cfg_s    evhtp_ssl_cfg_t;
+typedef struct evhtp_alias_s      evhtp_alias_t;
 typedef uint16_t                  evhtp_res;
 typedef uint8_t                   evhtp_error_flags;
 
@@ -229,6 +230,12 @@ struct evhtp_defaults_s {
     void               * post_accept_cbarg;
 };
 
+struct evhtp_alias_s {
+    char * alias;
+
+    TAILQ_ENTRY(evhtp_alias_s) next;
+};
+
 /**
  * @brief main structure containing all configuration information
  */
@@ -260,8 +267,9 @@ struct evhtp_s {
     struct timeval * recv_timeo;
     struct timeval * send_timeo;
 
-    TAILQ_ENTRY(evhtp_s) next_vhost;
+    TAILQ_HEAD(, evhtp_alias_s) aliases;
     TAILQ_HEAD(, evhtp_s) vhosts;
+    TAILQ_ENTRY(evhtp_s) next_vhost;
 };
 
 /**
@@ -683,6 +691,7 @@ void               evhtp_callback_free(evhtp_callback_t * callback);
  */
 int evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb);
 
+int evhtp_add_alias(evhtp_t * evhtp, const char * name);
 int evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost);
 
 /**

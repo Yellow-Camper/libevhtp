@@ -26,6 +26,8 @@ main(int argc, char ** argv) {
     evhtp_add_vhost(evhtp, "host1.com", v1);
     evhtp_add_vhost(evhtp, "localhost", v2);
 
+    evhtp_add_alias(v2, "127.0.0.1");
+
     scfg1.pemfile  = "./server.pem";
     scfg1.privfile = "./server.pem";
     scfg2.pemfile  = "./server1.pem";

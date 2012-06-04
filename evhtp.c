@@ -3147,7 +3147,6 @@ evhtp_connection_set_timeouts(evhtp_connection_t * c,
 void
 evhtp_connection_free(evhtp_connection_t * connection) {
     if (connection == NULL) {
-        printf("connection == NULL????\n");
         return;
     }
 
@@ -3192,6 +3191,11 @@ evhtp_connection_free(evhtp_connection_t * connection) {
 
     free(connection);
 }     /* evhtp_connection_free */
+
+void
+evhtp_request_free(evhtp_request_t * request) {
+    return _evhtp_request_free(request);
+}
 
 void
 evhtp_set_timeouts(evhtp_t * htp, struct timeval * r_timeo, struct timeval * w_timeo) {

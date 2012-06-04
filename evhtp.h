@@ -911,6 +911,7 @@ evbev_t * evhtp_connection_take_ownership(evhtp_connection_t * connection);
  */
 void evhtp_connection_free(evhtp_connection_t * connection);
 
+void evhtp_request_free(evhtp_request_t * request);
 
 #ifdef __cplusplus
 }

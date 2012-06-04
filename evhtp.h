@@ -163,6 +163,7 @@ typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_ERROR        0
 #define EVHTP_RES_PAUSE        1
 #define EVHTP_RES_FATAL        2
+#define EVHTP_RES_USER         3
 #define EVHTP_RES_OK           200
 
 #define EVHTP_RES_100          100

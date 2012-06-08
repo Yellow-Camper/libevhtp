@@ -2988,6 +2988,24 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
 
     SSL_CTX_set_options(htp->ssl_ctx, cfg->ssl_opts);
 
+#ifndef OPENSSL_NO_EC
+    if (cfg->named_curve != NULL) {
+        EC_KEY * ecdh = NULL;
+        int      nid  = 0;
+
+        nid  = OBJ_sn2nid(cfg->named_curve);
+        if (nid == 0) {
+            fprintf(stderr, "ECDH initialization failed: unknown curve %s\n", cfg->named_curve);
+        }
+        ecdh = EC_KEY_new_by_curve_name(nid);
+        if (ecdh == NULL) {
+            fprintf(stderr, "ECDH initialization failed for curve %s\n", cfg->named_curve);
+        }
+        SSL_CTX_set_tmp_ecdh(htp->ssl_ctx, ecdh);
+        EC_KEY_free(ecdh);
+    }
+#endif /* OPENSSL_NO_EC */
+
     if (cfg->ciphers != NULL) {
         SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers);
     }

@@ -421,12 +421,13 @@ struct evhtp_connection_s {
     htparser        * parser;
     event_t         * resume_ev;
     struct sockaddr * saddr;
-    struct timeval    recv_timeo; /**< conn read timeouts (overrides global) */
-    struct timeval    send_timeo; /**< conn write timeouts (overrides global) */
+    struct timeval    recv_timeo;         /**< conn read timeouts (overrides global) */
+    struct timeval    send_timeo;         /**< conn write timeouts (overrides global) */
     int               sock;
-    int               error;
-    int               owner;      /*< set to 1 if this structure owns the bufferevent */
-    evhtp_request_t * request;
+    uint8_t           error;
+    uint8_t           owner;              /**< set to 1 if this structure owns the bufferevent */
+    uint8_t           vhost_found_by_sni; /**< set to 1 if the vhost was found via SSL SNI */
+    evhtp_request_t * request;            /**< the request currently being processed */
 };
 
 struct evhtp_hooks_s {

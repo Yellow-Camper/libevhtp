@@ -1486,27 +1486,15 @@ static evhtp_connection_t *
 _evhtp_connection_new(evhtp_t * htp, int sock) {
     evhtp_connection_t * connection;
 
-    if (!(connection = malloc(sizeof(evhtp_connection_t)))) {
+    if (!(connection = calloc(sizeof(evhtp_connection_t), 1))) {
         return NULL;
     }
 
-    connection->recv_timeo.tv_sec  = 0;
-    connection->recv_timeo.tv_usec = 0;
-    connection->send_timeo.tv_sec  = 0;
-    connection->send_timeo.tv_usec = 0;
-
-    connection->evbase    = NULL;
-    connection->bev       = NULL;
-    connection->thread    = NULL;
-    connection->ssl       = NULL;
-    connection->hooks     = NULL;
-    connection->request   = NULL;
-    connection->resume_ev = NULL;
-    connection->error     = 0;
-    connection->owner     = 1;
-    connection->sock      = sock;
-    connection->htp       = htp;
-    connection->parser    = htparser_new();
+    connection->error  = 0;
+    connection->owner  = 1;
+    connection->sock   = sock;
+    connection->htp    = htp;
+    connection->parser = htparser_new();
 
     htparser_init(connection->parser, htp_type_request);
     htparser_set_userdata(connection->parser, connection);
@@ -1703,6 +1691,7 @@ _evhtp_ssl_servername(evhtp_ssl_t * ssl, int * unused, void * arg) {
         if (_evhtp_glob_match(evhtp_vhost->server_name, sname) == 1) {
             SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
             connection->htp = evhtp_vhost;
+            connection->vhost_found_by_sni = 1;
 
             return SSL_TLSEXT_ERR_OK;
         }
@@ -1716,6 +1705,7 @@ _evhtp_ssl_servername(evhtp_ssl_t * ssl, int * unused, void * arg) {
             if (_evhtp_glob_match(evhtp_alias->alias, sname) == 1) {
                 SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
                 connection->htp = evhtp_vhost;
+                connection->vhost_found_by_sni = 1;
 
                 return SSL_TLSEXT_ERR_OK;
             }

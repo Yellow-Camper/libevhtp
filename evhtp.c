@@ -21,6 +21,7 @@ static int                  _evhtp_request_parser_path(htparser * p, const char 
 static int                  _evhtp_request_parser_args(htparser * p, const char * data, size_t len);
 static int                  _evhtp_request_parser_header_key(htparser * p, const char * data, size_t len);
 static int                  _evhtp_request_parser_header_val(htparser * p, const char * data, size_t len);
+static int                  _evhtp_request_parser_hostname(htparser * p, const char * data, size_t len);
 static int                  _evhtp_request_parser_headers(htparser * p);
 static int                  _evhtp_request_parser_body(htparser * p, const char * data, size_t len);
 static int                  _evhtp_request_parser_fini(htparser * p);
@@ -212,6 +213,7 @@ static htparse_hooks request_psets = {
     .on_hdrs_begin      = _evhtp_request_parser_headers_start,
     .hdr_key            = _evhtp_request_parser_header_key,
     .hdr_val            = _evhtp_request_parser_header_val,
+    .hostname           = _evhtp_request_parser_hostname,
     .on_hdrs_complete   = _evhtp_request_parser_headers,
     .on_new_chunk       = _evhtp_request_parser_chunk_new,
     .on_chunk_complete  = _evhtp_request_parser_chunk_fini,
@@ -465,6 +467,13 @@ _evhtp_connection_fini_hook(evhtp_connection_t * connection) {
         return (connection->hooks->on_connection_fini)(connection,
                                                        connection->hooks->on_connection_fini_arg);
     }
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
+_evhtp_hostname_hook(evhtp_request_t * r, const char * hostname) {
+    HOOK_REQUEST_RUN(r, on_hostname, hostname);
 
     return EVHTP_RES_OK;
 }
@@ -1019,17 +1028,167 @@ _evhtp_request_parser_header_val(htparser * p, const char * data, size_t len) {
     return 0;
 }
 
+static evhtp_t *
+_evhtp_request_find_vhost(evhtp_t * evhtp, const char * name) {
+    evhtp_t       * evhtp_vhost;
+    evhtp_alias_t * evhtp_alias;
+
+    TAILQ_FOREACH(evhtp_vhost, &evhtp->vhosts, next_vhost) {
+        if (evhtp_vhost->server_name == NULL) {
+            continue;
+        }
+
+        if (_evhtp_glob_match(evhtp_vhost->server_name, name) == 1) {
+            return evhtp_vhost;
+        }
+
+        TAILQ_FOREACH(evhtp_alias, &evhtp_vhost->aliases, next) {
+            if (evhtp_alias->alias == NULL) {
+                continue;
+            }
+
+            if (_evhtp_glob_match(evhtp_alias->alias, name) == 1) {
+                return evhtp_vhost;
+            }
+        }
+    }
+
+    return NULL;
+}
+
 static int
-_evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
-    evhtp_connection_t * c        = htparser_get_userdata(p);
-    evhtp_hooks_t      * hooks    = NULL;
-    evhtp_callback_t   * callback = NULL;
-    evhtp_callback_cb    cb       = NULL;
-    void               * cbarg    = NULL;
+_evhtp_request_set_callbacks(evhtp_request_t * request) {
+    evhtp_t            * evhtp;
+    evhtp_connection_t * conn;
     evhtp_uri_t        * uri;
     evhtp_path_t       * path;
-    char               * match_start;
-    char               * match_end;
+    evhtp_hooks_t      * hooks;
+    evhtp_callback_t   * callback;
+    evhtp_callback_cb    cb;
+    void               * cbarg;
+
+    if (request == NULL) {
+        return -1;
+    }
+
+    if ((evhtp = request->htp) == NULL) {
+        return -1;
+    }
+
+    if ((conn = request->conn) == NULL) {
+        return -1;
+    }
+
+    if ((uri = request->uri) == NULL) {
+        return -1;
+    }
+
+    if ((path = uri->path) == NULL) {
+        return -1;
+    }
+
+    hooks    = NULL;
+    callback = NULL;
+    cb       = NULL;
+    cbarg    = NULL;
+
+    if ((callback = _evhtp_callback_find(evhtp->callbacks, path->path,
+                                         &path->matched_soff, &path->matched_eoff))) {
+        /* matched a callback using *just* the path (/a/b/c/) */
+        cb    = callback->cb;
+        cbarg = callback->cbarg;
+        hooks = callback->hooks;
+    } else if ((callback = _evhtp_callback_find(evhtp->callbacks, path->full,
+                                                &path->matched_soff, &path->matched_eoff))) {
+        /* matched a callback using both path and file (/a/b/c/d) */
+        cb    = callback->cb;
+        cbarg = callback->cbarg;
+        hooks = callback->hooks;
+    } else {
+        /* no callbacks found for either case, use defaults */
+        cb    = evhtp->defaults.cb;
+        cbarg = evhtp->defaults.cbarg;
+
+        path->matched_soff = 0;
+        path->matched_eoff = (unsigned int)strlen(path->full);
+    }
+
+    if (path->match_start == NULL) {
+        path->match_start = calloc(strlen(path->full) + 1, 1);
+    }
+
+    if (path->match_end == NULL) {
+        path->match_end = calloc(strlen(path->full) + 1, 1);
+    }
+
+    if (path->matched_eoff - path->matched_soff) {
+        memcpy(path->match_start, (void *)(path->full + path->matched_soff),
+               path->matched_eoff - path->matched_soff);
+    } else {
+        memcpy(path->match_start, (void *)(path->full + path->matched_soff),
+               strlen((const char *)(path->full + path->matched_soff)));
+    }
+
+    memcpy(path->match_end,
+           (void *)(path->full + path->matched_eoff),
+           strlen(path->full) - path->matched_eoff);
+
+    if (hooks != NULL) {
+        if (request->hooks == NULL) {
+            request->hooks = malloc(sizeof(evhtp_hooks_t));
+        }
+
+        memcpy(request->hooks, hooks, sizeof(evhtp_hooks_t));
+    }
+
+    request->cb    = cb;
+    request->cbarg = cbarg;
+
+    return 0;
+} /* _evhtp_request_set_callbacks */
+
+static int
+_evhtp_request_parser_hostname(htparser * p, const char * data, size_t len) {
+    evhtp_connection_t * c = htparser_get_userdata(p);
+    evhtp_t            * evhtp;
+    evhtp_t            * evhtp_vhost;
+
+    evhtp = c->htp;
+
+    /* since this is called after _evhtp_request_parser_path(), which already
+     * setup callbacks for the URI, we must now attempt to find callbacks which
+     * are specific to this host.
+     */
+    _evhtp_lock(evhtp);
+    {
+        if ((evhtp_vhost = _evhtp_request_find_vhost(evhtp, data))) {
+            _evhtp_lock(evhtp_vhost);
+            {
+                /* if we found a match for the host, we must set the htp
+                 * variables for both the connection and the request.
+                 */
+                c->htp          = evhtp_vhost;
+                c->request->htp = evhtp_vhost;
+
+                _evhtp_request_set_callbacks(c->request);
+            }
+            _evhtp_unlock(evhtp_vhost);
+        }
+    }
+    _evhtp_unlock(evhtp);
+
+    if ((c->request->status = _evhtp_hostname_hook(c->request, data)) != EVHTP_RES_OK) {
+        return -1;
+    }
+
+    return 0;
+} /* _evhtp_request_parser_hostname */
+
+static int
+_evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
+    evhtp_connection_t * c = htparser_get_userdata(p);
+    evhtp_uri_t        * uri;
+    evhtp_path_t       * path;
 
     if (!(uri = _evhtp_uri_new())) {
         c->request->status = EVHTP_RES_FATAL;
@@ -1041,62 +1200,25 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
         return -1;
     }
 
-    _evhtp_lock(c->htp);
+#if 0
+    match_start        = calloc(strlen(path->full) + 1, 1);
+    match_end          = calloc(strlen(path->full) + 1, 1);
 
-    if ((callback = _evhtp_callback_find(c->htp->callbacks, path->path,
-                                         &path->matched_soff, &path->matched_eoff))) {
-        /* matched a callback using *just* the path (/a/b/c/) */
-        cb    = callback->cb;
-        cbarg = callback->cbarg;
-        hooks = callback->hooks;
-    } else if ((callback = _evhtp_callback_find(c->htp->callbacks, path->full,
-                                                &path->matched_soff, &path->matched_eoff))) {
-        /* matched a callback using both path and file (/a/b/c/d) */
-        cb    = callback->cb;
-        cbarg = callback->cbarg;
-        hooks = callback->hooks;
-    } else {
-        /* no callbacks found for either case, use defaults */
-        cb    = c->htp->defaults.cb;
-        cbarg = c->htp->defaults.cbarg;
+    path->match_start  = match_start;
+    path->match_end    = match_end;
+#endif
 
-        path->matched_soff = 0;
-        path->matched_eoff = (unsigned int)strlen(path->full);
-    }
+    uri->path          = path;
+    uri->scheme        = htparser_get_scheme(p);
 
-    _evhtp_unlock(c->htp);
-
-    match_start = calloc(strlen(path->full) + 1, 1);
-    match_end   = calloc(strlen(path->full) + 1, 1);
-
-    if (path->matched_eoff - path->matched_soff) {
-        memcpy(match_start, (void *)(path->full + path->matched_soff),
-               path->matched_eoff - path->matched_soff);
-    } else {
-        memcpy(match_start, (void *)(path->full + path->matched_soff),
-               strlen((const char *)(path->full + path->matched_soff)));
-    }
-
-    memcpy(match_end,
-           (void *)(path->full + path->matched_eoff),
-           strlen(path->full) - path->matched_eoff);
-
-    path->match_start = match_start;
-    path->match_end   = match_end;
-
-    uri->path         = path;
-    uri->scheme       = htparser_get_scheme(p);
-
-    if (hooks != NULL) {
-        c->request->hooks = malloc(sizeof(evhtp_hooks_t));
-
-        memcpy(c->request->hooks, hooks, sizeof(evhtp_hooks_t));
-    }
-
-    c->request->uri    = uri;
-    c->request->cb     = cb;
-    c->request->cbarg  = cbarg;
     c->request->method = htparser_get_method(p);
+    c->request->uri    = uri;
+
+    _evhtp_lock(c->htp);
+    {
+        _evhtp_request_set_callbacks(c->request);
+    }
+    _evhtp_unlock(c->htp);
 
     if ((c->request->status = _evhtp_path_hook(c->request, path)) != EVHTP_RES_OK) {
         return -1;
@@ -1123,7 +1245,8 @@ _evhtp_request_parser_headers(htparser * p) {
     if ((host = evhtp_header_find(c->request->headers_in, "Host"))) {
         /* check to see if we have any virtual hosts, and if we do, search
          * for a match. If there is a match, we have to overwrite the
-         * current callbacks / hooks */
+         * current callbacks / hooks
+         */
     }
 
     if (!(expect_val = evhtp_header_find(c->request->headers_in, "Expect"))) {
@@ -1361,9 +1484,22 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
 
     if (c->request->keepalive) {
         _evhtp_request_free(c->request);
+
         c->request = NULL;
 
+        if (c->htp->parent && c->vhost_via_sni == 0) {
+            /* this request was servied by a virtual host evhtp_t structure
+             * which was *NOT* found via SSL SNI lookup. In this case we want to
+             * reset our connections evhtp_t structure back to the original so
+             * that subsequent requests can have a different Host: header.
+             */
+            evhtp_t * orig_htp = c->htp->parent;
+
+            c->htp = orig_htp;
+        }
+
         htparser_init(c->parser, htp_type_request);
+
         return htparser_set_userdata(c->parser, c);
     } else {
         return evhtp_connection_free(c);
@@ -1669,7 +1805,6 @@ _evhtp_ssl_servername(evhtp_ssl_t * ssl, int * unused, void * arg) {
     evhtp_connection_t * connection;
     evhtp_t            * evhtp;
     evhtp_t            * evhtp_vhost;
-    evhtp_alias_t      * evhtp_alias;
 
     if (!(sname = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name))) {
         return SSL_TLSEXT_ERR_NOACK;
@@ -1683,33 +1818,13 @@ _evhtp_ssl_servername(evhtp_ssl_t * ssl, int * unused, void * arg) {
         return SSL_TLSEXT_ERR_NOACK;
     }
 
-    TAILQ_FOREACH(evhtp_vhost, &evhtp->vhosts, next_vhost) {
-        if (evhtp_vhost->server_name == NULL) {
-            continue;
-        }
+    if ((evhtp_vhost = _evhtp_request_find_vhost(evhtp, sname))) {
+        connection->htp           = evhtp_vhost;
+        connection->vhost_via_sni = 1;
 
-        if (_evhtp_glob_match(evhtp_vhost->server_name, sname) == 1) {
-            SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
-            connection->htp = evhtp_vhost;
-            connection->vhost_found_by_sni = 1;
+        SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
 
-            return SSL_TLSEXT_ERR_OK;
-        }
-
-        /* check to see if any of the aliases match */
-        TAILQ_FOREACH(evhtp_alias, &evhtp_vhost->aliases, next) {
-            if (evhtp_alias->alias == NULL) {
-                continue;
-            }
-
-            if (_evhtp_glob_match(evhtp_alias->alias, sname) == 1) {
-                SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
-                connection->htp = evhtp_vhost;
-                connection->vhost_found_by_sni = 1;
-
-                return SSL_TLSEXT_ERR_OK;
-            }
-        }
+        return SSL_TLSEXT_ERR_OK;
     }
 
     return SSL_TLSEXT_ERR_NOACK;
@@ -2718,6 +2833,10 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, void * cb, void * a
             (*hooks)->on_chunks_fini         = (evhtp_hook_chunks_fini_cb)cb;
             (*hooks)->on_chunks_fini_arg     = arg;
             break;
+        case evhtp_hook_on_hostname:
+            (*hooks)->on_hostname            = (evhtp_hook_hostname_cb)cb;
+            (*hooks)->on_hostname_arg        = arg;
+            break;
         default:
             return -1;
     }     /* switch */
@@ -2775,6 +2894,10 @@ evhtp_unset_all_hooks(evhtp_hooks_t ** hooks) {
     }
 
     if (evhtp_unset_hook(hooks, evhtp_hook_on_chunks_complete)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_hostname)) {
         res -= 1;
     }
 
@@ -3251,9 +3374,12 @@ evhtp_add_alias(evhtp_t * evhtp, const char * name) {
 /**
  * @brief add a virtual host.
  *
- * XXX: This currently only applies to SSL SNI. This is due to the current
- *      architecture where determining a vhost via the Host header can break
- *      callbacks defined before the header is found.
+ * NOTE: If SSL is being used and the vhost was found via SNI, the Host: header
+ *       will *NOT* be used to find a matching vhost.
+ *
+ *       Also, any hooks which are set prior to finding a vhost that are hooks
+ *       which are after the host hook, they are overwritten by the callbacks
+ *       and hooks set for the vhost specific evhtp_t structure.
  *
  * @param evhtp
  * @param name
@@ -3276,6 +3402,12 @@ evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost) {
         return -1;
     }
 
+    /* set the parent of this vhost so when the request has been completely
+     * serviced, the vhost can be reset to the original evhtp structure.
+     *
+     * This allows for a keep-alive connection to make multiple requests with
+     * different Host: values.
+     */
     vhost->parent = evhtp;
 
     TAILQ_INSERT_TAIL(&evhtp->vhosts, vhost, next_vhost);

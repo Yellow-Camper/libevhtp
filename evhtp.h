@@ -104,7 +104,8 @@ enum evhtp_hook_type {
     evhtp_hook_on_chunk_complete,
     evhtp_hook_on_chunks_complete,
     evhtp_hook_on_headers_start,
-    evhtp_hook_on_error         /**< type which defines to hook whenever an error occurs */
+    evhtp_hook_on_error,        /**< type which defines to hook whenever an error occurs */
+    evhtp_hook_on_hostname
 };
 
 enum evhtp_callback_type {
@@ -141,6 +142,7 @@ typedef evhtp_res (*evhtp_hook_chunk_new_cb)(evhtp_request_t * r, uint64_t len, 
 typedef evhtp_res (*evhtp_hook_chunk_fini_cb)(evhtp_request_t * r, void * arg);
 typedef evhtp_res (*evhtp_hook_chunks_fini_cb)(evhtp_request_t * r, void * arg);
 typedef evhtp_res (*evhtp_hook_headers_start_cb)(evhtp_request_t * r, void * arg);
+typedef evhtp_res (*evhtp_hook_hostname_cb)(evhtp_request_t * r, const char * hostname, void * arg);
 
 typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
 typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
@@ -421,13 +423,13 @@ struct evhtp_connection_s {
     htparser        * parser;
     event_t         * resume_ev;
     struct sockaddr * saddr;
-    struct timeval    recv_timeo;         /**< conn read timeouts (overrides global) */
-    struct timeval    send_timeo;         /**< conn write timeouts (overrides global) */
+    struct timeval    recv_timeo;    /**< conn read timeouts (overrides global) */
+    struct timeval    send_timeo;    /**< conn write timeouts (overrides global) */
     int               sock;
     uint8_t           error;
-    uint8_t           owner;              /**< set to 1 if this structure owns the bufferevent */
-    uint8_t           vhost_found_by_sni; /**< set to 1 if the vhost was found via SSL SNI */
-    evhtp_request_t * request;            /**< the request currently being processed */
+    uint8_t           owner;         /**< set to 1 if this structure owns the bufferevent */
+    uint8_t           vhost_via_sni; /**< set to 1 if the vhost was found via SSL SNI */
+    evhtp_request_t * request;       /**< the request currently being processed */
 };
 
 struct evhtp_hooks_s {
@@ -442,6 +444,7 @@ struct evhtp_hooks_s {
     evhtp_hook_chunk_new_cb       on_new_chunk;
     evhtp_hook_chunk_fini_cb      on_chunk_fini;
     evhtp_hook_chunks_fini_cb     on_chunks_fini;
+    evhtp_hook_hostname_cb        on_hostname;
 
     void * on_headers_start_arg;
     void * on_header_arg;
@@ -454,6 +457,7 @@ struct evhtp_hooks_s {
     void * on_new_chunk_arg;
     void * on_chunk_fini_arg;
     void * on_chunks_fini_arg;
+    void * on_hostname_arg;
 };
 
 struct evhtp_ssl_cfg_s {

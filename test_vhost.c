@@ -27,7 +27,10 @@ main(int argc, char ** argv) {
     evhtp_add_vhost(evhtp, "localhost", v2);
 
     evhtp_add_alias(v2, "127.0.0.1");
+    evhtp_add_alias(v2, "localhost");
+    evhtp_add_alias(v2, "localhost:8081");
 
+#if 0
     scfg1.pemfile  = "./server.pem";
     scfg1.privfile = "./server.pem";
     scfg2.pemfile  = "./server1.pem";
@@ -36,6 +39,7 @@ main(int argc, char ** argv) {
     evhtp_ssl_init(evhtp, &scfg1);
     evhtp_ssl_init(v1, &scfg2);
     evhtp_ssl_init(v2, &scfg2);
+#endif
 
     evhtp_bind_socket(evhtp, "0.0.0.0", 8081, 1024);
     event_base_loop(evbase, 0);

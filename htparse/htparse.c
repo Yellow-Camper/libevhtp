@@ -45,7 +45,8 @@ enum eval_hdr_val {
     eval_hdr_val_connection,
     eval_hdr_val_proxy_connection,
     eval_hdr_val_content_length,
-    eval_hdr_val_transfer_encoding
+    eval_hdr_val_transfer_encoding,
+    eval_hdr_val_hostname
 };
 
 enum parser_flags {
@@ -254,6 +255,7 @@ __HTPARSE_GENDHOOK(uri);
 __HTPARSE_GENDHOOK(hdr_key);
 __HTPARSE_GENDHOOK(hdr_val);
 __HTPARSE_GENDHOOK(body);
+__HTPARSE_GENDHOOK(hostname);
 
 
 static inline uint64_t
@@ -1129,9 +1131,9 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_status:
                 /* http response status code */
                 if (ch == ' ') {
-		    if (p->status) {
-			p->state = s_status_text;
-		    }
+                    if (p->status) {
+                        p->state = s_status_text;
+                    }
                     break;
                 }
 
@@ -1254,6 +1256,11 @@ hdrline_start:
                         p->heval = eval_hdr_val_none;
 
                         switch (p->buf_idx + 1) {
+                            case 5:
+                                if (!strcasecmp(p->buf, "host")) {
+                                    p->heval = eval_hdr_val_hostname;
+                                }
+                                break;
                             case 11:
                                 if (!strcasecmp(p->buf, "connection")) {
                                     p->heval = eval_hdr_val_connection;
@@ -1328,8 +1335,11 @@ hdrline_start:
                         switch (p->heval) {
                             case eval_hdr_val_none:
                                 break;
+                            case eval_hdr_val_hostname:
+                                res = hook_hostname_run(p, hooks, p->buf, p->buf_idx);
+                                break;
                             case eval_hdr_val_content_length:
-                                p->content_len      = str_to_uint64(p->buf, p->buf_idx, &err);
+                                p->content_len = str_to_uint64(p->buf, p->buf_idx, &err);
 
                                 if (err == 1) {
                                     p->error = htparse_error_too_big;

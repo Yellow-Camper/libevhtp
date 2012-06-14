@@ -46,7 +46,8 @@ enum eval_hdr_val {
     eval_hdr_val_proxy_connection,
     eval_hdr_val_content_length,
     eval_hdr_val_transfer_encoding,
-    eval_hdr_val_hostname
+    eval_hdr_val_hostname,
+    eval_hdr_val_content_type
 };
 
 enum parser_flags {
@@ -110,6 +111,7 @@ struct htparser {
     htp_scheme scheme;
     htp_method method;
 
+    unsigned char multipart;
     unsigned char major;
     unsigned char minor;
     uint64_t      content_len;
@@ -391,6 +393,11 @@ htparser_get_major(htparser * p) {
 unsigned char
 htparser_get_minor(htparser * p) {
     return p->minor;
+}
+
+unsigned char
+htparser_get_multipart(htparser * p) {
+    return p->multipart;
 }
 
 void *
@@ -1266,6 +1273,11 @@ hdrline_start:
                                     p->heval = eval_hdr_val_connection;
                                 }
                                 break;
+                            case 13:
+                                if (!strcasecmp(p->buf, "content-type")) {
+                                    p->heval = eval_hdr_val_content_type;
+                                }
+                                break;
                             case 15:
                                 if (!strcasecmp(p->buf, "content-length")) {
                                     p->heval = eval_hdr_val_content_length;
@@ -1368,6 +1380,13 @@ hdrline_start:
                                     p->flags |= parser_flag_chunked;
                                 }
 
+                                break;
+                            case eval_hdr_val_content_type:
+                                if (p->buf[0] == 'm' || p->buf[0] == 'M') {
+                                    if (_str8cmp((p->buf + 1), 'u', 'l', 't', 'i', 'p', 'a', 'r', 't')) {
+                                        p->multipart = 1;
+                                    }
+                                }
                                 break;
                             default:
                                 break;

@@ -11,6 +11,7 @@
 #include <sys/un.h>
 #endif
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <sys/tree.h>
 
@@ -278,7 +279,7 @@ strndup(const char * s, size_t n) {
  *
  * @return an unsigned integer hash of str
  */
-static unsigned int
+static inline unsigned int
 _evhtp_quick_hash(const char * str) {
     unsigned int h = 0;
 
@@ -297,7 +298,7 @@ _evhtp_quick_hash(const char * str) {
  *
  * @return 1 if HTTP/1.0, else 0
  */
-static int
+static inline int
 _evhtp_is_http_10(const char major, const char minor) {
     if (major >= 1 && minor <= 0) {
         return 1;
@@ -314,7 +315,7 @@ _evhtp_is_http_10(const char major, const char minor) {
  *
  * @return 1 if HTTP/1.1, else 0
  */
-static int
+static inline int
 _evhtp_is_http_11(const char major, const char minor) {
     if (major >= 1 && minor >= 1) {
         return 1;
@@ -332,7 +333,7 @@ _evhtp_is_http_11(const char major, const char minor) {
  * @return EVHTP_PROTO_10 if HTTP/1.0, EVHTP_PROTO_11 if HTTP/1.1, otherwise
  *         EVHTP_PROTO_INVALID
  */
-static evhtp_proto
+static inline evhtp_proto
 _evhtp_protocol(const char major, const char minor) {
     if (_evhtp_is_http_10(major, minor)) {
         return EVHTP_PROTO_10;
@@ -353,7 +354,7 @@ _evhtp_protocol(const char major, const char minor) {
  *
  * @return EVHTP_RES_OK on success, otherwise something else.
  */
-static evhtp_res
+static inline evhtp_res
 _evhtp_path_hook(evhtp_request_t * request, evhtp_path_t * path) {
     HOOK_REQUEST_RUN(request, on_path, path);
 
@@ -370,7 +371,7 @@ _evhtp_path_hook(evhtp_request_t * request, evhtp_path_t * path) {
  *
  * @return EVHTP_RES_OK on success, otherwise something else.
  */
-static evhtp_res
+static inline evhtp_res
 _evhtp_header_hook(evhtp_request_t * request, evhtp_header_t * header) {
     HOOK_REQUEST_RUN(request, on_header, header);
 
@@ -386,7 +387,7 @@ _evhtp_header_hook(evhtp_request_t * request, evhtp_header_t * header) {
  *
  * @return EVHTP_RES_OK on success, otherwise something else.
  */
-static evhtp_res
+static inline evhtp_res
 _evhtp_headers_hook(evhtp_request_t * request, evhtp_headers_t * headers) {
     HOOK_REQUEST_RUN(request, on_headers, headers);
 
@@ -403,7 +404,7 @@ _evhtp_headers_hook(evhtp_request_t * request, evhtp_headers_t * headers) {
  *
  * @return EVHTP_RES_OK on success, otherwise something else.
  */
-static evhtp_res
+static inline evhtp_res
 _evhtp_body_hook(evhtp_request_t * request, evbuf_t * buf) {
     HOOK_REQUEST_RUN(request, on_read, buf);
 
@@ -418,35 +419,35 @@ _evhtp_body_hook(evhtp_request_t * request, evbuf_t * buf) {
  *
  * @return EVHTP_RES_OK on success, otherwise treated as an error
  */
-static evhtp_res
+static inline evhtp_res
 _evhtp_request_fini_hook(evhtp_request_t * request) {
     HOOK_REQUEST_RUN_NARGS(request, on_request_fini);
 
     return EVHTP_RES_OK;
 }
 
-static evhtp_res
+static inline evhtp_res
 _evhtp_chunk_new_hook(evhtp_request_t * request, uint64_t len) {
     HOOK_REQUEST_RUN(request, on_new_chunk, len);
 
     return EVHTP_RES_OK;
 }
 
-static evhtp_res
+static inline evhtp_res
 _evhtp_chunk_fini_hook(evhtp_request_t * request) {
     HOOK_REQUEST_RUN_NARGS(request, on_chunk_fini);
 
     return EVHTP_RES_OK;
 }
 
-static evhtp_res
+static inline evhtp_res
 _evhtp_chunks_fini_hook(evhtp_request_t * request) {
     HOOK_REQUEST_RUN_NARGS(request, on_chunks_fini);
 
     return EVHTP_RES_OK;
 }
 
-static evhtp_res
+static inline evhtp_res
 _evhtp_headers_start_hook(evhtp_request_t * request) {
     HOOK_REQUEST_RUN_NARGS(request, on_headers_start);
 
@@ -461,7 +462,7 @@ _evhtp_headers_start_hook(evhtp_request_t * request) {
  *
  * @return EVHTP_RES_OK on success, but pretty much ignored in any case.
  */
-static evhtp_res
+static inline evhtp_res
 _evhtp_connection_fini_hook(evhtp_connection_t * connection) {
     if (connection->hooks && connection->hooks->on_connection_fini) {
         return (connection->hooks->on_connection_fini)(connection,
@@ -471,7 +472,7 @@ _evhtp_connection_fini_hook(evhtp_connection_t * connection) {
     return EVHTP_RES_OK;
 }
 
-static evhtp_res
+static inline evhtp_res
 _evhtp_hostname_hook(evhtp_request_t * r, const char * hostname) {
     HOOK_REQUEST_RUN(r, on_hostname, hostname);
 
@@ -1028,7 +1029,7 @@ _evhtp_request_parser_header_val(htparser * p, const char * data, size_t len) {
     return 0;
 }
 
-static evhtp_t *
+static inline evhtp_t *
 _evhtp_request_find_vhost(evhtp_t * evhtp, const char * name) {
     evhtp_t       * evhtp_vhost;
     evhtp_alias_t * evhtp_alias;
@@ -1056,7 +1057,7 @@ _evhtp_request_find_vhost(evhtp_t * evhtp, const char * name) {
     return NULL;
 }
 
-static int
+static inline int
 _evhtp_request_set_callbacks(evhtp_request_t * request) {
     evhtp_t            * evhtp;
     evhtp_connection_t * conn;
@@ -1200,14 +1201,6 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
         return -1;
     }
 
-#if 0
-    match_start        = calloc(strlen(path->full) + 1, 1);
-    match_end          = calloc(strlen(path->full) + 1, 1);
-
-    path->match_start  = match_start;
-    path->match_end    = match_end;
-#endif
-
     uri->path          = path;
     uri->scheme        = htparser_get_scheme(p);
 
@@ -1345,8 +1338,7 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
     evbuf_t    * buf          = evbuffer_new();
     const char * content_type = evhtp_header_find(request->headers_out, "Content-Type");
 
-    if (content_type && strstr(content_type, "multipart")) {
-        /* multipart messages should not get any extra headers */
+    if (htparser_get_multipart(request->conn->parser) == 1) {
         goto check_proto;
     }
 
@@ -2556,6 +2548,19 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
                                           LEV_OPT_THREADSAFE | LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
                                           backlog, sa, sin_len);
+
+#ifdef USE_DEFER_ACCEPT
+    {
+        evutil_socket_t sock;
+        int             one = 1;
+
+        sock = evconnlistener_get_fd(htp->server);
+
+        setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, &one, (ev_socklen_t)sizeof(one));
+        setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &one, (ev_socklen_t)sizeof(one));
+    }
+#endif
+
     return htp->server ? 0 : -1;
 }
 

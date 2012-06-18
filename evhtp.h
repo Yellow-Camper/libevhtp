@@ -69,6 +69,7 @@ typedef struct evhtp_request_s    evhtp_request_t;
 typedef struct evhtp_hooks_s      evhtp_hooks_t;
 typedef struct evhtp_connection_s evhtp_connection_t;
 typedef struct evhtp_ssl_cfg_s    evhtp_ssl_cfg_t;
+typedef struct evhtp_alias_s      evhtp_alias_t;
 typedef uint16_t                  evhtp_res;
 typedef uint8_t                   evhtp_error_flags;
 
@@ -103,7 +104,8 @@ enum evhtp_hook_type {
     evhtp_hook_on_chunk_complete,
     evhtp_hook_on_chunks_complete,
     evhtp_hook_on_headers_start,
-    evhtp_hook_on_error         /**< type which defines to hook whenever an error occurs */
+    evhtp_hook_on_error,        /**< type which defines to hook whenever an error occurs */
+    evhtp_hook_on_hostname
 };
 
 enum evhtp_callback_type {
@@ -140,6 +142,7 @@ typedef evhtp_res (*evhtp_hook_chunk_new_cb)(evhtp_request_t * r, uint64_t len, 
 typedef evhtp_res (*evhtp_hook_chunk_fini_cb)(evhtp_request_t * r, void * arg);
 typedef evhtp_res (*evhtp_hook_chunks_fini_cb)(evhtp_request_t * r, void * arg);
 typedef evhtp_res (*evhtp_hook_headers_start_cb)(evhtp_request_t * r, void * arg);
+typedef evhtp_res (*evhtp_hook_hostname_cb)(evhtp_request_t * r, const char * hostname, void * arg);
 
 typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
 typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
@@ -152,16 +155,17 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION          "0.4.14"
+#define EVHTP_VERSION          "0.4.15"
 #define EVHTP_VERSION_MAJOR    0
 #define EVHTP_VERSION_MINOR    4
-#define EVHTP_VERSION_PATCH    14
+#define EVHTP_VERSION_PATCH    15
 
 #define evhtp_headers_iterator evhtp_kvs_iterator
 
 #define EVHTP_RES_ERROR        0
 #define EVHTP_RES_PAUSE        1
 #define EVHTP_RES_FATAL        2
+#define EVHTP_RES_USER         3
 #define EVHTP_RES_OK           200
 
 #define EVHTP_RES_100          100
@@ -229,31 +233,46 @@ struct evhtp_defaults_s {
     void               * post_accept_cbarg;
 };
 
+struct evhtp_alias_s {
+    char * alias;
+
+    TAILQ_ENTRY(evhtp_alias_s) next;
+};
+
 /**
  * @brief main structure containing all configuration information
  */
 struct evhtp_s {
+    evhtp_t  * parent;         /**< only when this is a vhost */
     evbase_t * evbase;         /**< the initialized event_base */
     evserv_t * server;         /**< the libevent listener struct */
     char     * server_name;    /**< the name included in Host: responses */
     void     * arg;            /**< user-defined evhtp_t specific arguments */
     int        bev_flags;      /**< bufferevent flags to use on bufferevent_*_socket_new() */
 
+#ifndef DISABLE_SSL
     evhtp_ssl_ctx_t * ssl_ctx; /**< if ssl enabled, this is the servers CTX */
     evhtp_ssl_cfg_t * ssl_cfg;
+#endif
 
-    evthr_pool_t * thr_pool;   /**< connection threadpool */
 #ifndef EVHTP_DISABLE_EVTHR
-    pthread_mutex_t * lock;    /**< parent lock for add/del cbs in threads */
+    evthr_pool_t * thr_pool;   /**< connection threadpool */
+#endif
+
+#ifndef EVHTP_DISABLE_EVTHR
+    pthread_mutex_t    * lock; /**< parent lock for add/del cbs in threads */
+    evhtp_thread_init_cb thread_init_cb;
+    void               * thread_init_cbarg;
 #endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
 
-    evhtp_thread_init_cb thread_init_cb;
-    void               * thread_init_cbarg;
-
     struct timeval * recv_timeo;
     struct timeval * send_timeo;
+
+    TAILQ_HEAD(, evhtp_alias_s) aliases;
+    TAILQ_HEAD(, evhtp_s) vhosts;
+    TAILQ_ENTRY(evhtp_s) next_vhost;
 };
 
 /**
@@ -404,10 +423,13 @@ struct evhtp_connection_s {
     htparser        * parser;
     event_t         * resume_ev;
     struct sockaddr * saddr;
+    struct timeval    recv_timeo;    /**< conn read timeouts (overrides global) */
+    struct timeval    send_timeo;    /**< conn write timeouts (overrides global) */
     int               sock;
-    int               error;
-    int               owner; /*< set to 1 if this structure owns the bufferevent */
-    evhtp_request_t * request;
+    uint8_t           error;
+    uint8_t           owner;         /**< set to 1 if this structure owns the bufferevent */
+    uint8_t           vhost_via_sni; /**< set to 1 if the vhost was found via SSL SNI */
+    evhtp_request_t * request;       /**< the request currently being processed */
 };
 
 struct evhtp_hooks_s {
@@ -422,6 +444,7 @@ struct evhtp_hooks_s {
     evhtp_hook_chunk_new_cb       on_new_chunk;
     evhtp_hook_chunk_fini_cb      on_chunk_fini;
     evhtp_hook_chunks_fini_cb     on_chunks_fini;
+    evhtp_hook_hostname_cb        on_hostname;
 
     void * on_headers_start_arg;
     void * on_header_arg;
@@ -434,6 +457,7 @@ struct evhtp_hooks_s {
     void * on_new_chunk_arg;
     void * on_chunk_fini_arg;
     void * on_chunks_fini_arg;
+    void * on_hostname_arg;
 };
 
 struct evhtp_ssl_cfg_s {
@@ -442,6 +466,7 @@ struct evhtp_ssl_cfg_s {
     char                  * cafile;
     char                  * capath;
     char                  * ciphers;
+    char                  * named_curve;
     long                    ssl_opts;
     long                    ssl_ctx_timeout;
     int                     verify_peer;
@@ -673,6 +698,8 @@ void               evhtp_callback_free(evhtp_callback_t * callback);
  */
 int evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb);
 
+int evhtp_add_alias(evhtp_t * evhtp, const char * name);
+int evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost);
 
 /**
  * @brief Allocates a new key/value structure.
@@ -847,6 +874,17 @@ void evhtp_request_set_bev(evhtp_request_t * request, evbev_t * bev);
  */
 evbev_t * evhtp_connection_get_bev(evhtp_connection_t * conn);
 
+
+/**
+ * @brief sets a connection-specific read/write timeout which overrides the
+ *        global read/write settings.
+ *
+ * @param conn
+ * @param r timeval for read
+ * @param w timeval for write
+ */
+void evhtp_connection_set_timeouts(evhtp_connection_t * conn, struct timeval * r, struct timeval * w);
+
 /**
  * @brief returns the underlying requests bufferevent
  *
@@ -880,6 +918,7 @@ evbev_t * evhtp_connection_take_ownership(evhtp_connection_t * connection);
  */
 void evhtp_connection_free(evhtp_connection_t * connection);
 
+void evhtp_request_free(evhtp_request_t * request);
 
 #ifdef __cplusplus
 }

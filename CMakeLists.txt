@@ -3,7 +3,7 @@ project(reason)
 
 set(PROJECT_MAJOR_VERSION 0)
 set(PROJECT_MINOR_VERSION 4)
-set(PROJECT_PATCH_VERSION 14)
+set(PROJECT_PATCH_VERSION 15)
 
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
@@ -102,8 +102,15 @@ if (NOT HAVE_SYS_UN)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_SYS_UN")
 endif(NOT HAVE_SYS_UN)
 
-OPTION(EVHTP_DISABLE_SSL   "Disable ssl support"      OFF)
-OPTION(EVHTP_DISABLE_EVTHR "Disable evthread support" OFF)
+OPTION(EVHTP_DISABLE_SSL       "Disable ssl support"      OFF)
+OPTION(EVHTP_DISABLE_EVTHR     "Disable evthread support" OFF)
+
+# -DEVHTP_USE_DEFER_ACCEPT:STRING=ON
+OPTION(EVHTP_USE_DEFER_ACCEPT  "Enable TCP_DEFER_ACCEPT"  OFF) 
+
+if (EVHTP_USE_DEFER_ACCEPT)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_DEFER_ACCEPT")
+endif(EVHTP_USE_DEFER_ACCEPT)
 
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -177,3 +184,5 @@ target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 add_executable(test_basic test_basic.c)
 target_link_libraries(test_basic libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
+add_executable(test_vhost test_vhost.c)
+target_link_libraries(test_vhost libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})

@@ -1,3 +1,22 @@
+v0.4.15
+ o Override global timeouts on a per-connection basis. (156f5ef Mark Ellzey)
+ o Use evhtp_connection_set_timeouts in accept. (8eb5aa9 Mark Ellzey)
+ o Remove use for alloca.h (339f9f2 Mark Ellzey)
+ o Added a max-backlog for evthr/pools (e8ac1f9 Mark Ellzey)
+ o Added evthr max backlog options. (a44d1c0 Mark Ellzey)
+ o Initial commit of vhost feature. (8fb43e0 Mark Ellzey)
+ o SSL SNI support. (4dcc68e Mark Ellzey)
+ o Added test_vhost.c (c5a698e Mark Ellzey)
+ o _evhtp_ssl_servername now uses wildcard matching. (00d0488 Mark Ellzey)
+ o Added vhost aliases functionality. (bf5766f Mark Ellzey)
+ o Readd inc/dec counter for evthr. (022ecf3 Mark Ellzey)
+ o Make evhtp_request_free public. (9046466 Mark Ellzey)
+ o Added a EVHTP_RES_USER evhtp_res type. (6b41cee Mark Ellzey)
+ o Add support for ECDH ciphers (via cfg->named_curve string) (131cae3 b)
+ o finding cbs/hook additions, hostname parse hooks (361a068 Mark Ellzey)
+ o Optimizations. (caddf10 Mark Ellzey)
+ o hook_on_hdrs_complete runs before last LF (2f77428 Mark Ellzey)
+
 v0.4.14
  o Added example and documentation on proper thread-safe design with evhtp. (154017e Mark Ellzey)
  o Added glob/wildcard callback patterns. (d33a416 Mark Ellzey)

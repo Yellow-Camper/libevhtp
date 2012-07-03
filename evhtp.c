@@ -33,7 +33,6 @@ static int                  _evhtp_request_parser_headers_start(htparser * p);
 
 static void                 _evhtp_connection_readcb(evbev_t * bev, void * arg);
 
-static void                 _evhtp_connection_free(evhtp_connection_t * connection);
 static evhtp_connection_t * _evhtp_connection_new(evhtp_t * htp, int sock, evhtp_type type);
 
 static evhtp_uri_t        * _evhtp_uri_new(void);
@@ -1080,10 +1079,6 @@ _evhtp_request_set_callbacks(evhtp_request_t * request) {
     evhtp_callback_cb    cb;
     void               * cbarg;
 
-    if (c->type == evhtp_type_client) {
-        return 0;
-    }
-
     if (request == NULL) {
         return -1;
     }
@@ -1667,7 +1662,6 @@ _evhtp_connection_new(evhtp_t * htp, int sock, evhtp_type type) {
     connection->evbase    = NULL;
     connection->bev       = NULL;
     connection->thread    = NULL;
-    connection->ssl_ctx   = NULL;
     connection->hooks     = NULL;
     connection->request   = NULL;
     connection->resume_ev = NULL;
@@ -1742,10 +1736,6 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
     evhtp_t            * htp = arg;
     evhtp_connection_t * connection;
 
-    if (_evhtp_run_pre_accept(htp, fd, s, sl) < 0) {
-        return;
-    }
-
     if (!(connection = _evhtp_connection_new(htp, fd, evhtp_type_server))) {
         return;
     }
@@ -1763,6 +1753,10 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
     }
 #endif
     connection->evbase = htp->evbase;
+
+    if (_evhtp_run_pre_accept(connection->htp, connection) < 0) {
+        return evhtp_connection_free(connection);
+    }
 
     if (_evhtp_connection_accept(htp->evbase, connection) < 0) {
         return evhtp_connection_free(connection);

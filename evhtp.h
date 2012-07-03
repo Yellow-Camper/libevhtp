@@ -930,6 +930,25 @@ void evhtp_connection_free(evhtp_connection_t * connection);
 
 void evhtp_request_free(evhtp_request_t * request);
 
+/*****************************************************************
+* client request functions                                      *
+*****************************************************************/
+
+/**
+ * @brief allocate a new connection
+ */
+evhtp_connection_t * evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port);
+
+/**
+ * @brief allocate a new request
+ */
+evhtp_request_t * evhtp_request_new(evhtp_callback_cb cb, void * arg);
+
+/**
+ * @brief make a client request
+ */
+int evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r, htp_method meth, const char * uri);
+
 #ifdef __cplusplus
 }
 #endif

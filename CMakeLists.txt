@@ -3,7 +3,7 @@ project(reason)
 
 set(PROJECT_MAJOR_VERSION 0)
 set(PROJECT_MINOR_VERSION 4)
-set(PROJECT_PATCH_VERSION 0)
+set(PROJECT_PATCH_VERSION 15)
 
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
@@ -27,6 +27,8 @@ CHECK_INCLUDE_FILES(unistd.h HAVE_UNISTD_H)
 CHECK_INCLUDE_FILES(memory.h HAVE_MEMORY_H)
 CHECK_INCLUDE_FILES(stdarg.h HAVE_STDARG_PROTOTYPES)
 CHECK_INCLUDE_FILES(sys/tree.h HAVE_SYS_TREE)
+CHECK_INCLUDE_FILES(sys/queue.h HAVE_SYS_QUEUE)
+CHECK_INCLUDE_FILES(sys/un.h HAVE_SYS_UN)
 
 CHECK_TYPE_SIZE("int" SIZEOF_INT)
 CHECK_TYPE_SIZE("long" SIZEOF_LONG)
@@ -84,6 +86,10 @@ if (NOT HAVE_SYS_TREE)
     CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in ${CMAKE_CURRENT_BINARY_DIR}/compat/sys/tree.h)
 endif(NOT HAVE_SYS_TREE)
 
+if (NOT HAVE_SYS_QUEUE)
+		CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/queue.h.in ${CMAKE_CURRENT_BINARY_DIR}/compat/sys/queue.h)
+endif(NOT HAVE_SYS_QUEUE)
+
 if (NOT HAVE_STRNDUP)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_STRNDUP")
 endif(NOT HAVE_STRNDUP)
@@ -92,8 +98,19 @@ if (NOT HAVE_STRNLEN)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_STRNLEN")
 endif(NOT HAVE_STRNLEN)
 
-OPTION(DISABLE_SSL   "Disable ssl support"      OFF)
-OPTION(DISABLE_EVTHR "Disable evthread support" OFF)
+if (NOT HAVE_SYS_UN)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_SYS_UN")
+endif(NOT HAVE_SYS_UN)
+
+OPTION(EVHTP_DISABLE_SSL       "Disable ssl support"      OFF)
+OPTION(EVHTP_DISABLE_EVTHR     "Disable evthread support" OFF)
+
+# -DEVHTP_USE_DEFER_ACCEPT:STRING=ON
+OPTION(EVHTP_USE_DEFER_ACCEPT  "Enable TCP_DEFER_ACCEPT"  OFF) 
+
+if (EVHTP_USE_DEFER_ACCEPT)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_DEFER_ACCEPT")
+endif(EVHTP_USE_DEFER_ACCEPT)
 
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -104,18 +121,18 @@ message("Std CFLAGS: ${CMAKE_C_FLAGS}")
 message("Dbg CFLAGS: ${CMAKE_C_FLAGS_DEBUG}")
 message("Rel CFLAGS: ${CMAKE_C_FLAGS_RELEASE}")
 
-find_package(LibEvent)
+find_package(LibEvent REQUIRED)
 find_package(OpenSSL)
-find_path(LIBEVENT_INCLUDE_DIR event.h)
+find_path(LIBEVENT_INCLUDE_DIR event2/event.h REQUIRED)
 
 include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}/compat
-	${CMAKE_CURRENT_SOURCE_DIR}/libhtparse
+	${CMAKE_CURRENT_SOURCE_DIR}/htparse
 	${CMAKE_CURRENT_BINARY_DIR}/oniguruma
 	${CMAKE_CURRENT_SOURCE_DIR}/oniguruma
 	${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/evthr
-    ${OPENSSL_INCLUDE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/evthr
+	${OPENSSL_INCLUDE_DIR}
 	${LIBEVENT_INCLUDE_DIR}
 )
 
@@ -126,26 +143,30 @@ set(LIBEVHTP_EXTERNAL_LIBS
 		${OPENSSL_LIBRARIES})
 
 if (NOT ${LIBEVENT_PTHREADS_FOUND})
-	set(DISABLE_EVTHR 1)
+	set(EVHTP_DISABLE_EVTHR 1)
 endif(NOT ${LIBEVENT_PTHREADS_FOUND})
 
 if (NOT ${LIBEVENT_OPENSSL_FOUND})
-	set (DISABLE_SSL 1)
+	set (EVHTP_DISABLE_SSL 1)
 endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
-set(LIBEVHTP_SOURCES evhtp.c libhtparse/htparse.c)
+set(LIBEVHTP_SOURCES evhtp.c htparse/htparse.c)
 
-if (NOT DISABLE_EVTHR)
+if (NOT EVHTP_DISABLE_EVTHR)
 	set (LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} pthread)
 	set (LIBEVHTP_SOURCES ${LIBEVHTP_SOURCES} evthr/evthr.c)
-endif(NOT DISABLE_EVTHR)
+endif(NOT EVHTP_DISABLE_EVTHR)
+
+if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG")
+endif (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 
 add_library(libevhtp STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
 
 install (TARGETS libevhtp DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
-install (FILES libhtparse/htparse.h DESTINATION include)
+install (FILES htparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
 install (FILES oniguruma/onigposix.h DESTINATION include)
 
@@ -158,7 +179,13 @@ if (NOT APPLE)
 endif()
 
 add_executable(test test.c)
-add_executable(test_client test_client.c)
-
 target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+add_executable(test_client test_client.c)
 target_link_libraries(test_client libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+add_executable(test_basic test_basic.c)
+target_link_libraries(test_basic libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+add_executable(test_vhost test_vhost.c)
+target_link_libraries(test_vhost libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})

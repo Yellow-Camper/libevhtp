@@ -1,336 +1,336 @@
+v0.4.15
+ o Override global timeouts on a per-connection basis. (156f5ef Mark Ellzey)
+ o Use evhtp_connection_set_timeouts in accept. (8eb5aa9 Mark Ellzey)
+ o Remove use for alloca.h (339f9f2 Mark Ellzey)
+ o Added a max-backlog for evthr/pools (e8ac1f9 Mark Ellzey)
+ o Added evthr max backlog options. (a44d1c0 Mark Ellzey)
+ o Initial commit of vhost feature. (8fb43e0 Mark Ellzey)
+ o SSL SNI support. (4dcc68e Mark Ellzey)
+ o Added test_vhost.c (c5a698e Mark Ellzey)
+ o _evhtp_ssl_servername now uses wildcard matching. (00d0488 Mark Ellzey)
+ o Added vhost aliases functionality. (bf5766f Mark Ellzey)
+ o Readd inc/dec counter for evthr. (022ecf3 Mark Ellzey)
+ o Make evhtp_request_free public. (9046466 Mark Ellzey)
+ o Added a EVHTP_RES_USER evhtp_res type. (6b41cee Mark Ellzey)
+ o Add support for ECDH ciphers (via cfg->named_curve string) (131cae3 b)
+ o finding cbs/hook additions, hostname parse hooks (361a068 Mark Ellzey)
+ o Optimizations. (caddf10 Mark Ellzey)
+ o hook_on_hdrs_complete runs before last LF (2f77428 Mark Ellzey)
+
+v0.4.14
+ o Added example and documentation on proper thread-safe design with evhtp. (154017e Mark Ellzey)
+ o Added glob/wildcard callback patterns. (d33a416 Mark Ellzey)
+ o Fixed issue with path matching. (d0648ff Mark Ellzey)
+
+v0.4.13
+ o Decrement pending count when defer fails. (4e99de9 Mark Ellzey)
+ o Updating documentation to say there is not much documentation. (184f33e Mark Ellzey)
+
+v0.4.11
+ o Added #ifndef EVHTP_DISABLE_EVTHR flags for compilation withotu threading support (d5bcc33 Thibaut Le Guilly)
+ o Modify evthr_lock() macro previous patch for less ifdefs. (c800fe9 Mark Ellzey)
+ o Took out more disable thread ifdefs. (b5de21e Mark Ellzey)
+ o Remove use of bev_flush for evhtp_send_reply_end (9f2f31f Mark Ellzey)
+ o Modify evthr_lock() macro previous patch for less ifdefs. (aa24e6a Mark Ellzey)
+ o Took out more disable thread ifdefs. (accbe88 Mark Ellzey)
+ o Bugfixes, additions, cleanup, see full commit msg. (e6155d8 Mark Ellzey)
+ o Added evhtp_set_bev_flags() (a342903 Mark Ellzey)
+ o Prep release v0.4.12 (acda3c8 Mark Ellzey)
+
+v0.4.10
+ o Add compile time EVHTP_DISABLE_REGEX option. (eab0d0f Andy Hochhaus)
+ o Use evbuffer_add in lieu of add_reference for short writes. (2df5fbd Joe Nardone)
+ o Added take_ownership functionality which frees resources but gives the underlying bufferevent to the caller. (75050f8 Mark Ellzey)
+ o Release v0.4.11 (5d6339f Mark Ellzey)
+
+v0.4.9
+ o Fixed memleak with evthr_free() (10ad15a Mark Ellzey)
+ o Correct SSL_Shutdown() usage. (f5f97ee Mark Ellzey)
+ o Added total bytes read function in htparser. (4a9eefb Mark Ellzey)
+ o Added rate-limiting option in test.c (b9e10c1 Mark Ellzey)
+ o Don't add aux headers if content-type is multipart. (6be91ca Mark Ellzey)
+ o Removed silly compile-time flags for OSX (0dd14a9 Mark Ellzey)
+ o Ignore deprecated ssl warnings on OSX until further notice. (0aa4fb6 Mark Ellzey)
+ o Prep release v0.4.10 (60d0f25 Mark Ellzey)
+
+v0.4.8
+ o Fix for non-system strndup. (d7486b4 Mark Ellzey)
+ o Prepping release v0.4.9 (4ef6362 Mark Ellzey)
+
+v0.4.7
+ o Place _evhtp_run_pre_accept() into _evhtp_connection_accept() (e45adbd Mark Ellzey)
+ o pre_accept_cb argument changes. (c2fbb86 Mark Ellzey)
+ o Fixed test.c for pre_accept changes. (671a911 Mark Ellzey)
+ o testing client ssl socket error log for debugging. (265437b Mark Ellzey)
+ o Remove some extra logging. (dd45fb8 Mark Ellzey)
+ o SSL client error handling debugging. (5c26eaf Mark Ellzey)
+ o err (8f5013e Mark Ellzey)
+ o removed some dbg msgs (84bec53 Mark Ellzey)
+ o adding error to connection on eventcb (0c9690c Mark Ellzey)
+ o Remove debug abort. (ca8089f Mark Ellzey)
+ o Remove debug msg. (9a41148 Mark Ellzey)
+ o Prepping release v0.4.8 (c140e2f Mark Ellzey)
+
+v0.4.6
+ o Fix to be able to set a verification "mode" to the SSL_CTX_set_verify() function without having to set a custom (*verify_callback). (f3c3f37 Oscar Koeroo)
+ o Allow SSL_CTX_set_timeout value to be passed in via config. (4f775bd Stephen Cox)
+ o Fixed issue with _evhtp_request_parser_path with no matched callbacks where the end offset was never being set. (Reported by snnn119@gmail.com) (0d20de9 Mark Ellzey)
+ o evhtp_parse_query() is no longer limited to 1024 byte key/val (a8179a2 Mark Ellzey)
+ o set request status to PAUSE if evhtp_request_pause() is called manually. (4d64111 Mark Ellzey)
+ o Prepping release v0.4.7 (12d7cc4 Mark Ellzey)
+
+v0.4.5
+ o Don't treat EOF eventcb flags for ssl enabled connections as errors. (49c98b1 Mark Ellzey)
+ o Add HTTP/1.1 chunked encoding interface. (69a29d3 Andy Hochhaus)
+ o Added test-case for chunking API usage. (939517a Mark Ellzey)
+ o Chunk API modifications, formatting cleanup. (b805dbd Mark Ellzey)
+ o Added SSL_CTX_set_timeout() for openssl >= 1.0 (e6fa029 Mark Ellzey)
+ o Prepping release 0.4.6 (81c493d Mark Ellzey)
+
+v0.4.3
+ o Added api docs (57370c1 Mark Ellzey)
+ o Added various accessor functions, see full commitlog (16d3fdc Mark Ellzey)
+ o Added evhtp_request_get_connection() (db1f023 Mark Ellzey)
+ o Moved callback locking as optional via evhtp_use_callback_locks() (7a028eb Mark Ellzey)
+ o Removing API docs. Generate yourself! (5bc036d Mark Ellzey)
+ o added local PF_UNIX socket listen support (f6ef167 Mark Ellzey)
+ o Adding sys/un.h checks. (6ec70e5 Mark Ellzey)
+ o Added evhtp_bind_sockaddr() (8f38b01 Mark Ellzey)
+ o Add a .gitignore file (09ac468 Nick Mathewson)
+ o Stop using the deprecated event.h; use event2/event.h instead (c60715d Nick Mathewson)
+ o Set -fno-strict-aliasing using gcc (4a43c0b Mark Ellzey)
+ o Picked DISABLE_SSL fixes from nmathewson into develop (b2bfb2f Mark Ellzey)
+ o Detect non-ascii hosts and refuse to build on them (b0c2267 Nick Mathewson)
+ o Eliminate use of ctype.h (7d0084e Nick Mathewson)
+ o Add checks for sys/queue.h and use compat when missing (f05b54a Mark Ellzey)
+ o compat queue.h BSD-only move. (2b49db6 Mark Ellzey)
+ o Removed README and added changelog generator. (219f2eb Mark Ellzey)
+ o Prepping release v0.4.4 (d335798 Mark Ellzey)
+ o ChangeLog for v0.4.4 (c5c6d19 Mark Ellzey)
+ o Fixing size_t printf format issues. (c75bc5b Mark Ellzey)
+ o Added support for the -C option in the test.c The internals were there, it just covers the getops. (e3636d5 Oscar Koeroo)
+ o The struct evhtp_connection_s has a member ssl_ctx of type evhtp_ssl_t (a typedef of an SSL*) which by name is confusing with respect to the evhtp_ssl_ctx_t (a typedef of an SSL_CTX*). The member of struct evhtp_connection_s is now rename from ssl_ctx to ssl. (ca42b4d Oscar Koeroo)
+ o Initial markdown-based API documentation. (c16b551 Mark Ellzey)
+ o Documentation updates. (f097558 Mark Ellzey)
+ o Documentation updates (98c8ff0 Mark Ellzey)
+ o Added evhtp_unescape_string() to unescape query type strings. (d75904f Mark Ellzey)
+ o added on_headers_start hook (before header parsing, post requestline parsing). (7076b8e Mark Ellzey)
+ o Added htparser_set_(major|minor). fixed edgecase where major/minor is not yet set. (137aa19 Mark Ellzey)
+ o Fix C++/clang++ build. (af2a0dd Andy Hochhaus)
+ o Added #ifndef _GNU_SOURCE before setting it again. (f8a2308 Mark Ellzey)
+ o Changes to DISABLE to EVHTP_DISABLE, also fixed enum hook missing from last merge. (0ab23de Mark Ellzey)
+ o inline enum's should not be static. (5efd199 Mark Ellzey)
+ o Set libevent as a required dependency (d08f4fd Mark Ellzey)
+ o Prepping release v0.4.5 (a3731d7 Mark Ellzey)
+
+v0.4.2
+ o Moving libhtparse to just htparse (bf2e43a Mark Ellzey)
+ o Thread-safe add/remove callback additions. (d916366 Mark Ellzey)
+ o strn* compat functions set to static (cab9503 Mark Ellzey)
+ o Fixed issue with OPTIONS requests. (a3487fd Mark Ellzey)
+ o arg parsing fixes (8627d0d Mark Ellzey)
+ o Added a basic example (c06ef72 Mark Ellzey)
+ o Added IPv6 listener support. (c1482a2 Mark Ellzey)
+ o Prepping release v0.4.3 (952baa9 Mark Ellzey)
+
 v0.4.1
-
-- Various CMAKE fixes
-- Added BSD Lic.
-- Added status code to string matching. This fixes the status string "DERP" issue.
-- The default callback (if not set by user) now properly returns a 404
-- Connection structure now contains the saddr.
-- parse_query bugfixes
-- Removed deprecated test2.c
-
-- Added timeout function evhtp_set_timeouts
-    * This allows the user to set timeouts on both recv and send.
-
-- SSL Fixes / Additions:
-        * Initialize with RAND_poll()
-        * Disable SSL Compression
-        * Added RELEASE_BUFFERS option if openssl version >= 1.0
-
-- evhtp_bind_socket() now has a fourth argument for setting the backlog
-
-- htparser fixes:
-    * Integer overflow fix for str_to_uint64
-    * Response parsing fixes
+ o Removing tabs from ChangeLog (3f6f220 Mark Ellzey)
+ o Add checks for sys/tree.h and compat when missing (40c87e5 Jason L. Shiffer)
+ o Fix strdup build warnings/errors on OSX (84e17c1 Jason L. Shiffer)
+ o SSL Threading changes (2631e7f Mark Ellzey)
+ o Increasing the parser stack size. (b0df5a8 Mark Ellzey)
+ o Added chunk hooking stuff. (2bcba66 Mark Ellzey)
+ o jfdsla (1fa36b9 Mark Ellzey)
+ o x509 updates (089bd8a Mark Ellzey)
+ o Revert "x509 updates" (2cc9195 Mark Ellzey)
+ o Add checks for sys/tree.h and compat when missing (8fa7e11 Jason L. Shiffer)
+ o Fix strdup build warnings/errors on OSX (95cbcf3 Jason L. Shiffer)
+ o Reworked SSL Thread initialization (38aee17 Mark Ellzey)
+ o Increased default stack limit in htparse (48f338a Mark Ellzey)
+ o chunk hooks, proper status code strings. (dbca386 Mark Ellzey)
+ o Moved ./libhtparse to ./htparse (44c77d3 Mark Ellzey)
+ o Prepping release v0.4.2 (815b023 Mark Ellzey)
 
 v0.4.0
-- API fully documented via Doxygen
-
-- Major re-factoring:
-    * evhtp_request_t, evhtp_connection_t evhtp_t are now exposed to the user
-
-    * htparse_hooks are no longer tied to a evhtp_t, but are private
-        globals (shouldn't ever be changed).
-
-    * bufferevent operations now share a single set of callbacks with an
-        evhtp_connection_t argument. This keeps things consistent.
-
-    * evhtp_connection_readcb reads and parses requests
-        evhtp_connection_writecb determines if a response is completed
-        and whether it should keep the connection alive or close it.
-
-    * requests and connections can be paused and resumed.
-        if you pause a request, all further request parsing is stopped so
-        that no further hooks are called until evhtp_request_resume() is
-        called.
-
-    * Callback definitions are now abstracted into a parent evhtp_callback_t
-        structure containing the type, hooks which can be added to a callback
-
-    *   The callback-hooks act just like the old per-connection hooks.
-        Callback searches have been cleaned up to facilitate both connection
-        based hooks and request based.
-
-        * Callback searches have now been broken up into 3 different functions
-            _evhtp_callback_find,
-            _evhtp_callback_regex_find,
-            _evhtp_callback_hash_find
-
-            * _evhtp_callback_find is a wrapper around the other functions,
-            * _evhtp_callback_regex_find will now set a start and end matched
-            * offset (so that a user can see exactly where the regex matched)
-
-    * Better API for defining a RFC compliant URI
-        * evhtp_uri_t structure is a wrapper around an entire URI
-            * evhtp_request_authority_t
-                Container where username/password/hostname/port information
-                is stored if in the request.
-
-            * evhtp_request_path_t
-                    Container where various path information from the URI is
-                    stored
-
-                * "full" = the full path including file, query args, and fragments
-                * "path" = just the parsed path (doesn't include file / qargs / fragments)
-                * "file" = the file found "/path/<file.ext>", file.txt being the file
-                * matched_soff = the offset where matched path was found
-                * matched_eoff = the offset where matched path was ended
-                * fragment = a string containing fragment data in URI "...#stuff"
-                * evhtp_request_query_t A key/val queue of parsed URI query arguments
-                * htp_scheme - If a scheme was present, this is the enum value of the scheme
-
-    * Added evhtp_request_parse_query which will take the query portion of the
-      request URI and does a no-copy parse into an evhtp_request_query_t structure
-      (?h=b;c=d&b=4 would become a list of key-values stored in the query_t struct)
-
-    * Added evhtp_set_pre_accept_cb which calls user-defined function prior to
-      accepting a connection.
-
-    * Added evhtp_set_post_accept_cb which calls user-defined function after
-      accepting a connection.
-
-    * Added evhtp_kv_t structures which are generic key/value queues
-    * Added evhtp_kv_new()
-    * Added evhtp_kvs_new()
-    * Added evhtp_kv_free()
-    * Added evhtp_kvs_free()
-    * Added evhtp_kvs_for_each() - an iterator for kvs
-    * Added evhtp_kv_find() - returns the value (if found) for a key.
-    * Added evhtp_header_new()
-    * Added evhtp_headers_add_header()
-    * Added evhtp_header_key_add()
-
-    * evhtp_hook_type enum's have been been changed to not be in all CAPS:
-        * evhtp_hook_on_header  = type for a hook after one header is parsed
-        * evhtp_hook_on_headers = type for a hook after all headers are parsed
-        * evhtp_hook_on_path    = type for a hook after path is parsed
-        * evhtp_hook_on_read    = type for a hook when body data is read
-        * evhtp_hook_on_fini    = type for a hook just prior to being free()'d
-        * evhtp_hook_on_error   = type for a hook when a fatal error occurs
-
-    * Currently ssl bufferevents will not cleanly shutdown a SSL connection
-      once bufferevent_free() is called, only SSL_free is done. Since the
-      shutdown process is never taken the session is marked as "bad" and will
-      remove that session for the cache and other various things that can
-      break performance.
-
-    * In order to fix this, before bufferevent_free() is called, I do a non-blocking
-      SSL_shutdown on the sessions SSL ctx. Since I use a set of flags which
-      essentially mark the session as clean, but ignores the full handshake; this
-      breaks TLS RFC. Not the best thing, but it works until a set of features I
-      added to libevent are put into the main base.
-
-    * Added a query_raw string which is the unparsed URI query arguments.
-
-    * SSL session callbacks setting is only done if there are user-defined ones
-      available.
-
-    * libhtparse fixes when dealing with requests with schema data.
-
-- Fixed conditional bug for chunked responses
-    * _evhtp_create_reply() was adding a Content-Length 0 header even if
-        the response is chunked (this breaks RFC).
-
-- Added evhtp_kv_rm_and_free which takes an evhtp_kvs_t and evhtp_kv_t set
-  remove the kv_t from kvs_t and free the kv_t structure.
-
-- Added evhtp_kvs_find_kv which acts like kv_find but instead returns an 
-    evhtp_kv_t structure.
-
-- Added an on_chunk_complete hook in htparse which is called
-    when a single chunk has been fully parsed.
-
-- Added an on_chunks_complete hook in htparse which is called
-    after all chunks in a request have been parsed.
-
-- Added thread initialization functionality in evthr
-
-- Added streaming reply functionality
-    * evhtp_send_reply_start() - creates the initial reply and sends
-    * evhtp_send_reply_body()  - sends a chunk of data to the client
-    * evhtp_send_reply_end()   - informs evhtp that the user is done streaming data and figures out whether to keep the connection alive or not.
-
-- Added htparser_get_status to libhtparse
-- Added HTTP response parsing in libevhtparsec
-- OSX Compatability fixes
-- Added evhtp_ssl_use_threads() to make openssl threadsafe 
-
-- ssl cfg now has 4 modes of defining how SSL session caching works
-    * evhtp_ssl_scache_type_disabled - disable cache entirely
-    * evhtp_ssl_scache_type_internal - use OpenSSL's build-in cache
-    * evhtp_ssl_scache_type_user     - use user-defined caching callbacks
-    * evhtp_ssl_scache_type_builtin  - use libevhtp's built-in cache (currently doesn't do anything)
-
-- Updated test.c to use the refactored API correctly
-- Added x509_verify_cb, max_verify_depth, verify_peer and store_flags option (via Oscar Koeroo <okoeroo@gmail.com>)
-- Added HTTP return code 418 (via Oscar Koeroo <okoeroo@gmail.com>)
-- Added dummy callbacks and values to the test.c program. (via Oscar Koeroo <okoeroo@gmail.com>)
-- Added CA Path option for ssl_cfg. (via Oscar Koeroo <okoeroo@gmail.com>)
-- Fixed issue with htparser_should_keepalive() returning wrong values.
-
+ o Deal with 100 return status with responses correctly (bb86d09 Mark Ellzey)
+ o more 100 fixes (3ef168a Mark Ellzey)
+ o hert pup (a637672 Mark Ellzey)
+ o updates (83abb12 Mark Ellzey)
+ o Adding struct sockaddr to connection_t (45c30c7 Mark Ellzey)
+ o Swapping around SSL init globals (3327f44 Mark Ellzey)
+ o Adding -lpthread for thread enabled configuration (80fff45 Mark Ellzey)
+ o Added include_dir for libevent pathing (4c6dbc2 Mark Ellzey)
+ o turn off compression by default (6244108 Mark Ellzey)
+ o Cleanup (275329a Mark Ellzey)
+ o static again (8796e10 Mark Ellzey)
+ o testing timeouts (ac70f3c Mark Ellzey)
+ o fix (1aa2d79 Mark Ellzey)
+ o more timeout tests (7f29ff6 Mark Ellzey)
+ o SSL 1.x optimizations / timeouts (b693c7f Mark Ellzey)
+ o Adding LICENSE (c1ba152 Mark Ellzey)
+ o blerp (1623480 Mark Ellzey)
+ o hrm (964aab3 Mark Ellzey)
+ o added backlog arg to evhtp_bind_socket() (584e73e Mark Ellzey)
+ o Adding backlog to bufferevent (c740b0c Mark Ellzey)
+ o blerp (7c8fe61 Mark Ellzey)
+ o htparser fix (c76e3ea Mark Ellzey)
+ o Re-added user-set timeouts (ec246ff Mark Ellzey)
+ o Changing static len checks with sizeof() (7c3a79f Mark Ellzey)
+ o Fixed over/underflow condition in str_to_uint64 (c72deee Mark Ellzey)
+ o Fixed issue with state transition into read_body (0fc1897 Mark Ellzey)
+ o added static rt (1910c19 Mark Ellzey)
+ o Fixed incorrect integer conversion which misses zero edge case. (c562ede Mark Ellzey)
+ o Added correct status code string definitions. (a5bc03d Mark Ellzey)
+ o Include RT and DL if avail when linking test. SSL needs them. (29e35fb Mark Ellzey)
+ o default cb now returns 404 (fd4e3cb Mark Ellzey)
+ o Prepping release v0.4.1 (246a5da Mark Ellzey)
 
 v0.3.7
- - Due to various problems http-parser (ry/http-parser) I have written my own
-   parser (derived and ispired from various nginx functions) (./libhtparse).
+ o linking ChangeLog to README (4da3a26 Mark Ellzey)
+ o updated htparse (1706b82 Mark Ellzey)
+ o removing cruft (ac3b4f4 Mark Ellzey)
+ o killkillkill (45d0dfa Mark Ellzey)
+ o More logical structure (3ee2531 Mark Ellzey)
+ o cleanup (f7e3af2 Mark Ellzey)
+ o blerp (2833315 Mark Ellzey)
+ o getting better (6daf3ca Mark Ellzey)
+ o Request pipeline now functional. (99554e3 Mark Ellzey)
+ o derpityderp (1bd1b4e Mark Ellzey)
+ o cruft (45e5a33 Mark Ellzey)
+ o Fixed an issue with the body parser callback (f130965 Mark Ellzey)
+ o Major cleanup / re-factor (0752eef Mark Ellzey)
+ o fixups (0cc0980 Mark Ellzey)
+ o Added some more documentation (56c08d6 Mark Ellzey)
+ o documentation updates (3715c81 Mark Ellzey)
+ o Added better functionality, more docs - see full commit log (8a8e555 Mark Ellzey)
+ o Added Basic reply functions (b5434de Mark Ellzey)
+ o More updates - perf updates - bug fixes (0b050cc Mark Ellzey)
+ o updating ssl and test.c (37191f9 Mark Ellzey)
+ o bugfix in kv_add (3a18380 Mark Ellzey)
+ o pausing / fixes / request and connection fini hooks (3e98351 Mark Ellzey)
+ o fixed all the pause issues.. (658650e Mark Ellzey)
+ o threading fixes (97f18c5 Mark Ellzey)
+ o some optimizations (6a747c6 Mark Ellzey)
+ o blerp (f04c39a Mark Ellzey)
+ o Added CA Path option for ssl_cfg. (Thanks Oscar Koeroo) (8ace875 Mark Ellzey)
+ o Added x509_verify_cb, max_verify_depth, verify_peer and store_flags option to the struct evhtp_ssl_cfg_s. And also added HTTP return code 418 (e92e882 Oscar Koeroo)
+ o Adding dummy callbacks and values to the test.c program. (e703100 Oscar Koeroo)
+ o max_verify_depth -> verify_depth (556d722 Mark Ellzey)
+ o OSX Compat / fixes (e844f9a Mark Ellzey)
+ o cleanup (f7f25ef Mark Ellzey)
+ o docs, cleanup (022d424 Mark Ellzey)
+ o created verify and verify depth callbacks types (instead of using void *) (8a2f6d8 Mark Ellzey)
+ o cleanup (aee4707 Mark Ellzey)
+ o HTTP response parsing in libhtparser (6855a08 Mark Ellzey)
+ o fix with evthr (d4a63d8 Mark Ellzey)
+ o Added htparser_get_status (dae487a Mark Ellzey)
+ o fixes (7c6f5ab Mark Ellzey)
+ o send_reply start/body/end (33bfade Mark Ellzey)
+ o thread initialization functionality (362f902 Mark Ellzey)
+ o Content-Length duplicate header fix (8f74408 Mark Ellzey)
+ o Added chunk_complete and chunks_complete callback hooks (f391855 Mark Ellzey)
+ o Added some documentation (7853017 Mark Ellzey)
+ o fixed issue with bufferevent SSL events (a34b413 Mark Ellzey)
+ o on_new_chunk bugfix (de39114 Mark Ellzey)
+ o Additions for HTTP/1.1 / other additions / fixes (f865ff4 Mark Ellzey)
+ o Fixed conditional bug (c5c4aa4 Mark Ellzey)
+ o fixed some bugs dealing with parsing and schemes (258cbec Mark Ellzey)
+ o SSL shutdown / bugfixes / see commit log (c850692 Mark Ellzey)
+ o Making static (add8058 Mark Ellzey)
+ o linking ChangeLog to README (61866b8 Mark Ellzey)
+ o fixes, docs, features: (see full commit log) (01e61e2 Mark Ellzey)
+ o SSL updates (see full commit log) (b3cfb24 Mark Ellzey)
+ o bugfix in kv_add (ed5699e Mark Ellzey)
+ o Hook macros, fixes, additions (see full commit log) (ef3fee3 Mark Ellzey)
+ o Added CA Path option for ssl_cfg. (Thanks Oscar Koeroo) (7b79640 Mark Ellzey)
+ o SSL verification configuration options (62c07ff Oscar Koeroo)
+ o OSX Compatability fixes (955133d Mark Ellzey)
+ o Created verify and verify depth callbacks types (instead of using void *) (a2a0f09 Mark Ellzey)
+ o HTTP response parsing in libhtparser (29ac2e7 Mark Ellzey)
+ o evthr bugfix in evthr_new() args (17aede7 Mark Ellzey)
+ o Added htparser_get_status to libhtparse (7b16bd1 Mark Ellzey)
+ o Added streaming reply functionality (f0a8ed3 Mark Ellzey)
+ o thread initialization functionality (78a6863 Mark Ellzey)
+ o Content-Length duplicate header fix (b7d283f Mark Ellzey)
+ o Additional libevhtparse chunk-specific hooks and documentation. (c0c6e59 Mark Ellzey)
+ o fixed issue with bufferevent SSL events (fbe3c8b Mark Ellzey)
+ o libhtparse on_new_chunk bugfix (d352dd1 Mark Ellzey)
+ o Additions for HTTP/1.1 / other additions / fixes (c2883eb Mark Ellzey)
+ o Fixed conditional bug for chunked responses (b159c32 Mark Ellzey)
+ o libhtparse fixes when dealing with requests with schema data. (efdc171 Mark Ellzey)
+ o SSL shutdown / bugfixes / see commit log (482d0bd Mark Ellzey)
+ o Modified so that libevhtp creates a static library instead of shared. (ba170f1 Mark Ellzey)
+ o Rebase fix for htparser_init() (ce446b0 Mark Ellzey)
+ o Updating for release 0.4.0 (872c243 Mark Ellzey)
 
- - Re-introduced the pre_accept_cb and post_accept_cb which deprecates the 
-      evhtp_set_connection_hooks (which would call a defined function immediately
-      after a connection was accepted, so it was confusing I think).
-
-      The new functions to set the pre/post accepts are:
-       * evhtp_set_pre_accept_cb(evhtp_t *, evhtp_pre_accept cb, void * arg);
-       * evhtp_set_post_accept_cb(evhtp_t *, evhtp_post_accept cb, void * arg);
-         - evhtp_pre_accept functions have the following attributes:
-           * int fd            : (the allocated file descriptor)
-           * struct sockaddr * : self-explanitory
-           * int slen          : size of sockaddr
-           * void * arg        : argument passed to evhtp_set_pre_accept_cb
-         - evhtp_post_accept functions have the following attributes:
-           * evhtp_conn_t *    : self explanitory
-           * void * arg        : argument passed to evhtp_set_post_accept_cb
-
-
- - libevhtp now properly honors all return evhtp_res's from defined request hooks.
-   Meaning if you return something other than EVHTP_RES_OK, the proper error
-   handling is done with the exception of EVHTP_RES_PAUSE (see notes on pausing)
-
- - Added [currently only half-working] methods to allow for suspending and
-   resuming parser execution and connection handling.
-
-   A hook which returns an evhtp_res value can now return "EVHTP_RES_PAUSE" which
-   informs libevhtp to stop all request processing on a connection. Alternatively
-   you can use the functions evhtp_request_pause(evhtp_request_t *);
-
-   You may also get a copy of the suspend/resume event timer directly via the
-   function evhtp_request_get_resume_ev()
-
-   To resume execution/processing one must call the function
-   evhtp_request_resume(evhtp_request_t *);
-
-    To completely disable this functionality you may call the function
-    evhtp_disable_pausing(evhtp_t *) before dropping into your event loop
-
- - Removed unnecessary bufferevent_[enable|disable] calls, it was too tedious
-   to work with as it could cause shitty race-like conditions if the client
-   bufferevent was needed outside of the library.
-
- - EVHTP_CLOSE_* flags have been renamed to EVHTP_FLAG_CLOSE_* and length
-   extended to 16 bits.
-
- - added functionality to both set and get user-set htp_request args:
-   evhtp_request_set_cbargs()
-   evhtp_request_get_cbargs()
-
- - added a hook which is called just prior to a evhtp_request_t being free()'d
-
- - Added the ability to define per-callback hooks. Much like per-connection hooks, 
-   you can set various hooks which are called when a uri|regex (defined by the 
-   set_cb functions) was matched.
-
-   In order to do this properly, set_cb functions now return a evhtp_callback_t which
-   can be passed to the evhtp_set_callback_hook() functions.
-
-   For example:
-   evhtp_callback_t * cb = evhtp_set_cb(htp, "/derp", derp_cb, NULL);
-   evhtp_set_callback_hook(cb, EVHTP_HOOK_HDRS_READ, derp_hdrs_cb, NULL); 
-
-   In the case above once evhtp has found that the incoming request is destined
-   for the "/derp" specific callback, it will call "derp_hdrs_cb" after all
-   headers have been read.
-
-   These act just like normal per-connection hooks, but it should be noted that
-   if a per-callback hook has been enabled, the per-connection hook will be ignored
-   for that hook.
-
- 
 v0.3.6
- - Removed submodule dependencies 
- - Added various evhtp_hdr functions
-    * evhtp_hdrs_new(): creates a new evhtp_hdrs_t struct
-    * evhtp_hdr_copy(): creates a copy of a evhtp_hdr_t struct
-    * evhtp_hdrs_copy(): creates a copy of a evhtp_hdrs_t struct
- - Added a default request callback if the user has not defined one.
- - Added some informational SSL accessor functions
-
+ o Matched callback hooking (5b385a6 Mark Ellzey)
+ o Drop connection with invalid requests. (e4cd611 Mark Ellzey)
+ o added some more requests accessors (d9cf7d5 Mark Ellzey)
+ o added a finished hook (c04e61b Mark Ellzey)
+ o added evhtp_request_set_cbargs() (28a22dd Mark Ellzey)
+ o Bunch of stuff - see full commit message. (ae49ecf Mark Ellzey)
+ o If compiling as debug, http-parser will be pre-processed then compiled. (easier to debug the shitty and unnecessary macro-based function prototypes). (c378db3 Mark Ellzey)
+ o Mods to pass -Wextra (2b44c46 Mark Ellzey)
+ o More -Wextra mods (f2d6c9e Mark Ellzey)
+ o a bit broken (17d1572 Mark Ellzey)
+ o adding gitignore (b8eba44 Mark Ellzey)
+ o Removing dep for http_parser over to my libhtparse codebase (11b484e Mark Ellzey)
+ o Adding libhtparse.... (dd61c20 Mark Ellzey)
+ o Prepping release v0.3.7 (64db298 Mark Ellzey)
 
 v0.3.5
- - Added evhtp_request_t accessors
-
-    evbuf_t          * evhtp_request_get_input(evhtp_request_t *);
-    evbuf_t          * evhtp_request_get_output(evhtp_request_t *);
-    evbase_t         * evhtp_request_get_evbase(evhtp_request_t *);
-    evserv_t         * evhtp_request_get_listener(evhtp_request_t *);
-    evhtp_method       evhtp_request_get_method(evhtp_request_t *);
-    evhtp_proto        evhtp_request_get_proto(evhtp_request_t *);
-    evhtp_conn_t     * evhtp_request_get_conn(evhtp_request_t *);
-    evhtp_hdrs_t     * evhtp_request_get_headers_in(evhtp_request_t *);
-    evhtp_hdrs_t     * evhtp_request_get_headers_out(evhtp_request_t *);
-    evhtp_callback_cb  evhtp_request_get_cb(evhtp_request_t *);
-    void             * evhtp_request_get_cbarg(evhtp_request_t *);
-    int                evhtp_request_get_sock(evhtp_request_t *);
-    const char       * evhtp_request_get_path(evhtp_request_t *);
-    const char       * evhtp_request_get_uri(evhtp_request_t *);
-    const char       * evhtp_request_method_str(evhtp_request_t *);
-    int                evhtp_request_get_matched_soff(evhtp_request_t *);
-    int                evhtp_request_get_matched_eoff(evhtp_request_t *);
-    int64_t            evhtp_request_get_content_length(evhtp_request_t *);
-
- - Better callback return error and response handling.
-        * Callbacks which return an evhtp_res code now must use
-      EVHTP_RES_*, where each EVHTP_RES_* definition is a HTTP
-      status code. For example "return EVHTP_RES_400;" will
-      send a 404 error to the client, along with terminating
-      the parser.
-
- - All static functions prefixed with _htp_* are now just static htp_
- - Various small bugfixes.
+ o Added various SSL information accessors (8db938e Mark Ellzey)
+ o evhtp_hdr functions / default 404 cb / fixes (37dbe4f Mark Ellzey)
+ o Prepping the removal of submodules (354e71d Mark Ellzey)
+ o No more submodules (1e0ec98 Mark Ellzey)
+ o updating release_prep (5a5e495 Mark Ellzey)
+ o Prepping release v0.3.6 (e582c7c Mark Ellzey)
+ o Updated ChangeLog (03a8536 Mark Ellzey)
 
 v0.3.4
- - Added optional OpenSSL support (with optional threading abstractions).
-   * In order to properly enable SSL for your server two things must happen:
-     evhtp_ssl_cfg structure must be filled with your settings:
+ o Added evhtp_set_regex_cb for matching URI with a regex. (99e8e64 Mark Ellzey)
+ o Adding oniguruma submodule (30adea5 Mark Ellzey)
+ o .. (2161264 Mark Ellzey)
+ o Switched over to oniguruma for regex (b80820b Mark Ellzey)
+ o updates (f2bb622 Mark Ellzey)
+ o httparser updates (1befd5c Mark Ellzey)
+ o make install rules, cleanup of dependencies (68cb269 Mark Ellzey)
+ o cmake onig test compile (75ede66 Mark Ellzey)
+ o Added find_callbacks_woffsets (0174055 Mark Ellzey)
+ o evhtp_request_t is now private. (c2cadcd Mark Ellzey)
+ o added various request accessors (6964387 Mark Ellzey)
+ o Even more evhtp_request_t accessors. (8c45457 Mark Ellzey)
+ o Better error / response handling. (6e869fc Mark Ellzey)
+ o Prepping release v0.3.5 (6a84efe Mark Ellzey)
 
-         evhtp_ssl_cfg scfg = {
-             .pemfile        = ssl_pem,
-             .privfile       = ssl_pem,
-             .cafile         = ssl_ca,
-             .ciphers        = "RC4+RSA:HIGH:+MEDIUM:+LOW",
-             .ssl_opts       = <SSL SPECIFIC FLAGS>,
-             .enable_scache  = 1,
-             .scache_timeout = 1024,
-             .scache_init    = evhtp_ssl_scache_builtin_init,
-             .scache_add     = evhtp_ssl_scache_builtin_add,
-             .scache_get     = evhtp_ssl_scache_builtin_get,
-             .scache_del     = NULL,
-         };
-   * please note that .scache_init, .scache_add, .scache_get, and .scace_del
-     are function points to allow for a user to define their own session cache
-     mechanism. Libevhtp has a few default built-in cache functions:
-      evhtp_ssl_scache_builtin_init,
-      evhtp_ssl_scache_builtin_add,
-      evhtp_ssl_scache_builtin_get,
-      evhtp_ssl_scache_builtin_del
+v0.3.3
+ o SSL and other various changes (see commit log) (76dc58d Mark Ellzey)
+ o Added ChangeLog (33bab50 Mark Ellzey)
+ o Updated version information. (df80701 Mark Ellzey)
+ o Added contrib section with misc patches. (0b2bb36 Mark Ellzey)
+ o And place it in the right directory :) (e337cb7 Mark Ellzey)
+ o Fixing up problems with the conflict resolution (6a606a4 Mark Ellzey)
 
-     Another side note here is that currently the builtin functions do not expire,
-     this will be fixed in the next beta-release.
+v0.3.2
+ o initial SSL support, junk is brizzoke (fbbc2fa Mark Ellzey)
+ o cleanup (57e309c Mark Ellzey)
+ o not working as intended, REBASE THIS JUNK (f645813 Mark Ellzey)
+ o SSL session caching. (590e226 Mark Ellzey)
+ o Adding a builtin cache (0e1d01e Mark Ellzey)
+ o Added SSL thread-safe functionality. (a9db78b Mark Ellzey)
+ o cleanup (6f71526 Mark Ellzey)
+ o Properly expire cache entries. (65f017b Mark Ellzey)
+ o Cleanup (edd1b44 Mark Ellzey)
+ o Prepping v0.3.3 (67307f1 Mark Ellzey)
 
-   * The second step is to enable the use of the SSL backend by calling
-     evhtp_use_ssl(evhtp_t *, evhtp_ssl_cfg *);
+v0.3.1
+ o Modifying to use bufferevents (0c4b22e Mark Ellzey)
+ o Converting back to bevents after perf issue solved (6771104 Mark Ellzey)
+ o Prepping release 0.3.2 (758bb16 Mark Ellzey)
 
- - Regular expression based path callback functions added:
-     evhtp_set_regex_cb(evhtp_t *, "^(/path_w_regex/).*", callback, args);
+v0.3.0
+ o Optional evthr support (5392bc9 Mark Ellzey)
+ o Prep v0.3.1 (8a6c836 Mark Ellzey)
+ o Prep release 0.3.1 (33f1a82 Mark Ellzey)
 
-     Using the case above, any path/uri in the request with /path_w_regex/*, the API
-     will execute your defined callback function. The output of which is the same as
-     any other defined callback.
-
- - Added _htp_callbacks_find_callback_woffsets(), which (if regex) will set 2 integer
-   variables in the evhtp_rquest_t structure defining the beginning and end of a matched
-   URI/path.
-
- - _htp_callback_new() has been modified to create regex based evhtp_callback_t's
-
- - Made the evhtp_request_t structure private, various get/set functions have been added
-   to deal with the internals.
-
- - Modified compile to support libonigurmura, a BSD licensed cross-platform regular expression
-   library. Currently this is only used to support posix regex functionality.

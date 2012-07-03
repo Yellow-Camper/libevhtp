@@ -1,0 +1,20 @@
+# cmake manages these; they shouldn't go in version control
+
+/CMakeCache.txt
+/CMakeFiles/**
+/Makefile
+/cmake_install.cmake
+
+# generated .h files
+
+/compat/sys/tree.h
+/oniguruma/config.h
+
+# compiled files
+
+/libevhtp.a
+/test
+/test_basic
+/test_vhost
+/test_client
+

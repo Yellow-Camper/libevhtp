@@ -189,3 +189,6 @@ target_link_libraries(test_basic libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
 add_executable(test_vhost test_vhost.c)
 target_link_libraries(test_vhost libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+add_executable(test_proxy test_proxy.c)
+target_link_libraries(test_proxy libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})

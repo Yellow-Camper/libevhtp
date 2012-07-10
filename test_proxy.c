@@ -8,10 +8,11 @@
 
 int
 make_request(evbase_t * evbase,
+             evthr_t * evthr,
              const char * const host,
              const short port,
              const char * const path,
-             const evhtp_headers_t * headers,
+             evhtp_headers_t * headers,
              evhtp_callback_cb cb,
              void * arg)
 {
@@ -19,6 +20,7 @@ make_request(evbase_t * evbase,
     evhtp_request_t    * request;
 
     conn    = evhtp_connection_new(evbase, host, port);
+    conn->thread = evthr;
     request = evhtp_request_new(cb, arg);
 
     evhtp_headers_add_header(request->headers_out,
@@ -28,7 +30,9 @@ make_request(evbase_t * evbase,
     evhtp_headers_add_header(request->headers_out,
                              evhtp_header_new("Connection", "close", 0, 0));
 
-    printf("Making backend request... ");
+    evhtp_headers_add_headers(request->headers_out, headers);
+
+    printf("Making backend request...\n");
     evhtp_make_request(conn, request, htp_method_GET, path);
     printf("Ok.\n");
 
@@ -39,19 +43,21 @@ static void
 backend_cb(evhtp_request_t * backend_req, void * arg) {
     evhtp_request_t * frontend_req = (evhtp_request_t *)arg;
     evbuffer_prepend_buffer(frontend_req->buffer_out, backend_req->buffer_in);
+    evhtp_headers_add_headers(frontend_req->headers_out, backend_req->headers_in);
 
     // char body[1024] = { '\0' };
     // ev_ssize_t len = evbuffer_copyout(frontend_req->buffer_out, body, sizeof(body));
     // printf("Backend %zu: %s\n", len, body);
 
     evhtp_send_reply(frontend_req, EVHTP_RES_OK);
+    evhtp_request_resume(frontend_req);
 }
 
 static void
 frontend_cb(evhtp_request_t * req, void * arg) {
-    printf("Received frontend request... ");
-
-    make_request(req->conn->evbase, "127.0.0.1", 8080, req->uri->path->full, NULL, backend_cb, req);
+    printf("  Received frontend request on thread %d... ", (int)evthr_get_aux(req->conn->thread));
+    evhtp_request_pause(req); // Pause the frontend request while we run the backend requests.
+    make_request(evthr_get_base(req->conn->thread), req->conn->thread, "127.0.0.1", 80, req->uri->path->full, req->headers_in, backend_cb, req);
     printf("Ok.\n");
 }
 
@@ -67,7 +73,9 @@ sigterm_cb(int fd, short event, void * arg)
 void
 init_thread_cb(evhtp_t * htp, evthr_t * thr, void * arg)
 {
-    printf("Spinning up a thread\n");
+    static int aux = 0;
+    printf("Spinning up a thread: %d\n", ++aux);
+    evthr_set_aux(thr, (void *)aux);
 }
 
 int

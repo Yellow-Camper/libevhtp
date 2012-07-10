@@ -740,6 +740,14 @@ evhtp_kv_t  * evhtp_kvs_find_kv(evhtp_kvs_t * kvs, const char * key);
  */
 void evhtp_kvs_add_kv(evhtp_kvs_t * kvs, evhtp_kv_t * kv);
 
+/**
+ * @brief appends all key/val structures from src tailq onto dst tailq
+ *
+ * @param dst an evhtp_kvs_t structure
+ * @param src an evhtp_kvs_t structure
+ */
+void evhtp_kvs_add_kvs(evhtp_kvs_t * dst, evhtp_kvs_t * src);
+
 int  evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, void * arg);
 
 /**
@@ -830,6 +838,7 @@ const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
 #define evhtp_headers_free        evhtp_kvs_free
 #define evhtp_header_rm_and_free  evhtp_kv_rm_and_free
 #define evhtp_headers_add_header  evhtp_kvs_add_kv
+#define evhtp_headers_add_headers evhtp_kvs_add_kvs
 #define evhtp_query_new           evhtp_kvs_new
 #define evhtp_query_free          evhtp_kvs_free
 

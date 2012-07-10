@@ -2132,6 +2132,19 @@ evhtp_kvs_add_kv(evhtp_kvs_t * kvs, evhtp_kv_t * kv) {
     TAILQ_INSERT_TAIL(kvs, kv, next);
 }
 
+void
+evhtp_kvs_add_kvs(evhtp_kvs_t * dst, evhtp_kvs_t * src) {
+    if (dst == NULL || src == NULL) {
+        return;
+    }
+
+    evhtp_kv_t * kv;
+
+    TAILQ_FOREACH(kv, src, next) {
+        evhtp_kvs_add_kv(dst, evhtp_kv_new(kv->key, kv->val, kv->k_heaped, kv->v_heaped));
+    }
+}
+
 typedef enum {
     s_query_start = 0,
     s_query_question_mark,

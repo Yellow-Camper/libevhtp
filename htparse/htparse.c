@@ -1442,6 +1442,13 @@ hdrline_start:
                 switch (ch) {
                     case CR:
                         p->state = s_hdrline_almost_done;
+                        res      = hook_on_hdrs_complete_run(p, hooks);
+
+                        if (res) {
+                            p->error = htparse_error_user;
+                            return i + 1;
+                        }
+
                         break;
                     case LF:
                         /* got LFLF? is this valid? */
@@ -1453,7 +1460,7 @@ hdrline_start:
 
                         p->state = s_hdrline_hdr_key;
                         break;
-                }
+                } /* switch */
                 break;
             case s_hdrline_almost_done:
                 htparse_log_debug("[%p] s_hdrline_almost_done", p);
@@ -1465,23 +1472,19 @@ hdrline_start:
                         p->buf_idx = 0;
                         htparse_log_debug("[%p] HERE", p);
 
-                        res        = hook_on_hdrs_complete_run(p, hooks);
-
-                        if (!res) {
-                            if (p->flags & parser_flag_trailing) {
-                                res      = hook_on_msg_complete_run(p, hooks);
-                                p->state = s_start;
-                            } else if (p->flags & parser_flag_chunked) {
-                                p->state = s_chunk_size_start;
-                            } else if (p->content_len > 0) {
-                                p->state = s_body_read;
-                            } else if (p->content_len == 0) {
-                                res      = hook_on_msg_complete_run(p, hooks);
-                                p->state = s_start;
-                            }
-                        } else {
-                            p->state = s_hdrline_done;
+                        if (p->flags & parser_flag_trailing) {
+                            res      = hook_on_msg_complete_run(p, hooks);
+                            p->state = s_start;
+                        } else if (p->flags & parser_flag_chunked) {
+                            p->state = s_chunk_size_start;
+                        } else if (p->content_len > 0) {
+                            p->state = s_body_read;
+                        } else if (p->content_len == 0) {
+                            res      = hook_on_msg_complete_run(p, hooks);
+                            p->state = s_start;
                         }
+
+                        p->state = s_hdrline_done;
 
                         if (res) {
                             p->error = htparse_error_user;

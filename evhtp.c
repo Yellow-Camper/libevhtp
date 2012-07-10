@@ -1154,6 +1154,19 @@ _evhtp_request_parser_hostname(htparser * p, const char * data, size_t len) {
     evhtp_t            * evhtp;
     evhtp_t            * evhtp_vhost;
 
+    if (c->vhost_via_sni == 1 && c->ssl != NULL) {
+        /* use the SNI set hostname instead of the header hostname */
+        const char * host;
+
+        host = SSL_get_servername(c->ssl, TLSEXT_NAMETYPE_host_name);
+
+        if ((c->request->status = _evhtp_hostname_hook(c->request, host)) != EVHTP_RES_OK) {
+            return -1;
+        }
+
+        return 0;
+    }
+
     evhtp = c->htp;
 
     /* since this is called after _evhtp_request_parser_path(), which already

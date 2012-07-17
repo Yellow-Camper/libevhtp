@@ -761,6 +761,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->port_offset       = &p->buf[p->buf_idx];
                         p->state = s_port;
                         break;
+                    case ' ':
+                        i--;
                     case '/':
                         p->path_offset       = &p->buf[p->buf_idx];
 
@@ -768,10 +770,6 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->buf[p->buf_idx]   = '\0';
 
                         p->state = s_after_slash_in_uri;
-                        break;
-                    case ' ':
-                        /* p->buf should contain the whole uri */
-                        p->state = s_http_09;
                         break;
                     default:
                         p->error = htparse_error_inval_schema;

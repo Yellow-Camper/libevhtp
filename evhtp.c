@@ -1461,7 +1461,7 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
     nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
 
     if (c->owner != 1) {
-	evbuffer_drain(bufferevent_get_input(bev), nred);
+	evbuffer_drain(bufferevent_get_input(bev), nread);
         return evhtp_connection_free(c);
     }
 

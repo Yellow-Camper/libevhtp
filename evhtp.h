@@ -494,6 +494,16 @@ struct evhtp_ssl_cfg_s {
  */
 evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
 
+
+/**
+ * @brief set a read/write timeout on all things evhtp_t. When the timeout
+ *        expires your error hook will be called with the libevent supplied event
+ *        flags.
+ *
+ * @param htp the base evhtp_t struct
+ * @param r read-timeout in timeval
+ * @param w write-timeout in timeval.
+ */
 void      evhtp_set_timeouts(evhtp_t * htp, struct timeval * r, struct timeval * w);
 void      evhtp_set_bev_flags(evhtp_t * htp, int flags);
 int       evhtp_ssl_use_threads(void);

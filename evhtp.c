@@ -1475,6 +1475,11 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
     nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
 
     if (c->owner != 1) {
+        /*
+         * someone has taken the ownership of this connection, we still need to
+         * drain the input buffer that had been read up to this point.
+         */
+        evbuffer_drain(bufferevent_get_input(bev), nread);
         return evhtp_connection_free(c);
     }
 

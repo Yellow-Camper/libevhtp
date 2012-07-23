@@ -1,3 +1,9 @@
+v0.4.16
+ o Use POSIX 200112 for *NIX based builds. (09dbb0f Mark Ellzey)
+ o Drain before letting ownership change. (cc50f84 Mark Ellzey)
+ o jfkdal (5817bd3 Mark Ellzey)
+ o Document evhtp_set_timeouts(). (acc3ed2 Mark Ellzey)
+
 v0.4.15
  o Override global timeouts on a per-connection basis. (156f5ef Mark Ellzey)
  o Use evhtp_connection_set_timeouts in accept. (8eb5aa9 Mark Ellzey)

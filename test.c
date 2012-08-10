@@ -341,12 +341,15 @@ test_fini(evhtp_request_t * r, void * arg) {
     return EVHTP_RES_OK;
 }
 
+#if 0
 static evhtp_res
 print_hostname(evhtp_request_t * r, const char * host, void * arg) {
     printf("%s\n", host);
 
     return EVHTP_RES_OK;
 }
+
+#endif
 
 static evhtp_res
 set_my_connection_handlers(evhtp_connection_t * conn, void * arg) {
@@ -360,7 +363,7 @@ set_my_connection_handlers(evhtp_connection_t * conn, void * arg) {
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_new_chunk, print_new_chunk_len, NULL);
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunk_complete, print_chunk_complete, NULL);
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunks_complete, print_chunks_complete, NULL);
-    //evhtp_set_hook(&conn->hooks, evhtp_hook_on_hostname, print_hostname, NULL);
+    /* evhtp_set_hook(&conn->hooks, evhtp_hook_on_hostname, print_hostname, NULL); */
 
     if (bw_limit > 0) {
         tick.tv_sec  = 0;

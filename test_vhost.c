@@ -17,8 +17,6 @@ main(int argc, char ** argv) {
     evhtp_t       * evhtp  = evhtp_new(evbase, NULL);
     evhtp_t       * v1     = evhtp_new(evbase, NULL);
     evhtp_t       * v2     = evhtp_new(evbase, NULL);
-    evhtp_ssl_cfg_t scfg1  = { 0 };
-    evhtp_ssl_cfg_t scfg2  = { 0 };
 
     evhtp_set_cb(v1, "/host1", NULL, "host1.com");
     evhtp_set_cb(v2, "/localhost", testcb, "localhost");

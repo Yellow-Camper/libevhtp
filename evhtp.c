@@ -223,7 +223,7 @@ static htparse_hooks request_psets = {
     .on_msg_complete    = _evhtp_request_parser_fini
 };
 
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
 static int             session_id_context    = 1;
 static int             ssl_num_locks;
 static evhtp_mutex_t * ssl_locks;
@@ -1154,6 +1154,7 @@ _evhtp_request_parser_hostname(htparser * p, const char * data, size_t len) {
     evhtp_t            * evhtp;
     evhtp_t            * evhtp_vhost;
 
+#ifndef EVHTP_DISABLE_SSL
     if (c->vhost_via_sni == 1 && c->ssl != NULL) {
         /* use the SNI set hostname instead of the header hostname */
         const char * host;
@@ -1166,6 +1167,7 @@ _evhtp_request_parser_hostname(htparser * p, const char * data, size_t len) {
 
         return 0;
     }
+#endif
 
     evhtp = c->htp;
 
@@ -1576,7 +1578,7 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
         return -1;
     }
 
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
     if (connection->htp->ssl_ctx != NULL) {
         connection->ssl = SSL_new(connection->htp->ssl_ctx);
         connection->bev = bufferevent_openssl_socket_new(evbase,
@@ -1592,7 +1594,7 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
     connection->bev = bufferevent_socket_new(evbase,
                                              connection->sock,
                                              connection->htp->bev_flags);
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
 end:
 #endif
 
@@ -1649,7 +1651,7 @@ _evhtp_connection_new(evhtp_t * htp, int sock) {
 }
 
 #ifdef LIBEVENT_HAS_SHUTDOWN
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
 static void
 _evhtp_shutdown_eventcb(evbev_t * bev, short events, void * arg) {
 }
@@ -1730,8 +1732,7 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
     }
 }
 
-#ifndef DISABLE_SSL
-
+#ifndef EVHTP_DISABLE_SSL
 #ifndef EVHTP_DISABLE_EVTHR
 static unsigned long
 _evhtp_ssl_get_thread_id(void) {
@@ -2970,7 +2971,7 @@ evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, voi
     htp->thread_init_cb    = init_cb;
     htp->thread_init_cbarg = arg;
 
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
     evhtp_ssl_use_threads();
 #endif
 
@@ -3077,7 +3078,7 @@ evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept_cb cb, void * arg) {
     htp->defaults.post_accept_cbarg = arg;
 }
 
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
 #ifndef EVHTP_DISABLE_EVTHR
 int
 evhtp_ssl_use_threads(void) {
@@ -3319,7 +3320,7 @@ evhtp_connection_free(evhtp_connection_t * connection) {
 #ifdef LIBEVENT_HAS_SHUTDOWN
         bufferevent_shutdown(connection->bev, _evhtp_shutdown_eventcb);
 #else
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
         if (connection->ssl != NULL) {
             SSL_set_shutdown(connection->ssl, SSL_RECEIVED_SHUTDOWN);
             SSL_shutdown(connection->ssl);

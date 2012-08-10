@@ -1,3 +1,8 @@
+v0.4.17
+ o Added cmake option for disabling regex. (5ab2e4b Mark Ellzey)
+ o Cleanup compiler warnings. (770a344 Mark Ellzey)
+ o Fixed EVHTP_DISABLE_SSL compile. (e088f2b Mark Ellzey)
+
 v0.4.16
  o Use POSIX 200112 for *NIX based builds. (09dbb0f Mark Ellzey)
  o Drain before letting ownership change. (cc50f84 Mark Ellzey)

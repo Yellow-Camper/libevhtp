@@ -341,12 +341,15 @@ test_fini(evhtp_request_t * r, void * arg) {
     return EVHTP_RES_OK;
 }
 
+#if 0
 static evhtp_res
 print_hostname(evhtp_request_t * r, const char * host, void * arg) {
     printf("%s\n", host);
 
     return EVHTP_RES_OK;
 }
+
+#endif
 
 static evhtp_res
 set_my_connection_handlers(evhtp_connection_t * conn, void * arg) {
@@ -360,7 +363,7 @@ set_my_connection_handlers(evhtp_connection_t * conn, void * arg) {
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_new_chunk, print_new_chunk_len, NULL);
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunk_complete, print_chunk_complete, NULL);
     evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunks_complete, print_chunks_complete, NULL);
-    //evhtp_set_hook(&conn->hooks, evhtp_hook_on_hostname, print_hostname, NULL);
+    /* evhtp_set_hook(&conn->hooks, evhtp_hook_on_hostname, print_hostname, NULL); */
 
     if (bw_limit > 0) {
         tick.tv_sec  = 0;
@@ -376,7 +379,7 @@ set_my_connection_handlers(evhtp_connection_t * conn, void * arg) {
     return EVHTP_RES_OK;
 }
 
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
 static int
 dummy_ssl_verify_callback(int ok, X509_STORE_CTX * x509_store) {
     return 1;
@@ -398,7 +401,7 @@ const char * help   =
     "  -t       : Run requests in a thread (default: off)\n"
     "  -n <int> : Number of threads        (default: 0 if -t is off, 4 if -t is on)\n"
 #endif
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
     "  -s <pem> : Enable SSL and PEM       (default: NULL)\n"
     "  -c <ca>  : CA cert file             (default: NULL)\n"
     "  -C <path>: CA Path                  (default: NULL)\n"
@@ -440,7 +443,7 @@ parse_args(int argc, char ** argv) {
                 num_threads = atoi(optarg);
                 break;
 #endif
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
             case 's':
                 ssl_pem     = strdup(optarg);
                 break;
@@ -536,7 +539,7 @@ main(int argc, char ** argv) {
     /* set a callback to set per-connection hooks (via a post_accept cb) */
     evhtp_set_post_accept_cb(htp, set_my_connection_handlers, NULL);
 
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
     if (ssl_pem != NULL) {
         evhtp_ssl_cfg_t scfg = {
             .pemfile            = ssl_pem,

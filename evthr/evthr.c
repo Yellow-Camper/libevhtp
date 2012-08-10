@@ -85,7 +85,6 @@ static void
 _evthr_read_cmd(int sock, short __unused__ which, void * args) {
     evthr_t   * thread;
     evthr_cmd_t cmd;
-    int         avail = 0;
     ssize_t     recvd;
 
     if (!(thread = (evthr_t *)args)) {

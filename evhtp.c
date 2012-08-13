@@ -1330,7 +1330,13 @@ _evhtp_request_parser_fini(htparser * p) {
 
     /* c->request->finished = 1; */
 
-    if (c->request->cb) {
+    /*
+     * XXX c->request should never be NULL, but we have found some path of
+     * execution where this actually happens. We will check for now, but the bug
+     * path needs to be tracked down.
+     *
+     */
+    if (c->request && c->request->cb) {
         (c->request->cb)(c->request, c->request->cbarg);
     }
 

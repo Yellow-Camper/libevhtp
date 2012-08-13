@@ -1482,9 +1482,9 @@ hdrline_start:
                         } else if (p->content_len == 0) {
                             res      = hook_on_msg_complete_run(p, hooks);
                             p->state = s_start;
+                        } else {
+                            p->state = s_hdrline_done;
                         }
-
-                        p->state = s_hdrline_done;
 
                         if (res) {
                             p->error = htparse_error_user;

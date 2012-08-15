@@ -766,9 +766,6 @@ _evhtp_request_free(evhtp_request_t * request) {
     evhtp_headers_free(request->headers_in);
     evhtp_headers_free(request->headers_out);
 
-    if (request->hooks) {
-        free(request->hooks);
-    }
 
     if (request->buffer_in) {
         evbuffer_free(request->buffer_in);
@@ -778,7 +775,7 @@ _evhtp_request_free(evhtp_request_t * request) {
         evbuffer_free(request->buffer_out);
     }
 
-
+    free(request->hooks);
     free(request);
 }
 
@@ -812,14 +809,8 @@ _evhtp_uri_free(evhtp_uri_t * uri) {
     evhtp_query_free(uri->query);
     _evhtp_path_free(uri->path);
 
-    if (uri->fragment) {
-        free(uri->fragment);
-    }
-
-    if (uri->query_raw) {
-        free(uri->query_raw);
-    }
-
+    free(uri->fragment);
+    free(uri->query_raw);
     free(uri);
 }
 
@@ -931,25 +922,12 @@ _evhtp_path_free(evhtp_path_t * path) {
         return;
     }
 
-    if (path->full) {
-        free(path->full);
-    }
+    free(path->full);
 
-    if (path->path) {
-        free(path->path);
-    }
-
-    if (path->file) {
-        free(path->file);
-    }
-
-    if (path->match_start) {
-        free(path->match_start);
-    }
-
-    if (path->match_end) {
-        free(path->match_end);
-    }
+    free(path->path);
+    free(path->file);
+    free(path->match_start);
+    free(path->match_end);
 
     free(path);
 }
@@ -1344,7 +1322,13 @@ _evhtp_request_parser_fini(htparser * p) {
 
     /* c->request->finished = 1; */
 
-    if (c->request->cb) {
+    /*
+     * XXX c->request should never be NULL, but we have found some path of
+     * execution where this actually happens. We will check for now, but the bug
+     * path needs to be tracked down.
+     *
+     */
+    if (c->request && c->request->cb) {
         (c->request->cb)(c->request, c->request->cbarg);
     }
 
@@ -2010,11 +1994,11 @@ evhtp_kv_free(evhtp_kv_t * kv) {
         return;
     }
 
-    if (kv->k_heaped && kv->key) {
+    if (kv->k_heaped) {
         free(kv->key);
     }
 
-    if (kv->v_heaped && kv->val) {
+    if (kv->v_heaped) {
         free(kv->val);
     }
 
@@ -2398,23 +2382,13 @@ query_key:
         evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1));
     }
 
-    if (key_buf) {
-        free(key_buf);
-    }
-
-    if (val_buf) {
-        free(val_buf);
-    }
+    free(key_buf);
+    free(val_buf);
 
     return query_args;
 error:
-    if (key_buf) {
-        free(key_buf);
-    }
-
-    if (val_buf) {
-        free(val_buf);
-    }
+    free(key_buf);
+    free(val_buf);
 
     return NULL;
 }     /* evhtp_parse_query */
@@ -2772,20 +2746,14 @@ evhtp_callback_free(evhtp_callback_t * callback) {
 
     switch (callback->type) {
         case evhtp_callback_type_hash:
-            if (callback->val.path) {
-                free(callback->val.path);
-            }
+            free(callback->val.path);
             break;
         case evhtp_callback_type_glob:
-            if (callback->val.glob) {
-                free(callback->val.glob);
-            }
+            free(callback->val.glob);
             break;
 #ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
-            if (callback->val.regex) {
-                regfree(callback->val.regex);
-            }
+            regfree(callback->val.regex);
             break;
 #endif
     }
@@ -3331,9 +3299,9 @@ evhtp_connection_free(evhtp_connection_t * connection) {
     _evhtp_request_free(connection->request);
     _evhtp_connection_fini_hook(connection);
 
-    if (connection->parser) {
-        free(connection->parser);
-    }
+    free(connection->parser);
+    free(connection->hooks);
+    free(connection->saddr);
 
     if (connection->resume_ev) {
         event_free(connection->resume_ev);
@@ -3353,19 +3321,11 @@ evhtp_connection_free(evhtp_connection_t * connection) {
 #endif
     }
 
-    if (connection->hooks) {
-        free(connection->hooks);
-    }
-
 #ifndef EVHTP_DISABLE_EVTHR
     if (connection->thread) {
         evthr_dec_backlog(connection->thread);
     }
 #endif
-
-    if (connection->saddr) {
-        free(connection->saddr);
-    }
 
     free(connection);
 }     /* evhtp_connection_free */

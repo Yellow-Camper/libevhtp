@@ -155,10 +155,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION          "0.4.17"
-#define EVHTP_VERSION_MAJOR    0
-#define EVHTP_VERSION_MINOR    4
-#define EVHTP_VERSION_PATCH    17
+#define EVHTP_VERSION          "1.0.0"
+#define EVHTP_VERSION_MAJOR    1
+#define EVHTP_VERSION_MINOR    0
+#define EVHTP_VERSION_PATCH    0
 
 #define evhtp_headers_iterator evhtp_kvs_iterator
 
@@ -504,10 +504,10 @@ evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
  * @param r read-timeout in timeval
  * @param w write-timeout in timeval.
  */
-void      evhtp_set_timeouts(evhtp_t * htp, struct timeval * r, struct timeval * w);
-void      evhtp_set_bev_flags(evhtp_t * htp, int flags);
-int       evhtp_ssl_use_threads(void);
-int       evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
+void evhtp_set_timeouts(evhtp_t * htp, struct timeval * r, struct timeval * w);
+void evhtp_set_bev_flags(evhtp_t * htp, int flags);
+int  evhtp_ssl_use_threads(void);
+int  evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
 
 
 /**
@@ -635,16 +635,42 @@ int evhtp_unset_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type);
  *
  * @return
  */
-int  evhtp_unset_all_hooks(evhtp_hooks_t ** hooks);
+int evhtp_unset_all_hooks(evhtp_hooks_t ** hooks);
 
-int  evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port, int backlog);
+
+/**
+ * @brief bind to a socket, optionally with specific protocol support
+ *        formatting. The addr can be defined as one of the following:
+ *          ipv6:<ipv6addr> for binding to an IPv6 address.
+ *          unix:<named pipe> for binding to a unix named socket
+ *          ipv4:<ipv4addr> for binding to an ipv4 address
+ *        Otherwise the addr is assumed to be ipv4.
+ *
+ * @param htp
+ * @param addr
+ * @param port
+ * @param backlog
+ *
+ * @return
+ */
+int evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port, int backlog);
+
+
+/**
+ * @brief bind to an already allocated sockaddr.
+ *
+ * @param htp
+ * @param
+ * @param sin_len
+ * @param backlog
+ *
+ * @return
+ */
 int  evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *, size_t sin_len, int backlog);
 void evhtp_unbind_socket(evhtp_t * htp, int deinit_status_codes);
 
 int  evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
-
 void evhtp_send_reply(evhtp_request_t * request, evhtp_res code);
-
 void evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code);
 void evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf);
 void evhtp_send_reply_end(evhtp_request_t * request);
@@ -655,9 +681,34 @@ void evhtp_send_reply_end(evhtp_request_t * request);
  * @return 1 if the response MUST have a body; 0 if the response MUST NOT have
  *     a body.
  */
-int  evhtp_response_needs_body(const evhtp_res code, const htp_method method);
+int evhtp_response_needs_body(const evhtp_res code, const htp_method method);
+
+
+/**
+ * @brief start a chunked response. If data already exists on the output buffer,
+ *        this will be converted to the first chunk.
+ *
+ * @param request
+ * @param code
+ */
 void evhtp_send_reply_chunk_start(evhtp_request_t * request, evhtp_res code);
+
+
+/**
+ * @brief send a chunk reply.
+ *
+ * @param request
+ * @param buf
+ */
 void evhtp_send_reply_chunk(evhtp_request_t * request, evbuf_t * buf);
+
+
+/**
+ * @brief call when all chunks have been sent and you wish to send the last
+ *        bits. This will add the last 0CRLFCRCL and call send_reply_end().
+ *
+ * @param request
+ */
 void evhtp_send_reply_chunk_end(evhtp_request_t * request);
 
 
@@ -709,8 +760,33 @@ void               evhtp_callback_free(evhtp_callback_t * callback);
  */
 int evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb);
 
-int evhtp_add_alias(evhtp_t * evhtp, const char * name);
+
+/**
+ * @brief add an evhtp_t structure (with its own callbacks) to a base evhtp_t
+ *        structure for virtual hosts. It should be noted that if you enable SSL
+ *        on the base evhtp_t and your version of OpenSSL supports SNI, the SNI
+ *        hostname will always take precedence over the Host header value.
+ *
+ * @param evhtp
+ * @param name
+ * @param vhost
+ *
+ * @return
+ */
 int evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost);
+
+
+/**
+ * @brief Add an alias hostname for a virtual-host specific evhtp_t. This avoids
+ *        having multiple evhtp_t virtual hosts with the same callback for the same
+ *        vhost.
+ *
+ * @param evhtp
+ * @param name
+ *
+ * @return
+ */
+int evhtp_add_alias(evhtp_t * evhtp, const char * name);
 
 /**
  * @brief Allocates a new key/value structure.

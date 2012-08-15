@@ -1,3 +1,10 @@
+v1.0.0
+ o Added some function documentation. (adc3ac6 Mark Ellzey)
+ o Check for null deref on request check. (a722fc4 Mark Ellzey)
+ o Fix for state set override for headers. (87fb859 Mark Ellzey)
+ o No need for null checks before free(). (7783ca2 Mark Ellzey)
+ o Bumping this up to 1.0.0 since it's been in production for a while.
+
 v0.4.17
  o Added cmake option for disabling regex. (5ab2e4b Mark Ellzey)
  o Cleanup compiler warnings. (770a344 Mark Ellzey)

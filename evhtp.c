@@ -1190,6 +1190,7 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
     }
 
     if (!(path = _evhtp_path_new(data, len))) {
+        _evhtp_uri_free(uri);
         c->request->status = EVHTP_RES_FATAL;
         return -1;
     }
@@ -1216,8 +1217,6 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
 static int
 _evhtp_request_parser_headers(htparser * p) {
     evhtp_connection_t * c = htparser_get_userdata(p);
-    const char         * expect_val;
-    const char         * host;
 
     /* XXX proto should be set with htparsers on_hdrs_begin hook */
     c->request->keepalive = htparser_should_keep_alive(p);
@@ -1228,14 +1227,7 @@ _evhtp_request_parser_headers(htparser * p) {
         return -1;
     }
 
-    if ((host = evhtp_header_find(c->request->headers_in, "Host"))) {
-        /* check to see if we have any virtual hosts, and if we do, search
-         * for a match. If there is a match, we have to overwrite the
-         * current callbacks / hooks
-         */
-    }
-
-    if (!(expect_val = evhtp_header_find(c->request->headers_in, "Expect"))) {
+    if (!evhtp_header_find(c->request->headers_in, "Expect")) {
         return 0;
     }
 

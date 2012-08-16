@@ -1324,8 +1324,25 @@ hdrline_start:
                     case ' ':
                         break;
                     case CR:
+                        /*
+                         * we have an empty header value here, so we set the buf
+                         * to empty, set the state to hdrline_hdr_val, and
+                         * decrement the start byte counter.
+                         */
+                        p->buf[p->buf_idx++] = ' ';
+                        p->buf[p->buf_idx]   = '\0';
+                        p->state = s_hdrline_hdr_val;
+
+                        /*
+                         * make sure the next pass comes back to this CR byte,
+                         * so it matches in s_hdrline_hdr_val.
+                         */
+                        i--;
+                        break;
                     case LF:
-                        /* empty header value, is this legal? */
+                        /* never got a CR for an empty header, this is an
+                         * invalid state.
+                         */
                         p->error             = htparse_error_inval_hdr;
                         return i + 1;
                     default:
@@ -1333,7 +1350,7 @@ hdrline_start:
                         p->buf[p->buf_idx]   = '\0';
                         p->state             = s_hdrline_hdr_val;
                         break;
-                }
+                } /* switch */
                 break;
             case s_hdrline_hdr_val:
                 htparse_log_debug("[%p] s_hdrline_hdr_val", p);

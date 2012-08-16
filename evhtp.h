@@ -155,10 +155,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION          "1.0.1"
+#define EVHTP_VERSION          "1.1.0"
 #define EVHTP_VERSION_MAJOR    1
-#define EVHTP_VERSION_MINOR    0
-#define EVHTP_VERSION_PATCH    1
+#define EVHTP_VERSION_MINOR    1
+#define EVHTP_VERSION_PATCH    0
 
 #define evhtp_headers_iterator evhtp_kvs_iterator
 
@@ -276,23 +276,6 @@ struct evhtp_s {
 };
 
 /**
- * @brief structure containing all registered evhtp_callbacks_t
- *
- * This structure holds information which correlates either
- * a path string (via a hash) or a regular expression callback.
- *
- */
-struct evhtp_callbacks_s {
-    evhtp_callback_t ** callbacks;      /**< hash of path callbacks */
-#ifndef EVHTP_DISABLE_REGEX
-    evhtp_callback_t * regex_callbacks; /**< list of regex callbacks */
-#endif
-    evhtp_callback_t * glob_callbacks;  /**< list of wildcard callbacks */
-    unsigned int       count;           /**< number of callbacks defined */
-    unsigned int       buckets;         /**< buckets allocated for hash */
-};
-
-/**
  * @brief structure containing a single callback and configuration
  *
  * The definition structure which is used within the evhtp_callbacks_t
@@ -321,9 +304,10 @@ struct evhtp_callback_s {
 #endif
     } val;
 
-    evhtp_callback_t * next;
+    TAILQ_ENTRY(evhtp_callback_s) next;
 };
 
+TAILQ_HEAD(evhtp_callbacks_s, evhtp_callback_s);
 
 /**
  * @brief a generic key/value structure
@@ -710,22 +694,6 @@ void evhtp_send_reply_chunk(evhtp_request_t * request, evbuf_t * buf);
  * @param request
  */
 void evhtp_send_reply_chunk_end(evhtp_request_t * request);
-
-
-/**
- * @brief creates a new evhtp_callbacks_t structure
- *
- * this structure is used to store all known
- * callbacks for a request.
- *
- * @param buckets the number of buckets to allocate for the
- *        path type hash.
- *
- * @return an evhtp_callbacks_t structure
- */
-evhtp_callbacks_t * evhtp_callbacks_new(unsigned int buckets);
-void                evhtp_callbacks_free(evhtp_callbacks_t * callbacks);
-
 
 /**
  * @brief creates a new evhtp_callback_t structure.

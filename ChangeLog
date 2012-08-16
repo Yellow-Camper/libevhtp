@@ -1,3 +1,8 @@
+v1.1.0
+ o Add ability for rules to be ordered. (ad8c468 Mark Ellzey)
+ o Cleanup the old rule code. (fbfda73 Mark Ellzey)
+ o Fixed missing variable in callback_find (4eb5e87 Mark Ellzey)
+
 v1.0.1
  o Fixes to make coverity happy. (6776d85 Mark Ellzey)
  o Add support for empty header values. (7ec160f Mark Ellzey)

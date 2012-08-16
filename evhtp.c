@@ -575,7 +575,7 @@ _evhtp_callback_find(evhtp_callbacks_t * cbs,
                 break;
 #ifndef EVHTP_DISABLE_REGEX
             case evhtp_callback_type_regex:
-                if ((res = regexec(callback->val.regex, path, callback->val.regex->re_nsub + 1, pmatch, 0)) == 0) {
+                if (regexec(callback->val.regex, path, callback->val.regex->re_nsub + 1, pmatch, 0) == 0) {
                     *start_offset = pmatch[callback->val.regex->re_nsub].rm_so;
                     *end_offset   = pmatch[callback->val.regex->re_nsub].rm_eo;
 

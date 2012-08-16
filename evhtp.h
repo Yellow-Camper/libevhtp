@@ -275,26 +275,6 @@ struct evhtp_s {
     TAILQ_ENTRY(evhtp_s) next_vhost;
 };
 
-#if 0
-/**
- * @brief structure containing all registered evhtp_callbacks_t
- *
- * This structure holds information which correlates either
- * a path string (via a hash) or a regular expression callback.
- *
- */
-struct evhtp_callbacks_s {
-    evhtp_callback_t ** callbacks;      /**< hash of path callbacks */
-#ifndef EVHTP_DISABLE_REGEX
-    evhtp_callback_t * regex_callbacks; /**< list of regex callbacks */
-#endif
-    evhtp_callback_t * glob_callbacks;  /**< list of wildcard callbacks */
-    unsigned int       count;           /**< number of callbacks defined */
-    unsigned int       buckets;         /**< buckets allocated for hash */
-};
-#endif
-
-
 /**
  * @brief structure containing a single callback and configuration
  *

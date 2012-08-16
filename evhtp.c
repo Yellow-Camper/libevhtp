@@ -479,44 +479,6 @@ _evhtp_hostname_hook(evhtp_request_t * r, const char * hostname) {
     return EVHTP_RES_OK;
 }
 
-#if 0
-/**
- * @brief attempts to find a callback via hashing the path
- *
- * @param callbacks a evhtp_callbacks_t * structure
- * @param path a null terminated string to be hashed and searched
- *
- * @return evhtp_callback_t * if found, NULL if not found.
- */
-static evhtp_callback_t *
-_evhtp_callback_hash_find(evhtp_callbacks_t * callbacks, const char * path) {
-    evhtp_callback_t * callback;
-    unsigned int       hash;
-    unsigned int       shash;
-
-    if (path == NULL) {
-        return NULL;
-    }
-
-    hash     = _evhtp_quick_hash(path);
-    shash    = (hash & (callbacks->buckets - 1));
-    callback = callbacks->callbacks[shash];
-
-    while (callback != NULL) {
-        if (callback->hash == hash &&
-            callback->type == evhtp_callback_type_hash &&
-            strcmp(callback->val.path, path) == 0) {
-            return callback;
-        }
-
-        callback = callback->next;
-    }
-
-    return NULL;
-}
-
-#endif
-
 /**
  * @brief glob/wildcard type pattern matching.
  *
@@ -588,135 +550,6 @@ _evhtp_glob_match(const char * pattern, const char * string) {
     return 0;
 } /* _evhtp_glob_match */
 
-#if 0
-/**
- * @brief iterate through a list of glob/wildcard defined callbacks.
- *
- * @param callbacks
- * @param path
- *
- * @return
- */
-static evhtp_callback_t *
-_evhtp_callback_glob_find(evhtp_callbacks_t * callbacks, const char * path) {
-    evhtp_callback_t * callback;
-
-    if (!callbacks || !path) {
-        return NULL;
-    }
-
-    callback = callbacks->glob_callbacks;
-
-    while (callback != NULL) {
-        if (callback->type == evhtp_callback_type_glob) {
-            if (_evhtp_glob_match(callback->val.glob, path) == 1) {
-                return callback;
-            }
-        }
-
-        callback = callback->next;
-    }
-
-    return NULL;
-}
-
-#endif
-
-#if 0
-/**
- * @brief iterate through a tailq of callback hooks defined as a regex until a
- *        match is found.
- *
- * @param callbacks a evhtp_callbacks_t structure
- * @param path a string containing a path to be matched against
- * @param soff a pointer to an integer which will be filled with the start
- *             offset in the string if matched.
- * @param eoff a pointer to an integer which will be filled with the end
- *             offset in the string if matched
- *
- * @return an evhtp_callback_t function on success, otherwise NULL
- */
-#ifndef EVHTP_DISABLE_REGEX
-static evhtp_callback_t *
-_evhtp_callback_regex_find(evhtp_callbacks_t * callbacks, const char * path,
-                           unsigned int * soff, unsigned int * eoff) {
-    evhtp_callback_t * callback = callbacks->regex_callbacks;
-
-    if (path == NULL) {
-        return NULL;
-    }
-
-    while (callback != NULL) {
-        regmatch_t pmatch[28];
-
-        if (callback->type == evhtp_callback_type_regex) {
-            if (regexec(callback->val.regex, path, callback->val.regex->re_nsub + 1, pmatch, 0) == 0) {
-                *soff = (unsigned int)pmatch[callback->val.regex->re_nsub].rm_so;
-                *eoff = (unsigned int)pmatch[callback->val.regex->re_nsub].rm_eo;
-
-                return callback;
-            }
-        }
-
-        callback = callback->next;
-    }
-
-    return NULL;
-}
-
-#endif
-#endif
-
-#if 0
-/**
- * @brief A wrapper around hash, glob, and regex hook lookups
- *        Search is done in this order:
- *          hash
- *          glob
- *          regex
- *
- * @param callbacks
- * @param path
- * @param start_offset
- * @param end_offset
- *
- * @return evhtp_callback_t on success, otherwise NULL
- */
-static evhtp_callback_t *
-_evhtp_callback_find(evhtp_callbacks_t * callbacks,
-                     const char        * path,
-                     unsigned int      * start_offset,
-                     unsigned int      * end_offset) {
-    evhtp_callback_t * callback;
-
-    if (callbacks == NULL) {
-        return NULL;
-    }
-
-    if ((callback = _evhtp_callback_hash_find(callbacks, path)) != NULL) {
-        *start_offset = 0;
-        *end_offset   = (unsigned int)strlen(path);
-        return callback;
-    }
-
-    if ((callback = _evhtp_callback_glob_find(callbacks, path)) != NULL) {
-        *start_offset = 0;
-        *end_offset   = (unsigned int)strlen(path);
-        return callback;
-    }
-
-#ifndef EVHTP_DISABLE_REGEX
-    if ((callback = _evhtp_callback_regex_find(callbacks, path,
-                                               start_offset, end_offset)) != NULL) {
-        return callback;
-    }
-#endif
-
-    return NULL;
-}
-
-#endif
-
 static evhtp_callback_t *
 _evhtp_callback_find(evhtp_callbacks_t * cbs,
                      const char        * path,
@@ -724,7 +557,6 @@ _evhtp_callback_find(evhtp_callbacks_t * cbs,
                      unsigned int      * end_offset) {
 #ifndef EVHTP_DISABLE_REGEX
     regmatch_t         pmatch[28];
-    int                res;
 #endif
     evhtp_callback_t * callback;
 
@@ -2671,44 +2503,7 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 
 void
 evhtp_callbacks_free(evhtp_callbacks_t * callbacks) {
-#if 0
-    evhtp_callback_t * callback;
-    evhtp_callback_t * next;
-    unsigned int       idx;
-
-    if (callbacks == NULL) {
-        return;
-    }
-
-    if (callbacks->callbacks) {
-        for (idx = 0; idx < callbacks->buckets; idx++) {
-            if (callbacks->callbacks[idx] == NULL) {
-                continue;
-            }
-
-            callback = callbacks->callbacks[idx];
-
-            while (callback != NULL) {
-                next     = callback->next;
-                evhtp_callback_free(callback);
-                callback = next;
-            }
-        }
-        free(callbacks->callbacks);
-    }
-
-#ifndef EVHTP_DISABLE_REGEX
-    callback = callbacks->regex_callbacks;
-
-    while (callback != NULL) {
-        next     = callback->next;
-        evhtp_callback_free(callback);
-        callback = next;
-    }
-#endif
-
-    free(callbacks);
-#endif
+    /* XXX TODO */
 }
 
 evhtp_callback_t *
@@ -2777,34 +2572,6 @@ evhtp_callback_free(evhtp_callback_t * callback) {
 
 int
 evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb) {
-#if 0
-    unsigned int hkey;
-
-    switch (cb->type) {
-        case evhtp_callback_type_hash:
-            hkey = cb->hash & (cbs->buckets - 1);
-
-            if (cbs->callbacks[hkey] == NULL) {
-                cbs->callbacks[hkey] = cb;
-            } else {
-                cb->next = cbs->callbacks[hkey];
-                cbs->callbacks[hkey] = cb;
-            }
-            break;
-#ifndef EVHTP_DISABLE_REGEX
-        case evhtp_callback_type_regex:
-            cb->next = cbs->regex_callbacks;
-            cbs->regex_callbacks = cb;
-            break;
-#endif
-        case evhtp_callback_type_glob:
-            cb->next = cbs->glob_callbacks;
-            cbs->glob_callbacks = cb;
-            break;
-        default:
-            return -1;
-    } /* switch */
-#endif
     TAILQ_INSERT_TAIL(cbs, cb, next);
 
     return 0;

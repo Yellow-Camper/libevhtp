@@ -275,6 +275,7 @@ struct evhtp_s {
     TAILQ_ENTRY(evhtp_s) next_vhost;
 };
 
+#if 0
 /**
  * @brief structure containing all registered evhtp_callbacks_t
  *
@@ -291,6 +292,8 @@ struct evhtp_callbacks_s {
     unsigned int       count;           /**< number of callbacks defined */
     unsigned int       buckets;         /**< buckets allocated for hash */
 };
+#endif
+
 
 /**
  * @brief structure containing a single callback and configuration
@@ -321,9 +324,10 @@ struct evhtp_callback_s {
 #endif
     } val;
 
-    evhtp_callback_t * next;
+    TAILQ_ENTRY(evhtp_callback_s) next;
 };
 
+TAILQ_HEAD(evhtp_callbacks_s, evhtp_callback_s);
 
 /**
  * @brief a generic key/value structure
@@ -709,22 +713,6 @@ void evhtp_send_reply_chunk(evhtp_request_t * request, evbuf_t * buf);
  * @param request
  */
 void evhtp_send_reply_chunk_end(evhtp_request_t * request);
-
-
-/**
- * @brief creates a new evhtp_callbacks_t structure
- *
- * this structure is used to store all known
- * callbacks for a request.
- *
- * @param buckets the number of buckets to allocate for the
- *        path type hash.
- *
- * @return an evhtp_callbacks_t structure
- */
-evhtp_callbacks_t * evhtp_callbacks_new(unsigned int buckets);
-void                evhtp_callbacks_free(evhtp_callbacks_t * callbacks);
-
 
 /**
  * @brief creates a new evhtp_callback_t structure.

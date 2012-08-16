@@ -1,3 +1,7 @@
+v1.0.1
+ o Fixes to make coverity happy. (6776d85 Mark Ellzey)
+ o Add support for empty header values. (7ec160f Mark Ellzey)
+
 v1.0.0
  o Added some function documentation. (adc3ac6 Mark Ellzey)
  o Check for null deref on request check. (a722fc4 Mark Ellzey)

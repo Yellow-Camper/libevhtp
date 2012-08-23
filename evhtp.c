@@ -3260,7 +3260,14 @@ evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost) {
      * This allows for a keep-alive connection to make multiple requests with
      * different Host: values.
      */
-    vhost->parent = evhtp;
+    vhost->parent                 = evhtp;
+
+    /* inherit various flags from the parent evhtp structure */
+    vhost->bev_flags              = evhtp->bev_flags;
+    vhost->max_body_size          = evhtp->max_body_size;
+    vhost->max_keepalive_requests = evhtp->max_keepalive_requests;
+    vhost->recv_timeo             = evhtp->recv_timeo;
+    vhost->send_timeo             = evhtp->send_timeo;
 
     TAILQ_INSERT_TAIL(&evhtp->vhosts, vhost, next_vhost);
 

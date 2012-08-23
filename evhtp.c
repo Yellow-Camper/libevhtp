@@ -1354,7 +1354,7 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
             if (c->request->hooks && c->request->hooks->on_error) {
                 (*c->request->hooks->on_error)(c->request, -1, c->request->hooks->on_error_arg);
             }
-	    return evhtp_connection_free(c);
+            return evhtp_connection_free(c);
         default:
             break;
     }
@@ -1388,9 +1388,9 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
      * keepalive bit to 0, thus closing the connection.
      */
     if (c->htp->max_keepalive_requests) {
-	if (++c->num_requests >= c->htp->max_keepalive_requests) {
-	    c->request->keepalive = 0;
-	}
+        if (++c->num_requests >= c->htp->max_keepalive_requests) {
+            c->request->keepalive = 0;
+        }
     }
 
     if (c->request->keepalive) {
@@ -1419,7 +1419,7 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
     }
 
     return;
-}
+} /* _evhtp_connection_writecb */
 
 static void
 _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {

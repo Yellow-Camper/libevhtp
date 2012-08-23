@@ -251,6 +251,7 @@ struct evhtp_s {
     void     * arg;            /**< user-defined evhtp_t specific arguments */
     int        bev_flags;      /**< bufferevent flags to use on bufferevent_*_socket_new() */
     uint64_t   max_body_size;
+    uint64_t   max_keepalive_requests;
 
 #ifndef DISABLE_SSL
     evhtp_ssl_ctx_t * ssl_ctx; /**< if ssl enabled, this is the servers CTX */
@@ -271,7 +272,6 @@ struct evhtp_s {
 
     struct timeval * recv_timeo;
     struct timeval * send_timeo;
-
 
     TAILQ_HEAD(, evhtp_alias_s) aliases;
     TAILQ_HEAD(, evhtp_s) vhosts;
@@ -419,6 +419,7 @@ struct evhtp_connection_s {
     evhtp_request_t * request;       /**< the request currently being processed */
     uint64_t          max_body_size;
     uint64_t          body_bytes_read;
+    uint64_t          num_requests;
 };
 
 struct evhtp_hooks_s {
@@ -1000,12 +1001,20 @@ void evhtp_set_max_body_size(evhtp_t * htp, uint64_t len);
 void evhtp_connection_set_max_body_size(evhtp_connection_t * conn, uint64_t len);
 
 /**
- * @brief just calls evhtp_connection_set_max_body_size for the request. 
+ * @brief just calls evhtp_connection_set_max_body_size for the request.
  *
  * @param request
  * @param len
  */
 void evhtp_request_set_max_body_size(evhtp_request_t * request, uint64_t len);
+
+/**
+ * @brief sets a maximum number of requests that a single connection can make.
+ *
+ * @param htp
+ * @param num
+ */
+void evhtp_set_max_keepalive_requests(evhtp_t * htp, uint64_t num);
 
 #ifdef __cplusplus
 }

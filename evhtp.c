@@ -1382,6 +1382,17 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
         return;
     }
 
+    /*
+     * if there is a set maximum number of keepalive requests configured, check
+     * to make sure we are not over it. If we have gone over the max we set the
+     * keepalive bit to 0, thus closing the connection.
+     */
+    if (c->htp->max_keepalive_requests) {
+	if (++c->num_requests >= c->htp->max_keepalive_requests) {
+	    c->request->keepalive = 0;
+	}
+    }
+
     if (c->request->keepalive) {
         _evhtp_request_free(c->request);
 
@@ -3170,6 +3181,11 @@ evhtp_set_timeouts(evhtp_t * htp, struct timeval * r_timeo, struct timeval * w_t
         htp->send_timeo = malloc(sizeof(struct timeval));
         memcpy(htp->send_timeo, w_timeo, sizeof(struct timeval));
     }
+}
+
+void
+evhtp_set_max_keepalive_requests(evhtp_t * htp, uint64_t num) {
+    htp->max_keepalive_requests = num;
 }
 
 /**

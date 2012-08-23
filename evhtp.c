@@ -2473,6 +2473,20 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     }
 #endif
 
+#ifndef EVHTP_DISABLE_SSL
+    if (htp->ssl_ctx != NULL) {
+        /* if ssl is enabled and we have virtual hosts, set our servername
+         * callback. We do this here because we want to make sure that this gets
+         * set after all potential virtualhosts have been set, not just after
+         * ssl_init.
+         */
+        if (TAILQ_FIRST(&htp->vhosts) != NULL) {
+            SSL_CTX_set_tlsext_servername_callback(htp->ssl_ctx,
+                                                   _evhtp_ssl_servername);
+        }
+    }
+#endif
+
     return htp->server ? 0 : -1;
 }
 
@@ -3039,10 +3053,6 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
                 cfg->args = (cfg->scache_init)(htp);
             }
         }
-    }
-
-    if (TAILQ_FIRST(&htp->vhosts) != NULL) {
-        SSL_CTX_set_tlsext_servername_callback(htp->ssl_ctx, _evhtp_ssl_servername);
     }
 
     return 0;

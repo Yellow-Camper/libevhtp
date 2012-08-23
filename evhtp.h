@@ -155,74 +155,75 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION          "1.1.0"
-#define EVHTP_VERSION_MAJOR    1
-#define EVHTP_VERSION_MINOR    1
-#define EVHTP_VERSION_PATCH    0
+#define EVHTP_VERSION           "1.1.0"
+#define EVHTP_VERSION_MAJOR     1
+#define EVHTP_VERSION_MINOR     1
+#define EVHTP_VERSION_PATCH     0
 
-#define evhtp_headers_iterator evhtp_kvs_iterator
+#define evhtp_headers_iterator  evhtp_kvs_iterator
 
-#define EVHTP_RES_ERROR        0
-#define EVHTP_RES_PAUSE        1
-#define EVHTP_RES_FATAL        2
-#define EVHTP_RES_USER         3
-#define EVHTP_RES_OK           200
+#define EVHTP_RES_ERROR         0
+#define EVHTP_RES_PAUSE         1
+#define EVHTP_RES_FATAL         2
+#define EVHTP_RES_USER          3
+#define EVHTP_RES_DATA_TOO_LONG 4
+#define EVHTP_RES_OK            200
 
-#define EVHTP_RES_100          100
-#define EVHTP_RES_CONTINUE     100
-#define EVHTP_RES_SWITCH_PROTO 101
-#define EVHTP_RES_PROCESSING   102
-#define EVHTP_RES_URI_TOOLONG  122
+#define EVHTP_RES_100           100
+#define EVHTP_RES_CONTINUE      100
+#define EVHTP_RES_SWITCH_PROTO  101
+#define EVHTP_RES_PROCESSING    102
+#define EVHTP_RES_URI_TOOLONG   122
 
-#define EVHTP_RES_200          200
-#define EVHTP_RES_CREATED      201
-#define EVHTP_RES_ACCEPTED     202
-#define EVHTP_RES_NAUTHINFO    203
-#define EVHTP_RES_NOCONTENT    204
-#define EVHTP_RES_RSTCONTENT   205
-#define EVHTP_RES_PARTIAL      206
-#define EVHTP_RES_MSTATUS      207
-#define EVHTP_RES_IMUSED       226
+#define EVHTP_RES_200           200
+#define EVHTP_RES_CREATED       201
+#define EVHTP_RES_ACCEPTED      202
+#define EVHTP_RES_NAUTHINFO     203
+#define EVHTP_RES_NOCONTENT     204
+#define EVHTP_RES_RSTCONTENT    205
+#define EVHTP_RES_PARTIAL       206
+#define EVHTP_RES_MSTATUS       207
+#define EVHTP_RES_IMUSED        226
 
-#define EVHTP_RES_300          300
-#define EVHTP_RES_MCHOICE      300
-#define EVHTP_RES_MOVEDPERM    301
-#define EVHTP_RES_FOUND        302
-#define EVHTP_RES_SEEOTHER     303
-#define EVHTP_RES_NOTMOD       304
-#define EVHTP_RES_USEPROXY     305
-#define EVHTP_RES_SWITCHPROXY  306
-#define EVHTP_RES_TMPREDIR     307
+#define EVHTP_RES_300           300
+#define EVHTP_RES_MCHOICE       300
+#define EVHTP_RES_MOVEDPERM     301
+#define EVHTP_RES_FOUND         302
+#define EVHTP_RES_SEEOTHER      303
+#define EVHTP_RES_NOTMOD        304
+#define EVHTP_RES_USEPROXY      305
+#define EVHTP_RES_SWITCHPROXY   306
+#define EVHTP_RES_TMPREDIR      307
 
-#define EVHTP_RES_400          400
-#define EVHTP_RES_BADREQ       400
-#define EVHTP_RES_UNAUTH       401
-#define EVHTP_RES_PAYREQ       402
-#define EVHTP_RES_FORBIDDEN    403
-#define EVHTP_RES_NOTFOUND     404
-#define EVHTP_RES_METHNALLOWED 405
-#define EVHTP_RES_NACCEPTABLE  406
-#define EVHTP_RES_PROXYAUTHREQ 407
-#define EVHTP_RES_TIMEOUT      408
-#define EVHTP_RES_CONFLICT     409
-#define EVHTP_RES_GONE         410
-#define EVHTP_RES_LENREQ       411
-#define EVHTP_RES_PRECONDFAIL  412
-#define EVHTP_RES_ENTOOLARGE   413
-#define EVHTP_RES_URITOOLARGE  414
-#define EVHTP_RES_UNSUPPORTED  415
-#define EVHTP_RES_RANGENOTSC   416
-#define EVHTP_RES_EXPECTFAIL   417
-#define EVHTP_RES_IAMATEAPOT   418
+#define EVHTP_RES_400           400
+#define EVHTP_RES_BADREQ        400
+#define EVHTP_RES_UNAUTH        401
+#define EVHTP_RES_PAYREQ        402
+#define EVHTP_RES_FORBIDDEN     403
+#define EVHTP_RES_NOTFOUND      404
+#define EVHTP_RES_METHNALLOWED  405
+#define EVHTP_RES_NACCEPTABLE   406
+#define EVHTP_RES_PROXYAUTHREQ  407
+#define EVHTP_RES_TIMEOUT       408
+#define EVHTP_RES_CONFLICT      409
+#define EVHTP_RES_GONE          410
+#define EVHTP_RES_LENREQ        411
+#define EVHTP_RES_PRECONDFAIL   412
+#define EVHTP_RES_ENTOOLARGE    413
+#define EVHTP_RES_URITOOLARGE   414
+#define EVHTP_RES_UNSUPPORTED   415
+#define EVHTP_RES_RANGENOTSC    416
+#define EVHTP_RES_EXPECTFAIL    417
+#define EVHTP_RES_IAMATEAPOT    418
 
-#define EVHTP_RES_500          500
-#define EVHTP_RES_SERVERR      500
-#define EVHTP_RES_NOTIMPL      501
-#define EVHTP_RES_BADGATEWAY   502
-#define EVHTP_RES_SERVUNAVAIL  503
-#define EVHTP_RES_GWTIMEOUT    504
-#define EVHTP_RES_VERNSUPPORT  505
-#define EVHTP_RES_BWEXEED      509
+#define EVHTP_RES_500           500
+#define EVHTP_RES_SERVERR       500
+#define EVHTP_RES_NOTIMPL       501
+#define EVHTP_RES_BADGATEWAY    502
+#define EVHTP_RES_SERVUNAVAIL   503
+#define EVHTP_RES_GWTIMEOUT     504
+#define EVHTP_RES_VERNSUPPORT   505
+#define EVHTP_RES_BWEXEED       509
 
 struct evhtp_defaults_s {
     evhtp_callback_cb    cb;
@@ -249,6 +250,7 @@ struct evhtp_s {
     char     * server_name;    /**< the name included in Host: responses */
     void     * arg;            /**< user-defined evhtp_t specific arguments */
     int        bev_flags;      /**< bufferevent flags to use on bufferevent_*_socket_new() */
+    uint64_t   max_body_size;
 
 #ifndef DISABLE_SSL
     evhtp_ssl_ctx_t * ssl_ctx; /**< if ssl enabled, this is the servers CTX */
@@ -269,6 +271,7 @@ struct evhtp_s {
 
     struct timeval * recv_timeo;
     struct timeval * send_timeo;
+
 
     TAILQ_HEAD(, evhtp_alias_s) aliases;
     TAILQ_HEAD(, evhtp_s) vhosts;
@@ -414,6 +417,8 @@ struct evhtp_connection_s {
     uint8_t           owner;         /**< set to 1 if this structure owns the bufferevent */
     uint8_t           vhost_via_sni; /**< set to 1 if the vhost was found via SSL SNI */
     evhtp_request_t * request;       /**< the request currently being processed */
+    uint64_t          max_body_size;
+    uint64_t          body_bytes_read;
 };
 
 struct evhtp_hooks_s {
@@ -973,6 +978,34 @@ evbev_t * evhtp_connection_take_ownership(evhtp_connection_t * connection);
 void evhtp_connection_free(evhtp_connection_t * connection);
 
 void evhtp_request_free(evhtp_request_t * request);
+
+
+/**
+ * @brief set a max body size to accept for an incoming request, this will
+ *        default to unlimited.
+ *
+ * @param htp
+ * @param len
+ */
+void evhtp_set_max_body_size(evhtp_t * htp, uint64_t len);
+
+
+/**
+ * @brief set a max body size for a specific connection, this will default to
+ *        the size set by evhtp_set_max_body_size
+ *
+ * @param conn
+ * @param len
+ */
+void evhtp_connection_set_max_body_size(evhtp_connection_t * conn, uint64_t len);
+
+/**
+ * @brief just calls evhtp_connection_set_max_body_size for the request. 
+ *
+ * @param request
+ * @param len
+ */
+void evhtp_request_set_max_body_size(evhtp_request_t * request, uint64_t len);
 
 #ifdef __cplusplus
 }

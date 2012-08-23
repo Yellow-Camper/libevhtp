@@ -1349,14 +1349,16 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
         return evhtp_connection_free(c);
     }
 
-    switch (c->request->status) {
-        case EVHTP_RES_DATA_TOO_LONG:
-            if (c->request->hooks && c->request->hooks->on_error) {
-                (*c->request->hooks->on_error)(c->request, -1, c->request->hooks->on_error_arg);
-            }
-            return evhtp_connection_free(c);
-        default:
-            break;
+    if (c->request) {
+        switch (c->request->status) {
+            case EVHTP_RES_DATA_TOO_LONG:
+                if (c->request->hooks && c->request->hooks->on_error) {
+                    (*c->request->hooks->on_error)(c->request, -1, c->request->hooks->on_error_arg);
+                }
+                return evhtp_connection_free(c);
+            default:
+                break;
+        }
     }
 
     if (avail != nread) {

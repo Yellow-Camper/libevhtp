@@ -963,15 +963,15 @@ _evhtp_request_set_callbacks(evhtp_request_t * request) {
     cb       = NULL;
     cbarg    = NULL;
 
-    if ((callback = _evhtp_callback_find(evhtp->callbacks, path->path,
+    if ((callback = _evhtp_callback_find(evhtp->callbacks, path->full,
                                          &path->matched_soff, &path->matched_eoff))) {
-        /* matched a callback using *just* the path (/a/b/c/) */
+        /* matched a callback using both path and file (/a/b/c/d) */
         cb    = callback->cb;
         cbarg = callback->cbarg;
         hooks = callback->hooks;
-    } else if ((callback = _evhtp_callback_find(evhtp->callbacks, path->full,
+    } else if ((callback = _evhtp_callback_find(evhtp->callbacks, path->path,
                                                 &path->matched_soff, &path->matched_eoff))) {
-        /* matched a callback using both path and file (/a/b/c/d) */
+        /* matched a callback using *just* the path (/a/b/c/) */
         cb    = callback->cb;
         cbarg = callback->cbarg;
         hooks = callback->hooks;

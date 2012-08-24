@@ -16,7 +16,7 @@ main(int argc, char ** argv) {
     evbase_t * evbase = event_base_new();
     evhtp_t  * htp    = evhtp_new(evbase, NULL);
 
-    evhtp_set_cb(htp, "/test", testcb, NULL);
+//    evhtp_set_cb(htp, "/test", testcb, NULL);
 #ifndef EVHTP_DISABLE_EVTHR
     evhtp_use_threads(htp, NULL, 4, NULL);
 #endif

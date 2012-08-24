@@ -1337,8 +1337,14 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
         c->request->status = EVHTP_RES_OK;
     }
 
-    buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
-    nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
+
+    buf = evbuffer_pullup(bufferevent_get_input(bev), avail);
+
+    bufferevent_disable(bev, EV_WRITE);
+    {
+        nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
+    }
+    bufferevent_enable(bev, EV_WRITE);
 
     if (c->owner != 1) {
         /*

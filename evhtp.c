@@ -977,15 +977,15 @@ _evhtp_request_set_callbacks(evhtp_request_t * request) {
     cb       = NULL;
     cbarg    = NULL;
 
-    if ((callback = _evhtp_callback_find(evhtp->callbacks, path->path,
+    if ((callback = _evhtp_callback_find(evhtp->callbacks, path->full,
                                          &path->matched_soff, &path->matched_eoff))) {
-        /* matched a callback using *just* the path (/a/b/c/) */
+        /* matched a callback using both path and file (/a/b/c/d) */
         cb    = callback->cb;
         cbarg = callback->cbarg;
         hooks = callback->hooks;
-    } else if ((callback = _evhtp_callback_find(evhtp->callbacks, path->full,
+    } else if ((callback = _evhtp_callback_find(evhtp->callbacks, path->path,
                                                 &path->matched_soff, &path->matched_eoff))) {
-        /* matched a callback using both path and file (/a/b/c/d) */
+        /* matched a callback using *just* the path (/a/b/c/) */
         cb    = callback->cb;
         cbarg = callback->cbarg;
         hooks = callback->hooks;
@@ -1148,9 +1148,17 @@ _evhtp_request_parser_headers(htparser * p) {
 static int
 _evhtp_request_parser_body(htparser * p, const char * data, size_t len) {
     evhtp_connection_t * c   = htparser_get_userdata(p);
-    evbuf_t            * buf = evbuffer_new();
+    evbuf_t            * buf;
     int                  res = 0;
 
+    if (c->max_body_size > 0 && c->body_bytes_read + len >= c->max_body_size) {
+        c->error           = 1;
+        c->request->status = EVHTP_RES_DATA_TOO_LONG;
+
+        return -1;
+    }
+
+    buf = evbuffer_new();
     evbuffer_add(buf, data, len);
 
     if ((c->request->status = _evhtp_body_hook(c->request, buf)) != EVHTP_RES_OK) {
@@ -1162,6 +1170,8 @@ _evhtp_request_parser_body(htparser * p, const char * data, size_t len) {
     }
 
     evbuffer_free(buf);
+
+    c->body_bytes_read += len;
 
     return res;
 }
@@ -1341,8 +1351,14 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
         c->request->status = EVHTP_RES_OK;
     }
 
-    buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
-    nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
+
+    buf = evbuffer_pullup(bufferevent_get_input(bev), avail);
+
+    bufferevent_disable(bev, EV_WRITE);
+    {
+        nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
+    }
+    bufferevent_enable(bev, EV_WRITE);
 
     if (c->owner != 1) {
         /*
@@ -1351,6 +1367,18 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
          */
         evbuffer_drain(bufferevent_get_input(bev), nread);
         return evhtp_connection_free(c);
+    }
+
+    if (c->request) {
+        switch (c->request->status) {
+            case EVHTP_RES_DATA_TOO_LONG:
+                if (c->request->hooks && c->request->hooks->on_error) {
+                    (*c->request->hooks->on_error)(c->request, -1, c->request->hooks->on_error_arg);
+                }
+                return evhtp_connection_free(c);
+            default:
+                break;
+        }
     }
 
     if (avail != nread) {
@@ -1362,7 +1390,7 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
     }
 
     evbuffer_drain(bufferevent_get_input(bev), nread);
-}
+} /* _evhtp_connection_readcb */
 
 static void
 _evhtp_connection_writecb(evbev_t * bev, void * arg) {
@@ -1376,10 +1404,22 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
         return;
     }
 
+    /*
+     * if there is a set maximum number of keepalive requests configured, check
+     * to make sure we are not over it. If we have gone over the max we set the
+     * keepalive bit to 0, thus closing the connection.
+     */
+    if (c->htp->max_keepalive_requests) {
+        if (++c->num_requests >= c->htp->max_keepalive_requests) {
+            c->request->keepalive = 0;
+        }
+    }
+
     if (c->request->keepalive) {
         _evhtp_request_free(c->request);
 
-        c->request = NULL;
+        c->request         = NULL;
+        c->body_bytes_read = 0;
 
         if (c->htp->parent && c->vhost_via_sni == 0) {
             /* this request was servied by a virtual host evhtp_t structure
@@ -1394,13 +1434,14 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
 
         htparser_init(c->parser, htp_type_request);
 
+
         return htparser_set_userdata(c->parser, c);
     } else {
         return evhtp_connection_free(c);
     }
 
     return;
-}
+} /* _evhtp_connection_writecb */
 
 static void
 _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
@@ -2452,6 +2493,20 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     }
 #endif
 
+#ifndef EVHTP_DISABLE_SSL
+    if (htp->ssl_ctx != NULL) {
+        /* if ssl is enabled and we have virtual hosts, set our servername
+         * callback. We do this here because we want to make sure that this gets
+         * set after all potential virtualhosts have been set, not just after
+         * ssl_init.
+         */
+        if (TAILQ_FIRST(&htp->vhosts) != NULL) {
+            SSL_CTX_set_tlsext_servername_callback(htp->ssl_ctx,
+                                                   _evhtp_ssl_servername);
+        }
+    }
+#endif
+
     return htp->server ? 0 : -1;
 }
 
@@ -3029,10 +3084,6 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         }
     }
 
-    if (TAILQ_FIRST(&htp->vhosts) != NULL) {
-        SSL_CTX_set_tlsext_servername_callback(htp->ssl_ctx, _evhtp_ssl_servername);
-    }
-
     return 0;
 }     /* evhtp_use_ssl */
 
@@ -3102,6 +3153,20 @@ evhtp_connection_set_timeouts(evhtp_connection_t * c,
 }
 
 void
+evhtp_connection_set_max_body_size(evhtp_connection_t * c, uint64_t len) {
+    if (len == 0) {
+        c->max_body_size = c->htp->max_body_size;
+    } else {
+        c->max_body_size = len;
+    }
+}
+
+void
+evhtp_request_set_max_body_size(evhtp_request_t * req, uint64_t len) {
+    return evhtp_connection_set_max_body_size(req->conn, len);
+}
+
+void
 evhtp_connection_free(evhtp_connection_t * connection) {
     if (connection == NULL) {
         return;
@@ -3159,6 +3224,11 @@ evhtp_set_timeouts(evhtp_t * htp, struct timeval * r_timeo, struct timeval * w_t
     }
 }
 
+void
+evhtp_set_max_keepalive_requests(evhtp_t * htp, uint64_t num) {
+    htp->max_keepalive_requests = num;
+}
+
 /**
  * @brief set bufferevent flags, defaults to BEV_OPT_CLOSE_ON_FREE
  *
@@ -3168,6 +3238,11 @@ evhtp_set_timeouts(evhtp_t * htp, struct timeval * r_timeo, struct timeval * w_t
 void
 evhtp_set_bev_flags(evhtp_t * htp, int flags) {
     htp->bev_flags = flags;
+}
+
+void
+evhtp_set_max_body_size(evhtp_t * htp, uint64_t len) {
+    htp->max_body_size = len;
 }
 
 int
@@ -3226,7 +3301,14 @@ evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost) {
      * This allows for a keep-alive connection to make multiple requests with
      * different Host: values.
      */
-    vhost->parent = evhtp;
+    vhost->parent                 = evhtp;
+
+    /* inherit various flags from the parent evhtp structure */
+    vhost->bev_flags              = evhtp->bev_flags;
+    vhost->max_body_size          = evhtp->max_body_size;
+    vhost->max_keepalive_requests = evhtp->max_keepalive_requests;
+    vhost->recv_timeo             = evhtp->recv_timeo;
+    vhost->send_timeo             = evhtp->send_timeo;
 
     TAILQ_INSERT_TAIL(&evhtp->vhosts, vhost, next_vhost);
 

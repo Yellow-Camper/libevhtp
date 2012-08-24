@@ -9,16 +9,17 @@
 #include <evhtp.h>
 
 #ifndef EVHTP_DISABLE_EVTHR
-int      use_threads = 0;
-int      num_threads = 0;
+int      use_threads    = 0;
+int      num_threads    = 0;
 #endif
-char   * bind_addr   = "0.0.0.0";
-uint16_t bind_port   = 8081;
-char   * ext_body    = NULL;
-char   * ssl_pem     = NULL;
-char   * ssl_ca      = NULL;
-char   * ssl_capath  = NULL;
-size_t   bw_limit    = 0;
+char   * bind_addr      = "0.0.0.0";
+uint16_t bind_port      = 8081;
+char   * ext_body       = NULL;
+char   * ssl_pem        = NULL;
+char   * ssl_ca         = NULL;
+char   * ssl_capath     = NULL;
+size_t   bw_limit       = 0;
+uint64_t max_keepalives = 0;
 
 struct pauser {
     event_t         * timer_ev;
@@ -184,6 +185,14 @@ test_500_cb(evhtp_request_t * req, void * arg ) {
     evhtp_send_reply(req, EVHTP_RES_SERVERR);
 }
 
+static void
+test_max_body(evhtp_request_t * req, void * arg) {
+    evbuffer_add_reference(req->buffer_out,
+                           "test_max_body\n", 14, NULL, NULL);
+
+    evhtp_send_reply(req, EVHTP_RES_OK);
+}
+
 const char * chunk_strings[] = {
     "I give you the light of Eärendil,\n",
     "our most beloved star.\n",
@@ -320,6 +329,13 @@ test_regex_hdrs_cb(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg ) {
 #endif
 
 static evhtp_res
+set_max_body(evhtp_request_t * req, evhtp_headers_t * hdrs, void * arg) {
+    evhtp_request_set_max_body_size(req, 1024);
+
+    return EVHTP_RES_OK;
+}
+
+static evhtp_res
 test_pre_accept(evhtp_connection_t * c, void * arg) {
     uint16_t port = *(uint16_t *)arg;
 
@@ -392,7 +408,7 @@ dummy_check_issued_cb(X509_STORE_CTX * ctx, X509 * x, X509 * issuer) {
 
 #endif
 
-const char * optstr = "htn:a:p:r:s:c:C:l:N:";
+const char * optstr = "htn:a:p:r:s:c:C:l:N:m:";
 
 const char * help   =
     "Options: \n"
@@ -410,7 +426,8 @@ const char * help   =
     "  -r <str> : Document root            (default: .)\n"
     "  -N <str> : Add this string to body. (default: NULL)\n"
     "  -a <str> : Bind Address             (default: 0.0.0.0)\n"
-    "  -p <int> : Bind Port                (default: 8081)\n";
+    "  -p <int> : Bind Port                (default: 8081)\n"
+    "  -m <int> : Max keepalive requests   (default: 0)\n";
 
 
 int
@@ -427,35 +444,38 @@ parse_args(int argc, char ** argv) {
                 printf("Usage: %s [opts]\n%s", argv[0], help);
                 return -1;
             case 'N':
-                ext_body    = strdup(optarg);
+                ext_body       = strdup(optarg);
                 break;
             case 'a':
-                bind_addr   = strdup(optarg);
+                bind_addr      = strdup(optarg);
                 break;
             case 'p':
-                bind_port   = atoi(optarg);
+                bind_port      = atoi(optarg);
                 break;
 #ifndef EVHTP_DISABLE_EVTHR
             case 't':
-                use_threads = 1;
+                use_threads    = 1;
                 break;
             case 'n':
-                num_threads = atoi(optarg);
+                num_threads    = atoi(optarg);
                 break;
 #endif
 #ifndef EVHTP_DISABLE_SSL
             case 's':
-                ssl_pem     = strdup(optarg);
+                ssl_pem        = strdup(optarg);
                 break;
             case 'c':
-                ssl_ca      = strdup(optarg);
+                ssl_ca         = strdup(optarg);
                 break;
             case 'C':
-                ssl_capath  = strdup(optarg);
+                ssl_capath     = strdup(optarg);
                 break;
 #endif
             case 'l':
-                bw_limit    = atoll(optarg);
+                bw_limit       = atoll(optarg);
+                break;
+            case 'm':
+                max_keepalives = atoll(optarg);
                 break;
             default:
                 printf("Unknown opt %s\n", optarg);
@@ -490,6 +510,7 @@ main(int argc, char ** argv) {
     evhtp_callback_t * cb_7   = NULL;
     evhtp_callback_t * cb_8   = NULL;
     evhtp_callback_t * cb_9   = NULL;
+    evhtp_callback_t * cb_10  = NULL;
 
     if (parse_args(argc, argv) < 0) {
         exit(1);
@@ -499,6 +520,8 @@ main(int argc, char ** argv) {
 
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
+
+    evhtp_set_max_keepalive_requests(htp, max_keepalives);
 
     cb_1   = evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
     cb_2   = evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
@@ -513,6 +536,7 @@ main(int argc, char ** argv) {
     cb_8   = evhtp_set_regex_cb(htp, "^/create/(.*)", create_callback, NULL);
 #endif
     cb_9   = evhtp_set_glob_cb(htp, "*/glob/*", test_glob_cb, NULL);
+    cb_10  = evhtp_set_cb(htp, "/max_body_size", test_max_body, NULL);
 
     /* set a callback to test out chunking API */
     evhtp_set_cb(htp, "/chunkme", test_chunking, NULL);
@@ -529,6 +553,8 @@ main(int argc, char ** argv) {
 #ifndef EVHTP_DISABLE_REGEX
     evhtp_set_hook(&cb_6->hooks, evhtp_hook_on_headers, test_regex_hdrs_cb, NULL);
 #endif
+
+    evhtp_set_hook(&cb_10->hooks, evhtp_hook_on_headers, set_max_body, NULL);
 
     /* set a default request handler */
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");

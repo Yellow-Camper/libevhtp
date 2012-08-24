@@ -1,3 +1,12 @@
+v1.1.1
+ o Added max-body functionality. (7f0052a Mark Ellzey)
+ o Added evhtp_set_max_keepalive_requests() (503ef28 Mark Ellzey)
+ o inherit parent settings when adding vhosts. (c66161b Mark Ellzey)
+ o Check for NULL before request status switch/case (f943a41 Mark Ellzey)
+ o call tlsext_servername_callback in bind_sockaddr (d1b5433 Mark Ellzey)
+ o Swap callback finder for path+file first. (2c30003 Mark Ellzey)
+ o Disable BEV_WRITE when htparser_run() is active (414814a Mark Ellzey)
+
 v1.1.0
  o Add ability for rules to be ordered. (ad8c468 Mark Ellzey)
  o Cleanup the old rule code. (fbfda73 Mark Ellzey)

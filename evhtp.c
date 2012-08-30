@@ -1743,6 +1743,13 @@ _evhtp_ssl_servername(evhtp_ssl_t * ssl, int * unused, void * arg) {
         connection->vhost_via_sni = 1;
 
         SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
+        SSL_set_options(ssl, SSL_CTX_get_options(ssl->ctx));
+
+        if ((SSL_get_verify_mode(ssl) == SSL_VERIFY_NONE) ||
+            (SSL_num_renegotiations(ssl) == 0)) {
+            SSL_set_verify(ssl, SSL_CTX_get_verify_mode(ssl->ctx),
+                           SSL_CTX_get_verify_callback(ssl->ctx));
+        }
 
         return SSL_TLSEXT_ERR_OK;
     }

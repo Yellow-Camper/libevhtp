@@ -647,6 +647,13 @@ int evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t port, int backl
 
 
 /**
+ * @brief stops the listening socket.
+ *
+ * @param htp
+ */
+void evhtp_unbind_socket(evhtp_t * htp);
+
+/**
  * @brief bind to an already allocated sockaddr.
  *
  * @param htp

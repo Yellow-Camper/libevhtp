@@ -2480,6 +2480,12 @@ evhtp_send_reply_chunk_end(evhtp_request_t * request) {
     evhtp_send_reply_end(request);
 }
 
+void
+evhtp_unbind_socket(evhtp_t * htp) {
+    evconnlistener_free(htp->server);
+    htp->server = NULL;
+}
+
 int
 evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int backlog) {
     signal(SIGPIPE, SIG_IGN);

@@ -236,6 +236,17 @@ main(int argc, char ** argv) {
                                           "Empty: \r\n"
                                           "Things: junk\r\n\r\n";
 
+    const char * test_no_cr             = "GET / HTTP/1.1\n"
+                                          "Host: stuff\n"
+                                          "Things: blah\n\n";
+    const char * test_no_hdr_cr         = "GET / HTTP/1.1\r\n"
+                                          "Host: things\n"
+                                          "Stuff: blah\n\n";
+    const char * test_no_hdr_cr_end     = "GET / HTTP/1.1\r\n"
+                                          "Host: blah\r\n"
+                                          "things: stuff\n\n\r\n";
+
+
 
     _test(p, &hooks, test_resp_1, htp_type_response);
     _test(p, &hooks, test_1, htp_type_request);
@@ -248,6 +259,9 @@ main(int argc, char ** argv) {
     _test(p, &hooks, test_fail, htp_type_request);
     _test(p, &hooks, test_empty_header, htp_type_request);
     _test(p, &hooks, test_resp_empty_header, htp_type_response);
+    _test(p, &hooks, test_no_cr, htp_type_request);
+    _test(p, &hooks, test_no_hdr_cr, htp_type_request);
+    _test(p, &hooks, test_no_hdr_cr_end, htp_type_request);
 
     _test_fragments(p, &hooks, test_fragment_1, htp_type_request);
     _test_fragments(p, &hooks, test_fragment_2, htp_type_request);

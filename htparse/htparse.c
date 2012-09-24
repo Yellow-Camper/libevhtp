@@ -931,19 +931,22 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->minor = 9;
                         p->buf_idx           = 0;
 
-                        p->state = s_hdrline_start;
+                        p->state             = s_hdrline_start;
                         break;
-                    default:
-                        if (ch == '?') {
-                            res = hook_path_run(p, hooks, p->path_offset, (&p->buf[p->buf_idx] - p->path_offset));
-                            p->args_offset = &p->buf[p->buf_idx];
-                        }
+                    case '?':
+                        res                  = hook_path_run(p, hooks, p->path_offset, (&p->buf[p->buf_idx] - p->path_offset));
 
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
 
-                        p->state = s_uri;
+                        p->args_offset       = &p->buf[p->buf_idx];
+                        p->state             = s_uri;
+                        break;
+                    default:
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
 
+                        p->state             = s_uri;
                         break;
                 } /* switch */
 
@@ -987,6 +990,18 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         }
                     }
                     break;
+                    case '?':
+
+                        res = hook_path_run(p, hooks, p->path_offset,
+                                            (&p->buf[p->buf_idx] - p->path_offset));
+
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+                        p->args_offset       = &p->buf[p->buf_idx];
+                        break;
+
+
+
                     case CR:
                         p->minor             = 9;
                         p->buf_idx           = 0;
@@ -1123,8 +1138,9 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->state = s_almost_done;
                         break;
                     case LF:
-                        p->state = s_hdrline_start;
-                        break;
+                        /* LF without a CR? error.... */
+                        p->error = htparse_error_inval_reqline;
+                        return i + 1;
                     default:
                         if (ch < '0' || ch > '9') {
                             p->error = htparse_error_inval_ver;
@@ -1414,8 +1430,9 @@ hdrline_start:
 
                         break;
                     case LF:
-                        p->state             = s_hdrline_hdr_done;
-                        break;
+                        /* LF before CR? invalid */
+                        p->error             = htparse_error_inval_hdr;
+                        return i + 1;
                     default:
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';

@@ -107,6 +107,7 @@ _evthr_read_cmd(int sock, short __unused__ which, void * args) {
     }
 
     if (recvd < sizeof(evthr_cmd_t)) {
+        pthread_mutex_unlock(&thread->rlock);
         goto error;
     }
 

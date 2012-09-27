@@ -119,10 +119,6 @@ RB_GENERATE(status_code_tree, status_code, entry, status_code_cmp);
 
 static void
 status_code_init(void) {
-    if (scode_tree_initialized > 0) {
-        return;
-    }
-
     /* 100 codes */
     scode_add(EVHTP_RES_CONTINUE, "Continue");
     scode_add(EVHTP_RES_SWITCH_PROTO, "Switching Protocols");

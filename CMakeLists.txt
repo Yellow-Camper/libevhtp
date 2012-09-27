@@ -78,6 +78,11 @@ find_package(LibEvent REQUIRED)
 find_package(OpenSSL)
 find_path(LIBEVENT_INCLUDE_DIR event2/event.h REQUIRED)
 
+if (NOT OPENSSL_FOUND)
+	set (EVHTP_DISABLE_SSL ON)
+endif()
+	
+
 if (NOT EVHTP_DISABLE_REGEX)
 	CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/oniguruma/config.h)
 	set(ONIG_SOURCES

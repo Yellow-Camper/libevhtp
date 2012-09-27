@@ -86,8 +86,6 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
 #define _evhtp_unlock(h)                           do {} while (0)
 #endif
 
-static int scode_tree_initialized = 0;
-
 /**
  * @brief An RBTREE entry for the status code -> str matcher
  */
@@ -181,23 +179,7 @@ status_code_init(void) {
     scode_add(EVHTP_RES_GWTIMEOUT, "Gateway Timeout");
     scode_add(EVHTP_RES_VERNSUPPORT, "HTTP Version Not Supported");
     scode_add(EVHTP_RES_BWEXEED, "Bandwidth Limit Exceeded");
-
-    scode_tree_initialized = 1;
 }     /* status_code_init */
-
-static void
-status_code_deinit(void) {
-    struct status_code *c;
-    struct status_code *nxt;
-
-    for(c = RB_MIN(status_code_tree, &status_code_head); c != NULL; c = nxt) {
-        nxt = RB_NEXT(status_code_tree, &status_code_head, c);
-        RB_REMOVE(status_code_tree, &status_code_head, c);
-        free(c);
-    }
-    
-    scode_tree_initialized = 0;
-}
 
 const char *
 status_code_to_str(evhtp_res code) {
@@ -2582,15 +2564,6 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 
     return evhtp_bind_sockaddr(htp, sa, sin_len, backlog);
 } /* evhtp_bind_socket */
-
-void
-evhtp_unbind_socket(evhtp_t * htp, int deinit_status_codes) {
-    if (deinit_status_codes) {
-        status_code_deinit();
-    }
-
-    evconnlistener_free(htp->server);
-}
 
 void
 evhtp_callbacks_free(evhtp_callbacks_t * callbacks) {

@@ -1,3 +1,8 @@
+v1.1.4
+ o Fixed potential deadlock - reported by zhangpeihao (36ee722 Mark Ellzey)
+ o Removing conflicting code from master branch. (51feaa9 Mark Ellzey)
+ o Assure SSL is disabled if not found. (d4f3f35 Mark Ellzey)
+
 v1.1.3
  o Added evhtp_unbind_socket() (9c9b508 Mark Ellzey)
  o Fixed issue with query argument decoding. (8ff9cf3 Mark Ellzey)

@@ -86,6 +86,8 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
 #define _evhtp_unlock(h)                           do {} while (0)
 #endif
 
+static int scode_tree_initialized = 0;
+
 /**
  * @brief An RBTREE entry for the status code -> str matcher
  */
@@ -119,6 +121,11 @@ RB_GENERATE(status_code_tree, status_code, entry, status_code_cmp);
 
 static void
 status_code_init(void) {
+    if (scode_tree_initialized) {
+        /* Already initialized. */
+        return;
+    }
+
     /* 100 codes */
     scode_add(EVHTP_RES_CONTINUE, "Continue");
     scode_add(EVHTP_RES_SWITCH_PROTO, "Switching Protocols");
@@ -175,6 +182,8 @@ status_code_init(void) {
     scode_add(EVHTP_RES_GWTIMEOUT, "Gateway Timeout");
     scode_add(EVHTP_RES_VERNSUPPORT, "HTTP Version Not Supported");
     scode_add(EVHTP_RES_BWEXEED, "Bandwidth Limit Exceeded");
+
+    scode_tree_initialized = 1;
 }     /* status_code_init */
 
 const char *

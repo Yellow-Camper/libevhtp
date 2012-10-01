@@ -2137,11 +2137,11 @@ evhtp_parse_query(const char * query, size_t len) {
 
     query_args = evhtp_query_new();
 
-    if (!(key_buf = malloc(len))) {
+    if (!(key_buf = malloc(len+1))) {
         return NULL;
     }
 
-    if (!(val_buf = malloc(len))) {
+    if (!(val_buf = malloc(len+1))) {
         free(key_buf);
         return NULL;
     }

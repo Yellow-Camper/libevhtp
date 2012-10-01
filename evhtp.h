@@ -483,6 +483,7 @@ struct evhtp_ssl_cfg_s {
  * @return a new evhtp_t structure or NULL on error
  */
 evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
+void      evhtp_free(evhtp_t * evhtp);
 
 
 /**

@@ -86,6 +86,13 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
 #define _evhtp_unlock(h)                           do {} while (0)
 #endif
 
+#ifndef TAILQ_FOREACH_SAFE
+#define TAILQ_FOREACH_SAFE(var, head, field, tvar)              \
+    for ((var) = TAILQ_FIRST((head));                           \
+         (var) && ((tvar) = TAILQ_NEXT((var), field), 1);       \
+         (var) = (tvar))
+#endif
+
 static int scode_tree_initialized = 0;
 
 /**
@@ -3358,3 +3365,29 @@ evhtp_new(evbase_t * evbase, void * arg) {
     return htp;
 }
 
+void
+evhtp_free(evhtp_t * evhtp) {
+    evhtp_alias_t * evhtp_alias, * tmp;
+
+    if (evhtp == NULL) {
+        return;
+    }
+
+    if (evhtp->callbacks) {
+        free(evhtp->callbacks);
+    }
+
+    if (evhtp->server_name) {
+        free(evhtp->server_name);
+    }
+
+    TAILQ_FOREACH_SAFE(evhtp_alias, &evhtp->aliases, next, tmp) {
+        if (evhtp_alias->alias != NULL) {
+            free(evhtp_alias->alias);
+        }
+        TAILQ_REMOVE(&evhtp->aliases, evhtp_alias, next);
+        free(evhtp_alias);
+    }
+
+    free(evhtp);
+}

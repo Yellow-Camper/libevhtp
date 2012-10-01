@@ -2211,8 +2211,11 @@ query_key:
                 break;
             case s_query_key_hex_1:
                 if (!evhtp_is_hex_query_char(ch)) {
-                    res = -1;
-                    goto error;
+                    /* not hex, so we treat as a normal key */
+                    key_buf[key_idx++] = ch;
+                    key_buf[key_idx]   = '\0';
+                    state = s_query_key;
+                    break;
                 }
 
                 key_buf[key_idx++] = ch;
@@ -2261,8 +2264,11 @@ query_key:
                 break;
             case s_query_val_hex_1:
                 if (!evhtp_is_hex_query_char(ch)) {
-                    res = -1;
-                    goto error;
+                    /* not really a hex val */
+                    val_buf[val_idx++] = ch;
+                    val_buf[val_idx]   = '\0';
+                    state = s_query_val;
+                    break;
                 }
 
                 val_buf[val_idx++] = ch;
@@ -3044,7 +3050,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
     SSL_CTX_use_PrivateKey_file(htp->ssl_ctx, cfg->privfile ? : cfg->pemfile, SSL_FILETYPE_PEM);
 
     SSL_CTX_set_session_id_context(htp->ssl_ctx,
-                                   (void*)&session_id_context,
+                                   (void *)&session_id_context,
                                    sizeof(session_id_context));
 
     SSL_CTX_set_app_data(htp->ssl_ctx, htp);

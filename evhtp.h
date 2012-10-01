@@ -270,8 +270,8 @@ struct evhtp_s {
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
 
-    struct timeval * recv_timeo;
-    struct timeval * send_timeo;
+    struct timeval recv_timeo;
+    struct timeval send_timeo;
 
     TAILQ_HEAD(, evhtp_alias_s) aliases;
     TAILQ_HEAD(, evhtp_s) vhosts;
@@ -494,7 +494,7 @@ evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
  * @param r read-timeout in timeval
  * @param w write-timeout in timeval.
  */
-void evhtp_set_timeouts(evhtp_t * htp, struct timeval * r, struct timeval * w);
+void evhtp_set_timeouts(evhtp_t * htp, const struct timeval * r, const struct timeval * w);
 void evhtp_set_bev_flags(evhtp_t * htp, int flags);
 int  evhtp_ssl_use_threads(void);
 int  evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
@@ -950,7 +950,7 @@ evbev_t * evhtp_connection_get_bev(evhtp_connection_t * conn);
  * @param r timeval for read
  * @param w timeval for write
  */
-void evhtp_connection_set_timeouts(evhtp_connection_t * conn, struct timeval * r, struct timeval * w);
+void evhtp_connection_set_timeouts(evhtp_connection_t * conn, const struct timeval * r, const struct timeval * w);
 
 /**
  * @brief returns the underlying requests bufferevent

@@ -1501,14 +1501,20 @@ end:
 
     if (connection->recv_timeo.tv_sec || connection->recv_timeo.tv_usec) {
         c_recv_timeo = &connection->recv_timeo;
+    } else if (connection->htp->recv_timeo.tv_sec ||
+               connection->htp->recv_timeo.tv_usec) {
+        c_recv_timeo = &connection->htp->recv_timeo;
     } else {
-        c_recv_timeo = connection->htp->recv_timeo;
+        c_recv_timeo = NULL;
     }
 
     if (connection->send_timeo.tv_sec || connection->send_timeo.tv_usec) {
         c_send_timeo = &connection->send_timeo;
+    } else if (connection->htp->send_timeo.tv_sec ||
+               connection->htp->send_timeo.tv_usec) {
+        c_send_timeo = &connection->htp->send_timeo;
     } else {
-        c_send_timeo = connection->htp->send_timeo;
+        c_send_timeo = NULL;
     }
 
     evhtp_connection_set_timeouts(connection, c_recv_timeo, c_send_timeo);
@@ -3146,9 +3152,9 @@ evhtp_request_get_connection(evhtp_request_t * request) {
 }
 
 void
-evhtp_connection_set_timeouts(evhtp_connection_t * c,
-                              struct timeval     * rtimeo,
-                              struct timeval     * wtimeo) {
+evhtp_connection_set_timeouts(evhtp_connection_t       * c,
+                              const struct timeval     * rtimeo,
+                              const struct timeval     * wtimeo) {
     if (!c) {
         return;
     }
@@ -3216,15 +3222,13 @@ evhtp_request_free(evhtp_request_t * request) {
 }
 
 void
-evhtp_set_timeouts(evhtp_t * htp, struct timeval * r_timeo, struct timeval * w_timeo) {
+evhtp_set_timeouts(evhtp_t * htp, const struct timeval * r_timeo, const struct timeval * w_timeo) {
     if (r_timeo != NULL) {
-        htp->recv_timeo = malloc(sizeof(struct timeval));
-        memcpy(htp->recv_timeo, r_timeo, sizeof(struct timeval));
+        htp->recv_timeo = *r_timeo;
     }
 
     if (w_timeo != NULL) {
-        htp->send_timeo = malloc(sizeof(struct timeval));
-        memcpy(htp->send_timeo, w_timeo, sizeof(struct timeval));
+        htp->send_timeo = *w_timeo;
     }
 }
 

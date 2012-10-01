@@ -2212,8 +2212,15 @@ query_key:
             case s_query_key_hex_1:
                 if (!evhtp_is_hex_query_char(ch)) {
                     /* not hex, so we treat as a normal key */
-                    key_buf[key_idx++] = ch;
-                    key_buf[key_idx]   = '\0';
+                    if ((key_idx + 2) >= len) {
+                        /* we need to insert \%<ch>, but not enough space */
+                        res = -1;
+                        goto error;
+                    }
+
+                    key_buf[key_idx - 1] = '%';
+                    key_buf[key_idx++]   = ch;
+                    key_buf[key_idx]     = '\0';
                     state = s_query_key;
                     break;
                 }
@@ -2265,8 +2272,17 @@ query_key:
             case s_query_val_hex_1:
                 if (!evhtp_is_hex_query_char(ch)) {
                     /* not really a hex val */
-                    val_buf[val_idx++] = ch;
-                    val_buf[val_idx]   = '\0';
+                    if ((val_idx + 2) >= len) {
+                        /* we need to insert \%<ch>, but not enough space */
+                        res = -1;
+                        goto error;
+                    }
+
+
+                    val_buf[val_idx - 1] = '%';
+                    val_buf[val_idx++]   = ch;
+                    val_buf[val_idx]     = '\0';
+
                     state = s_query_val;
                     break;
                 }

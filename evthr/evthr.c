@@ -354,9 +354,7 @@ evthr_pool_free(evthr_pool_t * pool) {
         return;
     }
 
-    for (thread = TAILQ_FIRST(&pool->threads); thread != NULL; thread = save) {
-        save = TAILQ_NEXT(thread, next);
-
+    TAILQ_FOREACH_SAFE(thread, &pool->threads, next, save) {
         TAILQ_REMOVE(&pool->threads, thread, next);
 
         evthr_free(thread);

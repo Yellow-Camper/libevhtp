@@ -2665,6 +2665,7 @@ evhtp_callback_free(evhtp_callback_t * callback) {
 #ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             regfree(callback->val.regex);
+            free(callback->val.regex);
             break;
 #endif
     }

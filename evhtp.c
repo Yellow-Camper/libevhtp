@@ -2669,6 +2669,10 @@ evhtp_callback_free(evhtp_callback_t * callback) {
 #endif
     }
 
+    if (callback->hooks) {
+        free(callback->hooks);
+    }
+
     free(callback);
 
     return;

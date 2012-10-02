@@ -514,6 +514,8 @@ main(int argc, char ** argv) {
     evhtp_callback_t * cb_8   = NULL;
     evhtp_callback_t * cb_9   = NULL;
     evhtp_callback_t * cb_10  = NULL;
+    evhtp_callback_t * cb_11  = NULL;
+    evhtp_callback_t * cb_12  = NULL;
 
     if (parse_args(argc, argv) < 0) {
         exit(1);
@@ -542,12 +544,12 @@ main(int argc, char ** argv) {
     cb_10  = evhtp_set_cb(htp, "/max_body_size", test_max_body, NULL);
 
     /* set a callback to test out chunking API */
-    evhtp_set_cb(htp, "/chunkme", test_chunking, NULL);
+    cb_11  = evhtp_set_cb(htp, "/chunkme", test_chunking, NULL);
 
     /* set a callback which takes ownership of the underlying bufferevent and
      * just starts echoing things
      */
-    evhtp_set_cb(htp, "/ownme", test_ownership, NULL);
+    cb_12  = evhtp_set_cb(htp, "/ownme", test_ownership, NULL);
 
     /* set a callback to pause on each header for cb_7 */
     evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, NULL);
@@ -623,6 +625,25 @@ main(int argc, char ** argv) {
     event_base_loop(evbase, 0);
 
     event_free(ev_sigint);
+    evhtp_unbind_socket(htp);
+    evhtp_callback_free(cb_12);
+    evhtp_callback_free(cb_11);
+    evhtp_callback_free(cb_10);
+    evhtp_callback_free(cb_9);
+#ifndef EVHTP_DISABLE_REGEX
+    evhtp_callback_free(cb_8);
+#endif
+    evhtp_callback_free(cb_7);
+#ifndef EVHTP_DISABLE_REGEX
+    evhtp_callback_free(cb_6);
+#endif
+    evhtp_callback_free(cb_5);
+    evhtp_callback_free(cb_4);
+    evhtp_callback_free(cb_3);
+    evhtp_callback_free(cb_2);
+    evhtp_callback_free(cb_1);
+    evhtp_free(htp);
+    event_base_free(evbase);
 
     return 0;
 } /* main */

@@ -3378,6 +3378,11 @@ evhtp_free(evhtp_t * evhtp) {
         return;
     }
 
+    if (evhtp->thr_pool) {
+        evthr_pool_stop(evhtp->thr_pool);
+        evthr_pool_free(evhtp->thr_pool);
+    }
+
     if (evhtp->callbacks) {
         free(evhtp->callbacks);
     }

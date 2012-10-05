@@ -114,10 +114,10 @@ enum evhtp_hook_type {
 
 enum evhtp_callback_type {
     evhtp_callback_type_hash,
+    evhtp_callback_type_glob,
 #ifndef EVHTP_DISABLE_REGEX
     evhtp_callback_type_regex,
 #endif
-    evhtp_callback_type_glob
 };
 
 enum evhtp_proto {

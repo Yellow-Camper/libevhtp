@@ -1243,6 +1243,10 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                         p->state = s_done;
                         res      = hook_on_hdrs_begin_run(p, hooks);
+                        if (res) {
+                            p->error = htparse_error_user;
+                            return i + 1;
+                        }
                         break;
                     default:
                         p->error = htparse_error_inval_reqline;

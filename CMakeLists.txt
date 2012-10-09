@@ -79,7 +79,11 @@ find_package(OpenSSL)
 find_path(LIBEVENT_INCLUDE_DIR event2/event.h REQUIRED)
 
 if (NOT OPENSSL_FOUND)
+	message("Diabling SSL")
 	set (EVHTP_DISABLE_SSL ON)
+	set (OPENSSL_CRYPTO_LIBRARY "")
+	set (OPENSSL_INCLUDE_DIR "")
+	set (OPENSSL_LIBRARIES "")
 endif()
 	
 
@@ -169,6 +173,10 @@ endif(NOT EVHTP_DISABLE_EVTHR)
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG")
 endif (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+
+if (EVHTP_DISABLE_SSL)
+	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEVHTP_DISABLE_SSL")
+endif()
 
 add_library(libevhtp STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")

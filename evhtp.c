@@ -633,14 +633,38 @@ _evhtp_request_new(evhtp_connection_t * c) {
     req->htp         = c ? c->htp : NULL;
     req->status      = EVHTP_RES_OK;
     req->buffer_in   = evbuffer_new();
+    if (!req->buffer_in) {
+        goto out_free_req;
+    }
     req->buffer_out  = evbuffer_new();
+    if (!req->buffer_out) {
+        goto out_free_buf_in;
+    }
     req->headers_in  = malloc(sizeof(evhtp_headers_t));
+    if (!req->headers_in) {
+        goto out_free_buf_out;
+    }
     req->headers_out = malloc(sizeof(evhtp_headers_t));
+    if (!req->headers_out) {
+        goto out_free_hdr_in;
+    }
 
     TAILQ_INIT(req->headers_in);
     TAILQ_INIT(req->headers_out);
 
     return req;
+
+    /* Error path. */
+ out_free_hdr_in:
+    free(req->headers_in);
+ out_free_buf_out:
+    evbuffer_free(req->buffer_out);
+ out_free_buf_in:
+    evbuffer_free(req->buffer_in);
+ out_free_req:
+    free(req);
+
+    return NULL;
 }
 
 /**
@@ -1785,6 +1809,10 @@ _evhtp_connection_new(evhtp_t * htp, evutil_socket_t sock, evhtp_type type) {
     connection->htp       = htp;
     connection->type      = type;
     connection->parser    = htparser_new();
+    if (!connection->parser) {
+        free(connection);
+        return NULL;
+    }
 
     htparser_init(connection->parser, ptype);
     htparser_set_userdata(connection->parser, connection);

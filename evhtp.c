@@ -3624,8 +3624,8 @@ evhtp_connection_free(evhtp_connection_t * connection) {
         return;
     }
 
-    _evhtp_request_free(connection->request);
     _evhtp_connection_fini_hook(connection);
+    _evhtp_request_free(connection->request);
 
     free(connection->parser);
     free(connection->hooks);

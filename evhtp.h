@@ -109,7 +109,8 @@ enum evhtp_hook_type {
     evhtp_hook_on_error,        /**< type which defines to hook whenever an error occurs */
     evhtp_hook_on_hostname,
     evhtp_hook_on_write,
-    evhtp_hook_on_event
+    evhtp_hook_on_event,
+    evhtp_hook_on_conn_error,   /**< type which defines to hook whenever a connection error occurs */
 };
 
 enum evhtp_callback_type {
@@ -145,6 +146,7 @@ typedef void (*evhtp_hook_event_cb)(evhtp_connection_t * conn, short events, voi
 /* Generic hook for passing ISO tests */
 typedef evhtp_res (*evhtp_hook)();
 
+typedef evhtp_res (*evhtp_hook_conn_err_cb)(evhtp_connection_t * connection, evhtp_error_flags errtype, void * arg);
 typedef evhtp_res (*evhtp_pre_accept_cb)(evhtp_connection_t * conn, void * arg);
 typedef evhtp_res (*evhtp_post_accept_cb)(evhtp_connection_t * conn, void * arg);
 typedef evhtp_res (*evhtp_hook_header_cb)(evhtp_request_t * req, evhtp_header_t * hdr, void * arg);
@@ -462,6 +464,7 @@ struct evhtp_hooks_s {
     evhtp_hook_read_cb            on_read;
     evhtp_hook_request_fini_cb    on_request_fini;
     evhtp_hook_connection_fini_cb on_connection_fini;
+    evhtp_hook_conn_err_cb        on_connection_error;
     evhtp_hook_err_cb             on_error;
     evhtp_hook_chunk_new_cb       on_new_chunk;
     evhtp_hook_chunk_fini_cb      on_chunk_fini;
@@ -477,6 +480,7 @@ struct evhtp_hooks_s {
     void * on_read_arg;
     void * on_request_fini_arg;
     void * on_connection_fini_arg;
+    void * on_connection_error_arg;
     void * on_error_arg;
     void * on_new_chunk_arg;
     void * on_chunk_fini_arg;

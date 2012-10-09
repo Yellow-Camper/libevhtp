@@ -82,6 +82,21 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
         }                                                                                     \
 } while (0);
 
+#define HOOK_CONN_RUN(conn, hook_name, ...) do {                                              \
+        if (conn->request) {                                                                  \
+            evhtp_request_t * request = conn->request;                                        \
+            if (HOOK_AVAIL(request, hook_name)) {                                             \
+                return HOOK_FUNC(conn, hook_name) (conn, __VA_ARGS__,                         \
+                                                   HOOK_ARGS(conn, hook_name));               \
+            }                                                                                 \
+        }                                                                                     \
+                                                                                              \
+        if (HOOK_AVAIL(conn, hook_name)) {                                                    \
+            return HOOK_FUNC(conn, hook_name) (conn, __VA_ARGS__,                             \
+                                               HOOK_ARGS(conn, hook_name));                   \
+        }                                                                                     \
+} while (0);
+
 #ifndef EVHTP_DISABLE_EVTHR
 #define _evhtp_lock(h)                             do { \
         if (h->lock) {                                  \
@@ -479,6 +494,36 @@ _evhtp_connection_fini_hook(evhtp_connection_t * connection) {
         return (connection->hooks->on_connection_fini)(connection,
                                                        connection->hooks->on_connection_fini_arg);
     }
+
+    return EVHTP_RES_OK;
+}
+
+/**
+ * @brief runs the user-defined hook when a connection error occurs
+ *
+ * @param request the request structure
+ * @param errtype the error that ocurred
+ */
+static inline void
+_evhtp_error_hook(evhtp_request_t * request, evhtp_error_flags errtype) {
+    if (request && request->hooks && request->hooks->on_error) {
+        (*request->hooks->on_error)(request, errtype,
+                                    request->hooks->on_error_arg);
+    }
+}
+
+/**
+ * @brief runs the user-defined hook when a connection error occurs
+ *
+ * @param connection the connection structure
+ * @param errtype the error that ocurred
+ */
+static inline evhtp_res
+_evhtp_connection_error_hook(evhtp_connection_t * connection, evhtp_error_flags errtype) {
+    if (connection->request) {
+        _evhtp_error_hook(connection->request, errtype);
+    }
+    HOOK_CONN_RUN(connection, on_connection_error, errtype);
 
     return EVHTP_RES_OK;
 }
@@ -1669,9 +1714,7 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
     if (c->request) {
         switch (c->request->status) {
             case EVHTP_RES_DATA_TOO_LONG:
-                if (c->request->hooks && c->request->hooks->on_error) {
-                    (*c->request->hooks->on_error)(c->request, -1, c->request->hooks->on_error_arg);
-                }
+                _evhtp_connection_error_hook(c, -1);
                 evhtp_connection_free(c);
                 return;
             default:
@@ -1809,10 +1852,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     c->error     = 1;
     c->connected = 0;
 
-    if (c->request && c->request->hooks && c->request->hooks->on_error) {
-        (*c->request->hooks->on_error)(c->request, events,
-                                       c->request->hooks->on_error_arg);
-    }
+    _evhtp_connection_error_hook(c, events);
 
 
     if (c->paused == 1) {
@@ -3202,6 +3242,10 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void
             (*hooks)->on_connection_fini     = (evhtp_hook_connection_fini_cb)cb;
             (*hooks)->on_connection_fini_arg = arg;
             break;
+        case evhtp_hook_on_conn_error:
+            (*hooks)->on_connection_error    = (evhtp_hook_conn_err_cb)cb;
+            (*hooks)->on_connection_error_arg= arg;
+            break;
         case evhtp_hook_on_error:
             (*hooks)->on_error = (evhtp_hook_err_cb)cb;
             (*hooks)->on_error_arg           = arg;
@@ -3271,6 +3315,10 @@ evhtp_unset_all_hooks(evhtp_hooks_t ** hooks) {
     }
 
     if (evhtp_unset_hook(hooks, evhtp_hook_on_connection_fini)) {
+        res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_conn_error)) {
         res -= 1;
     }
 

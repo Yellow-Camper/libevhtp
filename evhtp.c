@@ -1559,7 +1559,7 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
 
     if (c->request && c->request->status == EVHTP_RES_PAUSE) {
         evhtp_request_pause(c->request);
-    } else if (avail != nread) {
+    } else if (htparser_get_error(c->parser) != htparse_error_none) {
         evhtp_connection_free(c);
     }
 } /* _evhtp_connection_readcb */

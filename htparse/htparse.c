@@ -1922,6 +1922,13 @@ hdrline_start:
                 p->error = htparse_error_inval_state;
                 return i + 1;
         } /* switch */
+
+	/* If we successfully completed a request/response we return
+	   to caller, and leave it up to him to call us again if
+	   parsing should continue. */
+	if (p->state == s_start) {
+		return i + 1;
+	}
     }
 
     return i;

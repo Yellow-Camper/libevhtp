@@ -777,6 +777,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         }
 
                         i--;
+                        ch = '/';
                     /* to accept requests like <method> <proto>://<host> <ver>
                      * we fallthrough to the next case.
                      */
@@ -811,16 +812,26 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 res = hook_port_run(p, hooks, p->buf, p->buf_idx);
 
                 switch (ch) {
+                    case ' ':
+                        /* this technically should never happen, but we should
+                         * check anyway
+                         */
+                        if (i == 0) {
+                            p->error = htparse_error_inval_state;
+                            return i + 1;
+                        }
+
+                        i--;
+                        ch = '/';
+                    /* to accept requests like <method> <proto>://<host> <ver>
+                     * we fallthrough to the next case.
+                     */
                     case '/':
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
                         p->path_offset       = &p->buf[p->buf_idx - 1];
 
                         p->state   = s_after_slash_in_uri;
-                        break;
-                    case ' ':
-                        p->state   = s_http_09;
-                        p->buf_idx = 0;
                         break;
                     default:
                         p->error   = htparse_error_inval_reqline;

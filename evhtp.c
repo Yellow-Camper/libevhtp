@@ -880,6 +880,8 @@ _evhtp_path_new(const char * data, size_t len) {
 
     if (len != 0) {
         req_path->full = strndup(data, len);
+    } else {
+        req_path->full = strdup("/");
     }
 
     req_path->path = path;

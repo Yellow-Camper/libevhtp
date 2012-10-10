@@ -61,6 +61,8 @@ enum parser_state {
     s_schema_slash,
     s_schema_slash_slash,
     s_host,
+    s_host_ipv6,
+    s_host_ipv6_done,
     s_port,
     s_after_slash_in_uri,
     s_check_uri,
@@ -743,6 +745,15 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 }
                 break;
             case s_host:
+                if (ch == '[') {
+                    /* Literal IPv6 address start. */
+                    p->buf[p->buf_idx++] = ch;
+                    p->buf[p->buf_idx]   = '\0';
+                    p->host_offset       = &p->buf[p->buf_idx];
+
+                    p->state = s_host_ipv6;
+                    break;
+                }
                 c = (unsigned char)(ch | 0x20);
 
                 if (c >= 'a' && c <= 'z') {
@@ -758,6 +769,14 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 }
 
                 res = hook_host_run(p, hooks, p->host_offset, (&p->buf[p->buf_idx] - p->host_offset));
+                if (res) {
+                    p->error = htparse_error_user;
+                    return i + 1;
+                }
+
+                /* No break here! Fall through. */
+            case s_host_ipv6_done:
+                res = 0;
 
                 switch (ch) {
                     case ':':
@@ -799,6 +818,33 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     return i + 1;
                 }
 
+                break;
+            case s_host_ipv6:
+                c = (unsigned char)(ch | 0x20);
+
+                if ((c >= 'a' && c <= 'f') ||
+                    (ch >= '0' && ch <= '9') || ch == ':' || ch == '.') {
+                    p->buf[p->buf_idx++] = ch;
+                    p->buf[p->buf_idx]   = '\0';
+                    break;
+                }
+
+                switch (ch) {
+                    case ']':
+                        res = hook_host_run(p, hooks, p->host_offset,
+                                            (&p->buf[p->buf_idx] - p->host_offset));
+                        if (res) {
+                            p->error = htparse_error_user;
+                            return i + 1;
+                        }
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+                        p->state = s_host_ipv6_done;
+                        break;
+                    default:
+                        p->error = htparse_error_inval_schema;
+                        return i + 1;
+                }
                 break;
             case s_port:
                 res = 0;

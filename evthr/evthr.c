@@ -61,6 +61,13 @@ struct evthr {
     TAILQ_ENTRY(evthr) next;
 };
 
+#ifndef TAILQ_FOREACH_SAFE
+#define TAILQ_FOREACH_SAFE(var, head, field, tvar)              \
+    for ((var) = TAILQ_FIRST((head));                           \
+         (var) && ((tvar) = TAILQ_NEXT((var), field), 1);       \
+         (var) = (tvar))
+#endif
+
 inline void
 evthr_inc_backlog(evthr_t * evthr) {
     __sync_fetch_and_add(&evthr->cur_backlog, 1);
@@ -347,9 +354,7 @@ evthr_pool_free(evthr_pool_t * pool) {
         return;
     }
 
-    for (thread = TAILQ_FIRST(&pool->threads); thread != NULL; thread = save) {
-        save = TAILQ_NEXT(thread, next);
-
+    TAILQ_FOREACH_SAFE(thread, &pool->threads, next, save) {
         TAILQ_REMOVE(&pool->threads, thread, next);
 
         evthr_free(thread);
@@ -361,12 +366,13 @@ evthr_pool_free(evthr_pool_t * pool) {
 evthr_res
 evthr_pool_stop(evthr_pool_t * pool) {
     evthr_t * thr;
+    evthr_t * save;
 
     if (pool == NULL) {
         return EVTHR_RES_FATAL;
     }
 
-    TAILQ_FOREACH(thr, &pool->threads, next) {
+    TAILQ_FOREACH_SAFE(thr, &pool->threads, next, save) {
         evthr_stop(thr);
     }
 

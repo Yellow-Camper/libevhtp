@@ -86,6 +86,15 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
 #define _evhtp_unlock(h)                           do {} while (0)
 #endif
 
+#ifndef TAILQ_FOREACH_SAFE
+#define TAILQ_FOREACH_SAFE(var, head, field, tvar)              \
+    for ((var) = TAILQ_FIRST((head));                           \
+         (var) && ((tvar) = TAILQ_NEXT((var), field), 1);       \
+         (var) = (tvar))
+#endif
+
+static int scode_tree_initialized = 0;
+
 /**
  * @brief An RBTREE entry for the status code -> str matcher
  */
@@ -119,6 +128,11 @@ RB_GENERATE(status_code_tree, status_code, entry, status_code_cmp);
 
 static void
 status_code_init(void) {
+    if (scode_tree_initialized) {
+        /* Already initialized. */
+        return;
+    }
+
     /* 100 codes */
     scode_add(EVHTP_RES_CONTINUE, "Continue");
     scode_add(EVHTP_RES_SWITCH_PROTO, "Switching Protocols");
@@ -175,6 +189,8 @@ status_code_init(void) {
     scode_add(EVHTP_RES_GWTIMEOUT, "Gateway Timeout");
     scode_add(EVHTP_RES_VERNSUPPORT, "HTTP Version Not Supported");
     scode_add(EVHTP_RES_BWEXEED, "Bandwidth Limit Exceeded");
+
+    scode_tree_initialized = 1;
 }     /* status_code_init */
 
 const char *
@@ -1501,14 +1517,20 @@ end:
 
     if (connection->recv_timeo.tv_sec || connection->recv_timeo.tv_usec) {
         c_recv_timeo = &connection->recv_timeo;
+    } else if (connection->htp->recv_timeo.tv_sec ||
+               connection->htp->recv_timeo.tv_usec) {
+        c_recv_timeo = &connection->htp->recv_timeo;
     } else {
-        c_recv_timeo = connection->htp->recv_timeo;
+        c_recv_timeo = NULL;
     }
 
     if (connection->send_timeo.tv_sec || connection->send_timeo.tv_usec) {
         c_send_timeo = &connection->send_timeo;
+    } else if (connection->htp->send_timeo.tv_sec ||
+               connection->htp->send_timeo.tv_usec) {
+        c_send_timeo = &connection->htp->send_timeo;
     } else {
-        c_send_timeo = connection->htp->send_timeo;
+        c_send_timeo = NULL;
     }
 
     evhtp_connection_set_timeouts(connection, c_recv_timeo, c_send_timeo);
@@ -2643,8 +2665,13 @@ evhtp_callback_free(evhtp_callback_t * callback) {
 #ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             regfree(callback->val.regex);
+            free(callback->val.regex);
             break;
 #endif
+    }
+
+    if (callback->hooks) {
+        free(callback->hooks);
     }
 
     free(callback);
@@ -3146,9 +3173,9 @@ evhtp_request_get_connection(evhtp_request_t * request) {
 }
 
 void
-evhtp_connection_set_timeouts(evhtp_connection_t * c,
-                              struct timeval     * rtimeo,
-                              struct timeval     * wtimeo) {
+evhtp_connection_set_timeouts(evhtp_connection_t       * c,
+                              const struct timeval     * rtimeo,
+                              const struct timeval     * wtimeo) {
     if (!c) {
         return;
     }
@@ -3216,15 +3243,13 @@ evhtp_request_free(evhtp_request_t * request) {
 }
 
 void
-evhtp_set_timeouts(evhtp_t * htp, struct timeval * r_timeo, struct timeval * w_timeo) {
+evhtp_set_timeouts(evhtp_t * htp, const struct timeval * r_timeo, const struct timeval * w_timeo) {
     if (r_timeo != NULL) {
-        htp->recv_timeo = malloc(sizeof(struct timeval));
-        memcpy(htp->recv_timeo, r_timeo, sizeof(struct timeval));
+        htp->recv_timeo = *r_timeo;
     }
 
     if (w_timeo != NULL) {
-        htp->send_timeo = malloc(sizeof(struct timeval));
-        memcpy(htp->send_timeo, w_timeo, sizeof(struct timeval));
+        htp->send_timeo = *w_timeo;
     }
 }
 
@@ -3345,3 +3370,34 @@ evhtp_new(evbase_t * evbase, void * arg) {
     return htp;
 }
 
+void
+evhtp_free(evhtp_t * evhtp) {
+    evhtp_alias_t * evhtp_alias, * tmp;
+
+    if (evhtp == NULL) {
+        return;
+    }
+
+    if (evhtp->thr_pool) {
+        evthr_pool_stop(evhtp->thr_pool);
+        evthr_pool_free(evhtp->thr_pool);
+    }
+
+    if (evhtp->callbacks) {
+        free(evhtp->callbacks);
+    }
+
+    if (evhtp->server_name) {
+        free(evhtp->server_name);
+    }
+
+    TAILQ_FOREACH_SAFE(evhtp_alias, &evhtp->aliases, next, tmp) {
+        if (evhtp_alias->alias != NULL) {
+            free(evhtp_alias->alias);
+        }
+        TAILQ_REMOVE(&evhtp->aliases, evhtp_alias, next);
+        free(evhtp_alias);
+    }
+
+    free(evhtp);
+}

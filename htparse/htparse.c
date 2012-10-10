@@ -877,7 +877,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->state             = s_uri;
                         break;
                     case '?':
-                        res                  = hook_path_run(p, hooks, p->buf, p->buf_idx);
+                        res                  = hook_path_run(p, hooks, p->path_offset,
+                                                             (&p->buf[p->buf_idx] - p->path_offset));
 
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
@@ -920,7 +921,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         if (p->args_offset) {
                             r1 = hook_args_run(p, hooks, p->args_offset, p->buf_idx);
                         } else {
-                            r1 = hook_path_run(p, hooks, p->buf, p->buf_idx);
+                            r1 = hook_path_run(p, hooks, p->path_offset,
+                                               (&p->buf[p->buf_idx] - p->path_offset));
                         }
 
                         r2         = hook_uri_run(p, hooks, p->buf, p->buf_idx);

@@ -688,7 +688,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                                 break;
                         } /* switch */
 
-                        res                  = hook_scheme_run(p, hooks, p->scheme_offset, p->buf_idx);
+                        res                  = hook_scheme_run(p, hooks, p->scheme_offset,(&p->buf[p->buf_idx] - p->scheme_offset));
 
 #if 0
                         p->buf_idx           = 0;
@@ -848,7 +848,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 switch (ch) {
                     case ' ':
                     {
-                        int r1 = hook_path_run(p, hooks, p->path_offset, p->buf_idx);
+                        int r1 = hook_path_run(p, hooks, p->path_offset,
+                                               (&p->buf[p->buf_idx] - p->path_offset));
                         int r2 = hook_uri_run(p, hooks, p->buf, p->buf_idx);
 
                         p->state   = s_http_09;
@@ -919,7 +920,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         int r2 = 0;
 
                         if (p->args_offset) {
-                            r1 = hook_args_run(p, hooks, p->args_offset, p->buf_idx);
+                            r1 = hook_args_run(p, hooks, p->args_offset,
+                                               (&p->buf[p->buf_idx] - p->args_offset));
                         } else {
                             r1 = hook_path_run(p, hooks, p->path_offset,
                                                (&p->buf[p->buf_idx] - p->path_offset));

@@ -1009,18 +1009,6 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         }
                     }
                     break;
-                    case '?':
-
-                        res = hook_path_run(p, hooks, p->path_offset,
-                                            (&p->buf[p->buf_idx] - p->path_offset));
-
-                        p->buf[p->buf_idx++] = ch;
-                        p->buf[p->buf_idx]   = '\0';
-                        p->args_offset       = &p->buf[p->buf_idx];
-                        break;
-
-
-
                     case CR:
                         p->minor             = 9;
                         p->buf_idx           = 0;
@@ -1031,6 +1019,22 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->buf_idx           = 0;
                         p->state             = s_hdrline_start;
                         break;
+                    case '?':
+                        /* RFC 3986 section 3.4:
+                           The query component is indicated by the
+                           first question mark ("?") character and
+                           terminated by a number sign ("#") character
+                           or by the end of the URI. */
+                        if (!p->args_offset) {
+                            res = hook_path_run(p, hooks, p->path_offset,
+                                                (&p->buf[p->buf_idx] - p->path_offset));
+
+                            p->buf[p->buf_idx++] = ch;
+                            p->buf[p->buf_idx]   = '\0';
+                            p->args_offset       = &p->buf[p->buf_idx];
+                            break;
+                        }
+                        /* Fall through. */
                     default:
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';

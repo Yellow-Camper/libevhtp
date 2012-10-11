@@ -809,7 +809,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     break;
                 }
 
-                res = hook_port_run(p, hooks, p->buf, p->buf_idx);
+                res = hook_port_run(p, hooks, p->port_offset,
+                                    (&p->buf[p->buf_idx] - p->port_offset));
 
                 switch (ch) {
                     case ' ':

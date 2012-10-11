@@ -229,24 +229,27 @@ main(int argc, char ** argv) {
     const char * test_fail              = "GET /JF HfD]\r\n\r\n";
     const char * test_resp_1            = "HTTP/1.0 200 OK\r\n"
                                           "Stuff: junk\r\n\r\n";
-    const char * test_empty_header      = "GET /blah HTTP/1.1\r\n"
+    const char * test_empty_header      = "GET /empty_header HTTP/1.1\r\n"
                                           "Empty: \r\n"
                                           "Stuff: junk\r\n\r\n";
     const char * test_resp_empty_header = "HTTP/1.1 200 OK\r\n"
-                                          "Empty: \r\n"
+                                          "response Empty: \r\n"
                                           "Things: junk\r\n\r\n";
 
-    const char * test_no_cr             = "GET / HTTP/1.1\n"
+    const char * test_no_cr             = "GET /no_cr HTTP/1.1\n"
                                           "Host: stuff\n"
                                           "Things: blah\n\n";
-    const char * test_no_hdr_cr         = "GET / HTTP/1.1\r\n"
+    const char * test_no_hdr_cr         = "GET /no_hdr_cr HTTP/1.1\r\n"
                                           "Host: things\n"
                                           "Stuff: blah\n\n";
-    const char * test_no_hdr_cr_end     = "GET / HTTP/1.1\r\n"
+    const char * test_no_hdr_cr_end     = "GET /no_hdr_cr_end HTTP/1.1\r\n"
                                           "Host: blah\r\n"
                                           "things: stuff\n\n\r\n";
-
-
+    const char * test_multiline         = "GET /multi HTTP/1.1\r\n"
+                                          "Header:    foo\r\n"
+                                          "\tbar\r\n"
+                                          "\tbaz\r\n"
+                                          "key: val\r\n\r\n";
 
     _test(p, &hooks, test_resp_1, htp_type_response);
     _test(p, &hooks, test_1, htp_type_request);
@@ -262,6 +265,7 @@ main(int argc, char ** argv) {
     _test(p, &hooks, test_no_cr, htp_type_request);
     _test(p, &hooks, test_no_hdr_cr, htp_type_request);
     _test(p, &hooks, test_no_hdr_cr_end, htp_type_request);
+    _test(p, &hooks, test_multiline, htp_type_request);
 
     _test_fragments(p, &hooks, test_fragment_1, htp_type_request);
     _test_fragments(p, &hooks, test_fragment_2, htp_type_request);

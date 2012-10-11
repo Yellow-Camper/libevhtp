@@ -1375,8 +1375,6 @@ hdrline_start:
 
                 switch (ch) {
                     case CR:
-                        res = hook_hdr_val_run(p, hooks, p->buf, p->buf_idx);
-
                         switch (p->heval) {
                             case eval_hdr_val_none:
                                 break;
@@ -1426,8 +1424,6 @@ hdrline_start:
                         } /* switch */
 
                         p->state             = s_hdrline_hdr_almost_done;
-                        p->buf_idx           = 0;
-
                         break;
                     case LF:
                         /* LF before CR? invalid */
@@ -1475,6 +1471,13 @@ hdrline_start:
 
                 switch (ch) {
                     case CR:
+                        res = hook_hdr_val_run(p, hooks, p->buf, p->buf_idx);
+
+                        if (res) {
+                            p->error = htparse_error_user;
+                            return i + 1;
+                        }
+
                         p->state = s_hdrline_almost_done;
                         res      = hook_on_hdrs_complete_run(p, hooks);
 
@@ -1486,8 +1489,22 @@ hdrline_start:
                         break;
                     case LF:
                         /* got LFLF? is this valid? */
+                        p->error = htparse_error_inval_hdr;
+
                         return i + 1;
+                    case '\t':
+                        /* this is a multiline header value, we must go back to
+                         * reading as a header value */
+                        p->state = s_hdrline_hdr_val;
+                        break;
                     default:
+                        res      = hook_hdr_val_run(p, hooks, p->buf, p->buf_idx);
+
+                        if (res) {
+                            p->error = htparse_error_user;
+                            return i + 1;
+                        }
+
                         p->buf_idx           = 0;
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';

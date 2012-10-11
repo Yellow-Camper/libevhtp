@@ -26,6 +26,8 @@
 #include "evhtp.h"
 
 static int                  _evhtp_request_parser_start(htparser * p);
+static int                  _evhtp_request_parser_host(htparser * p, const char * data, size_t len);
+static int                  _evhtp_request_parser_port(htparser * p, const char * data, size_t len);
 static int                  _evhtp_request_parser_path(htparser * p, const char * data, size_t len);
 static int                  _evhtp_request_parser_args(htparser * p, const char * data, size_t len);
 static int                  _evhtp_request_parser_header_key(htparser * p, const char * data, size_t len);
@@ -45,6 +47,9 @@ static evhtp_connection_t * _evhtp_connection_new(evhtp_t * htp, evutil_socket_t
 
 static evhtp_uri_t        * _evhtp_uri_new(void);
 static void                 _evhtp_uri_free(evhtp_uri_t * uri);
+
+static evhtp_authority_t  * _evhtp_authority_new(void);
+static void                 _evhtp_authority_free(evhtp_authority_t * authority);
 
 static evhtp_path_t       * _evhtp_path_new(const char * data, size_t len);
 static void                 _evhtp_path_free(evhtp_path_t * path);
@@ -210,8 +215,8 @@ static htparse_hooks request_psets = {
     .on_msg_begin       = _evhtp_request_parser_start,
     .method             = NULL,
     .scheme             = NULL,
-    .host               = NULL,
-    .port               = NULL,
+    .host               = _evhtp_request_parser_host,
+    .port               = _evhtp_request_parser_port,
     .path               = _evhtp_request_parser_path,
     .args               = _evhtp_request_parser_args,
     .uri                = NULL,
@@ -713,7 +718,52 @@ _evhtp_uri_new(void) {
         return NULL;
     }
 
+    uri->authority = _evhtp_authority_new();
+    if (!uri->authority) {
+        _evhtp_uri_free(uri);
+        return NULL;
+    }
+
     return uri;
+}
+
+/**
+ * @brief frees an authority structure
+ *
+ * @param authority evhtp_authority_t
+ */
+static void
+_evhtp_authority_free(evhtp_authority_t * authority) {
+    if (authority == NULL) {
+        return;
+    }
+
+    if (authority->username) {
+        free(authority->username);
+    }
+    if (authority->password) {
+        free(authority->password);
+    }
+    if (authority->hostname) {
+        free(authority->hostname);
+    }
+    free(authority);
+}
+
+/**
+ * @brief create an authority structure
+ *
+ * @return evhtp_authority_t
+ */
+static evhtp_authority_t *
+_evhtp_authority_new(void) {
+    evhtp_authority_t * authority;
+
+    if (!(authority = calloc(1, sizeof(*authority)))) {
+        return NULL;
+    }
+
+    return authority;
 }
 
 /**
@@ -729,6 +779,7 @@ _evhtp_uri_free(evhtp_uri_t * uri) {
 
     evhtp_query_free(uri->query);
     _evhtp_path_free(uri->path);
+    _evhtp_authority_free(uri->authority);
 
     free(uri->fragment);
     free(uri->query_raw);
@@ -1155,27 +1206,75 @@ _evhtp_request_parser_hostname(htparser * p, const char * data, size_t len) {
 } /* _evhtp_request_parser_hostname */
 
 static int
+_evhtp_require_uri(evhtp_connection_t * c) {
+    if (!c->request->uri) {
+        if (!(c->request->uri = _evhtp_uri_new())) {
+            c->request->status = EVHTP_RES_FATAL;
+            return -1;
+        }
+    }
+    return 0;
+}
+
+static int
+_evhtp_request_parser_host(htparser * p, const char * data, size_t len) {
+    evhtp_connection_t * c = htparser_get_userdata(p);
+    evhtp_authority_t  * authority;
+
+    if (_evhtp_require_uri(c) != 0) {
+        return -1;
+    }
+    authority = c->request->uri->authority;
+
+    authority->hostname = strndup(data, len);
+    if (!authority->hostname) {
+        c->request->status = EVHTP_RES_FATAL;
+        return -1;
+    }
+
+    return 0;
+}
+
+static int
+_evhtp_request_parser_port(htparser * p, const char * data, size_t len) {
+    evhtp_connection_t * c = htparser_get_userdata(p);
+    evhtp_authority_t  * authority;
+    char *endptr;
+    unsigned long port;
+
+    if (_evhtp_require_uri(c) != 0) {
+        return -1;
+    }
+    authority = c->request->uri->authority;
+
+    port = strtoul(data, &endptr, 10);
+    if (endptr - data != len || port > 65535) {
+        c->request->status = EVHTP_RES_FATAL;
+        return -1;
+    }
+    authority->port = port;
+
+    return 0;
+}
+
+static int
 _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
     evhtp_connection_t * c = htparser_get_userdata(p);
-    evhtp_uri_t        * uri;
     evhtp_path_t       * path;
 
-    if (!(uri = _evhtp_uri_new())) {
-        c->request->status = EVHTP_RES_FATAL;
+    if (_evhtp_require_uri(c) != 0) {
         return -1;
     }
 
     if (!(path = _evhtp_path_new(data, len))) {
-        _evhtp_uri_free(uri);
         c->request->status = EVHTP_RES_FATAL;
         return -1;
     }
 
-    uri->path          = path;
-    uri->scheme        = htparser_get_scheme(p);
+    c->request->uri->path          = path;
+    c->request->uri->scheme        = htparser_get_scheme(p);
 
     c->request->method = htparser_get_method(p);
-    c->request->uri    = uri;
 
     _evhtp_lock(c->htp);
     {

@@ -139,7 +139,6 @@ test_regex(evhtp_request_t * req, void * arg) {
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
-#endif
 
 static void
 dynamic_cb(evhtp_request_t * r, void * arg) {
@@ -169,6 +168,7 @@ create_callback(evhtp_request_t * r, void * arg) {
 
     evhtp_send_reply(r, EVHTP_RES_OK);
 }
+#endif
 
 static void
 test_foo_cb(evhtp_request_t * req, void * arg ) {
@@ -508,9 +508,13 @@ main(int argc, char ** argv) {
     evhtp_callback_t * cb_3   = NULL;
     evhtp_callback_t * cb_4   = NULL;
     evhtp_callback_t * cb_5   = NULL;
+#ifndef EVHTP_DISABLE_REGEX
     evhtp_callback_t * cb_6   = NULL;
+#endif
     evhtp_callback_t * cb_7   = NULL;
+#ifndef EVHTP_DISABLE_REGEX
     evhtp_callback_t * cb_8   = NULL;
+#endif
     evhtp_callback_t * cb_9   = NULL;
     evhtp_callback_t * cb_10  = NULL;
     evhtp_callback_t * cb_11  = NULL;

@@ -884,12 +884,35 @@ static int
 _evhtp_request_parser_args(htparser * p, const char * data, size_t len) {
     evhtp_connection_t * c   = htparser_get_userdata(p);
     evhtp_uri_t        * uri = c->request->uri;
+    const char         * fragment;
 
     if (c->type == evhtp_type_client) {
         /* as a client, technically we should never get here, but just in case
          * we return a 0 to the parser to continue.
          */
         return 0;
+    }
+
+    /* Separate fragment from query according to RFC 3986. */
+    fragment = strchr(data, '#');
+    if (fragment) {
+        ptrdiff_t frag_offset = fragment - data;
+
+        if (frag_offset < len) {
+            size_t fraglen;
+
+            /* Skip '#'. */
+            fragment++;
+            frag_offset++;
+            fraglen = len - frag_offset;
+            uri->fragment = calloc(1, fraglen + 1);
+            if (!uri->fragment) {
+                c->request->status = EVHTP_RES_ERROR;
+                return -1;
+            }
+            memcpy(uri->fragment, fragment, fraglen);
+            len -= fraglen + 1; /* Skip '#' + fragment string. */
+        }
     }
 
     if (!(uri->query = evhtp_parse_query(data, len))) {

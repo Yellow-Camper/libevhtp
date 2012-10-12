@@ -1,3 +1,22 @@
+v1.1.5
+ o Don't treat non hex chars as errors. (d8c584d Mark Ellzey)
+ o If non hex, replace idx-1 with % (2783983 Mark Ellzey)
+ o Fix off-by-one in parse_query. (86881c1 Mark Ellzey)
+ o Do not use dynamically allocated timevals in evhtp_t. (3398442 Marcus Sundberg)
+ o Only initialize status_code_tree once. (da64395 Marcus Sundberg)
+ o Add evhtp_free() matching evhtp_new(). (60b141a Marcus Sundberg)
+ o (evhtp_callback_free): Free hooks as well, if set. (6fff598 Marcus Sundberg)
+ o (evhtp_callback_free): Free regexp pointer, not only regexp. (ab9adc6 Marcus Sundberg)
+ o (evthr_pool_stop): Do not read queue entry after freeing. (f7cc5f2 Marcus Sundberg)
+ o Use TAILQ_FOREACH_SAFE() in evhthr_pool_free() as well. (5c2adcc Marcus Sundberg)
+ o (evhtp_free): Stop and free thread pool, if started. (f13c207 Marcus Sundberg)
+ o Use libevent signal handling instead of signal() in test.c (e0b68b4 Marcus Sundberg)
+ o Properly deallocate resources in test programs. (ea1bd57 Marcus Sundberg)
+ o Add test_vhost to .gitignore (2a596c2 Marcus Sundberg)
+ o Fix issue where SSL is not disabled if not found. (6f25292 Mark Ellzey)
+ o Forgot LIBEVENT_OPENSSL_LIBRARY (5a933c7 Mark Ellzey)
+ o add upport multiline header values. (325c5c7 Mark Ellzey)
+
 v1.1.4
  o Fixed potential deadlock - reported by zhangpeihao (36ee722 Mark Ellzey)
  o Removing conflicting code from master branch. (51feaa9 Mark Ellzey)

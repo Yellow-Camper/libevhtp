@@ -665,12 +665,12 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                         switch (p->buf_idx) {
                             case 3:
-                                if (_str3_cmp(p->scheme_offset, 'f', 't', 'p', ' ')) {
+                                if (_str3_cmp(p->scheme_offset, 'f', 't', 'p', '\0')) {
                                     p->scheme = htp_scheme_ftp;
                                     break;
                                 }
 
-                                if (_str3_cmp(p->scheme_offset, 'n', 'f', 's', ' ')) {
+                                if (_str3_cmp(p->scheme_offset, 'n', 'f', 's', '\0')) {
                                     p->scheme = htp_scheme_nfs;
                                     break;
                                 }

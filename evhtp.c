@@ -1527,6 +1527,7 @@ static int
 _evhtp_create_headers(evhtp_header_t * header, void * arg) {
     evbuf_t * buf = arg;
 
+    evbuffer_expand(buf, header->klen + 2 + header->vlen + 2);
     evbuffer_add(buf, header->key, header->klen);
     evbuffer_add(buf, ": ", 2);
     evbuffer_add(buf, header->val, header->vlen);

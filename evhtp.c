@@ -1004,12 +1004,13 @@ _evhtp_request_parser_args(htparser * p, const char * data, size_t len) {
             fragment++;
             frag_offset++;
             fraglen = len - frag_offset;
-            uri->fragment = calloc(1, fraglen + 1);
+            uri->fragment = malloc(fraglen + 1);
             if (!uri->fragment) {
                 c->request->status = EVHTP_RES_ERROR;
                 return -1;
             }
             memcpy(uri->fragment, fragment, fraglen);
+            uri->fragment[fraglen] = '\0';
             len -= fraglen + 1; /* Skip '#' + fragment string. */
         }
     }
@@ -1019,8 +1020,9 @@ _evhtp_request_parser_args(htparser * p, const char * data, size_t len) {
         return -1;
     }
 
-    uri->query_raw = calloc(len + 1, 1);
+    uri->query_raw = malloc(len + 1);
     memcpy(uri->query_raw, data, len);
+    uri->query_raw[len] = '\0';
 
     return 0;
 }

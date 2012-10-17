@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
@@ -123,9 +124,6 @@ struct htparser {
     unsigned int  status;       /* only for responses */
     unsigned int  status_count; /* only for responses */
 
-    char         buf[PARSER_STACK_MAX];
-    unsigned int buf_idx;
-
     char * scheme_offset;
     char * host_offset;
     char * port_offset;
@@ -133,6 +131,10 @@ struct htparser {
     char * args_offset;
 
     void * userdata;
+
+    unsigned int buf_idx;
+    /* Must be last! */
+    char         buf[PARSER_STACK_MAX];
 };
 
 static uint32_t     usual[] = {
@@ -435,7 +437,9 @@ htparser_get_total_bytes_read(htparser * p) {
 
 void
 htparser_init(htparser * p, htp_type type) {
-    memset(p, 0, sizeof(htparser));
+    /* Do not memset entire string buffer. */
+    memset(p, 0, offsetof(htparser, buf));
+    p->buf[0] = '\0';
     p->error = htparse_error_none;
     p->type  = type;
 }

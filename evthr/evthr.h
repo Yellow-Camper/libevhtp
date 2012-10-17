@@ -10,6 +10,10 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum evthr_res {
     EVTHR_RES_OK = 0,
     EVTHR_RES_BACKLOG,
@@ -50,6 +54,10 @@ evthr_res      evthr_pool_stop(evthr_pool_t * pool);
 evthr_res      evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg);
 void           evthr_pool_free(evthr_pool_t * pool);
 void           evthr_pool_set_max_backlog(evthr_pool_t * evthr, int max);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __EVTHR_H__ */
 

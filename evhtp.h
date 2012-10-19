@@ -448,6 +448,7 @@ struct evhtp_connection_s {
     int8_t                       connected       : 1; /**< upstream connection status, for client */
     int8_t                       wait_4_write    : 1;
     int8_t                       free_connection : 1;
+    uint8_t                      keepalive       : 1; /**< set to 1 after the first request has been processed and the connection is kept open */
     struct ev_token_bucket_cfg * ratelimit_cfg;       /**< connection-specific ratelimiting configuration. */
 
     TAILQ_HEAD(, evhtp_request_s) pending;            /**< client pending data */

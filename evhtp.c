@@ -1733,6 +1733,7 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
     if (c->request->keepalive == 1) {
         _evhtp_request_free(c->request);
 
+        c->keepalive       = 1;
         c->request         = NULL;
         c->body_bytes_read = 0;
 

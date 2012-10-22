@@ -129,8 +129,11 @@ typedef enum evhtp_ssl_scache_type evhtp_ssl_scache_type;
 
 typedef void (*evhtp_thread_init_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
 typedef void (*evhtp_callback_cb)(evhtp_request_t * req, void * arg);
-typedef evhtp_res (*evhtp_hook_generic_cb)();
 typedef void (*evhtp_hook_err_cb)(evhtp_request_t * req, evhtp_error_flags errtype, void * arg);
+
+/* Generic hook for passing ISO tests */
+typedef evhtp_res (*evhtp_hook)();
+
 typedef evhtp_res (*evhtp_pre_accept_cb)(evhtp_connection_t * conn, void * arg);
 typedef evhtp_res (*evhtp_post_accept_cb)(evhtp_connection_t * conn, void * arg);
 typedef evhtp_res (*evhtp_hook_header_cb)(evhtp_request_t * req, evhtp_header_t * hdr, void * arg);
@@ -606,7 +609,7 @@ evhtp_callback_t * evhtp_set_glob_cb(evhtp_t * htp, const char * pattern, evhtp_
  *
  * @return 0 on success, -1 on error (if hooks is NULL, it is allocated)
  */
-int evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook_generic_cb cb, void * arg);
+int evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg);
 
 
 /**

@@ -2699,7 +2699,7 @@ evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb) {
 }
 
 int
-evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook_generic_cb cb, void * arg) {
+evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg) {
     if (*hooks == NULL) {
         if (!(*hooks = calloc(sizeof(evhtp_hooks_t), 1))) {
             return -1;

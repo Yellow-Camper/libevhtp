@@ -1,6 +1,6 @@
 if (CMAKE_COMPILER_IS_GNUCC)
 
-	set(RSN_BASE_C_FLAGS      "-Wall -fno-strict-aliasing -pedantic --std=c99")
+	set(RSN_BASE_C_FLAGS      "-Wall -fno-strict-aliasing")
 	set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} ${RSN_BASE_C_FLAGS} -DPROJECT_VERSION=\"${PROJECT_VERSION}\"")
 	set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG} ${RSN_BASE_C_FLAGS} -ggdb")
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${RSN_BASE_C_FLAGS}")

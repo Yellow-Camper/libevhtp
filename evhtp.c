@@ -87,9 +87,9 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
 #endif
 
 #ifndef TAILQ_FOREACH_SAFE
-#define TAILQ_FOREACH_SAFE(var, head, field, tvar)              \
-    for ((var) = TAILQ_FIRST((head));                           \
-         (var) && ((tvar) = TAILQ_NEXT((var), field), 1);       \
+#define TAILQ_FOREACH_SAFE(var, head, field, tvar)        \
+    for ((var) = TAILQ_FIRST((head));                     \
+         (var) && ((tvar) = TAILQ_NEXT((var), field), 1); \
          (var) = (tvar))
 #endif
 
@@ -115,7 +115,7 @@ status_code_cmp(void * _a, void * _b) {
 }
 
 RB_HEAD(status_code_tree, status_code) status_code_head = RB_INITIALIZER(&status_code_head);
-RB_GENERATE(status_code_tree, status_code, entry, status_code_cmp);
+RB_GENERATE(status_code_tree, status_code, entry, status_code_cmp)
 
 #define scode_add(scode, cstr) do {                                  \
         struct status_code * c = malloc(sizeof(struct status_code)); \
@@ -1329,7 +1329,7 @@ _evhtp_connection_resumecb(int fd, short events, void * arg) {
         c->request->status = EVHTP_RES_OK;
     }
 
-    return _evhtp_connection_readcb(c->bev, c);
+    _evhtp_connection_readcb(c->bev, c);
 }
 
 static void
@@ -1360,7 +1360,8 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
          * drain the input buffer that had been read up to this point.
          */
         evbuffer_drain(bufferevent_get_input(bev), nread);
-        return evhtp_connection_free(c);
+        evhtp_connection_free(c);
+        return;
     }
 
     if (c->request) {
@@ -1369,7 +1370,8 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
                 if (c->request->hooks && c->request->hooks->on_error) {
                     (*c->request->hooks->on_error)(c->request, -1, c->request->hooks->on_error_arg);
                 }
-                return evhtp_connection_free(c);
+                evhtp_connection_free(c);
+                return;
             default:
                 break;
         }
@@ -1379,7 +1381,8 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
         if (c->request && c->request->status == EVHTP_RES_PAUSE) {
             evhtp_request_pause(c->request);
         } else {
-            return evhtp_connection_free(c);
+            evhtp_connection_free(c);
+            return;
         }
     }
 
@@ -1429,9 +1432,11 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
         htparser_init(c->parser, htp_type_request);
 
 
-        return htparser_set_userdata(c->parser, c);
+        htparser_set_userdata(c->parser, c);
+        return;
     } else {
-        return evhtp_connection_free(c);
+        evhtp_connection_free(c);
+        return;
     }
 
     return;
@@ -1463,7 +1468,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
                                        c->request->hooks->on_error_arg);
     }
 
-    return evhtp_connection_free((evhtp_connection_t *)arg);
+    evhtp_connection_free((evhtp_connection_t *)arg);
 }
 
 static int
@@ -1550,7 +1555,7 @@ end:
 
 static void
 _evhtp_default_request_cb(evhtp_request_t * request, void * arg) {
-    return evhtp_send_reply(request, EVHTP_RES_NOTFOUND);
+    evhtp_send_reply(request, EVHTP_RES_NOTFOUND);
 }
 
 static evhtp_connection_t *
@@ -1613,11 +1618,13 @@ _evhtp_run_in_thread(evthr_t * thr, void * arg, void * shared) {
     evthr_inc_backlog(connection->thread);
 
     if (_evhtp_connection_accept(connection->evbase, connection) < 0) {
-        return evhtp_connection_free(connection);
+        evhtp_connection_free(connection);
+        return;
     }
 
     if (_evhtp_run_post_accept(htp, connection) < 0) {
-        return evhtp_connection_free(connection);
+        evhtp_connection_free(connection);
+        return;
     }
 }
 
@@ -1639,7 +1646,8 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
     if (htp->thr_pool != NULL) {
         if (evthr_pool_defer(htp->thr_pool, _evhtp_run_in_thread, connection) != EVTHR_RES_OK) {
             evutil_closesocket(connection->sock);
-            return evhtp_connection_free(connection);
+            evhtp_connection_free(connection);
+            return;
         }
         return;
     }
@@ -1647,11 +1655,13 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
     connection->evbase = htp->evbase;
 
     if (_evhtp_connection_accept(htp->evbase, connection) < 0) {
-        return evhtp_connection_free(connection);
+        evhtp_connection_free(connection);
+        return;
     }
 
     if (_evhtp_run_post_accept(htp, connection) < 0) {
-        return evhtp_connection_free(connection);
+        evhtp_connection_free(connection);
+        return;
     }
 }
 
@@ -1817,7 +1827,7 @@ evhtp_connection_resume(evhtp_connection_t * c) {
 void
 evhtp_request_pause(evhtp_request_t * request) {
     request->status = EVHTP_RES_PAUSE;
-    return evhtp_connection_pause(request->conn);
+    evhtp_connection_pause(request->conn);
 }
 
 /**
@@ -1829,7 +1839,7 @@ evhtp_request_pause(evhtp_request_t * request) {
  */
 void
 evhtp_request_resume(evhtp_request_t * request) {
-    return evhtp_connection_resume(request->conn);
+    evhtp_connection_resume(request->conn);
 }
 
 evhtp_header_t *
@@ -2159,11 +2169,11 @@ evhtp_parse_query(const char * query, size_t len) {
 
     query_args = evhtp_query_new();
 
-    if (!(key_buf = malloc(len+1))) {
+    if (!(key_buf = malloc(len + 1))) {
         return NULL;
     }
 
-    if (!(val_buf = malloc(len+1))) {
+    if (!(val_buf = malloc(len + 1))) {
         free(key_buf);
         return NULL;
     }
@@ -2355,7 +2365,8 @@ evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code) {
     c = evhtp_request_get_connection(request);
 
     if (!(reply_buf = _evhtp_create_reply(request, code))) {
-        return evhtp_connection_free(c);
+        evhtp_connection_free(c);
+        return;
     }
 
     bufferevent_write_buffer(c->bev, reply_buf);
@@ -2375,8 +2386,8 @@ void
 evhtp_send_reply_end(evhtp_request_t * request) {
     request->finished = 1;
 
-    return _evhtp_connection_writecb(evhtp_request_get_bev(request),
-                                     evhtp_request_get_connection(request));
+    _evhtp_connection_writecb(evhtp_request_get_bev(request),
+                              evhtp_request_get_connection(request));
 }
 
 void
@@ -2388,7 +2399,8 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
     request->finished = 1;
 
     if (!(reply_buf = _evhtp_create_reply(request, code))) {
-        return evhtp_connection_free(request->conn);
+        evhtp_connection_free(request->conn);
+        return;
     }
 
     bufferevent_write_buffer(evhtp_connection_get_bev(c), reply_buf);
@@ -3090,7 +3102,8 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
     }     /* switch */
 
     SSL_CTX_use_certificate_file(htp->ssl_ctx, cfg->pemfile, SSL_FILETYPE_PEM);
-    SSL_CTX_use_PrivateKey_file(htp->ssl_ctx, cfg->privfile ? : cfg->pemfile, SSL_FILETYPE_PEM);
+    SSL_CTX_use_PrivateKey_file(htp->ssl_ctx,
+                                cfg->privfile ? cfg->privfile : cfg->pemfile, SSL_FILETYPE_PEM);
 
     SSL_CTX_set_session_id_context(htp->ssl_ctx,
                                    (void *)&session_id_context,
@@ -3164,7 +3177,7 @@ evhtp_connection_set_bev(evhtp_connection_t * conn, evbev_t * bev) {
 
 void
 evhtp_request_set_bev(evhtp_request_t * request, evbev_t * bev) {
-    return evhtp_connection_set_bev(request->conn, bev);
+    evhtp_connection_set_bev(request->conn, bev);
 }
 
 evhtp_connection_t *
@@ -3173,9 +3186,9 @@ evhtp_request_get_connection(evhtp_request_t * request) {
 }
 
 void
-evhtp_connection_set_timeouts(evhtp_connection_t       * c,
-                              const struct timeval     * rtimeo,
-                              const struct timeval     * wtimeo) {
+evhtp_connection_set_timeouts(evhtp_connection_t   * c,
+                              const struct timeval * rtimeo,
+                              const struct timeval * wtimeo) {
     if (!c) {
         return;
     }
@@ -3194,7 +3207,7 @@ evhtp_connection_set_max_body_size(evhtp_connection_t * c, uint64_t len) {
 
 void
 evhtp_request_set_max_body_size(evhtp_request_t * req, uint64_t len) {
-    return evhtp_connection_set_max_body_size(req->conn, len);
+    evhtp_connection_set_max_body_size(req->conn, len);
 }
 
 void
@@ -3239,7 +3252,7 @@ evhtp_connection_free(evhtp_connection_t * connection) {
 
 void
 evhtp_request_free(evhtp_request_t * request) {
-    return _evhtp_request_free(request);
+    _evhtp_request_free(request);
 }
 
 void
@@ -3401,3 +3414,4 @@ evhtp_free(evhtp_t * evhtp) {
 
     free(evhtp);
 }
+

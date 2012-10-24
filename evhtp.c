@@ -3776,6 +3776,12 @@ evhtp_free(evhtp_t * evhtp) {
     }
 #endif
 
+#ifndef EVHTP_DISABLE_SSL
+    if (evhtp->ssl_ctx) {
+        SSL_CTX_free(evhtp->ssl_ctx);
+    }
+#endif
+
     if (evhtp->server_name) {
         free(evhtp->server_name);
     }

@@ -1,3 +1,11 @@
+v1.1.6
+ o Added __cplusplus into evthr (31e3973 Mark Ellzey)
+ o Use evhtp_hook_generic_cb function pointer prototype when setting a hook (59f01f3 Gian-Paolo Musumeci)
+ o ISO C fixes. (d1627f7 Mark Ellzey)
+ o ISO C fixes. (5be2662 Mark Ellzey)
+ o Renaming evhtp_hook_generic_cb to evhtp_hook, more ISO compliance. (60b3502 Mark Ellzey)
+ o Removing strict flags from BaseConfig. (bdc6265 Mark Ellzey)
+
 v1.1.5
  o Don't treat non hex chars as errors. (d8c584d Mark Ellzey)
  o If non hex, replace idx-1 with % (2783983 Mark Ellzey)

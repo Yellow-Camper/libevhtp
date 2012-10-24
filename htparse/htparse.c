@@ -36,10 +36,6 @@
 #define CR               (unsigned char)13
 #define CRLF             "\x0d\x0a"
 
-typedef enum eval_hdr_val eval_hdr_val;
-typedef enum parser_flags parser_flags;
-typedef enum parser_state parser_state;
-
 enum eval_hdr_val {
     eval_hdr_val_none = 0,
     eval_hdr_val_connection,
@@ -100,6 +96,11 @@ enum parser_state {
     s_space_after_status,
     s_status_text
 };
+
+typedef enum eval_hdr_val eval_hdr_val;
+typedef enum parser_flags parser_flags;
+typedef enum parser_state parser_state;
+
 
 struct htparser {
     htpparse_error error;
@@ -239,25 +240,25 @@ static const char * method_strmap[] = {
         return 0;                                                                                           \
     }
 
-__HTPARSE_GENHOOK(on_msg_begin);
-__HTPARSE_GENHOOK(on_hdrs_begin);
-__HTPARSE_GENHOOK(on_hdrs_complete);
-__HTPARSE_GENHOOK(on_new_chunk);
-__HTPARSE_GENHOOK(on_chunk_complete);
-__HTPARSE_GENHOOK(on_chunks_complete);
-__HTPARSE_GENHOOK(on_msg_complete);
+__HTPARSE_GENHOOK(on_msg_begin)
+__HTPARSE_GENHOOK(on_hdrs_begin)
+__HTPARSE_GENHOOK(on_hdrs_complete)
+__HTPARSE_GENHOOK(on_new_chunk)
+__HTPARSE_GENHOOK(on_chunk_complete)
+__HTPARSE_GENHOOK(on_chunks_complete)
+__HTPARSE_GENHOOK(on_msg_complete)
 
-__HTPARSE_GENDHOOK(method);
-__HTPARSE_GENDHOOK(scheme);
-__HTPARSE_GENDHOOK(host);
-__HTPARSE_GENDHOOK(port);
-__HTPARSE_GENDHOOK(path);
-__HTPARSE_GENDHOOK(args);
-__HTPARSE_GENDHOOK(uri);
-__HTPARSE_GENDHOOK(hdr_key);
-__HTPARSE_GENDHOOK(hdr_val);
-__HTPARSE_GENDHOOK(body);
-__HTPARSE_GENDHOOK(hostname);
+__HTPARSE_GENDHOOK(method)
+__HTPARSE_GENDHOOK(scheme)
+__HTPARSE_GENDHOOK(host)
+__HTPARSE_GENDHOOK(port)
+__HTPARSE_GENDHOOK(path)
+__HTPARSE_GENDHOOK(args)
+__HTPARSE_GENDHOOK(uri)
+__HTPARSE_GENDHOOK(hdr_key)
+__HTPARSE_GENDHOOK(hdr_val)
+__HTPARSE_GENDHOOK(body)
+__HTPARSE_GENDHOOK(hostname)
 
 
 static inline uint64_t

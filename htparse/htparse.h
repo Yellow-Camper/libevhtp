@@ -32,7 +32,9 @@ enum htp_method {
     htp_method_LOCK,
     htp_method_UNLOCK,
     htp_method_TRACE,
-    htp_method_UNKNOWN
+    htp_method_CONNECT, /* RFC 2616 */
+    htp_method_PATCH,   /* RFC 5789 */
+    htp_method_UNKNOWN,
 };
 
 enum htpparse_error {

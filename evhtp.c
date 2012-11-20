@@ -1982,6 +1982,10 @@ int
 evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, void * arg) {
     evhtp_kv_t * kv;
 
+    if (kvs == NULL || cb == NULL) {
+        return -1;
+    }
+
     TAILQ_FOREACH(kv, kvs, next) {
         int res;
 

@@ -19,5 +19,8 @@ $(OUT): $(OBJ)
 test: $(OUT) test.c
 	$(CC) $(INCLUDES) $(CFLAGS) test.c -o test $(OUT)
 
+overflow: $(OUT) overflow.c
+	$(CC) $(INCLUDES) $(CFLAGS) overflow.c -o overflow $(OUT)
+
 clean:
 	rm -f $(OBJ) $(OUT) test

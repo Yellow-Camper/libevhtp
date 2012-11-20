@@ -487,6 +487,16 @@ _evhtp_hostname_hook(evhtp_request_t * r, const char * hostname) {
     return EVHTP_RES_OK;
 }
 
+static inline evhtp_res
+_evhtp_connection_write_hook(evhtp_connection_t * connection) {
+    if (connection->hooks && connection->hooks->on_write) {
+        return (connection->hooks->on_write)(connection,
+                                             connection->hooks->on_write_arg);
+    }
+
+    return EVHTP_RES_OK;
+}
+
 /**
  * @brief glob/wildcard type pattern matching.
  *
@@ -1204,11 +1214,75 @@ _evhtp_request_parser_chunks_fini(htparser * p) {
     return 0;
 }
 
+/**
+ * @brief determines if the request body contains the query arguments.
+ *        if the query is NULL and the contenet length of the body has never
+ *        been drained, and the content-type is x-www-form-urlencoded, the
+ *        function returns 1
+ *
+ * @param req
+ *
+ * @return 1 if evhtp can use the body as the query arguments, 0 otherwise.
+ */
+static int
+_evhtp_should_parse_query_body(evhtp_request_t * req) {
+    const char * content_type;
+
+    if (req == NULL) {
+        return 0;
+    }
+
+    if (req->uri == NULL && req->uri->query != NULL) {
+        return 0;
+    }
+
+    if (evhtp_request_content_len(req) == 0) {
+        return 0;
+    }
+
+    if (evhtp_request_content_len(req) !=
+        evbuffer_get_length(req->buffer_in)) {
+        return 0;
+    }
+
+    content_type = evhtp_kv_find(req->headers_in, "content-type");
+
+    if (content_type == NULL) {
+        return 0;
+    }
+
+    if (strcasecmp(content_type, "application/x-www-form-urlencoded")) {
+        return 0;
+    }
+
+    return 1;
+}
+
 static int
 _evhtp_request_parser_fini(htparser * p) {
     evhtp_connection_t * c = htparser_get_userdata(p);
 
-    /* c->request->finished = 1; */
+    /* check to see if we should use the body of the request as the query
+     * arguments.
+     */
+    if (_evhtp_should_parse_query_body(c->request) == 1) {
+        const char  * body;
+        size_t        body_len;
+        evhtp_uri_t * uri;
+        evbuf_t     * buf_in;
+
+        uri            = c->request->uri;
+        buf_in         = c->request->buffer_in;
+
+        body_len       = evbuffer_get_length(buf_in);
+        body           = (const char *)evbuffer_pullup(buf_in, body_len);
+
+        uri->query_raw = calloc(body_len + 1, 1);
+        memcpy(uri->query_raw, body, body_len);
+
+        uri->query     = evhtp_parse_query(body, body_len);
+    }
+
 
     /*
      * XXX c->request should never be NULL, but we have found some path of
@@ -1396,6 +1470,8 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
     if (c->request == NULL) {
         return;
     }
+
+    _evhtp_connection_write_hook(c);
 
     if (c->request->finished == 0 || evbuffer_get_length(bufferevent_get_output(bev))) {
         return;
@@ -1981,6 +2057,10 @@ evhtp_kvs_free(evhtp_kvs_t * kvs) {
 int
 evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, void * arg) {
     evhtp_kv_t * kv;
+
+    if (kvs == NULL || cb == NULL) {
+        return -1;
+    }
 
     TAILQ_FOREACH(kv, kvs, next) {
         int res;
@@ -2755,6 +2835,10 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void
             (*hooks)->on_hostname            = (evhtp_hook_hostname_cb)cb;
             (*hooks)->on_hostname_arg        = arg;
             break;
+        case evhtp_hook_on_write:
+            (*hooks)->on_write = (evhtp_hook_write_cb)cb;
+            (*hooks)->on_write_arg           = arg;
+            break;
         default:
             return -1;
     }     /* switch */
@@ -2817,6 +2901,10 @@ evhtp_unset_all_hooks(evhtp_hooks_t ** hooks) {
 
     if (evhtp_unset_hook(hooks, evhtp_hook_on_hostname)) {
         res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_write)) {
+        return -1;
     }
 
     return res;

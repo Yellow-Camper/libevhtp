@@ -1385,6 +1385,8 @@ hdrline_start:
                             case eval_hdr_val_content_length:
                                 p->content_len = str_to_uint64(p->buf, p->buf_idx, &err);
 
+				htparse_log_debug("[%p] s_hdrline_hdr_val content-lenth = %zu", p, p->content_len);
+
                                 if (err == 1) {
                                     p->error = htparse_error_too_big;
                                     return i + 1;
@@ -1697,6 +1699,8 @@ hdrline_start:
 
                         i  += to_read - 1;
                         p->content_len -= to_read;
+
+			htparse_log_debug("[%p] s_body_read content_len is now %zu", p, p->content_len);
 
                         if (p->content_len == 0) {
                             res      = hook_on_msg_complete_run(p, hooks);

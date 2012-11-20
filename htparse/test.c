@@ -250,6 +250,9 @@ main(int argc, char ** argv) {
                                           "\tbar\r\n"
                                           "\tbaz\r\n"
                                           "key: val\r\n\r\n";
+    const char * test_bad_body          = "HTTP/1.1 200\r\n"
+                                          "Content-Length: 6230461615\r\n\r\n"
+                                          "1234567890 moredata";
 
     _test(p, &hooks, test_resp_1, htp_type_response);
     _test(p, &hooks, test_1, htp_type_request);
@@ -266,6 +269,7 @@ main(int argc, char ** argv) {
     _test(p, &hooks, test_no_hdr_cr, htp_type_request);
     _test(p, &hooks, test_no_hdr_cr_end, htp_type_request);
     _test(p, &hooks, test_multiline, htp_type_request);
+    _test(p, &hooks, test_bad_body, htp_type_response);
 
     _test_fragments(p, &hooks, test_fragment_1, htp_type_request);
     _test_fragments(p, &hooks, test_fragment_2, htp_type_request);

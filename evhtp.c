@@ -487,6 +487,16 @@ _evhtp_hostname_hook(evhtp_request_t * r, const char * hostname) {
     return EVHTP_RES_OK;
 }
 
+static inline evhtp_res
+_evhtp_connection_write_hook(evhtp_connection_t * connection) {
+    if (connection->hooks && connection->hooks->on_write) {
+        return (connection->hooks->on_write)(connection,
+                                             connection->hooks->on_write_arg);
+    }
+
+    return EVHTP_RES_OK;
+}
+
 /**
  * @brief glob/wildcard type pattern matching.
  *
@@ -1412,11 +1422,11 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
 
     buf = evbuffer_pullup(bufferevent_get_input(bev), avail);
 
-    //bufferevent_disable(bev, EV_WRITE);
-    //{
+    bufferevent_disable(bev, EV_WRITE);
+    {
         nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
-   // }
-   // bufferevent_enable(bev, EV_WRITE);
+    }
+    bufferevent_enable(bev, EV_WRITE);
 
     if (c->owner != 1) {
         /*
@@ -1460,6 +1470,8 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
     if (c->request == NULL) {
         return;
     }
+
+    _evhtp_connection_write_hook(c);
 
     if (c->request->finished == 0 || evbuffer_get_length(bufferevent_get_output(bev))) {
         return;
@@ -2823,6 +2835,10 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void
             (*hooks)->on_hostname            = (evhtp_hook_hostname_cb)cb;
             (*hooks)->on_hostname_arg        = arg;
             break;
+        case evhtp_hook_on_write:
+            (*hooks)->on_write = (evhtp_hook_write_cb)cb;
+            (*hooks)->on_write_arg           = arg;
+            break;
         default:
             return -1;
     }     /* switch */
@@ -2885,6 +2901,10 @@ evhtp_unset_all_hooks(evhtp_hooks_t ** hooks) {
 
     if (evhtp_unset_hook(hooks, evhtp_hook_on_hostname)) {
         res -= 1;
+    }
+
+    if (evhtp_unset_hook(hooks, evhtp_hook_on_write)) {
+        return -1;
     }
 
     return res;

@@ -105,7 +105,8 @@ enum evhtp_hook_type {
     evhtp_hook_on_chunks_complete,
     evhtp_hook_on_headers_start,
     evhtp_hook_on_error,        /**< type which defines to hook whenever an error occurs */
-    evhtp_hook_on_hostname
+    evhtp_hook_on_hostname,
+    evhtp_hook_on_write
 };
 
 enum evhtp_callback_type {
@@ -147,6 +148,7 @@ typedef evhtp_res (*evhtp_hook_chunk_fini_cb)(evhtp_request_t * r, void * arg);
 typedef evhtp_res (*evhtp_hook_chunks_fini_cb)(evhtp_request_t * r, void * arg);
 typedef evhtp_res (*evhtp_hook_headers_start_cb)(evhtp_request_t * r, void * arg);
 typedef evhtp_res (*evhtp_hook_hostname_cb)(evhtp_request_t * r, const char * hostname, void * arg);
+typedef evhtp_res (*evhtp_hook_write_cb)(evhtp_connection_t * conn, void * arg);
 
 typedef int (*evhtp_kvs_iterator)(evhtp_kv_t * kv, void * arg);
 typedef int (*evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
@@ -439,6 +441,7 @@ struct evhtp_hooks_s {
     evhtp_hook_chunk_fini_cb      on_chunk_fini;
     evhtp_hook_chunks_fini_cb     on_chunks_fini;
     evhtp_hook_hostname_cb        on_hostname;
+    evhtp_hook_write_cb           on_write;
 
     void * on_headers_start_arg;
     void * on_header_arg;
@@ -452,6 +455,7 @@ struct evhtp_hooks_s {
     void * on_chunk_fini_arg;
     void * on_chunks_fini_arg;
     void * on_hostname_arg;
+    void * on_write_arg;
 };
 
 struct evhtp_ssl_cfg_s {

@@ -1,3 +1,8 @@
+v1.1.7
+ o NULL check for evhtp_kvs_for_each (37f3864 Mark Ellzey)
+ o Parse body as the query args if content-type is url-encoded. (ee25209 Mark Ellzey)
+ o Added a write hook. (c32c0ed Mark Ellzey)
+
 v1.1.6
  o Added __cplusplus into evthr (31e3973 Mark Ellzey)
  o Use evhtp_hook_generic_cb function pointer prototype when setting a hook (59f01f3 Gian-Paolo Musumeci)

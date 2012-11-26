@@ -57,8 +57,13 @@ backend_cb(evhtp_request_t * backend_req, void * arg) {
 
 static void
 frontend_cb(evhtp_request_t * req, void * arg) {
-    printf("  Received frontend request on thread %d... ",
-           (int)evthr_get_aux(req->conn->thread));
+    int * aux;
+    int   thr;
+
+    aux = (int *)evthr_get_aux(req->conn->thread);
+    thr = *aux;
+
+    printf("  Received frontend request on thread %d... ", thr);
 
     /* Pause the frontend request while we run the backend requests. */
     evhtp_request_pause(req);
@@ -86,7 +91,7 @@ init_thread_cb(evhtp_t * htp, evthr_t * thr, void * arg) {
     static int aux = 0;
 
     printf("Spinning up a thread: %d\n", ++aux);
-    evthr_set_aux(thr, (void *)aux);
+    evthr_set_aux(thr, &aux);
 }
 
 int

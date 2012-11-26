@@ -368,12 +368,17 @@ htparser_get_method(htparser * p) {
 }
 
 const char *
-htparser_get_methodstr(htparser * p) {
-    if (p->method >= htp_method_UNKNOWN) {
+htparser_get_methodstr_m(htp_method meth) {
+    if (meth >= htp_method_UNKNOWN) {
         return NULL;
     }
 
-    return method_strmap[p->method];
+    return method_strmap[meth];
+}
+
+const char *
+htparser_get_methodstr(htparser * p) {
+    return htparser_get_methodstr_m(p->method);
 }
 
 void
@@ -763,7 +768,18 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->state = s_port;
                         break;
                     case ' ':
+                        /* this technically should never happen, but we should
+                         * check anyway
+                         */
+                        if (i == 0) {
+                            p->error = htparse_error_inval_state;
+                            return i + 1;
+                        }
+
                         i--;
+                    /* to accept requests like <method> <proto>://<host> <ver>
+                     * we fallthrough to the next case.
+                     */
                     case '/':
                         p->path_offset       = &p->buf[p->buf_idx];
 
@@ -1383,7 +1399,7 @@ hdrline_start:
                             case eval_hdr_val_content_length:
                                 p->content_len = str_to_uint64(p->buf, p->buf_idx, &err);
 
-				htparse_log_debug("[%p] s_hdrline_hdr_val content-lenth = %zu", p, p->content_len);
+                                htparse_log_debug("[%p] s_hdrline_hdr_val content-lenth = %zu", p, p->content_len);
 
                                 if (err == 1) {
                                     p->error = htparse_error_too_big;
@@ -1698,7 +1714,7 @@ hdrline_start:
                         i  += to_read - 1;
                         p->content_len -= to_read;
 
-			htparse_log_debug("[%p] s_body_read content_len is now %zu", p, p->content_len);
+                        htparse_log_debug("[%p] s_body_read content_len is now %zu", p, p->content_len);
 
                         if (p->content_len == 0) {
                             res      = hook_on_msg_complete_run(p, hooks);

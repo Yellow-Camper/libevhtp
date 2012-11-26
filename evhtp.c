@@ -1232,7 +1232,7 @@ _evhtp_should_parse_query_body(evhtp_request_t * req) {
         return 0;
     }
 
-    if (req->uri == NULL && req->uri->query != NULL) {
+    if (req->uri == NULL || req->uri->query != NULL) {
         return 0;
     }
 

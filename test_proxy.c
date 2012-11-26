@@ -7,21 +7,20 @@
 
 
 int
-make_request(evbase_t * evbase,
-             evthr_t * evthr,
+make_request(evbase_t         * evbase,
+             evthr_t          * evthr,
              const char * const host,
-             const short port,
+             const short        port,
              const char * const path,
-             evhtp_headers_t * headers,
-             evhtp_callback_cb cb,
-             void * arg)
-{
+             evhtp_headers_t  * headers,
+             evhtp_callback_cb  cb,
+             void             * arg) {
     evhtp_connection_t * conn;
     evhtp_request_t    * request;
 
-    conn    = evhtp_connection_new(evbase, host, port);
+    conn         = evhtp_connection_new(evbase, host, port);
     conn->thread = evthr;
-    request = evhtp_request_new(cb, arg);
+    request      = evhtp_request_new(cb, arg);
 
     evhtp_headers_add_header(request->headers_out,
                              evhtp_header_new("Host", "localhost", 0, 0));
@@ -42,12 +41,15 @@ make_request(evbase_t * evbase,
 static void
 backend_cb(evhtp_request_t * backend_req, void * arg) {
     evhtp_request_t * frontend_req = (evhtp_request_t *)arg;
+
     evbuffer_prepend_buffer(frontend_req->buffer_out, backend_req->buffer_in);
     evhtp_headers_add_headers(frontend_req->headers_out, backend_req->headers_in);
 
-    // char body[1024] = { '\0' };
-    // ev_ssize_t len = evbuffer_copyout(frontend_req->buffer_out, body, sizeof(body));
-    // printf("Backend %zu: %s\n", len, body);
+    /*
+     * char body[1024] = { '\0' };
+     * ev_ssize_t len = evbuffer_copyout(frontend_req->buffer_out, body, sizeof(body));
+     * printf("Backend %zu: %s\n", len, body);
+     */
 
     evhtp_send_reply(frontend_req, EVHTP_RES_OK);
     evhtp_request_resume(frontend_req);
@@ -55,38 +57,48 @@ backend_cb(evhtp_request_t * backend_req, void * arg) {
 
 static void
 frontend_cb(evhtp_request_t * req, void * arg) {
-    printf("  Received frontend request on thread %d... ", (int)evthr_get_aux(req->conn->thread));
-    evhtp_request_pause(req); // Pause the frontend request while we run the backend requests.
-    make_request(evthr_get_base(req->conn->thread), req->conn->thread, "127.0.0.1", 80, req->uri->path->full, req->headers_in, backend_cb, req);
+    printf("  Received frontend request on thread %d... ",
+           (int)evthr_get_aux(req->conn->thread));
+
+    /* Pause the frontend request while we run the backend requests. */
+    evhtp_request_pause(req);
+
+    make_request(evthr_get_base(req->conn->thread),
+                 req->conn->thread,
+                 "127.0.0.1", 80,
+                 req->uri->path->full,
+                 req->headers_in, backend_cb, req);
+
     printf("Ok.\n");
 }
 
-// Terminate gracefully on SIGTERM
+/* Terminate gracefully on SIGTERM */
 void
-sigterm_cb(int fd, short event, void * arg)
-{
-  evbase_t * evbase = (evbase_t *)arg;
-  struct timeval tv = {.tv_usec = 100000, .tv_sec = 0}; // 100 ms
-  event_base_loopexit(evbase, &tv);
+sigterm_cb(int fd, short event, void * arg) {
+    evbase_t     * evbase = (evbase_t *)arg;
+    struct timeval tv     = { .tv_usec = 100000, .tv_sec = 0 }; /* 100 ms */
+
+    event_base_loopexit(evbase, &tv);
 }
 
 void
-init_thread_cb(evhtp_t * htp, evthr_t * thr, void * arg)
-{
+init_thread_cb(evhtp_t * htp, evthr_t * thr, void * arg) {
     static int aux = 0;
+
     printf("Spinning up a thread: %d\n", ++aux);
     evthr_set_aux(thr, (void *)aux);
 }
 
 int
 main(int argc, char ** argv) {
-    evbase_t      * evbase = event_base_new();
-    evhtp_t       * evhtp  = evhtp_new(evbase, NULL);
+    struct event *ev_sigterm;
+    evbase_t    * evbase  = event_base_new();
+    evhtp_t     * evhtp   = evhtp_new(evbase, NULL);
 
     evhtp_set_gencb(evhtp, frontend_cb, NULL);
 
-#ifdef USE_SSL
-    evhtp_ssl_cfg_t scfg1  = { 0 };
+#ifndef EVHTP_DISABLE_SSL
+    evhtp_ssl_cfg_t scfg1 = { 0 };
 
     scfg1.pemfile  = "./server.pem";
     scfg1.privfile = "./server.pem";
@@ -96,7 +108,6 @@ main(int argc, char ** argv) {
 
     evhtp_use_threads(evhtp, init_thread_cb, 8, NULL);
 
-    struct event *ev_sigterm;
     ev_sigterm = evsignal_new(evbase, SIGTERM, sigterm_cb, evbase);
     evsignal_add(ev_sigterm, NULL);
 
@@ -106,3 +117,4 @@ main(int argc, char ** argv) {
     printf("Clean exit\n");
     return 0;
 }
+

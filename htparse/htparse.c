@@ -444,6 +444,7 @@ htparser_init(htparser * p, htp_type type) {
     p->buf[0] = '\0';
     p->state  = s_start;
     p->error  = htparse_error_none;
+    p->method = htp_method_UNKNOWN;
     p->type   = type;
 }
 
@@ -484,7 +485,21 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_start:
                 htparse_log_debug("[%p] s_start", p);
 
-                p->flags = 0;
+                p->flags         = 0;
+                p->error         = htparse_error_none;
+                p->method        = htp_method_UNKNOWN;
+                p->multipart     = 0;
+                p->major         = 0;
+                p->minor         = 0;
+                p->content_len   = 0;
+                p->status        = 0;
+                p->status_count  = 0;
+                p->scheme_offset = NULL;
+                p->host_offset   = NULL;
+                p->port_offset   = NULL;
+                p->path_offset   = NULL;
+                p->args_offset   = NULL;
+
 
                 if (ch == CR || ch == LF) {
                     break;

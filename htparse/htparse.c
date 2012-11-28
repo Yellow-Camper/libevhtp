@@ -63,7 +63,7 @@ enum parser_state {
     s_schema_slash_slash,
     s_host,
     s_host_ipv6,
-    s_host_ipv6_done,
+    s_host_done,
     s_port,
     s_after_slash_in_uri,
     s_check_uri,
@@ -133,8 +133,8 @@ struct htparser {
     void * userdata;
 
     unsigned int buf_idx;
-    /* Must be last! */
-    char         buf[PARSER_STACK_MAX];
+    /* Must be last since htparser_init memsets up to the offset of this buffer */
+    char buf[PARSER_STACK_MAX];
 };
 
 static uint32_t     usual[] = {
@@ -442,8 +442,9 @@ htparser_init(htparser * p, htp_type type) {
     /* Do not memset entire string buffer. */
     memset(p, 0, offsetof(htparser, buf));
     p->buf[0] = '\0';
-    p->error = htparse_error_none;
-    p->type  = type;
+    p->state  = s_start;
+    p->error  = htparse_error_none;
+    p->type   = type;
 }
 
 htparser *
@@ -704,7 +705,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                                 break;
                         } /* switch */
 
-                        res                  = hook_scheme_run(p, hooks, p->scheme_offset,(&p->buf[p->buf_idx] - p->scheme_offset));
+                        res                  = hook_scheme_run(p, hooks, p->scheme_offset, (&p->buf[p->buf_idx] - p->scheme_offset));
 
 #if 0
                         p->buf_idx           = 0;
@@ -788,8 +789,11 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     return i + 1;
                 }
 
-                /* No break here! Fall through. */
-            case s_host_ipv6_done:
+            /* successfully parsed a NON-IPV6 hostname, knowing this, the
+             * current character in 'ch' is actually the next state, so we
+             * we fall through to avoid another loop.
+             */
+            case s_host_done:
                 res = 0;
 
                 switch (ch) {
@@ -853,7 +857,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         }
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
-                        p->state = s_host_ipv6_done;
+                        p->state = s_host_done;
                         break;
                     default:
                         p->error = htparse_error_inval_schema;
@@ -892,12 +896,12 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->buf[p->buf_idx]   = '\0';
                         p->path_offset       = &p->buf[p->buf_idx - 1];
 
-                        p->state   = s_after_slash_in_uri;
+                        p->state = s_after_slash_in_uri;
                         break;
                     default:
-                        p->error   = htparse_error_inval_reqline;
+                        p->error = htparse_error_inval_reqline;
                         return i + 1;
-                }
+                } /* switch */
 
                 if (res) {
                     p->error = htparse_error_user;
@@ -1082,21 +1086,21 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     }
                     break;
                     case CR:
-                        p->minor             = 9;
-                        p->buf_idx           = 0;
-                        p->state             = s_almost_done;
+                        p->minor   = 9;
+                        p->buf_idx = 0;
+                        p->state   = s_almost_done;
                         break;
                     case LF:
-                        p->minor             = 9;
-                        p->buf_idx           = 0;
-                        p->state             = s_hdrline_start;
+                        p->minor   = 9;
+                        p->buf_idx = 0;
+                        p->state   = s_hdrline_start;
                         break;
                     case '?':
                         /* RFC 3986 section 3.4:
-                           The query component is indicated by the
-                           first question mark ("?") character and
-                           terminated by a number sign ("#") character
-                           or by the end of the URI. */
+                         * The query component is indicated by the
+                         * first question mark ("?") character and
+                         * terminated by a number sign ("#") character
+                         * or by the end of the URI. */
                         if (!p->args_offset) {
                             res = hook_path_run(p, hooks, p->path_offset,
                                                 (&p->buf[p->buf_idx] - p->path_offset));
@@ -1106,7 +1110,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                             p->args_offset       = &p->buf[p->buf_idx];
                             break;
                         }
-                        /* Fall through. */
+                    /* Fall through. */
                     default:
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';

@@ -2699,7 +2699,20 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 
 void
 evhtp_callbacks_free(evhtp_callbacks_t * callbacks) {
-    /* XXX TODO */
+    evhtp_callback_t * callback;
+    evhtp_callback_t * tmp;
+
+    if (callbacks == NULL) {
+        return;
+    }
+
+    TAILQ_FOREACH_SAFE(callback, callbacks, next, tmp) {
+        TAILQ_REMOVE(callbacks, callback, next);
+
+        evhtp_callback_free(callback);
+    }
+
+    free(callbacks);
 }
 
 evhtp_callback_t *
@@ -3484,12 +3497,12 @@ evhtp_free(evhtp_t * evhtp) {
         evthr_pool_free(evhtp->thr_pool);
     }
 
-    if (evhtp->callbacks) {
-        free(evhtp->callbacks);
-    }
-
     if (evhtp->server_name) {
         free(evhtp->server_name);
+    }
+
+    if (evhtp->callbacks) {
+        evhtp_callbacks_free(evhtp->callbacks);
     }
 
     TAILQ_FOREACH_SAFE(evhtp_alias, &evhtp->aliases, next, tmp) {

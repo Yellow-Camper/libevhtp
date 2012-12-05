@@ -904,6 +904,7 @@ _evhtp_request_parser_header_val(htparser * p, const char * data, size_t len) {
     memcpy(val_s, data, len);
 
     if ((header = evhtp_header_val_add(c->request->headers_in, val_s, 0)) == NULL) {
+        free(val_s);
         c->request->status = EVHTP_RES_FATAL;
         return -1;
     }

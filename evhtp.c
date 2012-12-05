@@ -1933,9 +1933,17 @@ evhtp_header_key_add(evhtp_headers_t * headers, const char * key, char kalloc) {
 
 evhtp_header_t *
 evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char valloc) {
-    evhtp_header_t * header = TAILQ_LAST(headers, evhtp_headers_s);
+    evhtp_header_t * header;
 
-    if (header == NULL) {
+    if (!headers || !val) {
+        return NULL;
+    }
+
+    if (!(header = TAILQ_LAST(headers, evhtp_headers_s))) {
+        return NULL;
+    }
+
+    if (header->val != NULL) {
         return NULL;
     }
 
@@ -1974,6 +1982,8 @@ evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc) {
     kv->v_heaped = valloc;
     kv->klen     = 0;
     kv->vlen     = 0;
+    kv->key      = NULL;
+    kv->val      = NULL;
 
     if (key != NULL) {
         kv->klen = strlen(key);

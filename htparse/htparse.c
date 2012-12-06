@@ -1591,15 +1591,15 @@ hdrline_start:
 
                 switch (ch) {
                     case CR:
-                        res = hook_hdr_val_run(p, hooks, p->buf, p->buf_idx);
+                        res      = hook_hdr_val_run(p, hooks, p->buf, p->buf_idx);
+                        p->state = s_hdrline_almost_done;
 
                         if (res) {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
 
-                        p->state = s_hdrline_almost_done;
-                        res      = hook_on_hdrs_complete_run(p, hooks);
+                        res = hook_on_hdrs_complete_run(p, hooks);
 
                         if (res) {
                             p->error = htparse_error_user;
@@ -1615,21 +1615,22 @@ hdrline_start:
                     case '\t':
                         /* this is a multiline header value, we must go back to
                          * reading as a header value */
-                        p->state = s_hdrline_hdr_val;
+                        p->state             = s_hdrline_hdr_val;
                         break;
                     default:
-                        res      = hook_hdr_val_run(p, hooks, p->buf, p->buf_idx);
+                        res                  = hook_hdr_val_run(p, hooks, p->buf, p->buf_idx);
+
+                        p->buf_idx           = 0;
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+
+                        p->state             = s_hdrline_hdr_key;
 
                         if (res) {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
 
-                        p->buf_idx           = 0;
-                        p->buf[p->buf_idx++] = ch;
-                        p->buf[p->buf_idx]   = '\0';
-
-                        p->state = s_hdrline_hdr_key;
                         break;
                 } /* switch */
                 break;
@@ -1675,7 +1676,9 @@ hdrline_start:
                 break;
             case s_hdrline_done:
                 htparse_log_debug("[%p] s_hdrline_done", p);
+
                 res = 0;
+
                 if (p->flags & parser_flag_trailing) {
                     res      = hook_on_msg_complete_run(p, hooks);
                     p->state = s_start;
@@ -1694,8 +1697,8 @@ hdrline_start:
                     p->error = htparse_error_user;
                     return i + 1;
                 }
-                break;
 
+                break;
             case s_chunk_size_start:
                 c = unhex[(unsigned char)ch];
 

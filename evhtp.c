@@ -1452,16 +1452,13 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
         }
     }
 
-    if (avail != nread) {
-        if (c->request && c->request->status == EVHTP_RES_PAUSE) {
-            evhtp_request_pause(c->request);
-        } else {
-            evhtp_connection_free(c);
-            return;
-        }
-    }
-
     evbuffer_drain(bufferevent_get_input(bev), nread);
+
+    if (c->request && c->request->status == EVHTP_RES_PAUSE) {
+        evhtp_request_pause(c->request);
+    } else if (avail != nread) {
+        evhtp_connection_free(c);
+    }
 } /* _evhtp_connection_readcb */
 
 static void

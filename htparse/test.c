@@ -432,6 +432,14 @@ struct testobj t21 = {
             "0\r\n\r\n"
 };
 
+struct testobj t22 = {
+    .name = "Header key with no value",
+    .type = htp_type_request,
+    .data = "GET / HTTP/1.1\r\n"
+            "Accept\r\n\r\n"
+};
+
+
 static int
 _run_test(htparser * p, struct testobj * obj) {
     size_t data_sz;
@@ -484,6 +492,7 @@ main(int argc, char **argv) {
     _run_test(parser, &t19);
     _run_test(parser, &t20);
     _run_test(parser, &t21);
+    _run_test(parser, &t22);
 
     return 0;
 }

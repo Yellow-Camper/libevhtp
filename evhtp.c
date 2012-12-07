@@ -1668,21 +1668,13 @@ _evhtp_connection_new(evhtp_t * htp, int sock, evhtp_type type) {
         return NULL;
     }
 
-    connection->evbase    = NULL;
-    connection->bev       = NULL;
-    connection->thread    = NULL;
-    connection->hooks     = NULL;
-    connection->request   = NULL;
-    connection->resume_ev = NULL;
-    connection->saddr     = NULL;
-    connection->error     = 0;
-    connection->owner     = 1;
-    connection->sock      = sock;
-    connection->htp       = htp;
-    connection->type      = type;
-    connection->parser    = htparser_new();
+    connection->error  = 0;
+    connection->owner  = 1;
+    connection->sock   = sock;
+    connection->htp    = htp;
+    connection->parser = htparser_new();
 
-    htparser_init(connection->parser, ptype);
+    htparser_init(connection->parser, htp_type_request);
     htparser_set_userdata(connection->parser, connection);
 
     TAILQ_INIT(&connection->pending);
@@ -1765,10 +1757,6 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
     }
 #endif
     connection->evbase = htp->evbase;
-
-    if (_evhtp_run_pre_accept(connection->htp, connection) < 0) {
-        return evhtp_connection_free(connection);
-    }
 
     if (_evhtp_connection_accept(htp->evbase, connection) < 0) {
         evhtp_connection_free(connection);

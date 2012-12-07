@@ -204,3 +204,6 @@ target_link_libraries(test_basic libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
 add_executable(test_vhost test_vhost.c)
 target_link_libraries(test_vhost libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+#add_executable(td examples/thread_design.c)
+#target_link_libraries(td libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS} hiredis)

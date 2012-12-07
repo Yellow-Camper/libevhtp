@@ -426,6 +426,8 @@ struct evhtp_connection_s {
     uint64_t          max_body_size;
     uint64_t          body_bytes_read;
     uint64_t          num_requests;
+    char              paused;
+    char              free_connection;
 };
 
 struct evhtp_hooks_s {

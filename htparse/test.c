@@ -3,279 +3,497 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
+#include <assert.h>
+#include <inttypes.h>
 
 #include "htparse.h"
 
+#define ADD_DATA_BUF(buf, name, data, len) do { \
+        strcat(buf, name ": '");                \
+        strncat(buf, data, len);                \
+        strcat(buf, "'\n");                     \
+} while (0)
+
+struct testobj {
+    char   * name;
+    char   * data;
+    htp_type type;
+};
+
+
 static int
-_on_msg_start(htparser * p) {
-    printf("START {\n");
+_msg_begin(htparser * p) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    strcat(buf, "START\n");
+
     return 0;
 }
 
 static int
-_on_msg_end(htparser * p) {
-    printf("}\n");
-    return 0;
-}
+_method(htparser * p, const char * b, size_t s) {
+    char * buf = (char *)htparser_get_userdata(p);
 
-static int
-_path(htparser * p, const char * data, size_t len) {
-    printf("\tpath = '%.*s'\n", (int)len, data);
-    return 0;
-}
-
-static int
-_method(htparser * p, const char * data, size_t len) {
-    printf("\tmethod = '%.*s'\n", (int)len, data);
-    return 0;
-}
-
-static int
-_uri(htparser * p, const char * data, size_t len) {
-    printf("\turi = '%.*s'\n", (int)len, data);
-    return 0;
-}
-
-static int
-_args(htparser * p, const char * data, size_t len) {
-    printf("\targs = '%.*s'\n", (int)len, data);
-    return 0;
-}
-
-static int
-_hdrs_end(htparser * p) {
-    printf("\t}\n");
-    return 0;
-}
-
-static int
-_hdrs_start(htparser * p) {
-    printf("\thdrs {\n");
-    return 0;
-}
-
-static int
-_hdr_key(htparser * p, const char * data, size_t len) {
-    printf("\t\thdr_key = '%.*s'\n", (int)len, data);
-    return 0;
-}
-
-static int
-_hdr_val(htparser * p, const char * data, size_t len) {
-    printf("\t\thdr_val = '%.*s'\n", (int)len, data);
-    return 0;
-}
-
-static int
-_read_body(htparser * p, const char * data, size_t len) {
-    printf("\t'%.*s'\n", (int)len, data);
-    return 0;
-}
-
-static int
-_on_new_chunk(htparser * p) {
-    printf("\t--chunk payload (%zu)--\n", htparser_get_content_length(p));
-    /* printf("..chunk..\n"); */
-    return 0;
-}
-
-static void
-_test(htparser * p, htparse_hooks * hooks, const char * l, htp_type type) {
-    printf("---- test ----\n");
-    printf("%zu, %s\n", strlen(l), l);
-
-    htparser_init(p, type);
-    printf("%zu == %zu\n", htparser_run(p, hooks, l, strlen(l)), strlen(l));
-
-    if (htparser_get_error(p)) {
-        printf("ERROR: %s\n", htparser_get_strerror(p));
+    if (htparser_get_method(p) == htp_method_UNKNOWN) {
+        ADD_DATA_BUF(buf, "METHOD_UNKNOWN", b, s);
+    } else {
+        ADD_DATA_BUF(buf, "METHOD", b, s);
     }
 
-    printf("\n");
+    return 0;
 }
 
-static void
-_test_fragments(htparser * p, htparse_hooks * hooks, const char ** fragments,
-                htp_type type) {
-    int i = 0;
+static int
+_scheme(htparser * p, const char * b, size_t s) {
+    char * buf = (char *)htparser_get_userdata(p);
 
-    printf("---- test fragment ----\n");
-    htparser_init(p, type);
+    ADD_DATA_BUF(buf, "SCHEME", b, s);
 
-    while (1) {
-        const char * l = fragments[i++];
-
-        if (l == NULL) {
-            break;
-        }
-
-        htparser_run(p, hooks, l, strlen(l));
-
-        if (htparser_get_error(p)) {
-            printf("ERROR: %s\n", htparser_get_strerror(p));
-        }
-    }
-
-    printf("\n");
+    return 0;
 }
 
-static const char * test_fragment_1[] = {
-    "GET \0",
-    "  /fjdksf\0",
-    "jfkdslfds H\0",
-    "TTP/1.\0",
-    "1\r\0",
-    "\n\0",
-    "\r\0",
-    "\n\0",
-    NULL
+static int
+_host(htparser * p, const char * b, size_t s) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    ADD_DATA_BUF(buf, "HOST", b, s);
+
+    return 0;
+}
+
+static int
+_port(htparser * p, const char * b, size_t s) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    ADD_DATA_BUF(buf, "PORT", b, s);
+
+    return 0;
+}
+
+static int
+_path(htparser * p, const char * b, size_t s) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    ADD_DATA_BUF(buf, "PATH", b, s);
+
+    return 0;
+}
+
+static int
+_args(htparser * p, const char * b, size_t s) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    ADD_DATA_BUF(buf, "ARGS", b, s);
+
+    return 0;
+}
+
+static int
+_uri(htparser * p, const char * b, size_t s) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    ADD_DATA_BUF(buf, "URI", b, s);
+
+    return 0;
+}
+
+static int
+_hdrs_begin(htparser * p) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    strcat(buf, "HDRS_BEGIN\n");
+
+    return 0;
+}
+
+static int
+_hdr_key(htparser * p, const char * b, size_t s) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    ADD_DATA_BUF(buf, "HDR_KEY", b, s);
+
+    return 0;
+}
+
+static int
+_hdr_val(htparser * p, const char * b, size_t s) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    ADD_DATA_BUF(buf, "HDR_VAL", b, s);
+
+    return 0;
+}
+
+static int
+_hostname(htparser * p, const char * b, size_t s) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    ADD_DATA_BUF(buf, "HOSTNAME", b, s);
+
+    return 0;
+}
+
+static int
+_hdrs_complete(htparser * p) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    strcat(buf, "HDRS_COMPLETE\n");
+
+    return 0;
+}
+
+static int
+_new_chunk(htparser * p) {
+    char * buf        = (char *)htparser_get_userdata(p);
+    char   tbuf[1024] = { 0 };
+
+    sprintf(tbuf, "NEW_CHUNK: %" PRIu64 "\n", htparser_get_content_length(p));
+    strcat(buf, tbuf);
+
+    return 0;
+}
+
+static int
+_chunk_complete(htparser * p) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    strcat(buf, "END_CHUNK\n");
+
+    return 0;
+}
+
+static int
+_chunks_complete(htparser * p) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    strcat(buf, "END_CHUNKS\n");
+
+    return 0;
+}
+
+static int
+_body(htparser * p, const char * b, size_t s) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    ADD_DATA_BUF(buf, "BODY", b, s);
+
+    return 0;
+}
+
+static int
+_msg_complete(htparser * p) {
+    char * buf = (char *)htparser_get_userdata(p);
+
+    strcat(buf, "MSG_COMPLETE\n");
+
+    return 0;
+}
+
+htparse_hooks hooks = {
+    .on_msg_begin       = _msg_begin,
+    .method             = _method,
+    .scheme             = _scheme,
+    .host               = _host,
+    .port               = _port,
+    .path               = _path,
+    .args               = _args,
+    .uri                = _uri,
+    .on_hdrs_begin      = _hdrs_begin,
+    .hdr_key            = _hdr_key,
+    .hdr_val            = _hdr_val,
+    .hostname           = _hostname,
+    .on_hdrs_complete   = _hdrs_complete,
+    .on_new_chunk       = _new_chunk,
+    .on_chunk_complete  = _chunk_complete,
+    .on_chunks_complete = _chunks_complete,
+    .body               = _body,
+    .on_msg_complete    = _msg_complete
 };
 
-static const char * test_fragment_2[] = {
-    "POST /\0",
-    "h?a=b HTTP/1.0\r\n\0",
-    "Content-Len\0",
-    "gth\0",
-    ": 1\0",
-    "0\r\n\0",
-    "\r\n\0",
-    "12345\0",
-    "67890\0",
-    NULL
+
+struct testobj t1 = {
+    .name = "small GET request",
+    .type = htp_type_request,
+    .data = "GET / HTTP/1.0\r\n\r\n"
 };
 
-static const char * test_chunk_fragment_1[] = {
-    "POST /stupid HTTP/1.1\r\n",
-    "Transfer-Encoding: chunked\r\n",
-    "\r\n",
-    "25\r\n",
-    "This is the data in the first chunk\r\n",
-    "\r\n",
-    "1C\r\n",
-    "and this is the second one\r\n",
-    "\r\n",
-    "3\r\n",
-    "con\r\n",
-    "8\r\n",
-    "sequence\r\n",
-    "0\r\n",
-    "\r\n",
-    NULL
+struct testobj t2 = {
+    .name = "GET request with arguments",
+    .type = htp_type_request,
+    .data = "GET /test?a=b&c=d HTTP/1.1\r\n\r\n"
 };
 
-static const char * test_chunk_fragment_2[] = {
-    "POST /stupid HTTP/1.1\r\n",
-    "Transfer-Encoding: chunked\r\n",
-    "\r\n",
-    "25\r\n",
-    "This is the data in the first chunk\r\n",
-    "\r\n",
-    "1C\r\n",
-    "and this is the second one\r\n",
-    "\r\n",
-    "3\r\n",
-    "c",
-    "on\r\n",
-    "8\r\n",
-    "sequence\r\n",
-    "0\r\n",
-    "\r\n",
-    "GET /foo?bar/baz? HTTP/1.0\r\n",
-    "Host: stupid.com\r\n",
-    "\r\n",
-    NULL
+struct testobj t3 = {
+    .name = "POST request with 4 bytes of data",
+    .type = htp_type_request,
+    .data = "POST /foo/bar HTTP/1.0\r\n"
+            "Content-Length: 4\r\n\r\n"
+            "abcd"
 };
+
+struct testobj t4 = {
+    .name = "Simple POST with chunked data",
+    .type = htp_type_request,
+    .data = "POST /test/ HTTP/1.1\r\n"
+            "Transfer-Encoding: chunked\r\n\r\n"
+            "1e\r\nall your base are belong to us\r\n"
+            "0\r\n"
+            "\r\n0"
+};
+
+struct testobj t5 = {
+    .name = "POST request with multiple chunks",
+    .type = htp_type_request,
+    .data = "POST /test/ HTTP/1.1\r\n"
+            "Transfer-Encoding: chunked\r\n\r\n"
+            "23\r\n"
+            "This is the data in the first chunk"
+            "\r\n"
+            "1A\r\n"
+            "and this is the second one"
+            "\r\n"
+            "3\r\n"
+            "foo\r\n"
+            "6\r\n"
+            "barbaz\r\n"
+            "0\r\n\r\n"
+};
+
+struct testobj t6 = {
+    .name = "GET request with a host header",
+    .type = htp_type_request,
+    .data = "GET /test/ HTTP/1.0\r\n"
+            "Host: ieatfood.net\r\n\r\n"
+};
+
+struct testobj t7 = {
+    .name = "GET request with an empty header value",
+    .type = htp_type_request,
+    .data = "GET /test/ HTTP/1.0\r\n"
+            "Header1: value1\r\n"
+            "Header2: \r\n"
+            "Header3: value3\r\n\r\n"
+};
+
+struct testobj t8 = {
+    .name = "GET request with a multi-line header value",
+    .type = htp_type_request,
+    .data = "GET /test/ HTTP/1.1\r\n"
+            "Header1: value1\r\n"
+            "Header2: val\r\n"
+            "\tue\r\n"
+            "\t2\r\n"
+            "Header3: value3\r\n\r\n"
+};
+
+struct testobj t9 = {
+    .name = "[FAILURE TEST] GET REQUEST with LF instead of CRLF on header value",
+    .type = htp_type_request,
+    .data = "GET /test/ HTTP/1.1\r\n"
+            "Header: value\n\n"
+};
+
+struct testobj t10 = {
+    .name = "[FAILURE TEST] GET request with invalid protocol",
+    .type = htp_type_request,
+    .data = "GET /test/ fdasfs\r\n\r\n"
+};
+
+struct testobj t11 = {
+    .name = "[FALURE TEST] POST request with invalid chunk length",
+    .type = htp_type_request,
+    .data = "POST /test/ HTTP/1.1\r\n"
+            "Transfer-Encoding: chunked\r\n\r\n"
+            "3\r\n"
+            "foo"
+            "\r\n"
+            "A\r\n"
+            "foobar\r\n"
+            "3\r\n"
+            "baz\r\n"
+            "0\r\n\r\n"
+};
+
+struct testobj t12 = {
+    .name = "Simple GET on a FTP scheme",
+    .type = htp_type_request,
+    .data = "GET ftp://test.com/foo/bar HTTP/1.1\r\n\r\n"
+};
+
+struct testobj t13 = {
+    .name = "Multiple GET requests in HTTP/1.1 request",
+    .type = htp_type_request,
+    .data = "GET /request1 HTTP/1.1\r\n\r\n"
+            "GET /request2 HTTP/1.0\r\n"
+            "Connection: close\r\n\r\n"
+};
+
+struct testobj t14 = {
+    .name = "[FAILURE TEST] invalid request type",
+    .type = htp_type_request,
+    .data = "DERP /test HTTP/1.1\r\n\r\n"
+};
+
+struct testobj t15 = {
+    .name = "http SCHEME request with port / args / headers",
+    .type = htp_type_request,
+    .data = "GET http://ieatfood.net:80/index.html?foo=bar&baz=buz HTTP/1.0\r\n"
+            "Host: ieatfood.net\r\n"
+            "Header: value\r\n\r\n"
+};
+
+struct testobj t16 = {
+    .name = "GET request which should run all callbacks minus scheme stuff, this includes multiple requests",
+    .type = htp_type_request,
+    .data = "GET /test1?a=b&c=d&e=f HTTP/1.1\r\n"
+            "Content-Length: 6\r\n\r\n"
+            "foobar"
+            "GET /test2 HTTP/1.1\r\n"
+            "Header: test2\r\n\r\n"
+            "POST /test/ HTTP/1.1\r\n"
+            "Transfer-Encoding: chunked\r\n\r\n"
+            "23\r\n"
+            "This is the data in the first chunk"
+            "\r\n"
+            "1A\r\n"
+            "and this is the second one"
+            "\r\n"
+            "3\r\n"
+            "foo\r\n"
+            "6\r\n"
+            "barbaz\r\n"
+            "0\r\n\r\n"
+            "GET /test/ HTTP/1.1\r\n"
+            "Host: ieatfood.net\r\n"
+            "Connection: close\r\n\r\n"
+};
+
+struct testobj t17 = {
+    .name = "Like the last test, but with scheme requests",
+    .type = htp_type_request,
+    .data = "GET http://ieatfood.net/test1?a=b&c=d&e=f HTTP/1.1\r\n"
+            "Content-Length: 6\r\n\r\n"
+            "foobar"
+            "GET https://ieatfood.net:443/test2 HTTP/1.1\r\n"
+            "Header: test2\r\n\r\n"
+            "POST /test/ HTTP/1.1\r\n"
+            "Transfer-Encoding: chunked\r\n\r\n"
+            "23\r\n"
+            "This is the data in the first chunk"
+            "\r\n"
+            "1A\r\n"
+            "and this is the second one"
+            "\r\n"
+            "3\r\n"
+            "foo\r\n"
+            "6\r\n"
+            "barbaz\r\n"
+            "0\r\n\r\n"
+            "GET ftp://ackers.net:21/test/ HTTP/1.1\r\n"
+            "Host: ackers.net\r\n"
+            "Connection: close\r\n\r\n"
+};
+
+struct testobj t18 = {
+    .name = "scheme request with empty path",
+    .type = htp_type_request,
+    .data = "GET http://ackers.net HTTP/1.0\r\n\r\n"
+};
+
+struct testobj t19 = {
+    .name = "basic HTTP RESPONSE",
+    .type = htp_type_response,
+    .data = "HTTP/1.1 200 OK\r\n\r\n"
+};
+
+struct testobj t20 = {
+    .name = "HTTP RESPONSE with body",
+    .type = htp_type_response,
+    .data = "HTTP/1.1 200 OK\r\n"
+            "Content-Length: 6\r\n\r\n"
+            "foobar"
+};
+
+struct testobj t21 = {
+    .name = "HTTP RESPONSE with chunked data",
+    .type = htp_type_response,
+    .data = "HTTP/1.1 200 OK\r\n"
+            "Transfer-Encoding: chunked\r\n\r\n"
+            "23\r\n"
+            "This is the data in the first chunk"
+            "\r\n"
+            "1A\r\n"
+            "and this is the second one"
+            "\r\n"
+            "3\r\n"
+            "foo\r\n"
+            "6\r\n"
+            "barbaz\r\n"
+            "0\r\n\r\n"
+};
+
+struct testobj t22 = {
+    .name = "Header key with no value",
+    .type = htp_type_request,
+    .data = "GET / HTTP/1.1\r\n"
+            "Accept\r\n\r\n"
+};
+
+
+static int
+_run_test(htparser * p, struct testobj * obj) {
+    size_t data_sz;
+    size_t parsed_sz;
+    char   result_buf[5000] = { 0 };
+
+    htparser_init(p, obj->type);
+    htparser_set_userdata(p, result_buf);
+
+    data_sz   = strlen(obj->data);
+    parsed_sz = htparser_run(p, &hooks, obj->data, data_sz);
+
+    strcat(result_buf, "ERROR_STR: ");
+    strcat(result_buf, htparser_get_strerror(p));
+    strcat(result_buf, "\n");
+
+    printf("%s\n", obj->name);
+    printf("-----------------\n");
+    printf("%s", result_buf);
+    printf("\n");
+
+    return 0;
+}
+
 int
-main(int argc, char ** argv) {
-    htparser    * p     = htparser_new();
-    htparse_hooks hooks = {
-        .on_msg_begin       = _on_msg_start,
-        .method             = _method,
-        .scheme             = NULL,
-        .host               = NULL,
-        .port               = NULL,
-        .path               = _path,
-        .args               = _args,
-        .uri                = _uri,
-        .on_hdrs_begin      = _hdrs_start,
-        .hdr_key            = _hdr_key,
-        .hdr_val            = _hdr_val,
-        .on_hdrs_complete   = _hdrs_end,
-        .on_new_chunk       = _on_new_chunk,
-        .on_chunk_complete  = NULL,
-        .on_chunks_complete = NULL,
-        .body               = _read_body,
-        .on_msg_complete    = _on_msg_end
-    };
+main(int argc, char **argv) {
+    htparser * parser;
 
-    const char  * test_1                = "GET / HTTP/1.0\r\n\r\n";
-    const char  * test_2                = "GET /hi?a=b&c=d HTTP/1.1\r\n\r\n";
-    const char  * test_3                = "GET /hi/die/?a=b&c=d HTTP/1.1\r\n\r\n";
-    const char  * test_4                = "POST /fjdls HTTP/1.0\r\n"
-                                          "Content-Length: 4\r\n"
-                                          "\r\n"
-                                          "abcd";
-    const char * test_7                 = "POST /derp HTTP/1.1\r\n"
-                                          "Transfer-Encoding: chunked\r\n\r\n"
-                                          "1e\r\nall your base are belong to us\r\n"
-                                          "0\r\n"
-                                          "\r\n\0";
-    const char * test_8                 = "GET /DIE HTTP/1.1\r\n"
-                                          "HERP: DE\r\n"
-                                          "\tRP\r\nthings:stuff\r\n\r\n";
-    const char * test_9                 = "GET /big_content_len HTTP/1.1\r\n"
-                                          "Content-Length: 18446744073709551615\r\n\r\n";
+    parser = htparser_new();
+    assert(parser != NULL);
 
-    const char * test_fail              = "GET /JF HfD]\r\n\r\n";
-    const char * test_resp_1            = "HTTP/1.0 200 OK\r\n"
-                                          "Stuff: junk\r\n\r\n";
-    const char * test_empty_header      = "GET /empty_header HTTP/1.1\r\n"
-                                          "Empty: \r\n"
-                                          "Stuff: junk\r\n\r\n";
-    const char * test_resp_empty_header = "HTTP/1.1 200 OK\r\n"
-                                          "response Empty: \r\n"
-                                          "Things: junk\r\n\r\n";
-
-    const char * test_no_cr             = "GET /no_cr HTTP/1.1\n"
-                                          "Host: stuff\n"
-                                          "Things: blah\n\n";
-    const char * test_no_hdr_cr         = "GET /no_hdr_cr HTTP/1.1\r\n"
-                                          "Host: things\n"
-                                          "Stuff: blah\n\n";
-    const char * test_no_hdr_cr_end     = "GET /no_hdr_cr_end HTTP/1.1\r\n"
-                                          "Host: blah\r\n"
-                                          "things: stuff\n\n\r\n";
-    const char * test_multiline         = "GET /multi HTTP/1.1\r\n"
-                                          "Header:    foo\r\n"
-                                          "\tbar\r\n"
-                                          "\tbaz\r\n"
-                                          "key: val\r\n\r\n";
-    const char * test_bad_body          = "HTTP/1.1 200\r\n"
-                                          "Content-Length: 6230461615\r\n\r\n"
-                                          "1234567890 moredata";
-
-    _test(p, &hooks, test_resp_1, htp_type_response);
-    _test(p, &hooks, test_1, htp_type_request);
-    _test(p, &hooks, test_2, htp_type_request);
-    _test(p, &hooks, test_3, htp_type_request);
-    _test(p, &hooks, test_4, htp_type_request);
-    _test(p, &hooks, test_7, htp_type_request);
-    _test(p, &hooks, test_8, htp_type_request);
-    _test(p, &hooks, test_9, htp_type_request);
-    _test(p, &hooks, test_fail, htp_type_request);
-    _test(p, &hooks, test_empty_header, htp_type_request);
-    _test(p, &hooks, test_resp_empty_header, htp_type_response);
-    _test(p, &hooks, test_no_cr, htp_type_request);
-    _test(p, &hooks, test_no_hdr_cr, htp_type_request);
-    _test(p, &hooks, test_no_hdr_cr_end, htp_type_request);
-    _test(p, &hooks, test_multiline, htp_type_request);
-    _test(p, &hooks, test_bad_body, htp_type_response);
-
-    _test_fragments(p, &hooks, test_fragment_1, htp_type_request);
-    _test_fragments(p, &hooks, test_fragment_2, htp_type_request);
-    _test_fragments(p, &hooks, test_chunk_fragment_1, htp_type_request);
-    _test_fragments(p, &hooks, test_chunk_fragment_2, htp_type_request);
+    _run_test(parser, &t1);
+    _run_test(parser, &t2);
+    _run_test(parser, &t3);
+    _run_test(parser, &t4);
+    _run_test(parser, &t5);
+    _run_test(parser, &t6);
+    _run_test(parser, &t7);
+    _run_test(parser, &t8);
+    _run_test(parser, &t9);
+    _run_test(parser, &t10);
+    _run_test(parser, &t11);
+    _run_test(parser, &t12);
+    _run_test(parser, &t13);
+    _run_test(parser, &t14);
+    _run_test(parser, &t15);
+    _run_test(parser, &t16);
+    _run_test(parser, &t17);
+    _run_test(parser, &t18);
+    _run_test(parser, &t19);
+    _run_test(parser, &t20);
+    _run_test(parser, &t21);
+    _run_test(parser, &t22);
 
     return 0;
-} /* main */
+}
 

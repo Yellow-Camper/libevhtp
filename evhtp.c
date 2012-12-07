@@ -915,6 +915,7 @@ _evhtp_request_parser_header_val(htparser * p, const char * data, size_t len) {
     memcpy(val_s, data, len);
 
     if ((header = evhtp_header_val_add(c->request->headers_in, val_s, 0)) == NULL) {
+        free(val_s);
         c->request->status = EVHTP_RES_FATAL;
         return -1;
     }
@@ -1462,16 +1463,13 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
         }
     }
 
-    if (avail != nread) {
-        if (c->request && c->request->status == EVHTP_RES_PAUSE) {
-            evhtp_request_pause(c->request);
-        } else {
-            evhtp_connection_free(c);
-            return;
-        }
-    }
-
     evbuffer_drain(bufferevent_get_input(bev), nread);
+
+    if (c->request && c->request->status == EVHTP_RES_PAUSE) {
+        evhtp_request_pause(c->request);
+    } else if (avail != nread) {
+        evhtp_connection_free(c);
+    }
 } /* _evhtp_connection_readcb */
 
 static void
@@ -1975,9 +1973,17 @@ evhtp_header_key_add(evhtp_headers_t * headers, const char * key, char kalloc) {
 
 evhtp_header_t *
 evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char valloc) {
-    evhtp_header_t * header = TAILQ_LAST(headers, evhtp_headers_s);
+    evhtp_header_t * header;
 
-    if (header == NULL) {
+    if (!headers || !val) {
+        return NULL;
+    }
+
+    if (!(header = TAILQ_LAST(headers, evhtp_headers_s))) {
+        return NULL;
+    }
+
+    if (header->val != NULL) {
         return NULL;
     }
 
@@ -2016,6 +2022,8 @@ evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc) {
     kv->v_heaped = valloc;
     kv->klen     = 0;
     kv->vlen     = 0;
+    kv->key      = NULL;
+    kv->val      = NULL;
 
     if (key != NULL) {
         kv->klen = strlen(key);
@@ -2754,7 +2762,20 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 
 void
 evhtp_callbacks_free(evhtp_callbacks_t * callbacks) {
-    /* XXX TODO */
+    evhtp_callback_t * callback;
+    evhtp_callback_t * tmp;
+
+    if (callbacks == NULL) {
+        return;
+    }
+
+    TAILQ_FOREACH_SAFE(callback, callbacks, next, tmp) {
+        TAILQ_REMOVE(callbacks, callback, next);
+
+        evhtp_callback_free(callback);
+    }
+
+    free(callbacks);
 }
 
 evhtp_callback_t *
@@ -3539,12 +3560,12 @@ evhtp_free(evhtp_t * evhtp) {
         evthr_pool_free(evhtp->thr_pool);
     }
 
-    if (evhtp->callbacks) {
-        free(evhtp->callbacks);
-    }
-
     if (evhtp->server_name) {
         free(evhtp->server_name);
+    }
+
+    if (evhtp->callbacks) {
+        evhtp_callbacks_free(evhtp->callbacks);
     }
 
     TAILQ_FOREACH_SAFE(evhtp_alias, &evhtp->aliases, next, tmp) {

@@ -13,15 +13,13 @@ testcb(evhtp_request_t * req, void * a) {
 
 int
 main(int argc, char ** argv) {
-    evbase_t         * evbase = event_base_new();
-    evhtp_t          * evhtp  = evhtp_new(evbase, NULL);
-    evhtp_t          * v1     = evhtp_new(evbase, NULL);
-    evhtp_t          * v2     = evhtp_new(evbase, NULL);
-    evhtp_callback_t * cb_1   = NULL;
-    evhtp_callback_t * cb_2   = NULL;
+    evbase_t * evbase = event_base_new();
+    evhtp_t  * evhtp  = evhtp_new(evbase, NULL);
+    evhtp_t  * v1     = evhtp_new(evbase, NULL);
+    evhtp_t  * v2     = evhtp_new(evbase, NULL);
 
-    cb_1 = evhtp_set_cb(v1, "/host1", NULL, "host1.com");
-    cb_2 = evhtp_set_cb(v2, "/localhost", testcb, "localhost");
+    evhtp_set_cb(v1, "/host1", NULL, "host1.com");
+    evhtp_set_cb(v2, "/localhost", testcb, "localhost");
 
     evhtp_add_vhost(evhtp, "host1.com", v1);
     evhtp_add_vhost(evhtp, "localhost", v2);
@@ -46,8 +44,6 @@ main(int argc, char ** argv) {
     event_base_loop(evbase, 0);
 
     evhtp_unbind_socket(evhtp);
-    evhtp_callback_free(cb_2);
-    evhtp_callback_free(cb_1);
     evhtp_free(v2);
     evhtp_free(v1);
     evhtp_free(evhtp);

@@ -15,13 +15,11 @@ testcb(evhtp_request_t * req, void * a) {
 
 int
 main(int argc, char ** argv) {
-    evbase_t         * evbase = event_base_new();
-    evhtp_t          * htp    = evhtp_new(evbase, NULL);
-    evhtp_callback_t * cb_1   = NULL;
-    evhtp_callback_t * cb_2   = NULL;
+    evbase_t * evbase = event_base_new();
+    evhtp_t  * htp    = evhtp_new(evbase, NULL);
 
-    cb_1 = evhtp_set_cb(htp, "/1/ping", testcb, "one");
-    cb_2 = evhtp_set_cb(htp, "/1/ping.json", testcb, "two");
+    evhtp_set_cb(htp, "/1/ping", testcb, "one");
+    evhtp_set_cb(htp, "/1/ping.json", testcb, "two");
 #ifndef EVHTP_DISABLE_EVTHR
     evhtp_use_threads(htp, NULL, 4, NULL);
 #endif
@@ -30,8 +28,6 @@ main(int argc, char ** argv) {
     event_base_loop(evbase, 0);
 
     evhtp_unbind_socket(htp);
-    evhtp_callback_free(cb_2);
-    evhtp_callback_free(cb_1);
     evhtp_free(htp);
     event_base_free(evbase);
 

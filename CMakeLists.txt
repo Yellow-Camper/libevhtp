@@ -54,9 +54,17 @@ if (NOT HAVE_SYS_UN)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_SYS_UN")
 endif(NOT HAVE_SYS_UN)
 
+# -DEVHTP_DISABLE_SSL:STRING=ON
 OPTION(EVHTP_DISABLE_SSL       "Disable ssl support"      OFF)
+
+# -DEVHTP_DISABLE_EVTHR:STRING=ON
 OPTION(EVHTP_DISABLE_EVTHR     "Disable evthread support" OFF)
+
+# -DEVHTP_DISABLE_REGEX:STRING=ON
 OPTION(EVHTP_DIABLE_REGEX      "Disable regex support"    OFF)
+
+# -DEVHTP_BUILD_SHARED:STRING=ON
+OPTION(EVHTP_BUILD_SHARED      "Build shared library too" OFF)
 
 # -DEVHTP_USE_DEFER_ACCEPT:STRING=ON
 OPTION(EVHTP_USE_DEFER_ACCEPT  "Enable TCP_DEFER_ACCEPT"  OFF) 
@@ -179,15 +187,6 @@ if (EVHTP_DISABLE_SSL)
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEVHTP_DISABLE_SSL")
 endif()
 
-add_library(libevhtp STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
-set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
-
-install (TARGETS libevhtp DESTINATION lib)
-install (FILES evhtp.h DESTINATION include)
-install (FILES htparse/htparse.h DESTINATION include)
-install (FILES evthr/evthr.h DESTINATION include)
-install (FILES oniguruma/onigposix.h DESTINATION include)
-
 find_library (LIB_DL dl)
 set (SYS_LIBS ${LIB_DL})
 
@@ -196,11 +195,28 @@ if (NOT APPLE)
 	set (SYS_LIBS ${SYS_LIBS} ${LIB_RT})
 endif()
 
+add_library(libevhtpStatic STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
+set_target_properties(libevhtpStatic PROPERTIES OUTPUT_NAME "evhtp")
+
+if (EVHTP_BUILD_SHARED)
+	add_library(libevhtpShared SHARED ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
+	set_target_properties(libevhtpShared PROPERTIES OUTPUT_NAME "evhtp")
+	target_link_libraries(libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS})
+	install (TARGETS libevhtpShared DESTINATION lib)
+endif()
+
+install (TARGETS libevhtpStatic DESTINATION lib)
+install (FILES evhtp.h DESTINATION include)
+install (FILES htparse/htparse.h DESTINATION include)
+install (FILES evthr/evthr.h DESTINATION include)
+install (FILES oniguruma/onigposix.h DESTINATION include)
+
+
 add_executable(test test.c)
-target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
 add_executable(test_basic test_basic.c)
-target_link_libraries(test_basic libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_basic libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
 add_executable(test_vhost test_vhost.c)
-target_link_libraries(test_vhost libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_vhost libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})

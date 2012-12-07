@@ -1672,9 +1672,10 @@ _evhtp_connection_new(evhtp_t * htp, int sock, evhtp_type type) {
     connection->owner  = 1;
     connection->sock   = sock;
     connection->htp    = htp;
+    connection->type   = type;
     connection->parser = htparser_new();
 
-    htparser_init(connection->parser, htp_type_request);
+    htparser_init(connection->parser, ptype);
     htparser_set_userdata(connection->parser, connection);
 
     TAILQ_INIT(&connection->pending);

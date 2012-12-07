@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <evhtp.h>
 
 static void
@@ -12,15 +13,14 @@ request_cb(evhtp_request_t * req, void * arg) {
 
 static evhtp_res
 print_data(evhtp_request_t * req, evbuf_t * buf, void * arg) {
-    printf("Got %zu bytes\n",
-           evbuffer_get_length(buf));
+    printf("Got %zu bytes\n", evbuffer_get_length(buf));
 
     return EVHTP_RES_OK;
 }
 
 static evhtp_res
 print_new_chunk_len(evhtp_request_t * req, uint64_t len, void * arg) {
-    printf("started new chunk, %zu bytes\n", len);
+    printf("started new chunk, %" PRIu64 "  bytes\n", len);
 
     return EVHTP_RES_OK;
 }
@@ -50,12 +50,9 @@ main(int argc, char ** argv) {
     request = evhtp_request_new(request_cb, evbase);
 
     evhtp_set_hook(&request->hooks, evhtp_hook_on_read, print_data, evbase);
-    evhtp_set_hook(&request->hooks, evhtp_hook_on_new_chunk,
-                   print_new_chunk_len, NULL);
-    evhtp_set_hook(&request->hooks, evhtp_hook_on_chunk_complete,
-                   print_chunk_complete, NULL);
-    evhtp_set_hook(&request->hooks, evhtp_hook_on_chunks_complete,
-                   print_chunks_complete, NULL);
+    evhtp_set_hook(&request->hooks, evhtp_hook_on_new_chunk, print_new_chunk_len, NULL);
+    evhtp_set_hook(&request->hooks, evhtp_hook_on_chunk_complete, print_chunk_complete, NULL);
+    evhtp_set_hook(&request->hooks, evhtp_hook_on_chunks_complete, print_chunks_complete, NULL);
 
     evhtp_headers_add_header(request->headers_out,
                              evhtp_header_new("Host", "ieatfood.net", 0, 0));

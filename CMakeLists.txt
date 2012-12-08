@@ -195,28 +195,38 @@ if (NOT APPLE)
 	set (SYS_LIBS ${SYS_LIBS} ${LIB_RT})
 endif()
 
-add_library(libevhtpStatic STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
-set_target_properties(libevhtpStatic PROPERTIES OUTPUT_NAME "evhtp")
-
 if (EVHTP_BUILD_SHARED)
 	add_library(libevhtpShared SHARED ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 	set_target_properties(libevhtpShared PROPERTIES OUTPUT_NAME "evhtp")
 	target_link_libraries(libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS})
 	install (TARGETS libevhtpShared DESTINATION lib)
+
+	add_executable(test test.c)
+	target_link_libraries(test libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+	add_executable(test_basic test_basic.c)
+	target_link_libraries(test_basic libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+	add_executable(test_vhost test_vhost.c)
+	target_link_libraries(test_vhost libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+else()
+	add_library(libevhtpStatic STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
+	set_target_properties(libevhtpStatic PROPERTIES OUTPUT_NAME "evhtp") 
+	install (TARGETS libevhtpStatic DESTINATION lib)
+
+	add_executable(test test.c)
+	target_link_libraries(test libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+	add_executable(test_basic test_basic.c)
+	target_link_libraries(test_basic libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+	add_executable(test_vhost test_vhost.c)
+	target_link_libraries(test_vhost libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 endif()
 
-install (TARGETS libevhtpStatic DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
 install (FILES htparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
 install (FILES oniguruma/onigposix.h DESTINATION include)
 
 
-add_executable(test test.c)
-target_link_libraries(test libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-add_executable(test_basic test_basic.c)
-target_link_libraries(test_basic libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-add_executable(test_vhost test_vhost.c)
-target_link_libraries(test_vhost libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})

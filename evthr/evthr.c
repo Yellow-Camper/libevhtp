@@ -376,8 +376,6 @@ evthr_pool_stop(evthr_pool_t * pool) {
         evthr_stop(thr);
     }
 
-    memset(&pool->threads, 0, sizeof(pool->threads));
-
     return EVTHR_RES_OK;
 }
 

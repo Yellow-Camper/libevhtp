@@ -435,6 +435,9 @@ struct evhtp_connection_s {
     uint64_t          body_bytes_read;
     uint64_t          num_requests;
     evhtp_type        type;                /**< server or client */
+    char              paused;
+    char              free_connection;
+
     TAILQ_HEAD(, evhtp_request_s) pending; /**< client pending data */
 };
 

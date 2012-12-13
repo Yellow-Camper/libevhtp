@@ -836,6 +836,10 @@ _evhtp_request_parser_start(htparser * p) {
         return 0;
     }
 
+    if (c->paused == 1) {
+        return -1;
+    }
+
     if (c->request) {
         if (c->request->finished == 1) {
             _evhtp_request_free(c->request);
@@ -1411,8 +1415,17 @@ static void
 _evhtp_connection_resumecb(int fd, short events, void * arg) {
     evhtp_connection_t * c = arg;
 
+    c->paused = 0;
+
+    bufferevent_enable(c->bev, EV_READ);
+
     if (c->request) {
         c->request->status = EVHTP_RES_OK;
+    }
+
+    if (c->free_connection == 1) {
+        evhtp_connection_free(c);
+        return;
     }
 
     _evhtp_connection_readcb(c->bev, c);
@@ -1431,6 +1444,9 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
         c->request->status = EVHTP_RES_OK;
     }
 
+    if (c->paused == 1) {
+        return;
+    }
 
     buf = evbuffer_pullup(bufferevent_get_input(bev), avail);
 
@@ -1481,6 +1497,10 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
     }
 
     _evhtp_connection_write_hook(c);
+
+    if (c->paused == 1) {
+        return;
+    }
 
     if (c->request->finished == 0 || evbuffer_get_length(bufferevent_get_output(bev))) {
         return;
@@ -1558,7 +1578,12 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
                                        c->request->hooks->on_error_arg);
     }
 
-    evhtp_connection_free((evhtp_connection_t *)arg);
+
+    if (c->paused == 1) {
+        c->free_connection = 1;
+    } else {
+        evhtp_connection_free((evhtp_connection_t *)arg);
+    }
 }
 
 static int
@@ -1670,6 +1695,7 @@ _evhtp_connection_new(evhtp_t * htp, int sock, evhtp_type type) {
 
     connection->error  = 0;
     connection->owner  = 1;
+    connection->paused = 0;
     connection->sock   = sock;
     connection->htp    = htp;
     connection->type   = type;
@@ -1905,6 +1931,7 @@ evhtp_request_get_method(evhtp_request_t * r) {
 void
 evhtp_connection_pause(evhtp_connection_t * c) {
     if ((bufferevent_get_enabled(c->bev) & EV_READ)) {
+        c->paused = 1;
         bufferevent_disable(c->bev, EV_READ);
     }
 }
@@ -1917,7 +1944,7 @@ evhtp_connection_pause(evhtp_connection_t * c) {
 void
 evhtp_connection_resume(evhtp_connection_t * c) {
     if (!(bufferevent_get_enabled(c->bev) & EV_READ)) {
-        bufferevent_enable(c->bev, EV_READ);
+        /* bufferevent_enable(c->bev, EV_READ); */
         event_active(c->resume_ev, EV_WRITE, 1);
     }
 }

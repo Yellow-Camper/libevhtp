@@ -17,3 +17,5 @@
 /test_basic
 /test_vhost
 
+/test_client
+/test_proxy

@@ -209,6 +209,13 @@ if (EVHTP_BUILD_SHARED)
 
 	add_executable(test_vhost test_vhost.c)
 	target_link_libraries(test_vhost libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+	add_executable(test_client test_client.c)
+	target_link_libraries(test_client libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+	add_executable(test_proxy test_proxy.c)
+	target_link_libraries(test_proxy libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
 else()
 	add_library(libevhtpStatic STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 	set_target_properties(libevhtpStatic PROPERTIES OUTPUT_NAME "evhtp") 
@@ -222,11 +229,15 @@ else()
 
 	add_executable(test_vhost test_vhost.c)
 	target_link_libraries(test_vhost libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+	add_executable(test_client test_client.c)
+	target_link_libraries(test_client libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+	add_executable(test_proxy test_proxy.c)
+	target_link_libraries(test_proxy libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
 endif()
 
 install (FILES evhtp.h DESTINATION include)
 install (FILES htparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
-install (FILES oniguruma/onigposix.h DESTINATION include)
-
-

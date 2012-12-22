@@ -1267,7 +1267,7 @@ _evhtp_should_parse_query_body(evhtp_request_t * req) {
         return 0;
     }
 
-    if (strcasecmp(content_type, "application/x-www-form-urlencoded")) {
+    if (strncasecmp(content_type, "application/x-www-form-urlencoded", 33)) {
         return 0;
     }
 

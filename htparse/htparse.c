@@ -118,11 +118,12 @@ struct htparser {
     unsigned char multipart;
     unsigned char major;
     unsigned char minor;
-    uint64_t      content_len;
+    uint64_t      content_len;      /* this gets decremented as data passes through */
+    uint64_t      orig_content_len; /* this contains the original length of the body */
     uint64_t      bytes_read;
     uint64_t      total_bytes_read;
-    unsigned int  status;       /* only for responses */
-    unsigned int  status_count; /* only for responses */
+    unsigned int  status;           /* only for responses */
+    unsigned int  status_count;     /* only for responses */
 
     char * scheme_offset;
     char * host_offset;
@@ -424,7 +425,7 @@ htparser_set_userdata(htparser * p, void * ud) {
 
 uint64_t
 htparser_get_content_length(htparser * p) {
-    return p->content_len;
+    return p->orig_content_len;
 }
 
 uint64_t
@@ -485,20 +486,21 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_start:
                 htparse_log_debug("[%p] s_start", p);
 
-                p->flags         = 0;
-                p->error         = htparse_error_none;
-                p->method        = htp_method_UNKNOWN;
-                p->multipart     = 0;
-                p->major         = 0;
-                p->minor         = 0;
-                p->content_len   = 0;
-                p->status        = 0;
-                p->status_count  = 0;
-                p->scheme_offset = NULL;
-                p->host_offset   = NULL;
-                p->port_offset   = NULL;
-                p->path_offset   = NULL;
-                p->args_offset   = NULL;
+                p->flags            = 0;
+                p->error            = htparse_error_none;
+                p->method           = htp_method_UNKNOWN;
+                p->multipart        = 0;
+                p->major            = 0;
+                p->minor            = 0;
+                p->content_len      = 0;
+                p->orig_content_len = 0;
+                p->status           = 0;
+                p->status_count     = 0;
+                p->scheme_offset    = NULL;
+                p->host_offset      = NULL;
+                p->port_offset      = NULL;
+                p->path_offset      = NULL;
+                p->args_offset      = NULL;
 
 
                 if (ch == CR || ch == LF) {
@@ -1500,7 +1502,8 @@ hdrline_start:
                                 res = hook_hostname_run(p, hooks, p->buf, p->buf_idx);
                                 break;
                             case eval_hdr_val_content_length:
-                                p->content_len = str_to_uint64(p->buf, p->buf_idx, &err);
+                                p->content_len      = str_to_uint64(p->buf, p->buf_idx, &err);
+                                p->orig_content_len = p->content_len;
 
                                 htparse_log_debug("[%p] s_hdrline_hdr_val content-lenth = %zu", p, p->content_len);
 
@@ -1609,7 +1612,7 @@ hdrline_start:
                         break;
                     case LF:
                         /* got LFLF? is this valid? */
-                        p->error = htparse_error_inval_hdr;
+                        p->error             = htparse_error_inval_hdr;
 
                         return i + 1;
                     case '\t':
@@ -1735,6 +1738,8 @@ hdrline_start:
                     return i + 1;
                 }
 
+                p->orig_content_len = p->content_len;
+
                 if (p->content_len == 0) {
                     res       = hook_on_chunks_complete_run(p, hooks);
 
@@ -1795,6 +1800,7 @@ hdrline_start:
                     return i + 1;
                 }
 
+                p->orig_content_len = 0;
                 p->state = s_chunk_size_start;
 
                 if (hook_on_chunk_complete_run(p, hooks)) {

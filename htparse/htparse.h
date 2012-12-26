@@ -101,6 +101,7 @@ unsigned char  htparser_get_minor(htparser *);
 unsigned char  htparser_get_multipart(htparser *);
 unsigned int   htparser_get_status(htparser *);
 uint64_t       htparser_get_content_length(htparser *);
+uint64_t       htparser_get_content_pending(htparser *);
 uint64_t       htparser_get_total_bytes_read(htparser *);
 htpparse_error htparser_get_error(htparser *);
 const char   * htparser_get_strerror(htparser *);

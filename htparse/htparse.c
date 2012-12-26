@@ -424,6 +424,11 @@ htparser_set_userdata(htparser * p, void * ud) {
 }
 
 uint64_t
+htparser_get_content_pending(htparser * p) {
+    return p->content_len;
+}
+
+uint64_t
 htparser_get_content_length(htparser * p) {
     return p->orig_content_len;
 }

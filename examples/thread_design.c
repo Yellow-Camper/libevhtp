@@ -128,6 +128,8 @@ redis_global_incr_cb(redisAsyncContext * redis, void * redis_reply, void * arg) 
     redisReply      * reply   = redis_reply;
     evhtp_request_t * request = arg;
 
+    printf("global_incr_cb(%p)\n", request);
+
     if (reply == NULL || reply->type != REDIS_REPLY_INTEGER) {
         evbuffer_add_printf(request->buffer_out,
                             "redis_global_incr_cb() failed\n");
@@ -143,6 +145,8 @@ redis_srcaddr_incr_cb(redisAsyncContext * redis, void * redis_reply, void * arg)
     redisReply      * reply   = redis_reply;
     evhtp_request_t * request = arg;
 
+    printf("incr_cb(%p)\n", request);
+
     if (reply == NULL || reply->type != REDIS_REPLY_INTEGER) {
         evbuffer_add_printf(request->buffer_out,
                             "redis_srcaddr_incr_cb() failed\n");
@@ -157,6 +161,8 @@ void
 redis_set_srcport_cb(redisAsyncContext * redis, void * redis_reply, void * arg) {
     redisReply      * reply   = redis_reply;
     evhtp_request_t * request = arg;
+
+    printf("set_srcport_cb(%p)\n", request);
 
     if (reply == NULL || reply->type != REDIS_REPLY_INTEGER) {
         evbuffer_add_printf(request->buffer_out,
@@ -178,6 +184,8 @@ redis_get_srcport_cb(redisAsyncContext * redis, void * redis_reply, void * arg) 
     redisReply      * reply   = redis_reply;
     evhtp_request_t * request = arg;
     int               i;
+
+    printf("get_srcport_cb(%p)\n", request);
 
     if (reply == NULL || reply->type != REDIS_REPLY_ARRAY) {
         evbuffer_add_printf(request->buffer_out,
@@ -209,6 +217,8 @@ app_process_request(evhtp_request_t * request, void * arg) {
     evthr_t            * thread;
     evhtp_connection_t * conn;
     char                 tmp[1024];
+
+    printf("process_request(%p)\n", request);
 
     thread = get_request_thr(request);
     conn   = evhtp_request_get_connection(request);

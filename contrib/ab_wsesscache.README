@@ -1,5 +1,0 @@
-Patches Apache Bench to support the ability to read in a client session-id file.
-
-Usage:
-openssl s_client -connect your_server:your_port -sess_out <outfile> -ssl3
-ab [opts] -I <outfile>

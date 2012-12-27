@@ -127,6 +127,7 @@ typedef enum evhtp_hook_type       evhtp_hook_type;
 typedef enum evhtp_callback_type   evhtp_callback_type;
 typedef enum evhtp_proto           evhtp_proto;
 typedef enum evhtp_ssl_scache_type evhtp_ssl_scache_type;
+typedef enum evhtp_type            evhtp_type;
 
 typedef void (*evhtp_thread_init_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
 typedef void (*evhtp_callback_cb)(evhtp_request_t * req, void * arg);
@@ -161,10 +162,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION           "1.1.7"
+#define EVHTP_VERSION           "1.2.0"
 #define EVHTP_VERSION_MAJOR     1
-#define EVHTP_VERSION_MINOR     1
-#define EVHTP_VERSION_PATCH     7
+#define EVHTP_VERSION_MINOR     2
+#define EVHTP_VERSION_PATCH     0
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 
@@ -230,6 +231,11 @@ typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_GWTIMEOUT     504
 #define EVHTP_RES_VERNSUPPORT   505
 #define EVHTP_RES_BWEXEED       509
+
+enum evhtp_type {
+    evhtp_type_client,
+    evhtp_type_server
+};
 
 struct evhtp_defaults_s {
     evhtp_callback_cb    cb;
@@ -402,6 +408,8 @@ struct evhtp_request_s {
     evhtp_callback_cb cb;             /**< the function to call when fully processed */
     void            * cbarg;          /**< argument which is passed to the cb function */
     int               error;
+
+    TAILQ_ENTRY(evhtp_request_s) next;
 };
 
 #define evhtp_request_content_len(r) htparser_get_content_length(r->conn->parser)
@@ -416,16 +424,21 @@ struct evhtp_connection_s {
     htparser        * parser;
     event_t         * resume_ev;
     struct sockaddr * saddr;
-    struct timeval    recv_timeo;    /**< conn read timeouts (overrides global) */
-    struct timeval    send_timeo;    /**< conn write timeouts (overrides global) */
+    struct timeval    recv_timeo;          /**< conn read timeouts (overrides global) */
+    struct timeval    send_timeo;          /**< conn write timeouts (overrides global) */
     int               sock;
     uint8_t           error;
-    uint8_t           owner;         /**< set to 1 if this structure owns the bufferevent */
-    uint8_t           vhost_via_sni; /**< set to 1 if the vhost was found via SSL SNI */
-    evhtp_request_t * request;       /**< the request currently being processed */
+    uint8_t           owner;               /**< set to 1 if this structure owns the bufferevent */
+    uint8_t           vhost_via_sni;       /**< set to 1 if the vhost was found via SSL SNI */
+    evhtp_request_t * request;             /**< the request currently being processed */
     uint64_t          max_body_size;
     uint64_t          body_bytes_read;
     uint64_t          num_requests;
+    evhtp_type        type;                /**< server or client */
+    char              paused;
+    char              free_connection;
+
+    TAILQ_HEAD(, evhtp_request_s) pending; /**< client pending data */
 };
 
 struct evhtp_hooks_s {
@@ -806,6 +819,14 @@ evhtp_kv_t  * evhtp_kvs_find_kv(evhtp_kvs_t * kvs, const char * key);
  */
 void evhtp_kvs_add_kv(evhtp_kvs_t * kvs, evhtp_kv_t * kv);
 
+/**
+ * @brief appends all key/val structures from src tailq onto dst tailq
+ *
+ * @param dst an evhtp_kvs_t structure
+ * @param src an evhtp_kvs_t structure
+ */
+void evhtp_kvs_add_kvs(evhtp_kvs_t * dst, evhtp_kvs_t * src);
+
 int  evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, void * arg);
 
 /**
@@ -896,6 +917,7 @@ const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
 #define evhtp_headers_free        evhtp_kvs_free
 #define evhtp_header_rm_and_free  evhtp_kv_rm_and_free
 #define evhtp_headers_add_header  evhtp_kvs_add_kv
+#define evhtp_headers_add_headers evhtp_kvs_add_kvs
 #define evhtp_query_new           evhtp_kvs_new
 #define evhtp_query_free          evhtp_kvs_free
 
@@ -996,7 +1018,6 @@ void evhtp_connection_free(evhtp_connection_t * connection);
 
 void evhtp_request_free(evhtp_request_t * request);
 
-
 /**
  * @brief set a max body size to accept for an incoming request, this will
  *        default to unlimited.
@@ -1031,6 +1052,25 @@ void evhtp_request_set_max_body_size(evhtp_request_t * request, uint64_t len);
  * @param num
  */
 void evhtp_set_max_keepalive_requests(evhtp_t * htp, uint64_t num);
+
+/*****************************************************************
+* client request functions                                      *
+*****************************************************************/
+
+/**
+ * @brief allocate a new connection
+ */
+evhtp_connection_t * evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port);
+
+/**
+ * @brief allocate a new request
+ */
+evhtp_request_t * evhtp_request_new(evhtp_callback_cb cb, void * arg);
+
+/**
+ * @brief make a client request
+ */
+int evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r, htp_method meth, const char * uri);
 
 #ifdef __cplusplus
 }

@@ -32,7 +32,9 @@ enum htp_method {
     htp_method_LOCK,
     htp_method_UNLOCK,
     htp_method_TRACE,
-    htp_method_UNKNOWN
+    htp_method_CONNECT, /* RFC 2616 */
+    htp_method_PATCH,   /* RFC 5789 */
+    htp_method_UNKNOWN,
 };
 
 enum htpparse_error {
@@ -91,6 +93,7 @@ int            htparser_should_keep_alive(htparser * p);
 htp_scheme     htparser_get_scheme(htparser *);
 htp_method     htparser_get_method(htparser *);
 const char   * htparser_get_methodstr(htparser *);
+const char   * htparser_get_methodstr_m(htp_method);
 void           htparser_set_major(htparser *, unsigned char);
 void           htparser_set_minor(htparser *, unsigned char);
 unsigned char  htparser_get_major(htparser *);
@@ -98,6 +101,7 @@ unsigned char  htparser_get_minor(htparser *);
 unsigned char  htparser_get_multipart(htparser *);
 unsigned int   htparser_get_status(htparser *);
 uint64_t       htparser_get_content_length(htparser *);
+uint64_t       htparser_get_content_pending(htparser *);
 uint64_t       htparser_get_total_bytes_read(htparser *);
 htpparse_error htparser_get_error(htparser *);
 const char   * htparser_get_strerror(htparser *);

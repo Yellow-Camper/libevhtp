@@ -625,22 +625,7 @@ main(int argc, char ** argv) {
 
     event_free(ev_sigint);
     evhtp_unbind_socket(htp);
-    evhtp_callback_free(cb_12);
-    evhtp_callback_free(cb_11);
-    evhtp_callback_free(cb_10);
-    evhtp_callback_free(cb_9);
-#ifndef EVHTP_DISABLE_REGEX
-    evhtp_callback_free(cb_8);
-#endif
-    evhtp_callback_free(cb_7);
-#ifndef EVHTP_DISABLE_REGEX
-    evhtp_callback_free(cb_6);
-#endif
-    evhtp_callback_free(cb_5);
-    evhtp_callback_free(cb_4);
-    evhtp_callback_free(cb_3);
-    evhtp_callback_free(cb_2);
-    evhtp_callback_free(cb_1);
+
     evhtp_free(htp);
     event_base_free(evbase);
 

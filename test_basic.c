@@ -18,6 +18,7 @@ main(int argc, char ** argv) {
     evbase_t * evbase = event_base_new();
     evhtp_t  * htp    = evhtp_new(evbase, NULL);
 
+    evhtp_set_cb(htp, "/simple/", testcb, "simple");
     evhtp_set_cb(htp, "/1/ping", testcb, "one");
     evhtp_set_cb(htp, "/1/ping.json", testcb, "two");
 #ifndef EVHTP_DISABLE_EVTHR

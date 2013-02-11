@@ -62,9 +62,9 @@ struct evthr {
 };
 
 #ifndef TAILQ_FOREACH_SAFE
-#define TAILQ_FOREACH_SAFE(var, head, field, tvar)              \
-    for ((var) = TAILQ_FIRST((head));                           \
-         (var) && ((tvar) = TAILQ_NEXT((var), field), 1);       \
+#define TAILQ_FOREACH_SAFE(var, head, field, tvar)        \
+    for ((var) = TAILQ_FIRST((head));                     \
+         (var) && ((tvar) = TAILQ_NEXT((var), field), 1); \
          (var) = (tvar))
 #endif
 
@@ -86,6 +86,15 @@ evthr_get_backlog(evthr_t * evthr) {
 inline void
 evthr_set_max_backlog(evthr_t * evthr, int max) {
     evthr->max_backlog = max;
+}
+
+inline int
+evthr_set_backlog(evthr_t * evthr, int num) {
+    if (evthr->wdr < 0) {
+        return -1;
+    }
+
+    return setsockopt(evthr->wdr, SOL_SOCKET, SO_RCVBUF, &num, sizeof(int));
 }
 
 static void
@@ -113,7 +122,7 @@ _evthr_read_cmd(int sock, short __unused__ which, void * args) {
         }
     }
 
-    if (recvd < sizeof(evthr_cmd_t)) {
+    if (recvd < (ssize_t)sizeof(evthr_cmd_t)) {
         pthread_mutex_unlock(&thread->rlock);
         goto error;
     }
@@ -452,6 +461,17 @@ evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared) {
     }
 
     return pool;
+}
+
+int
+evthr_pool_set_backlog(evthr_pool_t * pool, int num) {
+    evthr_t * thr;
+
+    TAILQ_FOREACH(thr, &pool->threads, next) {
+        evthr_set_backlog(thr, num);
+    }
+
+    return 0;
 }
 
 void

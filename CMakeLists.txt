@@ -241,3 +241,7 @@ endif()
 install (FILES evhtp.h DESTINATION include)
 install (FILES htparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
+
+if (NOT EVHTP_DISABLE_REGEX)
+	install (FILES oniguruma/onigposix.h DESTINATION include)
+endif()

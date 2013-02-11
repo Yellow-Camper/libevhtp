@@ -90,11 +90,15 @@ evthr_set_max_backlog(evthr_t * evthr, int max) {
 
 inline int
 evthr_set_backlog(evthr_t * evthr, int num) {
+    int rnum;
+
     if (evthr->wdr < 0) {
         return -1;
     }
 
-    return setsockopt(evthr->wdr, SOL_SOCKET, SO_RCVBUF, &num, sizeof(int));
+    rnum = num * sizeof(evthr_cmd_t);
+
+    return setsockopt(evthr->wdr, SOL_SOCKET, SO_RCVBUF, &rnum, sizeof(int));
 }
 
 static void

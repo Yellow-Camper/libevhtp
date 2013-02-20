@@ -195,49 +195,35 @@ if (NOT APPLE)
 	set (SYS_LIBS ${SYS_LIBS} ${LIB_RT})
 endif()
 
+add_custom_target(examples)
+
 if (EVHTP_BUILD_SHARED)
-	add_library(libevhtpShared SHARED ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
-	set_target_properties(libevhtpShared PROPERTIES OUTPUT_NAME "evhtp")
-	target_link_libraries(libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS})
-	install (TARGETS libevhtpShared DESTINATION lib)
-
-	add_executable(test test.c)
-	target_link_libraries(test libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_basic test_basic.c)
-	target_link_libraries(test_basic libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_vhost test_vhost.c)
-	target_link_libraries(test_vhost libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_client test_client.c)
-	target_link_libraries(test_client libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_proxy test_proxy.c)
-	target_link_libraries(test_proxy libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
+	set (EVHTP_LIBTYPE SHARED)
 else()
-	add_library(libevhtpStatic STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
-	set_target_properties(libevhtpStatic PROPERTIES OUTPUT_NAME "evhtp") 
-	install (TARGETS libevhtpStatic DESTINATION lib)
-
-	add_executable(test test.c)
-	target_link_libraries(test libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_basic test_basic.c)
-	target_link_libraries(test_basic libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_vhost test_vhost.c)
-	target_link_libraries(test_vhost libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_client test_client.c)
-	target_link_libraries(test_client libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_proxy test_proxy.c)
-	target_link_libraries(test_proxy libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
+	set (EVHTP_LIBTYPE STATIC)
 endif()
 
+add_library(libevhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
+
+set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
+target_link_libraries(libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
+
+
+add_executable(test EXCLUDE_FROM_ALL examples/test.c)
+add_executable(test_basic EXCLUDE_FROM_ALL examples/test_basic.c)
+add_executable(test_vhost EXCLUDE_FROM_ALL examples/test_vhost.c)
+add_executable(test_client EXCLUDE_FROM_ALL examples/test_client.c)
+add_executable(test_proxy EXCLUDE_FROM_ALL examples/test_proxy.c)
+
+target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_basic libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_vhost libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_client libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_proxy libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+add_dependencies(examples test test_basic test_vhost test_client test_proxy)
+
+install (TARGETS libevhtp DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
 install (FILES htparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)

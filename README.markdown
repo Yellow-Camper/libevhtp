@@ -12,6 +12,12 @@ probably not very awesome, it's best to look at test.c to see advanced usage.
 * [OpenSSL](http://openssl.org)
 * pthreads
 
+## Building
+* cd build
+* cmake ..
+* make
+* make examples
+
 ## Overview
 ***
 
@@ -34,7 +40,7 @@ Libevhtp attempts to address these problems along with a wide variety of cool me
 ### A bit about the architecture of libevhtp
 ***
 
-#### Bootstrapping 
+#### Bootstrapping
 
 1.	Create a parent evhtp_t structure.
 2.	Assign callbacks to the parent for specific URIs or posix-regex based URI's

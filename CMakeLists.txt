@@ -94,7 +94,6 @@ if (NOT OPENSSL_FOUND)
 	set (OPENSSL_LIBRARIES "")
 	set (LIBEVENT_OPENSSL_LIBRARY "")
 endif()
-	
 
 if (NOT EVHTP_DISABLE_REGEX)
 	CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/oniguruma/config.h)
@@ -145,7 +144,6 @@ if (NOT EVHTP_DISABLE_REGEX)
 else()
 	set(ONIG_SOURCES "")
 endif()
-
 
 include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}/compat
@@ -207,7 +205,6 @@ add_library(libevhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
 target_link_libraries(libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
-
 
 add_executable(test EXCLUDE_FROM_ALL examples/test.c)
 add_executable(test_basic EXCLUDE_FROM_ALL examples/test_basic.c)

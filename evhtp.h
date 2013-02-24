@@ -1070,7 +1070,9 @@ evhtp_request_t * evhtp_request_new(evhtp_callback_cb cb, void * arg);
 /**
  * @brief make a client request
  */
-int evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r, htp_method meth, const char * uri);
+int          evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r, htp_method meth, const char * uri);
+
+unsigned int evhtp_request_status(evhtp_request_t *);
 
 #ifdef __cplusplus
 }

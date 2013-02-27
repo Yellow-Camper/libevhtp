@@ -86,7 +86,7 @@ find_package(LibEvent REQUIRED)
 find_package(OpenSSL)
 find_path(LIBEVENT_INCLUDE_DIR event2/event.h REQUIRED)
 
-if (NOT EVHTP_DIABLE_REGEX)
+if (NOT EVHTP_DISABLE_REGEX)
 	find_library(HAS_SYS_ONIG onig)
 endif()
 

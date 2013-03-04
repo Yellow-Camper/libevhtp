@@ -3674,3 +3674,8 @@ evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r,
     return 0;
 }
 
+unsigned int
+evhtp_request_status(evhtp_request_t * r) {
+    return htparser_get_status(r->conn->parser);
+}
+

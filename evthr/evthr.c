@@ -407,19 +407,14 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
 
     /* find the thread with the smallest backlog */
     TAILQ_FOREACH(thr, &pool->threads, next) {
-        evthr_t * m_save;
-        evthr_t * t_save;
-        int       thr_backlog = 0;
-        int       min_backlog = 0;
+        int thr_backlog = 0;
+        int min_backlog = 0;
 
         thr_backlog = evthr_get_backlog(thr);
 
         if (min_thr) {
             min_backlog = evthr_get_backlog(min_thr);
         }
-
-        m_save = min_thr;
-        t_save = thr;
 
         if (min_thr == NULL) {
             min_thr = thr;

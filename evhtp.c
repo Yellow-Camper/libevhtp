@@ -2322,7 +2322,6 @@ evhtp_parse_query(const char * query, size_t len) {
     char             * val_buf = NULL;
     int                key_idx;
     int                val_idx;
-    int                res;
     unsigned char      ch;
     size_t             i;
 
@@ -2341,11 +2340,9 @@ evhtp_parse_query(const char * query, size_t len) {
     val_idx = 0;
 
     for (i = 0; i < len; i++) {
-        res = 0;
         ch  = query[i];
 
         if (key_idx >= len || val_idx >= len) {
-            res = -1;
             goto error;
         }
 
@@ -2379,7 +2376,6 @@ evhtp_parse_query(const char * query, size_t len) {
                         state = s_query_question_mark;
                         break;
                     default:
-                        res   = -1;
                         goto error;
                 }
                 break;
@@ -2405,7 +2401,6 @@ query_key:
                     /* not hex, so we treat as a normal key */
                     if ((key_idx + 2) >= len) {
                         /* we need to insert \%<ch>, but not enough space */
-                        res = -1;
                         goto error;
                     }
 
@@ -2423,7 +2418,6 @@ query_key:
                 break;
             case s_query_key_hex_2:
                 if (!evhtp_is_hex_query_char(ch)) {
-                    res = -1;
                     goto error;
                 }
 
@@ -2465,7 +2459,6 @@ query_key:
                     /* not really a hex val */
                     if ((val_idx + 2) >= len) {
                         /* we need to insert \%<ch>, but not enough space */
-                        res = -1;
                         goto error;
                     }
 
@@ -2485,7 +2478,6 @@ query_key:
                 break;
             case s_query_val_hex_2:
                 if (!evhtp_is_hex_query_char(ch)) {
-                    res = -1;
                     goto error;
                 }
 
@@ -2496,7 +2488,6 @@ query_key:
                 break;
             default:
                 /* bad state */
-                res   = -1;
                 goto error;
         }       /* switch */
     }

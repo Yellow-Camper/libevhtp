@@ -1062,6 +1062,11 @@ void evhtp_set_max_keepalive_requests(evhtp_t * htp, uint64_t num);
  */
 evhtp_connection_t * evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port);
 
+#ifndef DISABLE_SSL
+evhtp_connection_t * evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t* ctx);
+#endif
+
+
 /**
  * @brief allocate a new request
  */

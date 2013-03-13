@@ -237,13 +237,13 @@ add_dependencies(examples test test_basic test_vhost test_client test_proxy)
 
 install (TARGETS libevhtp DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
-install (FILES htparse/htparse.h DESTINATION include/evhtp)
-install (FILES evthr/evthr.h DESTINATION include/evhtp)
+install (FILES htparse/htparse.h DESTINATION include)
+install (FILES evthr/evthr.h DESTINATION include)
 
 # oniguruma/onigposix.h
 
 if (NOT EVHTP_DISABLE_REGEX)
 		if (NOT HAS_SYS_ONIG)
-				install (FILES oniguruma/onigposix.h DESTINATION include/evhtp)
+				install (FILES oniguruma/onigposix.h DESTINATION evhtp)
 		endif()
 endif()

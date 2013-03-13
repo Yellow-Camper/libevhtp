@@ -3,7 +3,7 @@ project(reason)
 
 set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
-set(PROJECT_PATCH_VERSION 0)
+set(PROJECT_PATCH_VERSION 1)
 
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
@@ -86,6 +86,10 @@ find_package(LibEvent REQUIRED)
 find_package(OpenSSL)
 find_path(LIBEVENT_INCLUDE_DIR event2/event.h REQUIRED)
 
+if (NOT EVHTP_DISABLE_REGEX)
+	find_library(HAS_SYS_ONIG onig)
+endif()
+
 if (NOT OPENSSL_FOUND)
 	message("Diabling SSL")
 	set (EVHTP_DISABLE_SSL ON)
@@ -94,66 +98,73 @@ if (NOT OPENSSL_FOUND)
 	set (OPENSSL_LIBRARIES "")
 	set (LIBEVENT_OPENSSL_LIBRARY "")
 endif()
-	
 
 if (NOT EVHTP_DISABLE_REGEX)
-	CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/oniguruma/config.h)
-	set(ONIG_SOURCES
-		oniguruma/regerror.c
-		oniguruma/regparse.c
-		oniguruma/regext.c
-		oniguruma/regcomp.c
-		oniguruma/regexec.c
-		oniguruma/reggnu.c
-		oniguruma/regenc.c
-		oniguruma/regsyntax.c
-		oniguruma/regtrav.c
-		oniguruma/regversion.c
-		oniguruma/st.c
-		oniguruma/regposix.c
-		oniguruma/regposerr.c
-		oniguruma/enc/unicode.c
-		oniguruma/enc/ascii.c
-		oniguruma/enc/utf8.c
-		oniguruma/enc/utf16_be.c
-		oniguruma/enc/utf16_le.c
-		oniguruma/enc/utf32_be.c
-		oniguruma/enc/utf32_le.c
-		oniguruma/enc/euc_jp.c
-		oniguruma/enc/sjis.c
-		oniguruma/enc/iso8859_1.c
-		oniguruma/enc/iso8859_2.c
-		oniguruma/enc/iso8859_3.c
-		oniguruma/enc/iso8859_4.c
-		oniguruma/enc/iso8859_5.c
-		oniguruma/enc/iso8859_6.c
-		oniguruma/enc/iso8859_7.c
-		oniguruma/enc/iso8859_8.c
-		oniguruma/enc/iso8859_9.c
-		oniguruma/enc/iso8859_10.c
-		oniguruma/enc/iso8859_11.c
-		oniguruma/enc/iso8859_13.c
-		oniguruma/enc/iso8859_14.c
-		oniguruma/enc/iso8859_15.c
-		oniguruma/enc/iso8859_16.c
-		oniguruma/enc/euc_tw.c
-		oniguruma/enc/euc_kr.c
-		oniguruma/enc/big5.c
-		oniguruma/enc/gb18030.c
-		oniguruma/enc/koi8_r.c
-		oniguruma/enc/cp1251.c)
+	if (NOT HAS_SYS_ONIG)
+		CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/oniguruma/config.h)
+		set(ONIG_SOURCES
+			oniguruma/regerror.c
+			oniguruma/regparse.c
+			oniguruma/regext.c
+			oniguruma/regcomp.c
+			oniguruma/regexec.c
+			oniguruma/reggnu.c
+			oniguruma/regenc.c
+			oniguruma/regsyntax.c
+			oniguruma/regtrav.c
+			oniguruma/regversion.c
+			oniguruma/st.c
+			oniguruma/regposix.c
+			oniguruma/regposerr.c
+			oniguruma/enc/unicode.c
+			oniguruma/enc/ascii.c
+			oniguruma/enc/utf8.c
+			oniguruma/enc/utf16_be.c
+			oniguruma/enc/utf16_le.c
+			oniguruma/enc/utf32_be.c
+			oniguruma/enc/utf32_le.c
+			oniguruma/enc/euc_jp.c
+			oniguruma/enc/sjis.c
+			oniguruma/enc/iso8859_1.c
+			oniguruma/enc/iso8859_2.c
+			oniguruma/enc/iso8859_3.c
+			oniguruma/enc/iso8859_4.c
+			oniguruma/enc/iso8859_5.c
+			oniguruma/enc/iso8859_6.c
+			oniguruma/enc/iso8859_7.c
+			oniguruma/enc/iso8859_8.c
+			oniguruma/enc/iso8859_9.c
+			oniguruma/enc/iso8859_10.c
+			oniguruma/enc/iso8859_11.c
+			oniguruma/enc/iso8859_13.c
+			oniguruma/enc/iso8859_14.c
+			oniguruma/enc/iso8859_15.c
+			oniguruma/enc/iso8859_16.c
+			oniguruma/enc/euc_tw.c
+			oniguruma/enc/euc_kr.c
+			oniguruma/enc/big5.c
+			oniguruma/enc/gb18030.c
+			oniguruma/enc/koi8_r.c
+			oniguruma/enc/cp1251.c)
+		set (ONIG_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/oniguruma;${CMAKE_CURRENT_SOURCE_DIR}/oniguruma)
+	else()
+		message("-- Using system libonig")
+		set(ONIG_SOURCES "")
+		set(ONIG_LIBS ${HAS_SYS_ONIG})
+		set(ONIG_INCLUDE_DIR "")
+	endif(NOT HAS_SYS_ONIG)
 else()
 	set(ONIG_SOURCES "")
+	set(ONIG_LIBS "")
+	set(ONIG_INCLUDE_DIR "")
 endif()
-
 
 include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}/compat
 	${CMAKE_CURRENT_SOURCE_DIR}/htparse
-	${CMAKE_CURRENT_BINARY_DIR}/oniguruma
-	${CMAKE_CURRENT_SOURCE_DIR}/oniguruma
-	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/evthr
+	${CMAKE_CURRENT_SOURCE_DIR}
+	${ONIG_INCLUDE_DIR}
 	${OPENSSL_INCLUDE_DIR}
 	${LIBEVENT_INCLUDE_DIR}
 )
@@ -162,7 +173,9 @@ set(LIBEVHTP_EXTERNAL_LIBS
 		${LIBEVENT_LIBRARY}
 		${LIBEVENT_PTHREADS_LIBRARY}
 		${LIBEVENT_OPENSSL_LIBRARY}
-		${OPENSSL_LIBRARIES})
+		${OPENSSL_LIBRARIES}
+		${ONIG_LIBS}
+)
 
 if (NOT ${LIBEVENT_PTHREADS_FOUND})
 	set(EVHTP_DISABLE_EVTHR 1)
@@ -195,49 +208,42 @@ if (NOT APPLE)
 	set (SYS_LIBS ${SYS_LIBS} ${LIB_RT})
 endif()
 
+add_custom_target(examples)
+
 if (EVHTP_BUILD_SHARED)
-	add_library(libevhtpShared SHARED ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
-	set_target_properties(libevhtpShared PROPERTIES OUTPUT_NAME "evhtp")
-	target_link_libraries(libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS})
-	install (TARGETS libevhtpShared DESTINATION lib)
-
-	add_executable(test test.c)
-	target_link_libraries(test libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_basic test_basic.c)
-	target_link_libraries(test_basic libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_vhost test_vhost.c)
-	target_link_libraries(test_vhost libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_client test_client.c)
-	target_link_libraries(test_client libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_proxy test_proxy.c)
-	target_link_libraries(test_proxy libevhtpShared ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
+	set (EVHTP_LIBTYPE SHARED)
 else()
-	add_library(libevhtpStatic STATIC ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
-	set_target_properties(libevhtpStatic PROPERTIES OUTPUT_NAME "evhtp") 
-	install (TARGETS libevhtpStatic DESTINATION lib)
-
-	add_executable(test test.c)
-	target_link_libraries(test libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_basic test_basic.c)
-	target_link_libraries(test_basic libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_vhost test_vhost.c)
-	target_link_libraries(test_vhost libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_client test_client.c)
-	target_link_libraries(test_client libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
-	add_executable(test_proxy test_proxy.c)
-	target_link_libraries(test_proxy libevhtpStatic ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
+	set (EVHTP_LIBTYPE STATIC)
 endif()
 
+add_library(libevhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
+
+set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
+target_link_libraries(libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
+
+add_executable(test EXCLUDE_FROM_ALL examples/test.c)
+add_executable(test_basic EXCLUDE_FROM_ALL examples/test_basic.c)
+add_executable(test_vhost EXCLUDE_FROM_ALL examples/test_vhost.c)
+add_executable(test_client EXCLUDE_FROM_ALL examples/test_client.c)
+add_executable(test_proxy EXCLUDE_FROM_ALL examples/test_proxy.c)
+
+target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_basic libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_vhost libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_client libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_proxy libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+add_dependencies(examples test test_basic test_vhost test_client test_proxy)
+
+install (TARGETS libevhtp DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
 install (FILES htparse/htparse.h DESTINATION include)
 install (FILES evthr/evthr.h DESTINATION include)
+
+# oniguruma/onigposix.h
+
+if (NOT EVHTP_DISABLE_REGEX)
+		if (NOT HAS_SYS_ONIG)
+				install (FILES oniguruma/onigposix.h DESTINATION evhtp)
+		endif()
+endif()

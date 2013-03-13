@@ -123,6 +123,11 @@ enum evhtp_proto {
     EVHTP_PROTO_11
 };
 
+enum evhtp_type {
+    evhtp_type_client,
+    evhtp_type_server
+};
+
 typedef enum evhtp_hook_type       evhtp_hook_type;
 typedef enum evhtp_callback_type   evhtp_callback_type;
 typedef enum evhtp_proto           evhtp_proto;
@@ -162,10 +167,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION           "1.2.0"
+#define EVHTP_VERSION           "1.2.1"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
-#define EVHTP_VERSION_PATCH     0
+#define EVHTP_VERSION_PATCH     1
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 
@@ -231,11 +236,6 @@ typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_GWTIMEOUT     504
 #define EVHTP_RES_VERNSUPPORT   505
 #define EVHTP_RES_BWEXEED       509
-
-enum evhtp_type {
-    evhtp_type_client,
-    evhtp_type_server
-};
 
 struct evhtp_defaults_s {
     evhtp_callback_cb    cb;
@@ -1070,7 +1070,9 @@ evhtp_request_t * evhtp_request_new(evhtp_callback_cb cb, void * arg);
 /**
  * @brief make a client request
  */
-int evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r, htp_method meth, const char * uri);
+int          evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r, htp_method meth, const char * uri);
+
+unsigned int evhtp_request_status(evhtp_request_t *);
 
 #ifdef __cplusplus
 }

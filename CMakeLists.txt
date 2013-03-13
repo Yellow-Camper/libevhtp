@@ -244,6 +244,6 @@ install (FILES evthr/evthr.h DESTINATION include)
 
 if (NOT EVHTP_DISABLE_REGEX)
 		if (NOT HAS_SYS_ONIG)
-				install (FILES oniguruma/onigposix.h DESTINATION evhtp)
+				install (FILES oniguruma/onigposix.h DESTINATION include)
 		endif()
 endif()

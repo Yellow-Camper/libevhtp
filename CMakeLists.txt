@@ -3,7 +3,7 @@ project(reason)
 
 set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
-set(PROJECT_PATCH_VERSION 1)
+set(PROJECT_PATCH_VERSION 2)
 
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
@@ -244,6 +244,6 @@ install (FILES evthr/evthr.h DESTINATION include)
 
 if (NOT EVHTP_DISABLE_REGEX)
 		if (NOT HAS_SYS_ONIG)
-				install (FILES oniguruma/onigposix.h DESTINATION evhtp)
+				install (FILES oniguruma/onigposix.h DESTINATION include)
 		endif()
 endif()

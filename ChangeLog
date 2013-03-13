@@ -1,3 +1,15 @@
+v1.2.1
+ o Add signal.h as reported by gnehzuil (1ac8706 Mark Ellzey)
+ o evthr_*set_backlog for SO_RCVBUF sockopts (93f35d9 Mark Ellzey)
+ o SO_RCVBUF should be multiple of sizeof(evthr_cmd_t) (32bd829 Mark Ellzey)
+ o Install regex header if enabled (6d61db4 Mark Ellzey)
+ o Fix missing symbol SIGTERM by including signal.h (c449ad8 Dennis van Dok)
+ o Examples will only built if "make examples" is run. (2abe24f Mark Ellzey)
+ o Fixed enum typedef issue reported by scott-- (fee4166 Mark Ellzey)
+ o Use system onig if avail, install includes in include/evthr (56067a9 Mark Ellzey)
+ o Added evhtp_request_status() to get client response code. (9008a0f Mark Ellzey)
+ o Removed unused code. (a7dabaa Mark Ellzey)
+
 v1.2.0
  o Initial client API (0bd23c9 Mark Ellzey)
  o updating test_client.c (b53f25f Mark Ellzey)

@@ -7,9 +7,12 @@
 #include <limits.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifndef WIN32
 #include <sys/syscall.h>
 #include <sys/ioctl.h>
 #include <sys/queue.h>
+#endif
+
 #include <unistd.h>
 #include <pthread.h>
 
@@ -89,7 +92,7 @@ evthr_set_max_backlog(evthr_t * evthr, int max) {
 }
 
 static void
-_evthr_read_cmd(int sock, short __unused__ which, void * args) {
+_evthr_read_cmd(evutil_socket_t sock, short __unused__ which, void * args) {
     evthr_t   * thread;
     evthr_cmd_t cmd;
     ssize_t     recvd;
@@ -264,7 +267,7 @@ evthr_new(evthr_init_cb init_cb, void * args) {
     evthr_t * thread;
     int       fds[2];
 
-    if (socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == -1) {
+    if (evutil_socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == -1) {
         return NULL;
     }
 

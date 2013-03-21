@@ -1134,6 +1134,12 @@ int evhtp_connection_set_ratelimit(evhtp_connection_t * c, size_t read_rate,
 /**
  * @brief allocate a new connection
  */
+evhtp_connection_t * evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
+                                              const char * addr, uint16_t port);
+
+/**
+ * @brief allocate a new connection
+ */
 evhtp_connection_t * evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port);
 
 /**

@@ -21,6 +21,7 @@
 #endif
 
 #include <limits.h>
+#include <event2/dns.h>
 
 #include "evhtp-internal.h"
 #include "evhtp.h"
@@ -4015,6 +4016,12 @@ evhtp_connection_set_rate_limit(evhtp_connection_t * conn,
 
 evhtp_connection_t *
 evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port) {
+    return evhtp_connection_new_dns(evbase, NULL, addr, port);
+}
+
+evhtp_connection_t *
+evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
+                         const char * addr, uint16_t port) {
     evhtp_connection_t * conn;
     struct sockaddr_in   sin;
 
@@ -4026,10 +4033,6 @@ evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port) {
         return NULL;
     }
 
-    sin.sin_family      = AF_INET;
-    sin.sin_addr.s_addr = inet_addr(addr);
-    sin.sin_port        = htons(port);
-
     conn->evbase        = evbase;
     conn->bev           = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
 
@@ -4038,8 +4041,16 @@ evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port) {
     bufferevent_setcb(conn->bev, NULL, NULL,
                       _evhtp_connection_eventcb, conn);
 
-    bufferevent_socket_connect(conn->bev,
-                               (struct sockaddr *)&sin, sizeof(sin));
+    if (dns_base != NULL) {
+        bufferevent_socket_connect_hostname(conn->bev,
+                                            dns_base, AF_UNSPEC, addr, port);
+    } else {
+        sin.sin_family      = AF_INET;
+        sin.sin_addr.s_addr = inet_addr(addr);
+        sin.sin_port        = htons(port);
+        bufferevent_socket_connect(conn->bev,
+                                   (struct sockaddr *)&sin, sizeof(sin));
+    }
 
     return conn;
 }

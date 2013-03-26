@@ -1,3 +1,6 @@
+v1.2.3
+ o Added evhtp_disable_100_continue() which informs evhtp to not send a 100 continue response. (1d0eb84 Mark Ellzey)
+
 v1.2.1
  o Add signal.h as reported by gnehzuil (1ac8706 Mark Ellzey)
  o evthr_*set_backlog for SO_RCVBUF sockopts (93f35d9 Mark Ellzey)

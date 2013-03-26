@@ -294,7 +294,7 @@ print_data(evhtp_request_t * req, evbuf_t * buf, void * arg) {
     evbuffer_add_printf(req->buffer_out,
                         "got %zu bytes of data\n",
                         evbuffer_get_length(buf));
-    printf("%.*s", (int)evbuffer_get_length(buf), (char *)evbuffer_pullup(buf, evbuffer_get_length(buf)));
+    //printf("%.*s", (int)evbuffer_get_length(buf), (char *)evbuffer_pullup(buf, evbuffer_get_length(buf)));
 #endif
     evbuffer_drain(buf, -1);
     return EVHTP_RES_OK;

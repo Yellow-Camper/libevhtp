@@ -1153,14 +1153,19 @@ _evhtp_request_parser_headers(htparser * p) {
         return -1;
     }
 
-    if (!evhtp_header_find(c->request->headers_in, "Expect")) {
-        return 0;
-    }
+    if (c->htp->disable_100_cont == 0) {
+        /* only send a 100 continue response if it hasn't been disabled via
+         * evhtp_disable_100_continue.
+         */
+        if (!evhtp_header_find(c->request->headers_in, "Expect")) {
+            return 0;
+        }
 
-    evbuffer_add_printf(bufferevent_get_output(c->bev),
-                        "HTTP/%d.%d 100 Continue\r\n\r\n",
-                        htparser_get_major(p),
-                        htparser_get_minor(p));
+        evbuffer_add_printf(bufferevent_get_output(c->bev),
+                            "HTTP/%d.%d 100 Continue\r\n\r\n",
+                            htparser_get_major(p),
+                            htparser_get_minor(p));
+    }
 
     return 0;
 }
@@ -2340,7 +2345,7 @@ evhtp_parse_query(const char * query, size_t len) {
     val_idx = 0;
 
     for (i = 0; i < len; i++) {
-        ch  = query[i];
+        ch = query[i];
 
         if (key_idx >= len || val_idx >= len) {
             goto error;
@@ -3456,6 +3461,11 @@ evhtp_set_bev_flags(evhtp_t * htp, int flags) {
 void
 evhtp_set_max_body_size(evhtp_t * htp, uint64_t len) {
     htp->max_body_size = len;
+}
+
+void
+evhtp_disable_100_continue(evhtp_t * htp) {
+    htp->disable_100_cont = 1;
 }
 
 int

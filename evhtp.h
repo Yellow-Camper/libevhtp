@@ -167,10 +167,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION           "1.2.2"
+#define EVHTP_VERSION           "1.2.3"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
-#define EVHTP_VERSION_PATCH     2
+#define EVHTP_VERSION_PATCH     3
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 
@@ -256,26 +256,27 @@ struct evhtp_alias_s {
  * @brief main structure containing all configuration information
  */
 struct evhtp_s {
-    evhtp_t  * parent;         /**< only when this is a vhost */
-    evbase_t * evbase;         /**< the initialized event_base */
-    evserv_t * server;         /**< the libevent listener struct */
-    char     * server_name;    /**< the name included in Host: responses */
-    void     * arg;            /**< user-defined evhtp_t specific arguments */
-    int        bev_flags;      /**< bufferevent flags to use on bufferevent_*_socket_new() */
+    evhtp_t  * parent;           /**< only when this is a vhost */
+    evbase_t * evbase;           /**< the initialized event_base */
+    evserv_t * server;           /**< the libevent listener struct */
+    char     * server_name;      /**< the name included in Host: responses */
+    void     * arg;              /**< user-defined evhtp_t specific arguments */
+    int        bev_flags;        /**< bufferevent flags to use on bufferevent_*_socket_new() */
     uint64_t   max_body_size;
     uint64_t   max_keepalive_requests;
+    int        disable_100_cont; /**< if set, evhtp will not respond to Expect: 100-continue */
 
 #ifndef DISABLE_SSL
-    evhtp_ssl_ctx_t * ssl_ctx; /**< if ssl enabled, this is the servers CTX */
+    evhtp_ssl_ctx_t * ssl_ctx;   /**< if ssl enabled, this is the servers CTX */
     evhtp_ssl_cfg_t * ssl_cfg;
 #endif
 
 #ifndef EVHTP_DISABLE_EVTHR
-    evthr_pool_t * thr_pool;   /**< connection threadpool */
+    evthr_pool_t * thr_pool;     /**< connection threadpool */
 #endif
 
 #ifndef EVHTP_DISABLE_EVTHR
-    pthread_mutex_t    * lock; /**< parent lock for add/del cbs in threads */
+    pthread_mutex_t    * lock;   /**< parent lock for add/del cbs in threads */
     evhtp_thread_init_cb thread_init_cb;
     void               * thread_init_cbarg;
 #endif
@@ -521,6 +522,14 @@ void evhtp_set_bev_flags(evhtp_t * htp, int flags);
 int  evhtp_ssl_use_threads(void);
 int  evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
 
+
+/**
+ * @brief when a client sends an Expect: 100-continue, if this is function is
+ *        called, evhtp will not send a HTTP/x.x continue response.
+ *
+ * @param htp
+ */
+void evhtp_disable_100_continue(evhtp_t * htp);
 
 /**
  * @brief creates a lock around callbacks and hooks, allowing for threaded

@@ -1341,6 +1341,13 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 switch (ch) {
                     case LF:
                         if (p->type == htp_type_response && p->status >= 100 && p->status < 200) {
+                            res = hook_on_hdrs_begin_run(p, hooks);
+
+                            if (res) {
+                                p->error = htparse_error_user;
+                                return i + 1;
+                            }
+
                             p->status       = 0;
                             p->status_count = 0;
                             p->state        = s_start;
@@ -1357,7 +1364,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     default:
                         p->error = htparse_error_inval_reqline;
                         return i + 1;
-                }
+                } /* switch */
                 break;
             case s_done:
                 switch (ch) {

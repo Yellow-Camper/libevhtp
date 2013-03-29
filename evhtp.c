@@ -1153,7 +1153,7 @@ _evhtp_request_parser_headers(htparser * p) {
         return -1;
     }
 
-    if (c->htp->disable_100_cont == 0) {
+    if (c->type == evhtp_type_server && c->htp->disable_100_cont == 0) {
         /* only send a 100 continue response if it hasn't been disabled via
          * evhtp_disable_100_continue.
          */

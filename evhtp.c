@@ -3418,7 +3418,7 @@ evhtp_connection_free(evhtp_connection_t * connection) {
     }
 
 #ifndef EVHTP_DISABLE_EVTHR
-    if (connection->thread) {
+    if (connection->thread && connection->type == evhtp_type_server) {
         evthr_dec_backlog(connection->thread);
     }
 #endif

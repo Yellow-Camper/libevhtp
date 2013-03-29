@@ -104,6 +104,7 @@ main(int argc, char ** argv) {
 
     evhtp_set_gencb(evhtp, frontend_cb, NULL);
 
+#if 0
 #ifndef EVHTP_DISABLE_SSL
     evhtp_ssl_cfg_t scfg1 = { 0 };
 
@@ -111,6 +112,7 @@ main(int argc, char ** argv) {
     scfg1.privfile = "./server.pem";
 
     evhtp_ssl_init(evhtp, &scfg1);
+#endif
 #endif
 
     evhtp_use_threads(evhtp, init_thread_cb, 8, NULL);

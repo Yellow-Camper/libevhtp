@@ -4023,7 +4023,6 @@ evhtp_connection_t *
 evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
                          const char * addr, uint16_t port) {
     evhtp_connection_t * conn;
-    struct sockaddr_in   sin;
     int                  err;
 
     if (evbase == NULL) {
@@ -4050,11 +4049,27 @@ evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
         err = bufferevent_socket_connect_hostname(conn->bev, dns_base,
                                                   AF_UNSPEC, addr, port);
     } else {
-        sin.sin_family      = AF_INET;
-        sin.sin_addr.s_addr = inet_addr(addr);
-        sin.sin_port        = htons(port);
-        err = bufferevent_socket_connect(conn->bev,
-                                         (struct sockaddr *)&sin, sizeof(sin));
+        struct sockaddr_in  sin4;
+        struct sockaddr_in6 sin6;
+        struct sockaddr   * sin;
+        int                 salen;
+
+        if (inet_pton(AF_INET, addr, &sin4.sin_addr)) {
+            sin4.sin_family = AF_INET;
+            sin4.sin_port   = htons(port);
+            sin             = (struct sockaddr *)&sin4;
+            salen           = sizeof(sin4);
+        } else if (inet_pton(AF_INET6, addr, &sin6.sin6_addr)) {
+            sin6.sin6_family = AF_INET6;
+            sin6.sin6_port   = htons(port);
+            sin              = (struct sockaddr *)&sin6;
+            salen            = sizeof(sin6);
+        } else {
+            /* Not a valid IP. */
+            evhtp_connection_free(conn);
+            return NULL;
+        }
+        err = bufferevent_socket_connect(conn->bev, sin, salen);
     }
 
     if (err) {

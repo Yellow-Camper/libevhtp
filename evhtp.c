@@ -4024,6 +4024,7 @@ evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
                          const char * addr, uint16_t port) {
     evhtp_connection_t * conn;
     struct sockaddr_in   sin;
+    int                  err;
 
     if (evbase == NULL) {
         return NULL;
@@ -4035,6 +4036,10 @@ evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
 
     conn->evbase        = evbase;
     conn->bev           = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
+    if (conn->bev == NULL) {
+        evhtp_connection_free(conn);
+        return NULL;
+    }
 
     bufferevent_enable(conn->bev, EV_READ);
 
@@ -4042,14 +4047,19 @@ evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
                       _evhtp_connection_eventcb, conn);
 
     if (dns_base != NULL) {
-        bufferevent_socket_connect_hostname(conn->bev,
-                                            dns_base, AF_UNSPEC, addr, port);
+        err = bufferevent_socket_connect_hostname(conn->bev, dns_base,
+                                                  AF_UNSPEC, addr, port);
     } else {
         sin.sin_family      = AF_INET;
         sin.sin_addr.s_addr = inet_addr(addr);
         sin.sin_port        = htons(port);
-        bufferevent_socket_connect(conn->bev,
-                                   (struct sockaddr *)&sin, sizeof(sin));
+        err = bufferevent_socket_connect(conn->bev,
+                                         (struct sockaddr *)&sin, sizeof(sin));
+    }
+
+    if (err) {
+        evhtp_connection_free(conn);
+        conn = NULL;
     }
 
     return conn;

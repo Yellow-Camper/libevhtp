@@ -114,10 +114,10 @@ main(int argc, char ** argv) {
 #endif
 
     evhtp_use_threads(evhtp, init_thread_cb, 8, NULL);
-
+#ifndef WIN32
     ev_sigterm = evsignal_new(evbase, SIGTERM, sigterm_cb, evbase);
     evsignal_add(ev_sigterm, NULL);
-
+#endif
     evhtp_bind_socket(evhtp, "0.0.0.0", 8081, 1024);
     event_base_loop(evbase, 0);
 

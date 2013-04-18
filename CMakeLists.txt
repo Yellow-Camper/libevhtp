@@ -200,13 +200,23 @@ if (EVHTP_DISABLE_SSL)
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEVHTP_DISABLE_SSL")
 endif()
 
-find_library (LIB_DL dl)
-set (SYS_LIBS ${LIB_DL})
 
-if (NOT APPLE)
-	find_library (LIB_RT rt)
-	set (SYS_LIBS ${SYS_LIBS} ${LIB_RT})
-endif()
+
+IF (WIN32)
+	ADD_DEFINITIONS(-DWIN32)
+	ADD_DEFINITIONS(-march=i486)
+	find_library (LIB_WS32 ws2_32)
+	set (SYS_LIBS ${SYS_LIBS} ${LIB_WS32})
+ELSE ()
+	find_library (LIB_DL dl)
+	set (SYS_LIBS ${LIB_DL})
+
+	if (NOT APPLE)
+		find_library (LIB_RT rt)
+		set (SYS_LIBS ${SYS_LIBS} ${LIB_RT})
+	endif()
+
+ENDIF (WIN32)
 
 add_custom_target(examples)
 
@@ -247,3 +257,8 @@ if (NOT EVHTP_DISABLE_REGEX)
 				install (FILES oniguruma/onigposix.h DESTINATION include)
 		endif()
 endif()
+
+IF (WIN32)
+   install (FILES compat/sys/queue.h DESTINATION include/sys)
+   install (FILES oniguruma/onigposix.h DESTINATION include)
+ENDIF (WIN32)

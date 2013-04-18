@@ -6,13 +6,20 @@
 #include <signal.h>
 #include <strings.h>
 #include <inttypes.h>
+#ifndef WIN32
 #include <sys/socket.h>
-#ifndef NO_SYS_UN
-#include <sys/un.h>
-#endif
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
+#else
+#define WINVER 0x0501
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
+#ifndef NO_SYS_UN
+#include <sys/un.h>
+#endif
+
 #include <sys/tree.h>
 
 #include "evhtp.h"
@@ -33,7 +40,7 @@ static int                  _evhtp_request_parser_headers_start(htparser * p);
 
 static void                 _evhtp_connection_readcb(evbev_t * bev, void * arg);
 
-static evhtp_connection_t * _evhtp_connection_new(evhtp_t * htp, int sock, evhtp_type type);
+static evhtp_connection_t * _evhtp_connection_new(evhtp_t * htp, evutil_socket_t sock, evhtp_type type);
 
 static evhtp_uri_t        * _evhtp_uri_new(void);
 static void                 _evhtp_uri_free(evhtp_uri_t * uri);
@@ -1344,8 +1351,11 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
         if (!evhtp_header_find(request->headers_out, "Content-Length")) {
             char lstr[128];
             int  sres;
-
+#ifndef WIN32
             sres = snprintf(lstr, sizeof(lstr), "%zu",
+#else
+            sres = snprintf(lstr, sizeof(lstr), "%u",
+#endif
                             evbuffer_get_length(request->buffer_out));
 
             if (sres >= sizeof(lstr) || sres < 0) {
@@ -1457,7 +1467,7 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
 
     bufferevent_disable(bev, EV_WRITE);
     {
-        nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
+        nread = htparser_run(c->parser, &request_psets, (const char *) buf, avail);
     }
     bufferevent_enable(bev, EV_WRITE);
 
@@ -1679,7 +1689,7 @@ _evhtp_default_request_cb(evhtp_request_t * request, void * arg) {
 }
 
 static evhtp_connection_t *
-_evhtp_connection_new(evhtp_t * htp, int sock, evhtp_type type) {
+_evhtp_connection_new(evhtp_t * htp, evutil_socket_t sock, evhtp_type type) {
     evhtp_connection_t * connection;
     htp_type             ptype;
 
@@ -1805,7 +1815,11 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
 #ifndef EVHTP_DISABLE_EVTHR
 static unsigned long
 _evhtp_ssl_get_thread_id(void) {
+#ifndef WIN32
     return (unsigned long)pthread_self();
+#else
+    return (unsigned long)(pthread_self().p);
+#endif
 }
 
 static void
@@ -2463,7 +2477,7 @@ query_key:
                 if (!evhtp_is_hex_query_char(ch)) {
                     /* not really a hex val */
                     if ((val_idx + 2) >= len) {
-                        /* we need to insert \%<ch>, but not enough space */
+                      /* we need to insert \%<ch>, but not enough space */
                         goto error;
                     }
 
@@ -2677,7 +2691,9 @@ evhtp_unbind_socket(evhtp_t * htp) {
 
 int
 evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int backlog) {
+#ifndef WIN32
     signal(SIGPIPE, SIG_IGN);
+#endif
 
     htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
                                           LEV_OPT_THREADSAFE | LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,

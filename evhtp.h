@@ -167,10 +167,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION           "1.2.4"
+#define EVHTP_VERSION           "1.2.5"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
-#define EVHTP_VERSION_PATCH     4
+#define EVHTP_VERSION_PATCH     5
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 
@@ -427,7 +427,7 @@ struct evhtp_connection_s {
     struct sockaddr * saddr;
     struct timeval    recv_timeo;          /**< conn read timeouts (overrides global) */
     struct timeval    send_timeo;          /**< conn write timeouts (overrides global) */
-    int               sock;
+    evutil_socket_t   sock;
     uint8_t           error;
     uint8_t           owner;               /**< set to 1 if this structure owns the bufferevent */
     uint8_t           vhost_via_sni;       /**< set to 1 if the vhost was found via SSL SNI */

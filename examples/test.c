@@ -30,7 +30,7 @@ struct pauser {
 
 /* pause testing */
 static void
-resume_request_timer(int sock, short which, void * arg) {
+resume_request_timer(evutil_socket_t sock, short which, void * arg) {
     struct pauser * pause = (struct pauser *)arg;
 
     printf("resume_request_timer(%p) timer_ev = %p\n", pause->request->conn, pause->timer_ev);

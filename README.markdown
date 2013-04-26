@@ -97,3 +97,10 @@ This example uses redis, mainly because most people who have asked me "is evhtp
 thread-safe" were attempting to *other things* before sending a response to a
 request. And on more than one occasion, those *other things* were communicating
 with redis.
+
+
+## For Windows MinGW
+
+  	cmake -G "MSYS Makefiles" -DCMAKE_INCLUDE_PATH=/mingw/include -DCMAKE_LIBRARY_PATH=/mingw/lib -DCMAKE_INSTALL_PREFIX=/mingw  .
+
+	make

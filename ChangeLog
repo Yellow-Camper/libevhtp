@@ -1,3 +1,9 @@
+v1.2.5
+ o Port to MinGW (b0bd094 poet)
+ o Only check for 100-continue is enabled for servers, not clients. (0cea847 Mark Ellzey)
+ o Only decrement the thread backlog if it is a server. (ceb1e60 Mark Ellzey)
+ o Use MSYS Makefiles instead of MinGW Makefiles (fd6ae5d poetwang)
+
 v1.2.4
  o run on_headers_begin if request type is response (this happens when a 100 continue type thing happens). (c3775e0 Mark Ellzey)
 

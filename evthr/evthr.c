@@ -198,7 +198,6 @@ _evthr_loop(void * args) {
         fprintf(stderr, "FATAL ERROR!\n");
     }
 
-    evthr_free(thread);
     pthread_exit(NULL);
 }
 

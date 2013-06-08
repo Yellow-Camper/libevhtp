@@ -1586,6 +1586,11 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
         }
     }
 
+    if (events == (BEV_EVENT_EOF | BEV_EVENT_READING)) {
+        printf("%s\n", strerror(errno));
+        return;
+    }
+
     c->error = 1;
 
     if (c->request && c->request->hooks && c->request->hooks->on_error) {
@@ -1599,7 +1604,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     } else {
         evhtp_connection_free((evhtp_connection_t *)arg);
     }
-}
+} /* _evhtp_connection_eventcb */
 
 static int
 _evhtp_run_pre_accept(evhtp_t * htp, evhtp_connection_t * conn) {
@@ -1964,6 +1969,7 @@ void
 evhtp_connection_resume(evhtp_connection_t * c) {
     if (!(bufferevent_get_enabled(c->bev) & EV_READ)) {
         /* bufferevent_enable(c->bev, EV_READ); */
+        c->paused = 0;
         event_active(c->resume_ev, EV_WRITE, 1);
     }
 }

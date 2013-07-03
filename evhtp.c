@@ -1587,7 +1587,6 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     }
 
     if (events == (BEV_EVENT_EOF | BEV_EVENT_READING)) {
-        printf("%s\n", strerror(errno));
         return;
     }
 

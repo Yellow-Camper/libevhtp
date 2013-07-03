@@ -493,6 +493,22 @@ htparser_new(void) {
     return malloc(sizeof(htparser));
 }
 
+static int
+is_host_char(unsigned char ch)
+{
+    char c = (unsigned char)(ch | 0x20);
+
+    if (c >= 'a' && c <= 'z') {
+        return 1;
+    }
+
+    if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
+        return 1;
+    }
+
+    return 0;
+}
+
 size_t
 htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len) {
     unsigned char ch;
@@ -693,6 +709,33 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_spaces_before_uri:
                 htparse_log_debug("[%p] s_spaces_before_uri", p);
 
+                /* CONNECT is special - RFC 2817 section 5.2:
+                 * The Request-URI portion of the Request-Line is
+                 * always an 'authority' as defined by URI Generic
+                 * Syntax [2], which is to say the host name and port
+                 * number destination of the requested connection
+                 * separated by a colon
+                 */
+                if (p->method == htp_method_CONNECT) {
+                    switch (ch) {
+                    case ' ':
+                        break;
+                    default:
+                        if (!is_host_char(ch)) {
+                            p->error = htparse_error_inval_reqline;
+                            return i + 1;
+                        }
+                        p->host_offset       = &p->buf[p->buf_idx];
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+
+                        p->state = s_host;
+                        break;
+                    } /* switch */
+
+                    break;
+                }
+
                 switch (ch) {
                     case ' ':
                         break;
@@ -825,15 +868,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     p->state = s_host_ipv6;
                     break;
                 }
-                c = (unsigned char)(ch | 0x20);
-
-                if (c >= 'a' && c <= 'z') {
-                    p->buf[p->buf_idx++] = ch;
-                    p->buf[p->buf_idx]   = '\0';
-                    break;
-                }
-
-                if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
+                if (is_host_char(ch)) {
                     p->buf[p->buf_idx++] = ch;
                     p->buf[p->buf_idx]   = '\0';
                     break;

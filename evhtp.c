@@ -684,6 +684,9 @@ _evhtp_request_free(evhtp_request_t * request) {
     evhtp_headers_free(request->headers_in);
     evhtp_headers_free(request->headers_out);
 
+    if (request->conn && request->conn->request == request) {
+        request->conn->request = NULL;
+    }
 
     if (request->buffer_in) {
         evbuffer_free(request->buffer_in);

@@ -1,3 +1,7 @@
+v1.2.6
+ o Add connection-specific rate-limiting function. (d0caf82 Mark Ellzey)
+ o Fix double free for evthr at shutdown (a514e80 Azat Khuzhin)
+
 v1.2.5
  o Port to MinGW (b0bd094 poet)
  o Only check for 100-continue is enabled for servers, not clients. (0cea847 Mark Ellzey)

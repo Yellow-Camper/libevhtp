@@ -3456,6 +3456,10 @@ evhtp_connection_free(evhtp_connection_t * connection) {
     }
 #endif
 
+    if (connection->ratelimit_cfg != NULL) {
+        ev_token_bucket_cfg_free(connection->ratelimit_cfg);
+    }
+
     free(connection);
 }     /* evhtp_connection_free */
 
@@ -3627,6 +3631,29 @@ evhtp_free(evhtp_t * evhtp) {
     }
 
     free(evhtp);
+}
+
+int
+evhtp_connection_set_rate_limit(evhtp_connection_t * conn,
+                                size_t read_rate, size_t read_burst,
+                                size_t write_rate, size_t write_burst,
+                                const struct timeval * tick) {
+    struct ev_token_bucket_cfg * tcfg;
+
+    if (conn == NULL || conn->bev == NULL) {
+        return -1;
+    }
+
+    tcfg = ev_token_bucket_cfg_new(read_rate, read_burst,
+                                   write_rate, write_burst, tick);
+
+    if (tcfg == NULL) {
+        return -1;
+    }
+
+    conn->ratelimit_cfg = tcfg;
+
+    return bufferevent_set_rate_limit(conn->bev, tcfg);
 }
 
 /*****************************************************************

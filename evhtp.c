@@ -2717,6 +2717,9 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
                                           LEV_OPT_THREADSAFE | LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
                                           backlog, sa, sin_len);
+    if (!htp->server) {
+        return -1;
+    }
 
 #ifdef USE_DEFER_ACCEPT
     {
@@ -2744,7 +2747,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     }
 #endif
 
-    return htp->server ? 0 : -1;
+    return 0;
 }
 
 int

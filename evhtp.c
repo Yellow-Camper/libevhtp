@@ -240,9 +240,11 @@ static htparse_hooks request_psets = {
 
 #ifndef EVHTP_DISABLE_SSL
 static int             session_id_context    = 1;
+#ifndef EVHTP_DISABLE_EVTHR
 static int             ssl_num_locks;
 static evhtp_mutex_t * ssl_locks;
 static int             ssl_locks_initialized = 0;
+#endif
 #endif
 
 /*
@@ -3609,10 +3611,12 @@ evhtp_free(evhtp_t * evhtp) {
         return;
     }
 
+#ifndef EVHTP_DISABLE_EVTHR
     if (evhtp->thr_pool) {
         evthr_pool_stop(evhtp->thr_pool);
         evthr_pool_free(evhtp->thr_pool);
     }
+#endif
 
     if (evhtp->server_name) {
         free(evhtp->server_name);

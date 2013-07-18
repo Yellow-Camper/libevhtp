@@ -61,7 +61,7 @@ OPTION(EVHTP_DISABLE_SSL       "Disable ssl support"      OFF)
 OPTION(EVHTP_DISABLE_EVTHR     "Disable evthread support" OFF)
 
 # -DEVHTP_DISABLE_REGEX:STRING=ON
-OPTION(EVHTP_DIABLE_REGEX      "Disable regex support"    OFF)
+OPTION(EVHTP_DISABLE_REGEX     "Disable regex support"    OFF)
 
 # -DEVHTP_BUILD_SHARED:STRING=ON
 OPTION(EVHTP_BUILD_SHARED      "Build shared library too" OFF)
@@ -200,6 +200,9 @@ if (EVHTP_DISABLE_SSL)
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEVHTP_DISABLE_SSL")
 endif()
 
+if (EVHTP_DISABLE_REGEX)
+	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEVHTP_DISABLE_REGEX")
+endif()
 
 
 IF (WIN32)

@@ -240,9 +240,11 @@ static htparse_hooks request_psets = {
 
 #ifndef EVHTP_DISABLE_SSL
 static int             session_id_context    = 1;
+#ifndef EVHTP_DISABLE_EVTHR
 static int             ssl_num_locks;
 static evhtp_mutex_t * ssl_locks;
 static int             ssl_locks_initialized = 0;
+#endif
 #endif
 
 /*
@@ -2715,6 +2717,9 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
                                           LEV_OPT_THREADSAFE | LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
                                           backlog, sa, sin_len);
+    if (!htp->server) {
+        return -1;
+    }
 
 #ifdef USE_DEFER_ACCEPT
     {
@@ -2742,7 +2747,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     }
 #endif
 
-    return htp->server ? 0 : -1;
+    return 0;
 }
 
 int
@@ -3609,10 +3614,12 @@ evhtp_free(evhtp_t * evhtp) {
         return;
     }
 
+#ifndef EVHTP_DISABLE_EVTHR
     if (evhtp->thr_pool) {
         evthr_pool_stop(evhtp->thr_pool);
         evthr_pool_free(evhtp->thr_pool);
     }
+#endif
 
     if (evhtp->server_name) {
         free(evhtp->server_name);
@@ -3629,6 +3636,12 @@ evhtp_free(evhtp_t * evhtp) {
         TAILQ_REMOVE(&evhtp->aliases, evhtp_alias, next);
         free(evhtp_alias);
     }
+
+#ifndef EVHTP_DISABLE_SSL
+    if (evhtp->ssl_ctx) {
+        SSL_CTX_free(evhtp->ssl_ctx);
+    }
+#endif
 
     free(evhtp);
 }

@@ -3043,7 +3043,7 @@ evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
     _evhtp_lock(htp);
 
     if (htp->callbacks == NULL) {
-        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), sizeof(char)))) {
+        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), 1))) {
             _evhtp_unlock(htp);
             return NULL;
         }
@@ -3119,7 +3119,7 @@ evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, vo
     _evhtp_lock(htp);
 
     if (htp->callbacks == NULL) {
-        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), sizeof(char)))) {
+        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), 1))) {
             _evhtp_unlock(htp);
             return NULL;
         }
@@ -3151,7 +3151,7 @@ evhtp_set_glob_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, voi
     _evhtp_lock(htp);
 
     if (htp->callbacks == NULL) {
-        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), sizeof(char)))) {
+        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), 1))) {
             _evhtp_unlock(htp);
             return NULL;
         }

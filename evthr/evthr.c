@@ -286,7 +286,7 @@ evthr_new(evthr_init_cb init_cb, void * args) {
     evutil_make_socket_nonblocking(fds[0]);
     evutil_make_socket_nonblocking(fds[1]);
 
-    if (!(thread = calloc(sizeof(evthr_t), sizeof(char)))) {
+    if (!(thread = calloc(sizeof(evthr_t), 1))) {
         return NULL;
     }
 
@@ -443,7 +443,7 @@ evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared) {
         return NULL;
     }
 
-    if (!(pool = calloc(sizeof(evthr_pool_t), sizeof(char)))) {
+    if (!(pool = calloc(sizeof(evthr_pool_t), 1))) {
         return NULL;
     }
 

@@ -3251,7 +3251,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
 
     SSL_CTX_set_options(htp->ssl_ctx, cfg->ssl_opts);
 
-#ifndef OPENSSL_NO_EC
+#ifndef OPENSSL_NO_ECDH
     if (cfg->named_curve != NULL) {
         EC_KEY * ecdh = NULL;
         int      nid  = 0;
@@ -3267,7 +3267,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         SSL_CTX_set_tmp_ecdh(htp->ssl_ctx, ecdh);
         EC_KEY_free(ecdh);
     }
-#endif /* OPENSSL_NO_EC */
+#endif /* OPENSSL_NO_ECDH */
 #ifndef OPENSSL_NO_DH
     if (cfg->dhparams != NULL) {
         FILE *fh;

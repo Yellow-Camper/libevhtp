@@ -3268,6 +3268,26 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         EC_KEY_free(ecdh);
     }
 #endif /* OPENSSL_NO_EC */
+#ifndef OPENSSL_NO_DH
+    if (cfg->dhparams != NULL) {
+        FILE *fh;
+        DH *dh;
+
+        fh = fopen(cfg->dhparams, "r");
+        if (fh != NULL) {
+            dh = PEM_read_DHparams(fh, NULL, NULL, NULL);
+            if (dh != NULL) {
+                SSL_CTX_set_tmp_dh(htp->ssl_ctx, dh);
+                DH_free(dh);
+            } else {
+                fprintf(stderr, "DH initialization failed: unable to parse file %s\n", cfg->dhparams);
+            }
+            fclose(fh);
+        } else {
+            fprintf(stderr, "DH initialization failed: unable to open file %s\n", cfg->dhparams);
+        }
+    }
+#endif /* OPENSSL_NO_DH */
 
     if (cfg->ciphers != NULL) {
         SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers);

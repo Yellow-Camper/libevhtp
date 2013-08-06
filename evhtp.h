@@ -480,6 +480,7 @@ struct evhtp_ssl_cfg_s {
     char                  * capath;
     char                  * ciphers;
     char                  * named_curve;
+    char                  * dhparams;
     long                    ssl_opts;
     long                    ssl_ctx_timeout;
     int                     verify_peer;

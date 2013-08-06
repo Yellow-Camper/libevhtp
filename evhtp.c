@@ -3235,21 +3235,23 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
     SSL_load_error_strings();
     RAND_poll();
 
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
     STACK_OF(SSL_COMP) * comp_methods = SSL_COMP_get_compression_methods();
     sk_SSL_COMP_zero(comp_methods);
+#endif
 
     htp->ssl_cfg = cfg;
     htp->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 
 #if OPENSSL_VERSION_NUMBER >= 0x10000000L
-    SSL_CTX_set_options(htp->ssl_ctx, SSL_MODE_RELEASE_BUFFERS);
+    SSL_CTX_set_options(htp->ssl_ctx, SSL_MODE_RELEASE_BUFFERS | SSL_OP_NO_COMPRESSION);
     /* SSL_CTX_set_options(htp->ssl_ctx, SSL_MODE_AUTO_RETRY); */
     SSL_CTX_set_timeout(htp->ssl_ctx, cfg->ssl_ctx_timeout);
 #endif
 
     SSL_CTX_set_options(htp->ssl_ctx, cfg->ssl_opts);
 
-#ifndef OPENSSL_NO_EC
+#ifndef OPENSSL_NO_ECDH
     if (cfg->named_curve != NULL) {
         EC_KEY * ecdh = NULL;
         int      nid  = 0;
@@ -3265,7 +3267,27 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         SSL_CTX_set_tmp_ecdh(htp->ssl_ctx, ecdh);
         EC_KEY_free(ecdh);
     }
-#endif /* OPENSSL_NO_EC */
+#endif /* OPENSSL_NO_ECDH */
+#ifndef OPENSSL_NO_DH
+    if (cfg->dhparams != NULL) {
+        FILE *fh;
+        DH *dh;
+
+        fh = fopen(cfg->dhparams, "r");
+        if (fh != NULL) {
+            dh = PEM_read_DHparams(fh, NULL, NULL, NULL);
+            if (dh != NULL) {
+                SSL_CTX_set_tmp_dh(htp->ssl_ctx, dh);
+                DH_free(dh);
+            } else {
+                fprintf(stderr, "DH initialization failed: unable to parse file %s\n", cfg->dhparams);
+            }
+            fclose(fh);
+        } else {
+            fprintf(stderr, "DH initialization failed: unable to open file %s\n", cfg->dhparams);
+        }
+    }
+#endif /* OPENSSL_NO_DH */
 
     if (cfg->ciphers != NULL) {
         SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers);

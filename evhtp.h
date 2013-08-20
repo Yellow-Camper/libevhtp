@@ -1,6 +1,7 @@
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
 
+#include <evhtp-config.h>
 #ifndef EVHTP_DISABLE_EVTHR
 #include <evthr.h>
 #endif
@@ -46,6 +47,7 @@ typedef struct evbuffer           evbuf_t;
 typedef struct event              event_t;
 typedef struct evconnlistener     evserv_t;
 typedef struct bufferevent        evbev_t;
+
 #ifdef EVHTP_DISABLE_EVTHR
 typedef struct event_base         evbase_t;
 typedef void                      evthr_t;
@@ -266,7 +268,7 @@ struct evhtp_s {
     uint64_t   max_keepalive_requests;
     int        disable_100_cont; /**< if set, evhtp will not respond to Expect: 100-continue */
 
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
     evhtp_ssl_ctx_t * ssl_ctx;   /**< if ssl enabled, this is the servers CTX */
     evhtp_ssl_cfg_t * ssl_cfg;
 #endif

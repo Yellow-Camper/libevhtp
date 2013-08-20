@@ -200,15 +200,6 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG")
 endif (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 
-if (EVHTP_DISABLE_SSL)
-	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEVHTP_DISABLE_SSL")
-endif()
-
-if (EVHTP_DISABLE_REGEX)
-	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEVHTP_DISABLE_REGEX")
-endif()
-
-
 IF (WIN32)
 	ADD_DEFINITIONS(-DWIN32)
 	ADD_DEFINITIONS(-march=i486)
@@ -233,6 +224,10 @@ else()
 	set (EVHTP_LIBTYPE STATIC)
 endif()
 
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/evhtp-config.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h)
+
 add_library(libevhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
@@ -255,7 +250,11 @@ add_dependencies(examples test test_basic test_vhost test_client test_proxy)
 install (TARGETS libevhtp DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
 install (FILES htparse/htparse.h DESTINATION include)
-install (FILES evthr/evthr.h DESTINATION include)
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h DESTINATION include)
+
+if (NOT EVHTP_DISABLE_EVTHR)
+	install (FILES evthr/evthr.h DESTINATION include)
+endif()
 
 # oniguruma/onigposix.h
 

@@ -2344,7 +2344,6 @@ evhtp_kvs_add_kvs(evhtp_kvs_t * dst, evhtp_kvs_t * src) {
 
 typedef enum {
     s_query_start = 0,
-    s_query_question_mark,
     s_query_separator,
     s_query_key,
     s_query_val,
@@ -2506,33 +2505,7 @@ evhtp_parse_query_wflags(const char * query, size_t len, int flags) {
 
                 key_idx = 0;
                 val_idx = 0;
-
-                switch (ch) {
-                    case '?':
-                        state = s_query_key;
-                        break;
-                    case '/':
-                        state = s_query_question_mark;
-                        break;
-                    default:
-                        state = s_query_key;
-                        goto query_key;
-                }
-
-                break;
-            case s_query_question_mark:
-                switch (ch) {
-                    case '?':
-                        state = s_query_key;
-                        break;
-                    case '/':
-                        state = s_query_question_mark;
-                        break;
-                    default:
-                        goto error;
-                }
-                break;
-query_key:
+		/* Fall through. */
             case s_query_key:
                 switch (ch) {
                     case '=':

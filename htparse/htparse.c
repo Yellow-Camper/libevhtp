@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
+#include <ctype.h>
 #include <unistd.h>
 
 #include "htparse.h"
@@ -305,6 +306,11 @@ __HTPARSE_GENDHOOK(hostname)
 static inline uint64_t
 str_to_uint64(char * str, size_t n, int * err) {
     uint64_t value;
+
+    /* Trim whitespace after value. */
+    while (n && isblank(str[n-1])) {
+	    n--;
+    }
 
     if (n > 20) {
         /* 18446744073709551615 is 20 bytes */

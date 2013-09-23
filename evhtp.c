@@ -2505,6 +2505,8 @@ evhtp_parse_query_wflags(const char * query, size_t len, int flags) {
 
                 key_idx = 0;
                 val_idx = 0;
+
+		state = s_query_key;
 		/* Fall through. */
             case s_query_key:
                 switch (ch) {

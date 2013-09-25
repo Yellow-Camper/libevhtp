@@ -720,6 +720,14 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     switch (ch) {
                     case ' ':
                         break;
+                    case '[':
+                        /* Literal IPv6 address start. */
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+                        p->host_offset       = &p->buf[p->buf_idx];
+
+                        p->state = s_host_ipv6;
+                        break;
                     default:
                         if (!is_host_char(ch)) {
                             p->error = htparse_error_inval_reqline;

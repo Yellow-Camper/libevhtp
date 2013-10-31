@@ -3,7 +3,7 @@ project(reason)
 
 set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
-set(PROJECT_PATCH_VERSION 5)
+set(PROJECT_PATCH_VERSION 7)
 
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
@@ -61,13 +61,13 @@ OPTION(EVHTP_DISABLE_SSL       "Disable ssl support"      OFF)
 OPTION(EVHTP_DISABLE_EVTHR     "Disable evthread support" OFF)
 
 # -DEVHTP_DISABLE_REGEX:STRING=ON
-OPTION(EVHTP_DIABLE_REGEX      "Disable regex support"    OFF)
+OPTION(EVHTP_DISABLE_REGEX     "Disable regex support"    OFF)
 
 # -DEVHTP_BUILD_SHARED:STRING=ON
 OPTION(EVHTP_BUILD_SHARED      "Build shared library too" OFF)
 
 # -DEVHTP_USE_DEFER_ACCEPT:STRING=ON
-OPTION(EVHTP_USE_DEFER_ACCEPT  "Enable TCP_DEFER_ACCEPT"  OFF) 
+OPTION(EVHTP_USE_DEFER_ACCEPT  "Enable TCP_DEFER_ACCEPT"  OFF)
 
 if (EVHTP_USE_DEFER_ACCEPT)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_DEFER_ACCEPT")
@@ -83,7 +83,15 @@ message("Dbg CFLAGS: ${CMAKE_C_FLAGS_DEBUG}")
 message("Rel CFLAGS: ${CMAKE_C_FLAGS_RELEASE}")
 
 find_package(LibEvent REQUIRED)
-find_package(OpenSSL)
+
+if (NOT LIBEVENT_OPENSSL_LIBRARY)
+	set (EVHTP_DISABLE_SSL ON)
+endif()
+
+if (NOT EVHTP_DISABLE_SSL)
+	find_package(OpenSSL)
+endif()
+
 find_path(LIBEVENT_INCLUDE_DIR event2/event.h REQUIRED)
 
 if (NOT EVHTP_DISABLE_REGEX)
@@ -178,11 +186,11 @@ set(LIBEVHTP_EXTERNAL_LIBS
 )
 
 if (NOT ${LIBEVENT_PTHREADS_FOUND})
-	set(EVHTP_DISABLE_EVTHR 1)
+	set(EVHTP_DISABLE_EVTHR ON)
 endif(NOT ${LIBEVENT_PTHREADS_FOUND})
 
 if (NOT ${LIBEVENT_OPENSSL_FOUND})
-	set (EVHTP_DISABLE_SSL 1)
+	set (EVHTP_DISABLE_SSL ON)
 endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
 set(LIBEVHTP_SOURCES evhtp.c htparse/htparse.c)
@@ -195,12 +203,6 @@ endif(NOT EVHTP_DISABLE_EVTHR)
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
   set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG")
 endif (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-
-if (EVHTP_DISABLE_SSL)
-	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DEVHTP_DISABLE_SSL")
-endif()
-
-
 
 IF (WIN32)
 	ADD_DEFINITIONS(-DWIN32)
@@ -226,6 +228,10 @@ else()
 	set (EVHTP_LIBTYPE STATIC)
 endif()
 
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/evhtp-config.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h)
+
 add_library(libevhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 
 set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
@@ -248,7 +254,11 @@ add_dependencies(examples test test_basic test_vhost test_client test_proxy)
 install (TARGETS libevhtp DESTINATION lib)
 install (FILES evhtp.h DESTINATION include)
 install (FILES htparse/htparse.h DESTINATION include)
-install (FILES evthr/evthr.h DESTINATION include)
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h DESTINATION include)
+
+if (NOT EVHTP_DISABLE_EVTHR)
+	install (FILES evthr/evthr.h DESTINATION include)
+endif()
 
 # oniguruma/onigposix.h
 

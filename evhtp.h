@@ -1,6 +1,7 @@
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
 
+#include <evhtp-config.h>
 #ifndef EVHTP_DISABLE_EVTHR
 #include <evthr.h>
 #endif
@@ -46,6 +47,7 @@ typedef struct evbuffer           evbuf_t;
 typedef struct event              event_t;
 typedef struct evconnlistener     evserv_t;
 typedef struct bufferevent        evbev_t;
+
 #ifdef EVHTP_DISABLE_EVTHR
 typedef struct event_base         evbase_t;
 typedef void                      evthr_t;
@@ -167,10 +169,10 @@ typedef void (*evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid
 typedef evhtp_ssl_sess_t * (*evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
 typedef void * (*evhtp_ssl_scache_init)(evhtp_t *);
 
-#define EVHTP_VERSION           "1.2.5"
+#define EVHTP_VERSION           "1.2.7"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
-#define EVHTP_VERSION_PATCH     5
+#define EVHTP_VERSION_PATCH     7
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 
@@ -266,7 +268,7 @@ struct evhtp_s {
     uint64_t   max_keepalive_requests;
     int        disable_100_cont; /**< if set, evhtp will not respond to Expect: 100-continue */
 
-#ifndef DISABLE_SSL
+#ifndef EVHTP_DISABLE_SSL
     evhtp_ssl_ctx_t * ssl_ctx;   /**< if ssl enabled, this is the servers CTX */
     evhtp_ssl_cfg_t * ssl_cfg;
 #endif
@@ -416,30 +418,31 @@ struct evhtp_request_s {
 #define evhtp_request_content_len(r) htparser_get_content_length(r->conn->parser)
 
 struct evhtp_connection_s {
-    evhtp_t         * htp;
-    evbase_t        * evbase;
-    evbev_t         * bev;
-    evthr_t         * thread;
-    evhtp_ssl_t     * ssl;
-    evhtp_hooks_t   * hooks;
-    htparser        * parser;
-    event_t         * resume_ev;
-    struct sockaddr * saddr;
-    struct timeval    recv_timeo;          /**< conn read timeouts (overrides global) */
-    struct timeval    send_timeo;          /**< conn write timeouts (overrides global) */
-    evutil_socket_t   sock;
-    uint8_t           error;
-    uint8_t           owner;               /**< set to 1 if this structure owns the bufferevent */
-    uint8_t           vhost_via_sni;       /**< set to 1 if the vhost was found via SSL SNI */
-    evhtp_request_t * request;             /**< the request currently being processed */
-    uint64_t          max_body_size;
-    uint64_t          body_bytes_read;
-    uint64_t          num_requests;
-    evhtp_type        type;                /**< server or client */
-    char              paused;
-    char              free_connection;
+    evhtp_t                    * htp;
+    evbase_t                   * evbase;
+    evbev_t                    * bev;
+    evthr_t                    * thread;
+    evhtp_ssl_t                * ssl;
+    evhtp_hooks_t              * hooks;
+    htparser                   * parser;
+    event_t                    * resume_ev;
+    struct sockaddr            * saddr;
+    struct timeval               recv_timeo;    /**< conn read timeouts (overrides global) */
+    struct timeval               send_timeo;    /**< conn write timeouts (overrides global) */
+    evutil_socket_t              sock;
+    uint8_t                      error;
+    uint8_t                      owner;         /**< set to 1 if this structure owns the bufferevent */
+    uint8_t                      vhost_via_sni; /**< set to 1 if the vhost was found via SSL SNI */
+    evhtp_request_t            * request;       /**< the request currently being processed */
+    uint64_t                     max_body_size;
+    uint64_t                     body_bytes_read;
+    uint64_t                     num_requests;
+    evhtp_type                   type;          /**< server or client */
+    char                         paused;
+    char                         free_connection;
+    struct ev_token_bucket_cfg * ratelimit_cfg; /**< connection-specific ratelimiting configuration. */
 
-    TAILQ_HEAD(, evhtp_request_s) pending; /**< client pending data */
+    TAILQ_HEAD(, evhtp_request_s) pending;      /**< client pending data */
 };
 
 struct evhtp_hooks_s {
@@ -479,6 +482,7 @@ struct evhtp_ssl_cfg_s {
     char                  * capath;
     char                  * ciphers;
     char                  * named_curve;
+    char                  * dhparams;
     long                    ssl_opts;
     long                    ssl_ctx_timeout;
     int                     verify_peer;
@@ -1061,6 +1065,23 @@ void evhtp_request_set_max_body_size(evhtp_request_t * request, uint64_t len);
  * @param num
  */
 void evhtp_set_max_keepalive_requests(evhtp_t * htp, uint64_t num);
+
+
+/**
+ * @brief set a bufferevent ratelimit on a evhtp_connection_t structure. The
+ *        logic is the same as libevent's rate-limiting code.
+ *
+ * @param c
+ * @param read_rate
+ * @param read_burst
+ * @param write_rate
+ * @param write_burst
+ * @param tick
+ *
+ * @return
+ */
+int evhtp_connection_set_ratelimit(evhtp_connection_t * c, size_t read_rate,
+    size_t read_burst, size_t write_rate, size_t write_burst, const struct timeval * tick);
 
 /*****************************************************************
 * client request functions                                      *

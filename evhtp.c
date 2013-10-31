@@ -240,9 +240,11 @@ static htparse_hooks request_psets = {
 
 #ifndef EVHTP_DISABLE_SSL
 static int             session_id_context    = 1;
+#ifndef EVHTP_DISABLE_EVTHR
 static int             ssl_num_locks;
 static evhtp_mutex_t * ssl_locks;
 static int             ssl_locks_initialized = 0;
+#endif
 #endif
 
 /*
@@ -1586,6 +1588,22 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
         }
     }
 
+    if (events == (BEV_EVENT_EOF | BEV_EVENT_READING)) {
+        if (errno == EAGAIN) {
+            /* libevent will sometimes recv again when it's not actually ready,
+             * this results in a 0 return value, and errno will be set to EAGAIN
+             * (try again). This does not mean there is a hard socket error, but
+             * simply needs to be read again.
+             *
+             * but libevent will disable the read side of the bufferevent
+             * anyway, so we must re-enable it.
+             */
+            bufferevent_enable(bev, EV_READ);
+            errno = 0;
+            return;
+        }
+    }
+
     c->error = 1;
 
     if (c->request && c->request->hooks && c->request->hooks->on_error) {
@@ -1599,7 +1617,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     } else {
         evhtp_connection_free((evhtp_connection_t *)arg);
     }
-}
+} /* _evhtp_connection_eventcb */
 
 static int
 _evhtp_run_pre_accept(evhtp_t * htp, evhtp_connection_t * conn) {
@@ -1964,6 +1982,7 @@ void
 evhtp_connection_resume(evhtp_connection_t * c) {
     if (!(bufferevent_get_enabled(c->bev) & EV_READ)) {
         /* bufferevent_enable(c->bev, EV_READ); */
+        c->paused = 0;
         event_active(c->resume_ev, EV_WRITE, 1);
     }
 }
@@ -2698,6 +2717,9 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
                                           LEV_OPT_THREADSAFE | LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
                                           backlog, sa, sin_len);
+    if (!htp->server) {
+        return -1;
+    }
 
 #ifdef USE_DEFER_ACCEPT
     {
@@ -2725,7 +2747,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     }
 #endif
 
-    return htp->server ? 0 : -1;
+    return 0;
 }
 
 int
@@ -3021,7 +3043,7 @@ evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
     _evhtp_lock(htp);
 
     if (htp->callbacks == NULL) {
-        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), sizeof(char)))) {
+        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), 1))) {
             _evhtp_unlock(htp);
             return NULL;
         }
@@ -3097,7 +3119,7 @@ evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, vo
     _evhtp_lock(htp);
 
     if (htp->callbacks == NULL) {
-        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), sizeof(char)))) {
+        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), 1))) {
             _evhtp_unlock(htp);
             return NULL;
         }
@@ -3129,7 +3151,7 @@ evhtp_set_glob_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, voi
     _evhtp_lock(htp);
 
     if (htp->callbacks == NULL) {
-        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), sizeof(char)))) {
+        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), 1))) {
             _evhtp_unlock(htp);
             return NULL;
         }
@@ -3213,21 +3235,23 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
     SSL_load_error_strings();
     RAND_poll();
 
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
     STACK_OF(SSL_COMP) * comp_methods = SSL_COMP_get_compression_methods();
     sk_SSL_COMP_zero(comp_methods);
+#endif
 
     htp->ssl_cfg = cfg;
     htp->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
 
 #if OPENSSL_VERSION_NUMBER >= 0x10000000L
-    SSL_CTX_set_options(htp->ssl_ctx, SSL_MODE_RELEASE_BUFFERS);
+    SSL_CTX_set_options(htp->ssl_ctx, SSL_MODE_RELEASE_BUFFERS | SSL_OP_NO_COMPRESSION);
     /* SSL_CTX_set_options(htp->ssl_ctx, SSL_MODE_AUTO_RETRY); */
     SSL_CTX_set_timeout(htp->ssl_ctx, cfg->ssl_ctx_timeout);
 #endif
 
     SSL_CTX_set_options(htp->ssl_ctx, cfg->ssl_opts);
 
-#ifndef OPENSSL_NO_EC
+#ifndef OPENSSL_NO_ECDH
     if (cfg->named_curve != NULL) {
         EC_KEY * ecdh = NULL;
         int      nid  = 0;
@@ -3243,7 +3267,27 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         SSL_CTX_set_tmp_ecdh(htp->ssl_ctx, ecdh);
         EC_KEY_free(ecdh);
     }
-#endif /* OPENSSL_NO_EC */
+#endif /* OPENSSL_NO_ECDH */
+#ifndef OPENSSL_NO_DH
+    if (cfg->dhparams != NULL) {
+        FILE *fh;
+        DH *dh;
+
+        fh = fopen(cfg->dhparams, "r");
+        if (fh != NULL) {
+            dh = PEM_read_DHparams(fh, NULL, NULL, NULL);
+            if (dh != NULL) {
+                SSL_CTX_set_tmp_dh(htp->ssl_ctx, dh);
+                DH_free(dh);
+            } else {
+                fprintf(stderr, "DH initialization failed: unable to parse file %s\n", cfg->dhparams);
+            }
+            fclose(fh);
+        } else {
+            fprintf(stderr, "DH initialization failed: unable to open file %s\n", cfg->dhparams);
+        }
+    }
+#endif /* OPENSSL_NO_DH */
 
     if (cfg->ciphers != NULL) {
         SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers);
@@ -3439,6 +3483,10 @@ evhtp_connection_free(evhtp_connection_t * connection) {
     }
 #endif
 
+    if (connection->ratelimit_cfg != NULL) {
+        ev_token_bucket_cfg_free(connection->ratelimit_cfg);
+    }
+
     free(connection);
 }     /* evhtp_connection_free */
 
@@ -3588,10 +3636,12 @@ evhtp_free(evhtp_t * evhtp) {
         return;
     }
 
+#ifndef EVHTP_DISABLE_EVTHR
     if (evhtp->thr_pool) {
         evthr_pool_stop(evhtp->thr_pool);
         evthr_pool_free(evhtp->thr_pool);
     }
+#endif
 
     if (evhtp->server_name) {
         free(evhtp->server_name);
@@ -3609,7 +3659,36 @@ evhtp_free(evhtp_t * evhtp) {
         free(evhtp_alias);
     }
 
+#ifndef EVHTP_DISABLE_SSL
+    if (evhtp->ssl_ctx) {
+        SSL_CTX_free(evhtp->ssl_ctx);
+    }
+#endif
+
     free(evhtp);
+}
+
+int
+evhtp_connection_set_rate_limit(evhtp_connection_t * conn,
+                                size_t read_rate, size_t read_burst,
+                                size_t write_rate, size_t write_burst,
+                                const struct timeval * tick) {
+    struct ev_token_bucket_cfg * tcfg;
+
+    if (conn == NULL || conn->bev == NULL) {
+        return -1;
+    }
+
+    tcfg = ev_token_bucket_cfg_new(read_rate, read_burst,
+                                   write_rate, write_burst, tick);
+
+    if (tcfg == NULL) {
+        return -1;
+    }
+
+    conn->ratelimit_cfg = tcfg;
+
+    return bufferevent_set_rate_limit(conn->bev, tcfg);
 }
 
 /*****************************************************************

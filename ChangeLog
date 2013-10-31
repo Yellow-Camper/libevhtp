@@ -1,3 +1,8 @@
+v1.2.8
+ o There's no libdl on FreeBSD. (a683a1f Adrian Chadd)
+ o FreeBSD handles the POSIX_C_SOURCE definition very strictly - strncmp() and a lot of other stuff isn't defined in the 2001 standards.  
+   Thus, the functions aren't declared when you include the library headers. (0354a67 Adrian Chadd)
+
 v1.2.7
  o Fix double free for evthr at shutdown (a2c2826 Azat Khuzhin)
  o Workaround for odd recv()'s being done when not requested. (2abd591 Mark Ellzey)

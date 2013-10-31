@@ -1,3 +1,22 @@
+v1.2.7
+ o Fix double free for evthr at shutdown (a2c2826 Azat Khuzhin)
+ o Workaround for odd recv()'s being done when not requested. (2abd591 Mark Ellzey)
+ o Only return from BEV_EOF|READ if errno is EAGAIN (00eef42 Mark Ellzey)
+ o Add connection-specific rate-limiting function. (32f4115 Mark Ellzey)
+ o Fix compilation without threads support (104eafd Janusz Dziemidowicz)
+ o Fix compilation without regex support (a71c736 Janusz Dziemidowicz)
+ o Fix crash when unable to bind socket with TCP deferred accept (60f9d71 Janusz Dziemidowicz)
+ o Add missing call to SSL_CTX_free() in evhtp_free(). (891d0cf Janusz Dziemidowicz)
+ o Malloc with 1 instead of sizeof(char) to avoid warnings (de445f7 Mark Ellzey)
+ o Don't check for bevssl if EVHTP_DISABLE_SSL enabled (9369afc Mark Ellzey)
+ o Use SSL_OP_NO_COMPRESSION if possible (2b714c5 Janusz Dziemidowicz)
+ o Support for DH parameters file (3d22d56 Janusz Dziemidowicz)
+ o Use proper #ifndef for ECDH (OPENSSL_NO_ECDH instead of OPENSSL_NO_EC) (35c21c4 Janusz Dziemidowicz)
+ o Build evhtp-config.h to make things easier to link (77552e4 Mark Ellzey)
+ o Undef optional flags as to not screw things up (374a269 Mark Ellzey)
+ o Disable OpenSSL support if libevent_ssl is not found (820d314 Mark Ellzey)
+ o Clean up unused variables in onig (2d38112 Mark Ellzey)
+
 v1.2.6
  o Add connection-specific rate-limiting function. (d0caf82 Mark Ellzey)
  o Fix double free for evthr at shutdown (a514e80 Azat Khuzhin)

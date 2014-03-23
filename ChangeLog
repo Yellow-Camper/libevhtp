@@ -1,3 +1,17 @@
+v1.2.9
+ o Accept upper-case "Chunked" in addition to "chunked" for transfer encoding. (07a9322 Tim Burks)
+ o [htparse] Added length checks for various header values (42050e8 Mark Ellzey)
+ o Fix up some compiler warnings. (37e0c4e Mark Ellzey)
+ o Use snprintf for resp hdrs, fallback to evbuffer_add_printf (c27ac5a Mark Ellzey)
+ o status_code_to_str no longer uses RB lookups (d143a85 Mark Ellzey)
+ o Don't call bufferevent_set_timeouts read/write NULL (f372d9c Mark Ellzey)
+ o add 'libdir' support (3b7e250 Christian)
+ o Add INCLUDE_INSTALL_DIR support (19cab6f Mark Ellzey)
+ o Add back in tree.h (0f69673 Mark Ellzey)
+ o Fix a segfault in regex handling (d1a4240 f69m)
+ o Formatting cleanup (c0c2055 Mark Ellzey)
+ o No need for sys/tree include (0d3619f Mark Ellzey)
+
 v1.2.8
  o There's no libdl on FreeBSD. (a683a1f Adrian Chadd)
  o FreeBSD handles the POSIX_C_SOURCE definition very strictly - strncmp() and a lot of other stuff isn't defined in the 2001 standards.  

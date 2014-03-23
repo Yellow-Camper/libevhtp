@@ -101,7 +101,7 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
          (var) = (tvar))
 #endif
 
-const char *
+static const char *
 status_code_to_str(evhtp_res code) {
     switch (code) {
         case EVHTP_RES_200:
@@ -3876,3 +3876,4 @@ EXPORT_SYMBOL(evhtp_connection_new);
 EXPORT_SYMBOL(evhtp_request_new);
 EXPORT_SYMBOL(evhtp_make_request);
 EXPORT_SYMBOL(evhtp_request_status);
+EXPORT_SYMBOL(evhtp_connection_set_ratelimit);

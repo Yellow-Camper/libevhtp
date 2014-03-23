@@ -20,8 +20,6 @@
 #include <sys/un.h>
 #endif
 
-#include <sys/tree.h>
-
 #include <limits.h>
 
 #include "evhtp.h"

@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "htparse.h"
+#include "evhtp-internal.h"
 
 #ifdef PARSER_DEBUG
 #define __QUOTE(x)                  # x
@@ -1901,3 +1902,25 @@ hdrline_start:
     return i;
 }         /* htparser_run */
 
+
+EXPORT_SYMBOL(htparser_run);
+EXPORT_SYMBOL(htparser_should_keep_alive);
+EXPORT_SYMBOL(htparser_get_scheme);
+EXPORT_SYMBOL(htparser_get_method);
+EXPORT_SYMBOL(htparser_get_methodstr);
+EXPORT_SYMBOL(htparser_get_methodstr_m);
+EXPORT_SYMBOL(htparser_set_major);
+EXPORT_SYMBOL(htparser_set_minor);
+EXPORT_SYMBOL(htparser_get_major);
+EXPORT_SYMBOL(htparser_get_minor);
+EXPORT_SYMBOL(htparser_get_multipart);
+EXPORT_SYMBOL(htparser_get_status);
+EXPORT_SYMBOL(htparser_get_content_length);
+EXPORT_SYMBOL(htparser_get_content_pending);
+EXPORT_SYMBOL(htparser_get_total_bytes_read);
+EXPORT_SYMBOL(htparser_get_error);
+EXPORT_SYMBOL(htparser_get_strerror);
+EXPORT_SYMBOL(htparser_get_userdata);
+EXPORT_SYMBOL(htparser_set_userdata);
+EXPORT_SYMBOL(htparser_init);
+EXPORT_SYMBOL(htparser_new);

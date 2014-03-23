@@ -19,6 +19,7 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 
+#include "evhtp-internal.h"
 #include "evthr.h"
 
 #if (__GNUC__ > 2 || ( __GNUC__ == 2 && __GNUC__MINOR__ > 4)) && (!defined(__STRICT_ANSI__) || __STRICT_ANSI__ == 0)
@@ -501,3 +502,23 @@ evthr_pool_start(evthr_pool_t * pool) {
     return 0;
 }
 
+EXPORT_SYMBOL(evthr_new);
+EXPORT_SYMBOL(evthr_get_base);
+EXPORT_SYMBOL(evthr_set_aux);
+EXPORT_SYMBOL(evthr_get_aux);
+EXPORT_SYMBOL(evthr_start);
+EXPORT_SYMBOL(evthr_stop);
+EXPORT_SYMBOL(evthr_defer);
+EXPORT_SYMBOL(evthr_free);
+EXPORT_SYMBOL(evthr_inc_backlog);
+EXPORT_SYMBOL(evthr_dec_backlog);
+EXPORT_SYMBOL(evthr_get_backlog);
+EXPORT_SYMBOL(evthr_set_max_backlog);
+EXPORT_SYMBOL(evthr_set_backlog);
+EXPORT_SYMBOL(evthr_pool_new);
+EXPORT_SYMBOL(evthr_pool_start);
+EXPORT_SYMBOL(evthr_pool_stop);
+EXPORT_SYMBOL(evthr_pool_defer);
+EXPORT_SYMBOL(evthr_pool_free);
+EXPORT_SYMBOL(evthr_pool_set_max_backlog);
+EXPORT_SYMBOL(evthr_pool_set_backlog);

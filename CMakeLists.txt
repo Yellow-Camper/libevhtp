@@ -11,6 +11,7 @@ set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFiles)
 INCLUDE (CheckTypeSize)
+INCLUDE (CheckCCompilerFlag)
 
 CHECK_FUNCTION_EXISTS(alloca  C_ALLOCA)
 CHECK_FUNCTION_EXISTS(memcmp  HAVE_MEMCMP)
@@ -33,6 +34,13 @@ CHECK_INCLUDE_FILES(sys/un.h HAVE_SYS_UN)
 CHECK_TYPE_SIZE("int" SIZEOF_INT)
 CHECK_TYPE_SIZE("long" SIZEOF_LONG)
 CHECK_TYPE_SIZE("short" SIZEOF_SHORT)
+
+check_c_compiler_flag(-fvisibility=hidden EVHTP_HAS_VISIBILITY_HIDDEN)
+
+if (EVHTP_HAS_VISIBILITY_HIDDEN)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
+    add_definitions(-DEVHTP_HAS_VISIBILITY_HIDDEN)
+endif()
 
 if (NOT HAVE_SYS_TREE)
     CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in ${CMAKE_CURRENT_BINARY_DIR}/compat/sys/tree.h)
@@ -243,13 +251,16 @@ add_executable(test EXCLUDE_FROM_ALL examples/test.c)
 add_executable(test_basic EXCLUDE_FROM_ALL examples/test_basic.c)
 add_executable(test_vhost EXCLUDE_FROM_ALL examples/test_vhost.c)
 add_executable(test_client EXCLUDE_FROM_ALL examples/test_client.c)
-add_executable(test_proxy EXCLUDE_FROM_ALL examples/test_proxy.c)
+
+if (NOT EVHTP_DISABLE_EVTHR)
+	add_executable(test_proxy EXCLUDE_FROM_ALL examples/test_proxy.c)
+	target_link_libraries(test_proxy libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+endif()
 
 target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 target_link_libraries(test_basic libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 target_link_libraries(test_vhost libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 target_link_libraries(test_client libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_proxy libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
 add_dependencies(examples test test_basic test_vhost test_client test_proxy)
 

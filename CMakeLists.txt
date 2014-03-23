@@ -253,7 +253,11 @@ target_link_libraries(test_proxy libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
 add_dependencies(examples test test_basic test_vhost test_client test_proxy)
 
-install (TARGETS libevhtp DESTINATION lib)
+if (NOT LIB_INSTALL_DIR)
+  set (LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+endif (NOT LIB_INSTALL_DIR)
+
+install (TARGETS libevhtp DESTINATION ${LIB_INSTALL_DIR})
 install (FILES evhtp.h DESTINATION include)
 install (FILES htparse/htparse.h DESTINATION include)
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h DESTINATION include)

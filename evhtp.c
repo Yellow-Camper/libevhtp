@@ -3430,7 +3430,7 @@ evhtp_request_get_connection(evhtp_request_t * request) {
     return request->conn;
 }
 
-void
+inline void
 evhtp_connection_set_timeouts(evhtp_connection_t   * c,
                               const struct timeval * rtimeo,
                               const struct timeval * wtimeo) {
@@ -3438,7 +3438,9 @@ evhtp_connection_set_timeouts(evhtp_connection_t   * c,
         return;
     }
 
-    bufferevent_set_timeouts(c->bev, rtimeo, wtimeo);
+    if (rtimeo || wtimeo) {
+        bufferevent_set_timeouts(c->bev, rtimeo, wtimeo);
+    }
 }
 
 void

@@ -1026,18 +1026,17 @@ _evhtp_request_set_callbacks(evhtp_request_t * request) {
     }
 
     if (path->matched_soff != UINT_MAX /*ONIG_REGION_NOTPOS*/) {
-
         if (path->matched_eoff - path->matched_soff) {
             memcpy(path->match_start, (void *)(path->full + path->matched_soff),
-                path->matched_eoff - path->matched_soff);
+                   path->matched_eoff - path->matched_soff);
         } else {
             memcpy(path->match_start, (void *)(path->full + path->matched_soff),
-                strlen((const char *)(path->full + path->matched_soff)));
+                   strlen((const char *)(path->full + path->matched_soff)));
         }
 
         memcpy(path->match_end,
-           (void *)(path->full + path->matched_eoff),
-           strlen(path->full) - path->matched_eoff);
+               (void *)(path->full + path->matched_eoff),
+               strlen(path->full) - path->matched_eoff);
     }
 
     if (hooks != NULL) {

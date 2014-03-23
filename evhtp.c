@@ -20,6 +20,8 @@
 #include <sys/un.h>
 #endif
 
+#include <sys/tree.h>
+
 #include "evhtp.h"
 
 static int                  _evhtp_request_parser_start(htparser * p);

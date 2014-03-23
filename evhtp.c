@@ -20,8 +20,6 @@
 #include <sys/un.h>
 #endif
 
-#include <sys/tree.h>
-
 #include "evhtp.h"
 
 static int                  _evhtp_request_parser_start(htparser * p);
@@ -100,119 +98,107 @@ static void                 _evhtp_path_free(evhtp_path_t * path);
          (var) = (tvar))
 #endif
 
-static int scode_tree_initialized = 0;
-
-/**
- * @brief An RBTREE entry for the status code -> str matcher
- */
-struct status_code {
-    evhtp_res    code;
-    const char * str;
-
-    RB_ENTRY(status_code) entry;
-};
-
-
-static int
-status_code_cmp(void * _a, void * _b) {
-    struct status_code * a = _a;
-    struct status_code * b = _b;
-
-    return b->code - a->code;
-}
-
-RB_HEAD(status_code_tree, status_code) status_code_head = RB_INITIALIZER(&status_code_head);
-RB_GENERATE(status_code_tree, status_code, entry, status_code_cmp)
-
-#define scode_add(scode, cstr) do {                                  \
-        struct status_code * c = malloc(sizeof(struct status_code)); \
-                                                                     \
-        c->code = scode;                                             \
-        c->str  = cstr;                                              \
-                                                                     \
-        RB_INSERT(status_code_tree, &status_code_head, c);           \
-} while (0)
-
-static void
-status_code_init(void) {
-    if (scode_tree_initialized) {
-        /* Already initialized. */
-        return;
-    }
-
-    /* 100 codes */
-    scode_add(EVHTP_RES_CONTINUE, "Continue");
-    scode_add(EVHTP_RES_SWITCH_PROTO, "Switching Protocols");
-    scode_add(EVHTP_RES_PROCESSING, "Processing");
-    scode_add(EVHTP_RES_URI_TOOLONG, "URI Too Long");
-
-    /* 200 codes */
-    scode_add(EVHTP_RES_200, "OK");
-    scode_add(EVHTP_RES_CREATED, "Created");
-    scode_add(EVHTP_RES_ACCEPTED, "Accepted");
-    scode_add(EVHTP_RES_NAUTHINFO, "No Auth Info");
-    scode_add(EVHTP_RES_NOCONTENT, "No Content");
-    scode_add(EVHTP_RES_RSTCONTENT, "Reset Content");
-    scode_add(EVHTP_RES_PARTIAL, "Partial Content");
-    scode_add(EVHTP_RES_MSTATUS, "Multi-Status");
-    scode_add(EVHTP_RES_IMUSED, "IM Used");
-
-    /* 300 codes */
-    scode_add(EVHTP_RES_300, "Redirect");
-    scode_add(EVHTP_RES_MOVEDPERM, "Moved Permanently");
-    scode_add(EVHTP_RES_FOUND, "Found");
-    scode_add(EVHTP_RES_SEEOTHER, "See Other");
-    scode_add(EVHTP_RES_NOTMOD, "Not Modified");
-    scode_add(EVHTP_RES_USEPROXY, "Use Proxy");
-    scode_add(EVHTP_RES_SWITCHPROXY, "Switch Proxy");
-    scode_add(EVHTP_RES_TMPREDIR, "Temporary Redirect");
-
-    /* 400 codes */
-    scode_add(EVHTP_RES_400, "Bad Request");
-    scode_add(EVHTP_RES_UNAUTH, "Unauthorized");
-    scode_add(EVHTP_RES_PAYREQ, "Payment Required");
-    scode_add(EVHTP_RES_FORBIDDEN, "Forbidden");
-    scode_add(EVHTP_RES_NOTFOUND, "Not Found");
-    scode_add(EVHTP_RES_METHNALLOWED, "Not Allowed");
-    scode_add(EVHTP_RES_NACCEPTABLE, "Not Acceptable");
-    scode_add(EVHTP_RES_PROXYAUTHREQ, "Proxy Authentication Required");
-    scode_add(EVHTP_RES_TIMEOUT, "Request Timeout");
-    scode_add(EVHTP_RES_CONFLICT, "Conflict");
-    scode_add(EVHTP_RES_GONE, "Gone");
-    scode_add(EVHTP_RES_LENREQ, "Length Required");
-    scode_add(EVHTP_RES_PRECONDFAIL, "Precondition Failed");
-    scode_add(EVHTP_RES_ENTOOLARGE, "Entity Too Large");
-    scode_add(EVHTP_RES_URITOOLARGE, "Request-URI Too Long");
-    scode_add(EVHTP_RES_UNSUPPORTED, "Unsupported Media Type");
-    scode_add(EVHTP_RES_RANGENOTSC, "Requested Range Not Satisfiable");
-    scode_add(EVHTP_RES_EXPECTFAIL, "Expectation Failed");
-    scode_add(EVHTP_RES_IAMATEAPOT, "I'm a teapot");
-
-    /* 500 codes */
-    scode_add(EVHTP_RES_SERVERR, "Internal Server Error");
-    scode_add(EVHTP_RES_NOTIMPL, "Not Implemented");
-    scode_add(EVHTP_RES_BADGATEWAY, "Bad Gateway");
-    scode_add(EVHTP_RES_SERVUNAVAIL, "Service Unavailable");
-    scode_add(EVHTP_RES_GWTIMEOUT, "Gateway Timeout");
-    scode_add(EVHTP_RES_VERNSUPPORT, "HTTP Version Not Supported");
-    scode_add(EVHTP_RES_BWEXEED, "Bandwidth Limit Exceeded");
-
-    scode_tree_initialized = 1;
-}     /* status_code_init */
-
 const char *
 status_code_to_str(evhtp_res code) {
-    struct status_code   c;
-    struct status_code * found;
+    switch (code) {
+        case EVHTP_RES_200:
+            return "OK";
+        case EVHTP_RES_300:
+            return "Redirect";
+        case EVHTP_RES_400:
+            return "Bad Request";
+        case EVHTP_RES_NOTFOUND:
+            return "Not Found";
+        case EVHTP_RES_SERVERR:
+            return "Internal Server Error";
+        case EVHTP_RES_CONTINUE:
+            return "Continue";
+        case EVHTP_RES_FORBIDDEN:
+            return "Forbidden";
+        case EVHTP_RES_SWITCH_PROTO:
+            return "Switching Protocols";
+        case EVHTP_RES_MOVEDPERM:
+            return "Moved Permanently";
+        case EVHTP_RES_PROCESSING:
+            return "Processing";
+        case EVHTP_RES_URI_TOOLONG:
+            return "URI Too Long";
+        case EVHTP_RES_CREATED:
+            return "Created";
+        case EVHTP_RES_ACCEPTED:
+            return "Accepted";
+        case EVHTP_RES_NAUTHINFO:
+            return "No Auth Info";
+        case EVHTP_RES_NOCONTENT:
+            return "No Content";
+        case EVHTP_RES_RSTCONTENT:
+            return "Reset Content";
+        case EVHTP_RES_PARTIAL:
+            return "Partial Content";
+        case EVHTP_RES_MSTATUS:
+            return "Multi-Status";
+        case EVHTP_RES_IMUSED:
+            return "IM Used";
+        case EVHTP_RES_FOUND:
+            return "Found";
+        case EVHTP_RES_SEEOTHER:
+            return "See Other";
+        case EVHTP_RES_NOTMOD:
+            return "Not Modified";
+        case EVHTP_RES_USEPROXY:
+            return "Use Proxy";
+        case EVHTP_RES_SWITCHPROXY:
+            return "Switch Proxy";
+        case EVHTP_RES_TMPREDIR:
+            return "Temporary Redirect";
+        case EVHTP_RES_UNAUTH:
+            return "Unauthorized";
+        case EVHTP_RES_PAYREQ:
+            return "Payment Required";
+        case EVHTP_RES_METHNALLOWED:
+            return "Not Allowed";
+        case EVHTP_RES_NACCEPTABLE:
+            return "Not Acceptable";
+        case EVHTP_RES_PROXYAUTHREQ:
+            return "Proxy Authentication Required";
+        case EVHTP_RES_TIMEOUT:
+            return "Request Timeout";
+        case EVHTP_RES_CONFLICT:
+            return "Conflict";
+        case EVHTP_RES_GONE:
+            return "Gone";
+        case EVHTP_RES_LENREQ:
+            return "Length Required";
+        case EVHTP_RES_PRECONDFAIL:
+            return "Precondition Failed";
+        case EVHTP_RES_ENTOOLARGE:
+            return "Entity Too Large";
+        case EVHTP_RES_URITOOLARGE:
+            return "Request-URI Too Long";
+        case EVHTP_RES_UNSUPPORTED:
+            return "Unsupported Media Type";
+        case EVHTP_RES_RANGENOTSC:
+            return "Requested Range Not Satisfiable";
+        case EVHTP_RES_EXPECTFAIL:
+            return "Expectation Failed";
+        case EVHTP_RES_IAMATEAPOT:
+            return "I'm a teapot";
+        case EVHTP_RES_NOTIMPL:
+            return "Not Implemented";
+        case EVHTP_RES_BADGATEWAY:
+            return "Bad Gateway";
+        case EVHTP_RES_SERVUNAVAIL:
+            return "Service Unavailable";
+        case EVHTP_RES_GWTIMEOUT:
+            return "Gateway Timeout";
+        case EVHTP_RES_VERNSUPPORT:
+            return "HTTP Version Not Supported";
+        case EVHTP_RES_BWEXEED:
+            return "Bandwidth Limit Exceeded";
+    } /* switch */
 
-    c.code = code;
-
-    if (!(found = RB_FIND(status_code_tree, &status_code_head, &c))) {
-        return "DERP";
-    }
-
-    return found->str;
-}
+    return "UNKNOWN";
+}     /* status_code_to_str */
 
 /**
  * @brief callback definitions for request processing from libhtparse
@@ -3636,8 +3622,6 @@ evhtp_new(evbase_t * evbase, void * arg) {
     if (!(htp = calloc(sizeof(evhtp_t), 1))) {
         return NULL;
     }
-
-    status_code_init();
 
     htp->arg       = arg;
     htp->evbase    = evbase;

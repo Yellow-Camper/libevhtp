@@ -257,24 +257,28 @@ if (NOT LIB_INSTALL_DIR)
   set (LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 endif (NOT LIB_INSTALL_DIR)
 
+if(NOT INCLUDE_INSTALL_DIR)
+	set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
+endif()
+
 install (TARGETS libevhtp DESTINATION ${LIB_INSTALL_DIR})
-install (FILES evhtp.h DESTINATION include)
-install (FILES htparse/htparse.h DESTINATION include)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h DESTINATION include)
+install (FILES evhtp.h DESTINATION ${INCLUDE_INSTALL_DIR})
+install (FILES htparse/htparse.h DESTINATION ${INCLUDE_INSTALL_DIR})
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h DESTINATION ${INCLUDE_INSTALL_DIR})
 
 if (NOT EVHTP_DISABLE_EVTHR)
-	install (FILES evthr/evthr.h DESTINATION include)
+	install (FILES evthr/evthr.h DESTINATION ${INCLUDE_INSTALL_DIR})
 endif()
 
 # oniguruma/onigposix.h
 
 if (NOT EVHTP_DISABLE_REGEX)
 		if (NOT HAS_SYS_ONIG)
-				install (FILES oniguruma/onigposix.h DESTINATION include)
+				install (FILES oniguruma/onigposix.h DESTINATION ${INCLUDE_INSTALL_DIR})
 		endif()
 endif()
 
 IF (WIN32)
-   install (FILES compat/sys/queue.h DESTINATION include/sys)
-   install (FILES oniguruma/onigposix.h DESTINATION include)
+   install (FILES compat/sys/queue.h DESTINATION ${INCLUDE_INSTALL_DIR}/sys)
+   install (FILES oniguruma/onigposix.h DESTINATION ${INCLUDE_INSTALL_DIR})
 ENDIF (WIN32)

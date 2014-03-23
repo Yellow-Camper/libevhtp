@@ -3221,11 +3221,13 @@ evhtp_ssl_use_threads(void) {
 
 int
 evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
-    long                  cache_mode;
+#ifdef EVHTP_ENABLE_FUTURE_STUFF
     evhtp_ssl_scache_init init_cb = NULL;
     evhtp_ssl_scache_add  add_cb  = NULL;
     evhtp_ssl_scache_get  get_cb  = NULL;
     evhtp_ssl_scache_del  del_cb  = NULL;
+#endif
+    long                  cache_mode;
 
     if (cfg == NULL || htp == NULL || cfg->pemfile == NULL) {
         return -1;
@@ -3271,7 +3273,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
 #ifndef OPENSSL_NO_DH
     if (cfg->dhparams != NULL) {
         FILE *fh;
-        DH *dh;
+        DH   *dh;
 
         fh = fopen(cfg->dhparams, "r");
         if (fh != NULL) {
@@ -3309,6 +3311,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
         case evhtp_ssl_scache_type_disabled:
             cache_mode = SSL_SESS_CACHE_OFF;
             break;
+#ifdef EVHTP_ENABLE_FUTURE_STUFF
         case evhtp_ssl_scache_type_user:
             cache_mode = SSL_SESS_CACHE_SERVER |
                          SSL_SESS_CACHE_NO_INTERNAL |
@@ -3324,13 +3327,12 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
                          SSL_SESS_CACHE_NO_INTERNAL |
                          SSL_SESS_CACHE_NO_INTERNAL_LOOKUP;
 
-#if 0
             init_cb    = _evhtp_ssl_builtin_init;
             add_cb     = _evhtp_ssl_builtin_add;
             get_cb     = _evhtp_ssl_builtin_get;
             del_cb     = _evhtp_ssl_builtin_del;
-#endif
             break;
+#endif
         case evhtp_ssl_scache_type_internal:
         default:
             cache_mode = SSL_SESS_CACHE_SERVER;

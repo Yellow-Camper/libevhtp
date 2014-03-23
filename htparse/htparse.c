@@ -1586,6 +1586,9 @@ hdrline_start:
                                 }
 
                                 break;
+                            case eval_hdr_val_proxy_connection:
+                            default:
+                                break;
                         } /* switch */
 
                         p->state             = s_hdrline_hdr_almost_done;

@@ -55,7 +55,6 @@ struct evthr {
     ev_t          * event;
     evbase_t      * evbase;
     pthread_mutex_t lock;
-    pthread_mutex_t stat_lock;
     pthread_mutex_t rlock;
     pthread_t     * thr;
     evthr_init_cb   init_cb;
@@ -64,13 +63,6 @@ struct evthr {
 
     TAILQ_ENTRY(evthr) next;
 };
-
-#ifndef TAILQ_FOREACH_SAFE
-#define TAILQ_FOREACH_SAFE(var, head, field, tvar)        \
-    for ((var) = TAILQ_FIRST((head));                     \
-         (var) && ((tvar) = TAILQ_NEXT((var), field), 1); \
-         (var) = (tvar))
-#endif
 
 inline void
 evthr_inc_backlog(evthr_t * evthr) {
@@ -105,67 +97,48 @@ evthr_set_backlog(evthr_t * evthr, int num) {
     return setsockopt(evthr->wdr, SOL_SOCKET, SO_RCVBUF, &rnum, sizeof(int));
 }
 
+static inline int
+_evthr_read(evthr_t * thr, evthr_cmd_t * cmd, evutil_socket_t sock) {
+    if (recv(sock, cmd, sizeof(evthr_cmd_t), 0) != sizeof(evthr_cmd_t)) {
+        return 0;
+    }
+
+    return 1;
+}
+
 static void
 _evthr_read_cmd(evutil_socket_t sock, short __unused__ which, void * args) {
     evthr_t   * thread;
     evthr_cmd_t cmd;
-    ssize_t     recvd;
+    int         stopped;
 
     if (!(thread = (evthr_t *)args)) {
         return;
     }
 
-    if (pthread_mutex_trylock(&thread->lock) != 0) {
-        return;
-    }
-
     pthread_mutex_lock(&thread->rlock);
 
-    if ((recvd = recv(sock, &cmd, sizeof(evthr_cmd_t), 0)) <= 0) {
-        pthread_mutex_unlock(&thread->rlock);
-        if (errno == EAGAIN) {
-            goto end;
-        } else {
-            goto error;
-        }
-    }
+    stopped = 0;
 
-    if (recvd < (ssize_t)sizeof(evthr_cmd_t)) {
-        pthread_mutex_unlock(&thread->rlock);
-        goto error;
+    while (_evthr_read(thread, &cmd, sock) == 1) {
+        if (cmd.stop == 1) {
+            stopped = 1;
+            break;
+        }
+
+        if (cmd.cb != NULL) {
+            (cmd.cb)(thread, cmd.args, thread->arg);
+        }
+
+        evthr_dec_backlog(thread);
     }
 
     pthread_mutex_unlock(&thread->rlock);
 
-    if (recvd != sizeof(evthr_cmd_t)) {
-        goto error;
+    if (stopped == 1) {
+        event_base_loopbreak(thread->evbase);
     }
 
-    if (cmd.stop == 1) {
-        goto stop;
-    }
-
-    if (cmd.cb != NULL) {
-        cmd.cb(thread, cmd.args, thread->arg);
-        goto done;
-    } else {
-        goto done;
-    }
-
-stop:
-    event_base_loopbreak(thread->evbase);
-done:
-    evthr_dec_backlog(thread);
-end:
-    pthread_mutex_unlock(&thread->lock);
-    return;
-error:
-    pthread_mutex_lock(&thread->stat_lock);
-    thread->cur_backlog = -1;
-    thread->err         = 1;
-    pthread_mutex_unlock(&thread->stat_lock);
-    pthread_mutex_unlock(&thread->lock);
-    event_base_loopbreak(thread->evbase);
     return;
 } /* _evthr_read_cmd */
 
@@ -188,9 +161,11 @@ _evthr_loop(void * args) {
     event_add(thread->event, NULL);
 
     pthread_mutex_lock(&thread->lock);
+
     if (thread->init_cb != NULL) {
         thread->init_cb(thread, thread->arg);
     }
+
     pthread_mutex_unlock(&thread->lock);
 
     event_base_loop(thread->evbase, 0);
@@ -298,11 +273,6 @@ evthr_new(evthr_init_cb init_cb, void * args) {
     thread->wdr     = fds[1];
 
     if (pthread_mutex_init(&thread->lock, NULL)) {
-        evthr_free(thread);
-        return NULL;
-    }
-
-    if (pthread_mutex_init(&thread->stat_lock, NULL)) {
         evthr_free(thread);
         return NULL;
     }
@@ -423,11 +393,13 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
             min_thr = thr;
         } else if (thr_backlog == 0) {
             min_thr = thr;
-	    break;
         } else if (thr_backlog < min_backlog) {
             min_thr = thr;
         }
 
+        if (evthr_get_backlog(min_thr) == 0) {
+            break;
+        }
     }
 
     return evthr_defer(min_thr, cb, arg);

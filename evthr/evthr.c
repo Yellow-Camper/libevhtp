@@ -422,13 +422,11 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
             min_thr = thr;
         } else if (thr_backlog == 0) {
             min_thr = thr;
+	    break;
         } else if (thr_backlog < min_backlog) {
             min_thr = thr;
         }
 
-        if (evthr_get_backlog(min_thr) == 0) {
-            break;
-        }
     }
 
     return evthr_defer(min_thr, cb, arg);

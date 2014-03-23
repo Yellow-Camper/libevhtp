@@ -1342,6 +1342,8 @@ static evbuf_t *
 _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
     evbuf_t    * buf          = evbuffer_new();
     const char * content_type = evhtp_header_find(request->headers_out, "Content-Type");
+    char         res_buf[1024];
+    int          sres;
 
     if (htparser_get_multipart(request->conn->parser) == 1) {
         goto check_proto;
@@ -1352,13 +1354,13 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
 
         if (!evhtp_header_find(request->headers_out, "Content-Length")) {
             char lstr[128];
-            int  sres;
 #ifndef WIN32
             sres = snprintf(lstr, sizeof(lstr), "%zu",
+                            evbuffer_get_length(request->buffer_out));
 #else
             sres = snprintf(lstr, sizeof(lstr), "%u",
-#endif
                             evbuffer_get_length(request->buffer_out));
+#endif
 
             if (sres >= sizeof(lstr) || sres < 0) {
                 /* overflow condition, this should never happen, but if it does,
@@ -1412,11 +1414,31 @@ check_proto:
             break;
     } /* switch */
 
-    /* add the status line */
-    evbuffer_add_printf(buf, "HTTP/%d.%d %d %s\r\n",
-                        htparser_get_major(request->conn->parser),
-                        htparser_get_minor(request->conn->parser),
-                        code, status_code_to_str(code));
+
+    /* attempt to add the status line into a temporary buffer and then use
+     * evbuffer_add(). Using plain old snprintf() will be faster than
+     * evbuffer_add_printf(). If the snprintf() fails, which it rarely should,
+     * we fallback to using evbuffer_add_printf().
+     */
+
+    sres = snprintf(res_buf, sizeof(res_buf), "HTTP/%d.%d %d %s\r\n",
+                    htparser_get_major(request->conn->parser),
+                    htparser_get_minor(request->conn->parser),
+                    code, status_code_to_str(code));
+
+    if (sres >= sizeof(res_buf) || sres < 0) {
+        /* failed to fit the whole thing in the res_buf, so just fallback to
+         * using evbuffer_add_printf().
+         */
+        evbuffer_add_printf(buf, "HTTP/%d.%d %d %s\r\n",
+                            htparser_get_major(request->conn->parser),
+                            htparser_get_minor(request->conn->parser),
+                            code, status_code_to_str(code));
+    } else {
+        /* copy the res_buf using evbuffer_add() instead of add_printf() */
+        evbuffer_add(buf, res_buf, sres);
+    }
+
 
     evhtp_headers_for_each(request->headers_out, _evhtp_create_headers, buf);
     evbuffer_add(buf, "\r\n", 2);
@@ -1469,7 +1491,7 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
 
     bufferevent_disable(bev, EV_WRITE);
     {
-        nread = htparser_run(c->parser, &request_psets, (const char *) buf, avail);
+        nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
     }
     bufferevent_enable(bev, EV_WRITE);
 
@@ -2496,7 +2518,7 @@ query_key:
                 if (!evhtp_is_hex_query_char(ch)) {
                     /* not really a hex val */
                     if ((val_idx + 2) >= len) {
-                      /* we need to insert \%<ch>, but not enough space */
+                        /* we need to insert \%<ch>, but not enough space */
                         goto error;
                     }
 

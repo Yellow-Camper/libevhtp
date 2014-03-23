@@ -55,6 +55,7 @@ struct evthr {
     evbase_t      * evbase;
     pthread_mutex_t lock;
     pthread_mutex_t stat_lock;
+    pthread_mutex_t rlock;
     pthread_t     * thr;
     evthr_init_cb   init_cb;
     void          * arg;
@@ -117,7 +118,10 @@ _evthr_read_cmd(evutil_socket_t sock, short __unused__ which, void * args) {
         return;
     }
 
+    pthread_mutex_lock(&thread->rlock);
+
     if ((recvd = recv(sock, &cmd, sizeof(evthr_cmd_t), 0)) <= 0) {
+        pthread_mutex_unlock(&thread->rlock);
         if (errno == EAGAIN) {
             goto end;
         } else {
@@ -126,8 +130,11 @@ _evthr_read_cmd(evutil_socket_t sock, short __unused__ which, void * args) {
     }
 
     if (recvd < (ssize_t)sizeof(evthr_cmd_t)) {
+        pthread_mutex_unlock(&thread->rlock);
         goto error;
     }
+
+    pthread_mutex_unlock(&thread->rlock);
 
     if (recvd != sizeof(evthr_cmd_t)) {
         goto error;
@@ -216,12 +223,17 @@ evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
     cmd.args = arg;
     cmd.stop = 0;
 
+    pthread_mutex_lock(&thread->rlock);
+
     evthr_inc_backlog(thread);
 
     if (send(thread->wdr, &cmd, sizeof(cmd), 0) <= 0) {
         evthr_dec_backlog(thread);
+        pthread_mutex_unlock(&thread->rlock);
         return EVTHR_RES_RETRY;
     }
+
+    pthread_mutex_unlock(&thread->rlock);
 
     return EVTHR_RES_OK;
 }
@@ -235,11 +247,14 @@ evthr_stop(evthr_t * thread) {
     cmd.args = NULL;
     cmd.stop = 1;
 
+    pthread_mutex_lock(&thread->rlock);
 
     if (write(thread->wdr, &cmd, sizeof(evthr_cmd_t)) < 0) {
+        pthread_mutex_unlock(&thread->rlock);
         return EVTHR_RES_RETRY;
     }
 
+    pthread_mutex_unlock(&thread->rlock);
 
     return EVTHR_RES_OK;
 }
@@ -287,6 +302,11 @@ evthr_new(evthr_init_cb init_cb, void * args) {
     }
 
     if (pthread_mutex_init(&thread->stat_lock, NULL)) {
+        evthr_free(thread);
+        return NULL;
+    }
+
+    if (pthread_mutex_init(&thread->rlock, NULL)) {
         evthr_free(thread);
         return NULL;
     }

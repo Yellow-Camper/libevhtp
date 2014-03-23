@@ -23,21 +23,19 @@
 #include "evthr.h"
 
 #if (__GNUC__ > 2 || ( __GNUC__ == 2 && __GNUC__MINOR__ > 4)) && (!defined(__STRICT_ANSI__) || __STRICT_ANSI__ == 0)
-#define __unused__   __attribute__((unused))
+#define __unused__ __attribute__((unused))
 #else
 #define __unused__
 #endif
-
-#define _EVTHR_MAGIC 0x03fb
 
 typedef struct evthr_cmd        evthr_cmd_t;
 typedef struct evthr_pool_slist evthr_pool_slist_t;
 
 struct evthr_cmd {
-    uint8_t  stop : 1;
+    uint8_t  stop;
     void   * args;
     evthr_cb cb;
-} __attribute__ ((packed));
+};
 
 TAILQ_HEAD(evthr_pool_slist, evthr);
 
@@ -182,19 +180,20 @@ evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
     int         cur_backlog;
     evthr_cmd_t cmd;
 
-    cur_backlog = evthr_get_backlog(thread);
 
     if (thread->max_backlog) {
+        cur_backlog = evthr_get_backlog(thread);
+
+
+        if (cur_backlog == -1) {
+            return EVTHR_RES_FATAL;
+        }
+
         if (cur_backlog + 1 > thread->max_backlog) {
             return EVTHR_RES_BACKLOG;
         }
     }
 
-    if (cur_backlog == -1) {
-        return EVTHR_RES_FATAL;
-    }
-
-    /* cmd.magic = _EVTHR_MAGIC; */
     cmd.cb   = cb;
     cmd.args = arg;
     cmd.stop = 0;
@@ -378,31 +377,41 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
         return EVTHR_RES_NOCB;
     }
 
+#if 0
     /* find the thread with the smallest backlog */
     TAILQ_FOREACH(thr, &pool->threads, next) {
-        int thr_backlog = 0;
+        int thr_backlog;
         int min_backlog = 0;
 
         thr_backlog = evthr_get_backlog(thr);
 
+        if (thr_backlog == 0) {
+            min_thr = thr;
+            break;
+        }
+
         if (min_thr) {
             min_backlog = evthr_get_backlog(min_thr);
+
+            if (min_backlog == 0) {
+                break;
+            }
         }
 
         if (min_thr == NULL) {
             min_thr = thr;
-        } else if (thr_backlog == 0) {
-            min_thr = thr;
         } else if (thr_backlog < min_backlog) {
             min_thr = thr;
         }
-
-        if (evthr_get_backlog(min_thr) == 0) {
-            break;
-        }
     }
+#endif
+    thr = TAILQ_FIRST(&pool->threads);
 
-    return evthr_defer(min_thr, cb, arg);
+    TAILQ_REMOVE(&pool->threads, thr, next);
+    TAILQ_INSERT_TAIL(&pool->threads, thr, next);
+
+
+    return evthr_defer(thr, cb, arg);
 } /* evthr_pool_defer */
 
 evthr_pool_t *

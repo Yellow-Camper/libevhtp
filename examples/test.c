@@ -613,7 +613,7 @@ main(int argc, char ** argv) {
     }
 #endif
 
-    if (evhtp_bind_socket(htp, bind_addr, bind_port, 128) < 0) {
+    if (evhtp_bind_socket(htp, bind_addr, bind_port, 2046) < 0) {
         fprintf(stderr, "Could not bind socket: %s\n", strerror(errno));
         exit(-1);
     }

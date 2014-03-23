@@ -36,6 +36,7 @@ _method(htparser * p, const char * b, size_t s) {
 
     if (htparser_get_method(p) == htp_method_UNKNOWN) {
         ADD_DATA_BUF(buf, "METHOD_UNKNOWN", b, s);
+        return htp_method_UNKNOWN;
     } else {
         ADD_DATA_BUF(buf, "METHOD", b, s);
     }
@@ -238,13 +239,14 @@ struct testobj t4 = {
             "Transfer-Encoding: chunked\r\n\r\n"
             "1e\r\nall your base are belong to us\r\n"
             "0\r\n"
-            "\r\n0"
+            "\r\n"
 };
 
 struct testobj t5 = {
     .name = "POST request with multiple chunks",
     .type = htp_type_request,
     .data = "POST /test/ HTTP/1.1\r\n"
+	    "Connection: Keep-Alive\r\n"
             "Transfer-Encoding: chunked\r\n\r\n"
             "23\r\n"
             "This is the data in the first chunk"

@@ -3,7 +3,7 @@ project(reason)
 
 set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
-set(PROJECT_PATCH_VERSION 8)
+set(PROJECT_PATCH_VERSION 9)
 
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
@@ -253,24 +253,32 @@ target_link_libraries(test_proxy libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
 add_dependencies(examples test test_basic test_vhost test_client test_proxy)
 
-install (TARGETS libevhtp DESTINATION lib)
-install (FILES evhtp.h DESTINATION include)
-install (FILES htparse/htparse.h DESTINATION include)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h DESTINATION include)
+if (NOT LIB_INSTALL_DIR)
+  set (LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+endif (NOT LIB_INSTALL_DIR)
+
+if(NOT INCLUDE_INSTALL_DIR)
+	set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
+endif()
+
+install (TARGETS libevhtp DESTINATION ${LIB_INSTALL_DIR})
+install (FILES evhtp.h DESTINATION ${INCLUDE_INSTALL_DIR})
+install (FILES htparse/htparse.h DESTINATION ${INCLUDE_INSTALL_DIR})
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h DESTINATION ${INCLUDE_INSTALL_DIR})
 
 if (NOT EVHTP_DISABLE_EVTHR)
-	install (FILES evthr/evthr.h DESTINATION include)
+	install (FILES evthr/evthr.h DESTINATION ${INCLUDE_INSTALL_DIR})
 endif()
 
 # oniguruma/onigposix.h
 
 if (NOT EVHTP_DISABLE_REGEX)
 		if (NOT HAS_SYS_ONIG)
-				install (FILES oniguruma/onigposix.h DESTINATION include)
+				install (FILES oniguruma/onigposix.h DESTINATION ${INCLUDE_INSTALL_DIR})
 		endif()
 endif()
 
 IF (WIN32)
-   install (FILES compat/sys/queue.h DESTINATION include/sys)
-   install (FILES oniguruma/onigposix.h DESTINATION include)
+   install (FILES compat/sys/queue.h DESTINATION ${INCLUDE_INSTALL_DIR}/sys)
+   install (FILES oniguruma/onigposix.h DESTINATION ${INCLUDE_INSTALL_DIR})
 ENDIF (WIN32)

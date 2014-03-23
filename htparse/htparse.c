@@ -1529,31 +1529,64 @@ hdrline_start:
                                 switch (p->buf[0]) {
                                     case 'K':
                                     case 'k':
+                                        if (p->buf_idx != 10) {
+                                            break;
+                                        }
+
                                         if (_str9cmp((p->buf + 1),
                                                      'e', 'e', 'p', '-', 'A', 'l', 'i', 'v', 'e')) {
                                             p->flags |= parser_flag_connection_keep_alive;
                                         }
                                         break;
                                     case 'c':
+                                    case 'C':
+                                        if (p->buf_idx != 5) {
+                                            break;
+                                        }
+
                                         if (_str5cmp(p->buf, 'c', 'l', 'o', 's', 'e')) {
                                             p->flags |= parser_flag_connection_close;
                                         }
                                         break;
-                                }
+                                } /* switch */
                                 break;
                             case eval_hdr_val_transfer_encoding:
-                                if (_str7_cmp(p->buf, 'c', 'h', 'u', 'n', 'k', 'e', 'd', '\0')) {
-                                    p->flags |= parser_flag_chunked;
+                                if (p->buf_idx != 7) {
+                                    break;
+                                }
+
+                                switch (p->buf[0]) {
+                                    case 'c':
+                                    case 'C':
+                                        if (p->buf_idx != 7) {
+                                            break;
+                                        }
+
+                                        if (_str6cmp((p->buf + 1), 'h', 'u', 'n', 'k', 'e', 'd')) {
+                                            p->flags |= parser_flag_chunked;
+                                        }
+
+                                        break;
                                 }
 
                                 break;
                             case eval_hdr_val_content_type:
-                                if (p->buf[0] == 'm' || p->buf[0] == 'M') {
-                                    if (_str8cmp((p->buf + 1), 'u', 'l', 't', 'i', 'p', 'a', 'r', 't')) {
-                                        p->multipart = 1;
-                                    }
+                                if (p->buf_idx != 9) {
+                                    break;
                                 }
+
+                                switch (p->buf[0]) {
+                                    case 'm':
+                                    case 'M':
+                                        if (_str8cmp((p->buf + 1), 'u', 'l', 't', 'i', 'p', 'a', 'r', 't')) {
+                                            p->multipart = 1;
+                                        }
+
+                                        break;
+                                }
+
                                 break;
+                            case eval_hdr_val_proxy_connection:
                             default:
                                 break;
                         } /* switch */

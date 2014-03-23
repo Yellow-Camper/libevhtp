@@ -1542,10 +1542,11 @@ hdrline_start:
                                 }
                                 break;
                             case eval_hdr_val_transfer_encoding:
-                                if (_str7_cmp(p->buf, 'c', 'h', 'u', 'n', 'k', 'e', 'd', '\0')) {
-                                    p->flags |= parser_flag_chunked;
+                                if (p->buf[0] == 'c' || p->buf[0] == 'C') {
+                                    if (_str6cmp((p->buf + 1), 'h', 'u', 'n', 'k', 'e', 'd')) {
+                                        p->flags |= parser_flag_chunked;
+                                    }
                                 }
-
                                 break;
                             case eval_hdr_val_content_type:
                                 if (p->buf[0] == 'm' || p->buf[0] == 'M') {

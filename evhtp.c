@@ -1792,8 +1792,6 @@ _evhtp_run_in_thread(evthr_t * thr, void * arg, void * shared) {
     connection->evbase = evthr_get_base(thr);
     connection->thread = thr;
 
-    evthr_inc_backlog(connection->thread);
-
     if (_evhtp_connection_accept(connection->evbase, connection) < 0) {
         evhtp_connection_free(connection);
         return;
@@ -3492,12 +3490,6 @@ evhtp_connection_free(evhtp_connection_t * connection) {
         bufferevent_free(connection->bev);
 #endif
     }
-
-#ifndef EVHTP_DISABLE_EVTHR
-    if (connection->thread && connection->type == evhtp_type_server) {
-        evthr_dec_backlog(connection->thread);
-    }
-#endif
 
     if (connection->ratelimit_cfg != NULL) {
         ev_token_bucket_cfg_free(connection->ratelimit_cfg);

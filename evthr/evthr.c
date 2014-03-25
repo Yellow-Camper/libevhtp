@@ -127,8 +127,6 @@ _evthr_read_cmd(evutil_socket_t sock, short __unused__ which, void * args) {
         if (cmd.cb != NULL) {
             (cmd.cb)(thread, cmd.args, thread->arg);
         }
-
-        evthr_dec_backlog(thread);
     }
 
     pthread_mutex_unlock(&thread->rlock);
@@ -181,29 +179,13 @@ evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
     evthr_cmd_t cmd;
 
 
-    if (thread->max_backlog) {
-        cur_backlog = evthr_get_backlog(thread);
-
-
-        if (cur_backlog == -1) {
-            return EVTHR_RES_FATAL;
-        }
-
-        if (cur_backlog + 1 > thread->max_backlog) {
-            return EVTHR_RES_BACKLOG;
-        }
-    }
-
     cmd.cb   = cb;
     cmd.args = arg;
     cmd.stop = 0;
 
     pthread_mutex_lock(&thread->rlock);
 
-    evthr_inc_backlog(thread);
-
     if (send(thread->wdr, &cmd, sizeof(cmd), 0) <= 0) {
-        evthr_dec_backlog(thread);
         pthread_mutex_unlock(&thread->rlock);
         return EVTHR_RES_RETRY;
     }
@@ -377,34 +359,6 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
         return EVTHR_RES_NOCB;
     }
 
-#if 0
-    /* find the thread with the smallest backlog */
-    TAILQ_FOREACH(thr, &pool->threads, next) {
-        int thr_backlog;
-        int min_backlog = 0;
-
-        thr_backlog = evthr_get_backlog(thr);
-
-        if (thr_backlog == 0) {
-            min_thr = thr;
-            break;
-        }
-
-        if (min_thr) {
-            min_backlog = evthr_get_backlog(min_thr);
-
-            if (min_backlog == 0) {
-                break;
-            }
-        }
-
-        if (min_thr == NULL) {
-            min_thr = thr;
-        } else if (thr_backlog < min_backlog) {
-            min_thr = thr;
-        }
-    }
-#endif
     thr = TAILQ_FIRST(&pool->threads);
 
     TAILQ_REMOVE(&pool->threads, thr, next);

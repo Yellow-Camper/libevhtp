@@ -439,6 +439,7 @@ struct evhtp_connection_s {
     uint64_t                     num_requests;
     evhtp_type                   type;          /**< server or client */
     char                         paused;
+    char                         wait_4_write;
     char                         free_connection;
     struct ev_token_bucket_cfg * ratelimit_cfg; /**< connection-specific ratelimiting configuration. */
 

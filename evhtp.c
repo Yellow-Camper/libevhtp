@@ -1283,6 +1283,10 @@ static int
 _evhtp_request_parser_fini(htparser * p) {
     evhtp_connection_t * c = htparser_get_userdata(p);
 
+    if (c->paused) {
+        return -1;
+    }
+
     /* check to see if we should use the body of the request as the query
      * arguments.
      */
@@ -1315,8 +1319,12 @@ _evhtp_request_parser_fini(htparser * p) {
         (c->request->cb)(c->request, c->request->cbarg);
     }
 
+    if (c->paused == 1) {
+        return -1;
+    }
+
     return 0;
-}
+} /* _evhtp_request_parser_fini */
 
 static int
 _evhtp_create_headers(evhtp_header_t * header, void * arg) {
@@ -1447,8 +1455,6 @@ _evhtp_connection_resumecb(int fd, short events, void * arg) {
 
     c->paused = 0;
 
-    bufferevent_enable(c->bev, EV_READ);
-
     if (c->request) {
         c->request->status = EVHTP_RES_OK;
     }
@@ -1458,7 +1464,20 @@ _evhtp_connection_resumecb(int fd, short events, void * arg) {
         return;
     }
 
-    _evhtp_connection_readcb(c->bev, c);
+    /* XXX this is a hack to show a potential fix for issues/86, the main indea
+     * is that you call resume AFTER you have sent the reply (not BEFORE).
+     *
+     * When it has been decided this is a proper fix, the pause bit should be
+     * changed to a state-type flag.
+     */
+
+    if (evbuffer_get_length(bufferevent_get_output(c->bev))) {
+        bufferevent_enable(c->bev, EV_WRITE);
+        c->wait_4_write = 1;
+    } else {
+        bufferevent_enable(c->bev, EV_READ | EV_WRITE);
+        _evhtp_connection_readcb(c->bev, c);
+    }
 }
 
 static void
@@ -1470,6 +1489,10 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
 
     avail = evbuffer_get_length(bufferevent_get_input(bev));
 
+    if (avail == 0) {
+        return;
+    }
+
     if (c->request) {
         c->request->status = EVHTP_RES_OK;
     }
@@ -1478,13 +1501,9 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
         return;
     }
 
-    buf = evbuffer_pullup(bufferevent_get_input(bev), avail);
+    buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
 
-    bufferevent_disable(bev, EV_WRITE);
-    {
-        nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
-    }
-    bufferevent_enable(bev, EV_WRITE);
+    nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
 
     if (c->owner != 1) {
         /*
@@ -1532,9 +1551,22 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
         return;
     }
 
+    if (c->wait_4_write == 1) {
+        c->wait_4_write = 0;
+
+        bufferevent_enable(bev, EV_READ);
+
+        if (evbuffer_get_length(bufferevent_get_input(bev))) {
+            _evhtp_connection_readcb(bev, arg);
+        }
+
+        return;
+    }
+
     if (c->request->finished == 0 || evbuffer_get_length(bufferevent_get_output(bev))) {
         return;
     }
+
 
     /*
      * if there is a set maximum number of keepalive requests configured, check
@@ -1978,6 +2010,9 @@ evhtp_request_get_method(evhtp_request_t * r) {
  */
 void
 evhtp_connection_pause(evhtp_connection_t * c) {
+    c->paused = 1;
+    bufferevent_disable(c->bev, EV_READ | EV_WRITE);
+    return;
     if ((bufferevent_get_enabled(c->bev) & EV_READ)) {
         c->paused = 1;
         bufferevent_disable(c->bev, EV_READ);
@@ -1991,11 +2026,10 @@ evhtp_connection_pause(evhtp_connection_t * c) {
  */
 void
 evhtp_connection_resume(evhtp_connection_t * c) {
-    if (!(bufferevent_get_enabled(c->bev) & EV_READ)) {
-        /* bufferevent_enable(c->bev, EV_READ); */
-        c->paused = 0;
-        event_active(c->resume_ev, EV_WRITE, 1);
-    }
+    c->paused = 0;
+
+    event_active(c->resume_ev, EV_WRITE, 1);
+    return;
 }
 
 /**
@@ -2585,8 +2619,10 @@ void
 evhtp_send_reply_end(evhtp_request_t * request) {
     request->finished = 1;
 
+#if 0
     _evhtp_connection_writecb(evhtp_request_get_bev(request),
                               evhtp_request_get_connection(request));
+#endif
 }
 
 void

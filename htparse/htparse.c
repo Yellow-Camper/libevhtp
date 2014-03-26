@@ -1864,30 +1864,22 @@ hdrline_start:
                     const char * pe      = (const char *)(data + len);
                     size_t       to_read = _MIN_READ(pe - pp, p->content_len);
 
-                    htparse_log_debug("[%p] s_body_read %zu", p, to_read);
-
                     if (to_read > 0) {
                         res = hook_body_run(p, hooks, pp, to_read);
 
                         i  += to_read - 1;
                         p->content_len -= to_read;
+                    }
 
-                        htparse_log_debug("[%p] s_body_read content_len is now %zu", p, p->content_len);
-
-                        if (p->content_len == 0) {
-                            res      = hook_on_msg_complete_run(p, hooks);
-
-                            p->state = s_start;
-                        }
-                    } else {
+                    if (p->content_len == 0) {
                         res      = hook_on_msg_complete_run(p, hooks);
                         p->state = s_start;
                     }
-                }
 
-                if (res) {
-                    p->error = htparse_error_user;
-                    return i + 1;
+                    if (res) {
+                        p->error = htparse_error_user;
+                        return i + 1;
+                    }
                 }
 
                 break;
@@ -1901,7 +1893,6 @@ hdrline_start:
 
     return i;
 }         /* htparser_run */
-
 
 EXPORT_SYMBOL(htparser_run);
 EXPORT_SYMBOL(htparser_should_keep_alive);

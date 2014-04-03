@@ -22,12 +22,6 @@
 #include "evhtp-internal.h"
 #include "evthr.h"
 
-#if (__GNUC__ > 2 || ( __GNUC__ == 2 && __GNUC__MINOR__ > 4)) && (!defined(__STRICT_ANSI__) || __STRICT_ANSI__ == 0)
-#define __unused__ __attribute__((unused))
-#else
-#define __unused__
-#endif
-
 typedef struct evthr_cmd        evthr_cmd_t;
 typedef struct evthr_pool_slist evthr_pool_slist_t;
 
@@ -45,8 +39,6 @@ struct evthr_pool {
 };
 
 struct evthr {
-    int             cur_backlog;
-    int             max_backlog;
     int             rdr;
     int             wdr;
     char            err;
@@ -62,39 +54,6 @@ struct evthr {
     TAILQ_ENTRY(evthr) next;
 };
 
-inline void
-evthr_inc_backlog(evthr_t * evthr) {
-    __sync_fetch_and_add(&evthr->cur_backlog, 1);
-}
-
-inline void
-evthr_dec_backlog(evthr_t * evthr) {
-    __sync_fetch_and_sub(&evthr->cur_backlog, 1);
-}
-
-inline int
-evthr_get_backlog(evthr_t * evthr) {
-    return __sync_add_and_fetch(&evthr->cur_backlog, 0);
-}
-
-inline void
-evthr_set_max_backlog(evthr_t * evthr, int max) {
-    evthr->max_backlog = max;
-}
-
-inline int
-evthr_set_backlog(evthr_t * evthr, int num) {
-    int rnum;
-
-    if (evthr->wdr < 0) {
-        return -1;
-    }
-
-    rnum = num * sizeof(evthr_cmd_t);
-
-    return setsockopt(evthr->wdr, SOL_SOCKET, SO_RCVBUF, &rnum, sizeof(int));
-}
-
 static inline int
 _evthr_read(evthr_t * thr, evthr_cmd_t * cmd, evutil_socket_t sock) {
     if (recv(sock, cmd, sizeof(evthr_cmd_t), 0) != sizeof(evthr_cmd_t)) {
@@ -105,7 +64,7 @@ _evthr_read(evthr_t * thr, evthr_cmd_t * cmd, evutil_socket_t sock) {
 }
 
 static void
-_evthr_read_cmd(evutil_socket_t sock, short __unused__ which, void * args) {
+_evthr_read_cmd(evutil_socket_t sock, short which, void * args) {
     evthr_t   * thread;
     evthr_cmd_t cmd;
     int         stopped;
@@ -175,7 +134,6 @@ _evthr_loop(void * args) {
 
 evthr_res
 evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
-    int         cur_backlog;
     evthr_cmd_t cmd;
 
 
@@ -348,8 +306,7 @@ evthr_pool_stop(evthr_pool_t * pool) {
 
 evthr_res
 evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
-    evthr_t * min_thr = NULL;
-    evthr_t * thr     = NULL;
+    evthr_t * thr = NULL;
 
     if (pool == NULL) {
         return EVTHR_RES_FATAL;
@@ -399,26 +356,6 @@ evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared) {
 }
 
 int
-evthr_pool_set_backlog(evthr_pool_t * pool, int num) {
-    evthr_t * thr;
-
-    TAILQ_FOREACH(thr, &pool->threads, next) {
-        evthr_set_backlog(thr, num);
-    }
-
-    return 0;
-}
-
-void
-evthr_pool_set_max_backlog(evthr_pool_t * pool, int max) {
-    evthr_t * thr;
-
-    TAILQ_FOREACH(thr, &pool->threads, next) {
-        evthr_set_max_backlog(thr, max);
-    }
-}
-
-int
 evthr_pool_start(evthr_pool_t * pool) {
     evthr_t * evthr = NULL;
 
@@ -445,15 +382,8 @@ EXPORT_SYMBOL(evthr_start);
 EXPORT_SYMBOL(evthr_stop);
 EXPORT_SYMBOL(evthr_defer);
 EXPORT_SYMBOL(evthr_free);
-EXPORT_SYMBOL(evthr_inc_backlog);
-EXPORT_SYMBOL(evthr_dec_backlog);
-EXPORT_SYMBOL(evthr_get_backlog);
-EXPORT_SYMBOL(evthr_set_max_backlog);
-EXPORT_SYMBOL(evthr_set_backlog);
 EXPORT_SYMBOL(evthr_pool_new);
 EXPORT_SYMBOL(evthr_pool_start);
 EXPORT_SYMBOL(evthr_pool_stop);
 EXPORT_SYMBOL(evthr_pool_defer);
 EXPORT_SYMBOL(evthr_pool_free);
-EXPORT_SYMBOL(evthr_pool_set_max_backlog);
-EXPORT_SYMBOL(evthr_pool_set_backlog);

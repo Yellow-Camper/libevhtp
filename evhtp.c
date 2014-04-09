@@ -2473,6 +2473,12 @@ query_key:
                         key_buf[key_idx] = '\0';
                         state = s_query_key_hex_1;
                         break;
+                    case ';':
+                    case '&':
+                        /* no = for key, so ignore it and look for next key */
+                        memset(key_buf, 0, len);
+                        key_idx = 0;
+                        break;
                     default:
                         key_buf[key_idx++] = ch;
                         key_buf[key_idx]   = '\0';
@@ -2575,7 +2581,7 @@ query_key:
         }       /* switch */
     }
 
-    if (key_idx && val_idx) {
+    if (key_idx && (val_idx || state == s_query_val)) {
         evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1));
     }
 

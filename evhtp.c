@@ -2475,15 +2475,24 @@ query_key:
                         break;
                     case ';':
                     case '&':
-                        /* no = for key, so ignore it and look for next key */
+                        /* in this state, we have an empty value, so we just
+                         * insert the key with a value of NULL. Then set the
+                         * state back to parsing s_query_key.
+                         */
+                        evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, NULL, 1, 1));
+
                         memset(key_buf, 0, len);
-                        key_idx = 0;
+                        memset(val_buf, 0, len);
+
+                        key_idx            = 0;
+                        val_idx            = 0;
+                        state              = s_query_key;
                         break;
                     default:
                         key_buf[key_idx++] = ch;
                         key_buf[key_idx]   = '\0';
                         break;
-                }
+                } /* switch */
                 break;
             case s_query_key_hex_1:
                 if (!evhtp_is_hex_query_char(ch)) {
@@ -2581,8 +2590,9 @@ query_key:
         }       /* switch */
     }
 
-    if (key_idx && (val_idx || state == s_query_val)) {
-        evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1));
+    if (key_idx > 0) {
+        evhtp_kvs_add_kv(query_args,
+                         evhtp_kv_new(key_buf, val_idx ? val_buf : NULL, 1, 1));
     }
 
     free(key_buf);

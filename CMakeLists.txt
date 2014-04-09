@@ -251,6 +251,7 @@ add_executable(test EXCLUDE_FROM_ALL examples/test.c)
 add_executable(test_basic EXCLUDE_FROM_ALL examples/test_basic.c)
 add_executable(test_vhost EXCLUDE_FROM_ALL examples/test_vhost.c)
 add_executable(test_client EXCLUDE_FROM_ALL examples/test_client.c)
+add_executable(test_query EXCLUDE_FROM_ALL examples/test_query.c)
 
 if (NOT EVHTP_DISABLE_EVTHR)
 	add_executable(test_proxy EXCLUDE_FROM_ALL examples/test_proxy.c)
@@ -261,8 +262,9 @@ target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 target_link_libraries(test_basic libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 target_link_libraries(test_vhost libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 target_link_libraries(test_client libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_query libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
-add_dependencies(examples test test_basic test_vhost test_client test_proxy)
+add_dependencies(examples test test_basic test_vhost test_client test_proxy test_query)
 
 if (NOT LIB_INSTALL_DIR)
   set (LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib")

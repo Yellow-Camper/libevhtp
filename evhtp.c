@@ -1614,7 +1614,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     evhtp_connection_t * c = arg;
 
     if (c->hooks && c->hooks->on_event) {
-        (*c->hooks->on_event)(c, events, c->hooks->on_event_arg);
+        (c->hooks->on_event)(c, events, c->hooks->on_event_arg);
     }
 
     if ((events & BEV_EVENT_CONNECTED)) {

@@ -295,3 +295,7 @@ IF (WIN32)
    install (FILES compat/sys/queue.h DESTINATION ${INCLUDE_INSTALL_DIR}/sys)
    install (FILES oniguruma/onigposix.h DESTINATION ${INCLUDE_INSTALL_DIR})
 ENDIF (WIN32)
+
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/evhtp.pc.in
+	${CMAKE_CURRENT_BINARY_DIR}/evhtp.pc @ONLY)

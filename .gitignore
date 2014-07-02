@@ -19,3 +19,5 @@
 
 /test_client
 /test_proxy
+
+/build/*

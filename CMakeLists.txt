@@ -12,6 +12,8 @@ INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFiles)
 INCLUDE (CheckTypeSize)
 INCLUDE (CheckCCompilerFlag)
+INCLUDE (TestBigEndian)
+
 
 CHECK_FUNCTION_EXISTS(alloca  C_ALLOCA)
 CHECK_FUNCTION_EXISTS(memcmp  HAVE_MEMCMP)
@@ -34,6 +36,8 @@ CHECK_INCLUDE_FILES(sys/un.h HAVE_SYS_UN)
 CHECK_TYPE_SIZE("int" SIZEOF_INT)
 CHECK_TYPE_SIZE("long" SIZEOF_LONG)
 CHECK_TYPE_SIZE("short" SIZEOF_SHORT)
+
+TEST_BIG_ENDIAN(HOST_BIG_ENDIAN)
 
 check_c_compiler_flag(-fvisibility=hidden EVHTP_HAS_VISIBILITY_HIDDEN)
 
@@ -61,6 +65,10 @@ endif(NOT HAVE_STRNLEN)
 if (NOT HAVE_SYS_UN)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_SYS_UN")
 endif(NOT HAVE_SYS_UN)
+
+if (HOST_BIG_ENDIAN)
+		add_definitions(-DHOST_BIG_ENDIAN)
+endif()
 
 # -DEVHTP_DISABLE_SSL:STRING=ON
 OPTION(EVHTP_DISABLE_SSL       "Disable ssl support"      OFF)

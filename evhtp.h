@@ -857,10 +857,31 @@ void evhtp_kvs_add_kvs(evhtp_kvs_t * dst, evhtp_kvs_t * src);
 
 int  evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, void * arg);
 
+#define EVHTP_PARSE_QUERY_FLAG_STRICT                       0
+#define EVHTP_PARSE_QUERY_FLAG_IGNORE_HEX             (1 << 0)
+#define EVHTP_PARSE_QUERY_FLAG_ALLOW_EMPTY_VALS       (1 << 1)
+#define EVHTP_PARSE_QUERY_FLAG_ALLOW_NULL_VALS        (1 << 2)
+#define EVHTP_PARSE_QUERY_FLAG_TREAT_SEMICOLON_AS_SEP (1 << 3)
+#define EVHTP_PARSE_QUERY_FLAG_LENIENT          (unsigned)(-1)
+
 /**
  * @brief Parses the query portion of the uri into a set of key/values
  *
- * Parses query arguments like "?herp=derp&foo=bar;blah=baz"
+ * Parses query arguments like "?herp=&foo=bar;blah=baz&a=%3"
+ *
+ * @param query data containing the uri query arguments
+ * @param len size of the data
+ * @param flags parse query flags to alter 'strictness' (see EVHTP_PARSE_QUERY_FLAG_*)
+ *
+ * @return evhtp_query_t * on success, NULL on error
+ */
+evhtp_query_t * evhtp_parse_query_wflags(const char * query, size_t len, int flags);
+
+/**
+ * @brief Parses the query portion of the uri into a set of key/values in a
+ *        strict manner
+ *
+ * Parses query arguments like "?herp=derp&foo=bar&blah=baz"
  *
  * @param query data containing the uri query arguments
  * @param len size of the data

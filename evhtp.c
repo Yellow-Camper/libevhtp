@@ -2402,7 +2402,7 @@ evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len)
 }         /* evhtp_unescape_string */
 
 evhtp_query_t *
-evhtp_parse_query(const char * query, size_t len) {
+evhtp_parse_query_wflags(const char * query, size_t len, int flags) {
     evhtp_query_t    * query_args;
     query_parser_state state   = s_query_start;
     char             * key_buf = NULL;
@@ -2475,12 +2475,24 @@ query_key:
                     case '%':
                         key_buf[key_idx++] = ch;
                         key_buf[key_idx] = '\0';
-                        state = s_query_key_hex_1;
+
+                        if (!(flags & EVHTP_PARSE_QUERY_FLAG_IGNORE_HEX)) {
+                            state = s_query_key_hex_1;
+                        }
                         break;
                     case ';':
+                        if (!(flags & EVHTP_PARSE_QUERY_FLAG_TREAT_SEMICOLON_AS_SEP)) {
+                            key_buf[key_idx++] = ch;
+                            key_buf[key_idx]   = '\0';
+                            break;
+                        }
                     case '&':
-                        /* in this state, we have an empty value, so we just
-                         * insert the key with a value of NULL. Then set the
+                        /* in this state, we have a NULL value */
+                        if (!(flags & EVHTP_PARSE_QUERY_FLAG_ALLOW_NULL_VALS)) {
+                            goto error;
+                        }
+
+                        /* insert the key with value of NULL and set the
                          * state back to parsing s_query_key.
                          */
                         evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, NULL, 1, 1));
@@ -2488,9 +2500,9 @@ query_key:
                         memset(key_buf, 0, len);
                         memset(val_buf, 0, len);
 
-                        key_idx            = 0;
-                        val_idx            = 0;
-                        state              = s_query_key;
+                        key_idx = 0;
+                        val_idx = 0;
+                        state = s_query_key;
                         break;
                     default:
                         key_buf[key_idx++] = ch;
@@ -2506,9 +2518,9 @@ query_key:
                         goto error;
                     }
 
-                    key_buf[key_idx - 1] = '%';
-                    key_buf[key_idx++]   = ch;
-                    key_buf[key_idx]     = '\0';
+                    key_buf[key_idx++] = '%';
+                    key_buf[key_idx++] = ch;
+                    key_buf[key_idx]   = '\0';
                     state = s_query_key;
                     break;
                 }
@@ -2531,6 +2543,11 @@ query_key:
             case s_query_val:
                 switch (ch) {
                     case ';':
+                        if (!(flags & EVHTP_PARSE_QUERY_FLAG_TREAT_SEMICOLON_AS_SEP)) {
+                            val_buf[val_idx++] = ch;
+                            val_buf[val_idx]   = '\0';
+                            break;
+                        }
                     case '&':
                         evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1));
 
@@ -2547,7 +2564,9 @@ query_key:
                         val_buf[val_idx++] = ch;
                         val_buf[val_idx]   = '\0';
 
-                        state              = s_query_val_hex_1;
+                        if (!(flags & EVHTP_PARSE_QUERY_FLAG_IGNORE_HEX)) {
+                            state = s_query_val_hex_1;
+                        }
                         break;
                     default:
                         val_buf[val_idx++] = ch;
@@ -2564,10 +2583,9 @@ query_key:
                         goto error;
                     }
 
-
-                    val_buf[val_idx - 1] = '%';
-                    val_buf[val_idx++]   = ch;
-                    val_buf[val_idx]     = '\0';
+                    val_buf[val_idx++] = '%';
+                    val_buf[val_idx++] = ch;
+                    val_buf[val_idx]   = '\0';
 
                     state = s_query_val;
                     break;
@@ -2594,9 +2612,20 @@ query_key:
         }       /* switch */
     }
 
-    if (key_idx > 0) {
-        evhtp_kvs_add_kv(query_args,
-                         evhtp_kv_new(key_buf, val_idx ? val_buf : NULL, 1, 1));
+    if (key_idx) {
+        if (val_idx) {
+            evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, val_buf, 1, 1));
+        } else if (state >= s_query_val) {
+            if (!(flags & EVHTP_PARSE_QUERY_FLAG_ALLOW_EMPTY_VALS)) {
+                goto error;
+            }
+            evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, "", 1, 1));
+        } else {
+            if (!(flags & EVHTP_PARSE_QUERY_FLAG_ALLOW_NULL_VALS)) {
+                goto error;
+            }
+            evhtp_kvs_add_kv(query_args, evhtp_kv_new(key_buf, NULL, 1, 1));
+        }
     }
 
     free(key_buf);
@@ -2609,6 +2638,11 @@ error:
 
     return NULL;
 }     /* evhtp_parse_query */
+
+evhtp_query_t *
+evhtp_parse_query(const char * query, size_t len) {
+    return evhtp_parse_query_wflags(query, len, EVHTP_PARSE_QUERY_FLAG_STRICT);
+}
 
 void
 evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code) {

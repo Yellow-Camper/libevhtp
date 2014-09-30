@@ -198,6 +198,8 @@ static const char * method_strmap[] = {
 
 #define _MIN_READ(a, b) ((a) < (b) ? (a) : (b))
 
+#ifndef HOST_BIG_ENDIAN
+/* Little-endian cmp macros */
 #define _str3_cmp(m, c0, c1, c2, c3) \
     *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
 
@@ -227,6 +229,37 @@ static const char * method_strmap[] = {
     *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)        \
     && ((uint32_t *)m)[1] == ((c7 << 24) | (c6 << 16) | (c5 << 8) | c4) \
     && m[8] == c8
+#else
+/* Big endian cmp macros */
+#define _str3_cmp(m, c0, c1, c2, c3) \
+    m[0] == c0 && m[1] == c1 && m[2] == c2
+
+#define _str3Ocmp(m, c0, c1, c2, c3) \
+    m[0] == c0 && m[2] == c2 && m[3] == c3
+
+#define _str4cmp(m, c0, c1, c2, c3) \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3
+
+#define _str5cmp(m, c0, c1, c2, c3, c4) \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3 && m[4] == c4
+
+#define _str6cmp(m, c0, c1, c2, c3, c4, c5)              \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3 \
+    && m[4] == c4 && m[5] == c5
+
+#define _str7_cmp(m, c0, c1, c2, c3, c4, c5, c6, c7)     \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3 \
+    && m[4] == c4 && m[5] == c5 && m[6] == c6
+
+#define _str8cmp(m, c0, c1, c2, c3, c4, c5, c6, c7)      \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3 \
+    && m[4] == c4 && m[5] == c5 && m[6] == c6 && m[7] == c7
+
+#define _str9cmp(m, c0, c1, c2, c3, c4, c5, c6, c7, c8)  \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3 \
+    && m[4] == c4 && m[5] == c5 && m[6] == c6 && m[7] == c7 && m[8] == c8
+
+#endif
 
 #define __HTPARSE_GENHOOK(__n)                                                    \
     static inline int hook_ ## __n ## _run(htparser * p, htparse_hooks * hooks) { \

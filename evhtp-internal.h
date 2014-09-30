@@ -2,7 +2,7 @@
 #define __EVHTP_INTERNAL_H__
 
 #ifdef EVHTP_HAS_VISIBILITY_HIDDEN
-#define __visible   __attribute__((visibility("default")))
+#define __visible __attribute__((visibility("default")))
 #define EXPORT_SYMBOL(x) typeof(x)(x)__visible
 #else
 #define EXPORT_SYMBOL(n)

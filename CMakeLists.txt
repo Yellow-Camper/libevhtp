@@ -5,6 +5,8 @@ set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
 set(PROJECT_PATCH_VERSION 9)
 
+
+add_definitions(-D_FORTIFY_SOURCE=2)
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 
@@ -13,9 +15,9 @@ INCLUDE (CheckIncludeFiles)
 INCLUDE (CheckTypeSize)
 INCLUDE (CheckCCompilerFlag)
 INCLUDE (TestBigEndian)
+INCLUDE (UseDebugSymbols)
 
 
-CHECK_FUNCTION_EXISTS(alloca  C_ALLOCA)
 CHECK_FUNCTION_EXISTS(memcmp  HAVE_MEMCMP)
 CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
 CHECK_FUNCTION_EXISTS(strnlen HAVE_STRNLEN)
@@ -97,6 +99,7 @@ message("Build Type: ${CMAKE_BUILD_TYPE}")
 message("Std CFLAGS: ${CMAKE_C_FLAGS}")
 message("Dbg CFLAGS: ${CMAKE_C_FLAGS_DEBUG}")
 message("Rel CFLAGS: ${CMAKE_C_FLAGS_RELEASE}")
+message("RelDbg CFLAGS: ${CMAKE_C_FLAGS_RELWITHDEBINFO}")
 
 find_package(LibEvent REQUIRED)
 
@@ -216,10 +219,6 @@ if (NOT EVHTP_DISABLE_EVTHR)
 	set (LIBEVHTP_SOURCES ${LIBEVHTP_SOURCES} evthr/evthr.c)
 endif(NOT EVHTP_DISABLE_EVTHR)
 
-if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG")
-endif (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-
 IF (WIN32)
 	ADD_DEFINITIONS(-DWIN32)
 	ADD_DEFINITIONS(-march=i486)
@@ -250,10 +249,8 @@ configure_file(
 	${CMAKE_CURRENT_SOURCE_DIR}/evhtp-config.h.in
 	${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h)
 
-add_library(libevhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
-
-set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
-target_link_libraries(libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
+add_library(evhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
+target_link_libraries(evhtp ${LIBEVHTP_EXTERNAL_LIBS})
 
 add_executable(test EXCLUDE_FROM_ALL examples/test.c)
 add_executable(test_basic EXCLUDE_FROM_ALL examples/test_basic.c)
@@ -261,16 +258,18 @@ add_executable(test_vhost EXCLUDE_FROM_ALL examples/test_vhost.c)
 add_executable(test_client EXCLUDE_FROM_ALL examples/test_client.c)
 add_executable(test_query EXCLUDE_FROM_ALL examples/test_query.c)
 
+strip_debug_symbols(test_query)
+
 if (NOT EVHTP_DISABLE_EVTHR)
 	add_executable(test_proxy EXCLUDE_FROM_ALL examples/test_proxy.c)
-	target_link_libraries(test_proxy libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+	target_link_libraries(test_proxy evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 endif()
 
-target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_basic libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_vhost libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_client libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_query libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_basic evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_vhost evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_client evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_query evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
 add_dependencies(examples test test_basic test_vhost test_client test_proxy test_query)
 
@@ -282,7 +281,7 @@ if(NOT INCLUDE_INSTALL_DIR)
 	set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
 endif()
 
-install (TARGETS libevhtp DESTINATION ${LIB_INSTALL_DIR})
+install (TARGETS evhtp DESTINATION ${LIB_INSTALL_DIR})
 install (FILES evhtp.h DESTINATION ${INCLUDE_INSTALL_DIR})
 install (FILES htparse/htparse.h DESTINATION ${INCLUDE_INSTALL_DIR})
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h DESTINATION ${INCLUDE_INSTALL_DIR})
@@ -307,3 +306,5 @@ ENDIF (WIN32)
 configure_file(
 	${CMAKE_CURRENT_SOURCE_DIR}/evhtp.pc.in
 	${CMAKE_CURRENT_BINARY_DIR}/evhtp.pc @ONLY)
+
+message("CFLAGS: ${CMAKE_C_FLAGS}")

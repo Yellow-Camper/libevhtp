@@ -1629,6 +1629,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
         return;
     }
 
+#ifndef EVHTP_DISABLE_SSL
     if (c->ssl && !(events & BEV_EVENT_EOF)) {
         /* XXX need to do better error handling for SSL specific errors */
         c->error = 1;
@@ -1637,6 +1638,7 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
             c->request->error = 1;
         }
     }
+#endif
 
     if (events == (BEV_EVENT_EOF | BEV_EVENT_READING)) {
         if (errno == EAGAIN) {

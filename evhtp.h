@@ -408,10 +408,11 @@ struct evhtp_request_s {
     evhtp_proto          proto;         /**< HTTP protocol used */
     htp_method           method;        /**< HTTP method used */
     evhtp_res            status;        /**< The HTTP response code or other error conditions */
-    int8_t               keepalive : 1; /**< set to 1 if the connection is keep-alive */
-    int8_t               finished  : 1; /**< set to 1 if the request is fully processed */
-    int8_t               chunked   : 1; /**< set to 1 if the request is chunked */
-    int8_t               error     : 1;
+    int8_t               keepalive : 1, /**< set to 1 if the connection is keep-alive */
+                         finished  : 1, /**< set to 1 if the request is fully processed */
+                         chunked   : 1, /**< set to 1 if the request is chunked */
+                         error     : 1,
+                         pad       : 4;
 
     evhtp_callback_cb cb;               /**< the function to call when fully processed */
     void            * cbarg;            /**< argument which is passed to the cb function */
@@ -429,28 +430,30 @@ struct evhtp_connection_s {
 #ifndef EVHTP_DISABLE_SSL
     evhtp_ssl_t * ssl;
 #endif
-    evhtp_hooks_t              * hooks;
-    htparser                   * parser;
-    event_t                    * resume_ev;
-    struct sockaddr            * saddr;
-    struct timeval               recv_timeo;          /**< conn read timeouts (overrides global) */
-    struct timeval               send_timeo;          /**< conn write timeouts (overrides global) */
-    evutil_socket_t              sock;
-    evhtp_request_t            * request;             /**< the request currently being processed */
-    uint64_t                     max_body_size;
-    uint64_t                     body_bytes_read;
-    uint64_t                     num_requests;
-    evhtp_type                   type;                /**< server or client */
-    uint8_t                      error           : 1;
-    uint8_t                      owner           : 1; /**< set to 1 if this structure owns the bufferevent */
-    uint8_t                      vhost_via_sni   : 1; /**< set to 1 if the vhost was found via SSL SNI */
-    int8_t                       paused          : 1;
-    int8_t                       connected       : 1; /**< upstream connection status, for client */
-    int8_t                       wait_4_write    : 1;
-    int8_t                       free_connection : 1;
-    struct ev_token_bucket_cfg * ratelimit_cfg;       /**< connection-specific ratelimiting configuration. */
+    evhtp_hooks_t   * hooks;
+    htparser        * parser;
+    event_t         * resume_ev;
+    struct sockaddr * saddr;
+    struct timeval    recv_timeo;               /**< conn read timeouts (overrides global) */
+    struct timeval    send_timeo;               /**< conn write timeouts (overrides global) */
+    evutil_socket_t   sock;
+    evhtp_request_t * request;                  /**< the request currently being processed */
+    uint64_t          max_body_size;
+    uint64_t          body_bytes_read;
+    uint64_t          num_requests;
+    evhtp_type        type;                     /**< server or client */
+    int8_t            error           : 1,
+                      owner           : 1,      /**< set to 1 if this structure owns the bufferevent */
+                      vhost_via_sni   : 1,      /**< set to 1 if the vhost was found via SSL SNI */
+                      paused          : 1,
+                      connected       : 1,      /**< upstream connection status, for client */
+                      wait_4_write    : 1,
+                      free_connection : 1,
+                      pad             : 1;
 
-    TAILQ_HEAD(, evhtp_request_s) pending;            /**< client pending data */
+    struct ev_token_bucket_cfg * ratelimit_cfg; /**< connection-specific ratelimiting configuration. */
+
+    TAILQ_HEAD(, evhtp_request_s) pending;      /**< client pending data */
 };
 
 struct evhtp_hooks_s {

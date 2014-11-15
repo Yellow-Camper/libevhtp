@@ -1134,6 +1134,11 @@ int evhtp_connection_set_ratelimit(evhtp_connection_t * c, size_t read_rate,
  */
 evhtp_connection_t * evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port);
 
+#ifndef DISABLE_SSL
+evhtp_connection_t * evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t* ctx);
+#endif
+
+
 /**
  * @brief allocate a new request
  */

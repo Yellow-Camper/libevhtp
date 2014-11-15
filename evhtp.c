@@ -3861,6 +3861,43 @@ evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port) {
     return conn;
 }
 
+#ifndef DISABLE_SSL
+evhtp_connection_t *
+evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t* ctx) {
+    evhtp_connection_t * conn;
+    struct sockaddr_in   sin;
+
+    if (evbase == NULL) {
+        return NULL;
+    }
+
+    if (!(conn = _evhtp_connection_new(NULL, -1, evhtp_type_client))) {
+        return NULL;
+    }
+
+    sin.sin_family      = AF_INET;
+    sin.sin_addr.s_addr = inet_addr(addr);
+    sin.sin_port        = htons(port);
+
+    conn->ssl           = SSL_new(ctx);
+    conn->evbase        = evbase;
+    conn->bev           = bufferevent_openssl_socket_new(evbase, -1, conn->ssl, BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE);
+
+    bufferevent_enable(conn->bev, EV_READ);
+
+    bufferevent_setcb(conn->bev, NULL, NULL,
+                      _evhtp_connection_eventcb, conn);
+
+    bufferevent_socket_connect(conn->bev,
+                               (struct sockaddr *)&sin, sizeof(sin));
+
+
+    return conn;
+}
+#endif
+
+
+
 evhtp_request_t *
 evhtp_request_new(evhtp_callback_cb cb, void * arg) {
     evhtp_request_t * r;

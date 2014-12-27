@@ -170,7 +170,6 @@ evthr_stop(evthr_t * thread) {
     }
 
     pthread_mutex_unlock(&thread->rlock);
-    
     pthread_join(*thread->thr, NULL);
     return EVTHR_RES_OK;
 }

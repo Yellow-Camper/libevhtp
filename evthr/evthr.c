@@ -170,7 +170,8 @@ evthr_stop(evthr_t * thread) {
     }
 
     pthread_mutex_unlock(&thread->rlock);
-
+    
+    pthread_join(*thread->thr, NULL);
     return EVTHR_RES_OK;
 }
 
@@ -226,8 +227,6 @@ evthr_new(evthr_init_cb init_cb, void * args) {
 
 int
 evthr_start(evthr_t * thread) {
-    int res;
-
     if (thread == NULL || thread->thr == NULL) {
         return -1;
     }
@@ -236,9 +235,7 @@ evthr_start(evthr_t * thread) {
         return -1;
     }
 
-    res = pthread_detach(*thread->thr);
-
-    return res;
+    return 0;
 }
 
 void

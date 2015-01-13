@@ -1,23 +1,5 @@
 # cmake manages these; they shouldn't go in version control
-
-/CMakeCache.txt
-/CMakeFiles/**
-/Makefile
-/cmake_install.cmake
-
-# generated .h files
-
-/compat/sys/tree.h
-/oniguruma/config.h
-
-# compiled files
-
-/libevhtp.a
-/test
-/test_basic
-/test_vhost
-
-/test_client
-/test_proxy
-
-/build/*
+#
+#
+# they aren't going into version control, but shouldn't be
+# completely ignored. I'm removing the mods here.

@@ -1168,6 +1168,11 @@ evhtp_connection_t * evhtp_connection_new_dns(evbase_t * evbase, struct evdns_ba
  */
 evhtp_connection_t * evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port);
 
+#ifndef DISABLE_SSL
+evhtp_connection_t * evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t* ctx);
+#endif
+
+
 /**
  * @brief allocate a new request
  */

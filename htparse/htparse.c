@@ -50,10 +50,10 @@ enum eval_hdr_val {
 };
 
 enum parser_flags {
-    parser_flag_chunked               = 1 << 0,
-    parser_flag_connection_keep_alive = 1 << 1,
-    parser_flag_connection_close      = 1 << 2,
-    parser_flag_trailing              = 1 << 3,
+    parser_flag_chunked               = (1 << 0),
+    parser_flag_connection_keep_alive = (1 << 1),
+    parser_flag_connection_close      = (1 << 2),
+    parser_flag_trailing              = (1 << 3),
 };
 
 enum parser_state {
@@ -820,10 +820,6 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                         res                  = hook_scheme_run(p, hooks, p->scheme_offset, (&p->buf[p->buf_idx] - p->scheme_offset));
 
-#if 0
-                        p->buf_idx           = 0;
-                        p->buf[0]            = '\0';
-#endif
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
 

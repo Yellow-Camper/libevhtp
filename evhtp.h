@@ -541,6 +541,29 @@ void      evhtp_free(evhtp_t * evhtp);
  * @param w write-timeout in timeval.
  */
 void evhtp_set_timeouts(evhtp_t * htp, const struct timeval * r, const struct timeval * w);
+
+
+/**
+ * @brief during the request processing cycle, these flags will be used to
+ *        for query argument parsing. i.e., what to parse and not to parse.
+ *
+ *        SEE: EVHTP_PARSE_QUERY_* stuff.
+ *
+ *        For example, if you do not wish for the streaming parser attempting the act
+ *        of fragment parsing:
+ *           evhtp_set_parser_flags(htp, EVHTP_PARSE_QUERY_FLAG_IGNORE_FRAGMENTS);
+ *
+ * @param htp
+ * @param flags
+ */
+void evhtp_set_parser_flags(evhtp_t * htp, int flags);
+
+/**
+ * @brief bufferevent flags which will be used for bev sockets.
+ *
+ * @param htp
+ * @param flags
+ */
 void evhtp_set_bev_flags(evhtp_t * htp, int flags);
 
 #ifndef EVHTP_DISABLE_SSL

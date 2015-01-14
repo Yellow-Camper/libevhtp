@@ -3930,6 +3930,11 @@ evhtp_disable_100_continue(evhtp_t * htp) {
     htp->disable_100_cont = 1;
 }
 
+void
+evhtp_set_parser_flags(evhtp_t * htp, int flags) {
+    htp->parser_flags = flags;
+}
+
 int
 evhtp_add_alias(evhtp_t * evhtp, const char * name) {
     evhtp_alias_t * alias;

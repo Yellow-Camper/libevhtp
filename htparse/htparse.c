@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
+#include <ctype.h>
 #include <unistd.h>
 
 #include "htparse.h"
@@ -306,6 +307,11 @@ static inline uint64_t
 str_to_uint64(char * str, size_t n, int * err) {
     uint64_t value;
 
+    /* Trim whitespace after value. */
+    while (n && isblank(str[n-1])) {
+	    n--;
+    }
+
     if (n > 20) {
         /* 18446744073709551615 is 20 bytes */
         *err = 1;
@@ -491,6 +497,22 @@ htparser_init(htparser * p, htp_type type) {
 htparser *
 htparser_new(void) {
     return malloc(sizeof(htparser));
+}
+
+static int
+is_host_char(unsigned char ch)
+{
+    char c = (unsigned char)(ch | 0x20);
+
+    if (c >= 'a' && c <= 'z') {
+        return 1;
+    }
+
+    if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
+        return 1;
+    }
+
+    return 0;
 }
 
 size_t
@@ -693,6 +715,41 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_spaces_before_uri:
                 htparse_log_debug("[%p] s_spaces_before_uri", p);
 
+                /* CONNECT is special - RFC 2817 section 5.2:
+                 * The Request-URI portion of the Request-Line is
+                 * always an 'authority' as defined by URI Generic
+                 * Syntax [2], which is to say the host name and port
+                 * number destination of the requested connection
+                 * separated by a colon
+                 */
+                if (p->method == htp_method_CONNECT) {
+                    switch (ch) {
+                    case ' ':
+                        break;
+                    case '[':
+                        /* Literal IPv6 address start. */
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+                        p->host_offset       = &p->buf[p->buf_idx];
+
+                        p->state = s_host_ipv6;
+                        break;
+                    default:
+                        if (!is_host_char(ch)) {
+                            p->error = htparse_error_inval_reqline;
+                            return i + 1;
+                        }
+                        p->host_offset       = &p->buf[p->buf_idx];
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+
+                        p->state = s_host;
+                        break;
+                    } /* switch */
+
+                    break;
+                }
+
                 switch (ch) {
                     case ' ':
                         break;
@@ -825,15 +882,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     p->state = s_host_ipv6;
                     break;
                 }
-                c = (unsigned char)(ch | 0x20);
-
-                if (c >= 'a' && c <= 'z') {
-                    p->buf[p->buf_idx++] = ch;
-                    p->buf[p->buf_idx]   = '\0';
-                    break;
-                }
-
-                if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
+                if (is_host_char(ch)) {
                     p->buf[p->buf_idx++] = ch;
                     p->buf[p->buf_idx]   = '\0';
                     break;
@@ -1922,6 +1971,13 @@ hdrline_start:
                 p->error = htparse_error_inval_state;
                 return i + 1;
         } /* switch */
+
+	/* If we successfully completed a request/response we return
+	   to caller, and leave it up to him to call us again if
+	   parsing should continue. */
+	if (p->state == s_start) {
+		return i + 1;
+	}
     }
 
     return i;

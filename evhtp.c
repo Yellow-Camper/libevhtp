@@ -683,8 +683,6 @@ _evhtp_request_new(evhtp_connection_t * c) {
     req->status = EVHTP_RES_OK;
 
     do {
-        req->buffer_in = evbuffer_new();
-
         if (!(req->buffer_in = evbuffer_new())) {
             break;
         }

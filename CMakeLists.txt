@@ -42,6 +42,11 @@ CHECK_TYPE_SIZE("short" SIZEOF_SHORT)
 TEST_BIG_ENDIAN(HOST_BIG_ENDIAN)
 
 check_c_compiler_flag(-fvisibility=hidden EVHTP_HAS_VISIBILITY_HIDDEN)
+check_c_compiler_flag(-std=c99 EVHTP_HAS_C99)
+
+if (EVHTP_HAS_C99)
+	add_definitions(-DEVHTP_HAS_C99)
+endif()
 
 if (EVHTP_HAS_VISIBILITY_HIDDEN)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")

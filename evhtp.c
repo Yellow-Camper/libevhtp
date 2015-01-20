@@ -55,6 +55,8 @@ static void                 _evhtp_authority_free(evhtp_authority_t * authority)
 static evhtp_path_t       * _evhtp_path_new(const char * data, size_t len);
 static void                 _evhtp_path_free(evhtp_path_t * path);
 
+static void                 _evhtp_request_free(evhtp_request_t *);
+
 #define HOOK_AVAIL(var, hook_name)                 (var->hooks && var->hooks->hook_name)
 #define HOOK_FUNC(var, hook_name)                  (var->hooks->hook_name)
 #define HOOK_ARGS(var, hook_name)                  var->hooks->hook_name ## _arg
@@ -289,7 +291,7 @@ strndup(const char * s, size_t n) {
     ret    = malloc(n + 1);
     ret[n] = '\0';
 
-    strncpy(ret, s, n);
+    memcpy(ret, s, n);
 
     return ret;
 }
@@ -319,21 +321,17 @@ _evhtp_quick_hash(const char * str) {
 }
 
 /**
- * @brief helper function to determine if http version is HTTP/1.0
+ *
+ * @brief helper macro to determine if http version is HTTP/1.0
  *
  * @param major the major version number
  * @param minor the minor version number
  *
  * @return 1 if HTTP/1.0, else 0
  */
-static inline int
-_evhtp_is_http_10(const char major, const char minor) {
-    if (major >= 1 && minor <= 0) {
-        return 1;
-    }
 
-    return 0;
-}
+#define _evhtp_is_http_11(_major, _minor) \
+    (_major >= 1 && _minor >= 1)
 
 /**
  * @brief helper function to determine if http version is HTTP/1.1
@@ -343,14 +341,9 @@ _evhtp_is_http_10(const char major, const char minor) {
  *
  * @return 1 if HTTP/1.1, else 0
  */
-static inline int
-_evhtp_is_http_11(const char major, const char minor) {
-    if (major >= 1 && minor >= 1) {
-        return 1;
-    }
+#define _evhtp_is_http_10(_major, _minor) \
+    (_major >= 1 && _minor <= 0)
 
-    return 0;
-}
 
 /**
  * @brief returns the HTTP protocol version
@@ -678,45 +671,47 @@ _evhtp_callback_find(evhtp_callbacks_t * cbs,
 static evhtp_request_t *
 _evhtp_request_new(evhtp_connection_t * c) {
     evhtp_request_t * req;
+    uint8_t           error;
 
     if (!(req = calloc(sizeof(evhtp_request_t), 1))) {
         return NULL;
     }
 
-    req->conn        = c;
-    req->htp         = c ? c->htp : NULL;
-    req->status      = EVHTP_RES_OK;
-    req->buffer_in   = evbuffer_new();
-    if (!req->buffer_in) {
-        goto out_free_req;
-    }
-    req->buffer_out  = evbuffer_new();
-    if (!req->buffer_out) {
-        goto out_free_buf_in;
-    }
-    req->headers_in  = malloc(sizeof(evhtp_headers_t));
-    if (!req->headers_in) {
-        goto out_free_buf_out;
-    }
-    req->headers_out = malloc(sizeof(evhtp_headers_t));
-    if (!req->headers_out) {
-        goto out_free_hdr_in;
+    error       = 1;
+    req->conn   = c;
+    req->htp    = c ? c->htp : NULL;
+    req->status = EVHTP_RES_OK;
+
+    do {
+        req->buffer_in = evbuffer_new();
+
+        if (!(req->buffer_in = evbuffer_new())) {
+            break;
+        }
+
+        if (!(req->buffer_out = evbuffer_new())) {
+            break;
+        }
+
+        if (!(req->headers_in = malloc(sizeof(evhtp_headers_t)))) {
+            break;
+        }
+
+        if (!(req->headers_out = malloc(sizeof(evhtp_headers_t)))) {
+            break;
+        }
+
+        TAILQ_INIT(req->headers_in);
+        TAILQ_INIT(req->headers_out);
+
+        error = 0;
+    } while (0);
+
+    if (error == 0) {
+        return req;
     }
 
-    TAILQ_INIT(req->headers_in);
-    TAILQ_INIT(req->headers_out);
-
-    return req;
-
-    /* Error path. */
-out_free_hdr_in:
-    free(req->headers_in);
-out_free_buf_out:
-    evbuffer_free(req->buffer_out);
-out_free_buf_in:
-    evbuffer_free(req->buffer_in);
-out_free_req:
-    free(req);
+    _evhtp_request_free(req);
 
     return NULL;
 } /* _evhtp_request_new */
@@ -768,6 +763,7 @@ _evhtp_uri_new(void) {
     }
 
     uri->authority = _evhtp_authority_new();
+
     if (!uri->authority) {
         _evhtp_uri_free(uri);
 
@@ -788,15 +784,10 @@ _evhtp_authority_free(evhtp_authority_t * authority) {
         return;
     }
 
-    if (authority->username) {
-        free(authority->username);
-    }
-    if (authority->password) {
-        free(authority->password);
-    }
-    if (authority->hostname) {
-        free(authority->hostname);
-    }
+    free(authority->username);
+    free(authority->password);
+    free(authority->hostname);
+
     free(authority);
 }
 
@@ -828,6 +819,7 @@ _evhtp_uri_free(evhtp_uri_t * uri) {
     }
 
     evhtp_query_free(uri->query);
+
     _evhtp_path_free(uri->path);
     _evhtp_authority_free(uri->authority);
 
@@ -895,7 +887,6 @@ _evhtp_path_new(const char * data, size_t len) {
 
                     /* check for overflow */
                     if ((const char *)(data + path_len) > data_end) {
-                        fprintf(stderr, "PATH Corrupted.. (path_len > len)\n");
                         free(req_path);
 
                         return NULL;
@@ -903,7 +894,6 @@ _evhtp_path_new(const char * data, size_t len) {
 
                     /* check for overflow */
                     if ((const char *)(&data[i + 1] + file_len) > data_end) {
-                        fprintf(stderr, "FILE Corrupted.. (file_len > len)\n");
                         free(req_path);
 
                         return NULL;
@@ -1069,7 +1059,7 @@ _evhtp_request_parser_headers_start(htparser * p) {
 static int
 _evhtp_request_parser_header_key(htparser * p, const char * data, size_t len) {
     evhtp_connection_t * c = htparser_get_userdata(p);
-    char               * key_s;     /* = strndup(data, len); */
+    char               * key_s;
     evhtp_header_t     * hdr;
 
     key_s      = malloc(len + 1);
@@ -1288,7 +1278,7 @@ _evhtp_request_parser_hostname(htparser * p, const char * data, size_t len) {
 
 static int
 _evhtp_require_uri(evhtp_connection_t * c) {
-    if (!c->request->uri) {
+    if (c && c->request && !c->request->uri) {
         if (!(c->request->uri = _evhtp_uri_new())) {
             c->request->status = EVHTP_RES_FATAL;
 
@@ -1307,9 +1297,10 @@ _evhtp_request_parser_host(htparser * p, const char * data, size_t len) {
     if (_evhtp_require_uri(c) != 0) {
         return -1;
     }
-    authority           = c->request->uri->authority;
 
+    authority           = c->request->uri->authority;
     authority->hostname = strndup(data, len);
+
     if (!authority->hostname) {
         c->request->status = EVHTP_RES_FATAL;
 
@@ -1329,14 +1320,16 @@ _evhtp_request_parser_port(htparser * p, const char * data, size_t len) {
     if (_evhtp_require_uri(c) != 0) {
         return -1;
     }
-    authority = c->request->uri->authority;
 
+    authority = c->request->uri->authority;
     port      = strtoul(data, &endptr, 10);
+
     if (endptr - data != len || port > 65535) {
         c->request->status = EVHTP_RES_FATAL;
 
         return -1;
     }
+
     authority->port = port;
 
     return 0;
@@ -1359,7 +1352,6 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
 
     c->request->uri->path   = path;
     c->request->uri->scheme = htparser_get_scheme(p);
-
     c->request->method      = htparser_get_method(p);
 
     _evhtp_lock(c->htp);
@@ -2028,6 +2020,7 @@ _evhtp_connection_new(evhtp_t * htp, evutil_socket_t sock, evhtp_type type) {
     connection->htp       = htp;
     connection->type      = type;
     connection->parser    = htparser_new();
+
     if (!connection->parser) {
         free(connection);
 
@@ -2672,8 +2665,6 @@ evhtp_query_t *
 evhtp_parse_query_wflags(const char * query, size_t len, int flags) {
     evhtp_query_t    * query_args;
     query_parser_state state;
-    char             * key_buf;
-    char             * val_buf;
     size_t             key_idx;
     size_t             val_idx;
     unsigned char      ch;
@@ -2686,6 +2677,17 @@ evhtp_parse_query_wflags(const char * query, size_t len, int flags) {
 
     query_args = evhtp_query_new();
 
+    state      = s_query_start;
+    key_idx    = 0;
+    val_idx    = 0;
+
+#ifdef EVHTP_HAS_C99
+    char   key_buf[len + 1];
+    char   val_buf[len + 1];
+#else
+    char * key_buf;
+    char * val_buf;
+
     if (!(key_buf = malloc(len + 1))) {
         return NULL;
     }
@@ -2695,10 +2697,7 @@ evhtp_parse_query_wflags(const char * query, size_t len, int flags) {
 
         return NULL;
     }
-
-    state   = s_query_start;
-    key_idx = 0;
-    val_idx = 0;
+#endif
 
     for (i = 0; i < len; i++) {
         ch = query[i];
@@ -2895,13 +2894,17 @@ evhtp_parse_query_wflags(const char * query, size_t len, int flags) {
         } while (0);
     }
 
+#ifndef EVHTP_HAS_C99
     free(key_buf);
     free(val_buf);
+#endif
 
     return query_args;
 error:
+#ifndef EVHTP_HAS_C99
     free(key_buf);
     free(val_buf);
+#endif
 
     return NULL;
 }     /* evhtp_parse_query */
@@ -2940,11 +2943,6 @@ evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf) {
 void
 evhtp_send_reply_end(evhtp_request_t * request) {
     request->finished = 1;
-
-#if 0
-    _evhtp_connection_writecb(evhtp_request_get_bev(request),
-                              evhtp_request_get_connection(request));
-#endif
 }
 
 void
@@ -3051,14 +3049,18 @@ evhtp_send_reply_chunk(evhtp_request_t * request, evbuf_t * buf) {
     if (evbuffer_get_length(buf) == 0) {
         return;
     }
+
     if (request->chunked == 1) {
         evbuffer_add_printf(output, "%x\r\n",
                             (unsigned)evbuffer_get_length(buf));
     }
+
     evhtp_send_reply_body(request, buf);
+
     if (request->chunked) {
         evbuffer_add(output, "\r\n", 2);
     }
+
     bufferevent_flush(request->conn->bev, EV_WRITE, BEV_FLUSH);
 }
 
@@ -3122,14 +3124,13 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
 
 int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog) {
-    struct sockaddr_in  sin;
-    struct sockaddr_in6 sin6;
-
 #ifndef NO_SYS_UN
-    struct sockaddr_un sun;
+    struct sockaddr_un  sun;
 #endif
-    struct sockaddr  * sa;
-    size_t             sin_len;
+    struct sockaddr_in6 sin6;
+    struct sockaddr_in  sin;
+    struct sockaddr   * sa;
+    size_t              sin_len;
 
     memset(&sin, 0, sizeof(sin));
 
@@ -3160,7 +3161,6 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 
         sa = (struct sockaddr *)&sun;
 #else
-        fprintf(stderr, "System does not support AF_UNIX sockets\n");
 
         return -1;
 #endif
@@ -4174,7 +4174,7 @@ evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
 
 #ifndef EVHTP_DISABLE_SSL
 evhtp_connection_t *
-evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t* ctx) {
+evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t * ctx) {
     evhtp_connection_t * conn;
     struct sockaddr_in   sin;
 
@@ -4205,6 +4205,7 @@ evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, ev
 
     return conn;
 }
+
 #endif
 
 
@@ -4256,3 +4257,4 @@ unsigned int
 evhtp_request_status(evhtp_request_t * r) {
     return htparser_get_status(r->conn->parser);
 }
+

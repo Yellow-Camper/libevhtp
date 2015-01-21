@@ -4235,7 +4235,6 @@ evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
      * the eventcb
      */
     if (err) {
-	conn->bev = NULL;
         return NULL;
     }
 

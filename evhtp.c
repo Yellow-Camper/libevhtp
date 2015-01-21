@@ -540,6 +540,62 @@ _evhtp_connection_write_hook(evhtp_connection_t * connection) {
     return EVHTP_RES_OK;
 }
 
+static int
+_evhtp_glob_match2(const char * pattern, size_t plen,
+                   const char * string, size_t str_len) {
+    while (plen) {
+        switch (pattern[0]) {
+            case '*':
+                while (pattern[1] == '*') {
+                    pattern++;
+                    plen--;
+                }
+
+                if (plen == 1) {
+                    return 1;     /* match */
+                }
+
+                while (str_len) {
+                    if (_evhtp_glob_match2(pattern + 1, plen - 1,
+                                           string, str_len)) {
+                        return 1; /* match */
+                    }
+
+                    string++;
+                    str_len--;
+                }
+
+                return 0;         /* no match */
+            default:
+                if (pattern[0] != string[0]) {
+                    return 0;     /* no match */
+                }
+
+                string++;
+                str_len--;
+                break;
+        } /* switch */
+
+        pattern++;
+        plen--;
+
+        if (str_len == 0) {
+            while (*pattern == '*') {
+                pattern++;
+                plen--;
+            }
+
+            break;
+        }
+    }
+
+    if (plen == 0 && str_len == 0) {
+        return 1;
+    }
+
+    return 0;
+} /* _evhtp_glob_match2 */
+
 /**
  * @brief glob/wildcard type pattern matching.
  *
@@ -551,16 +607,23 @@ _evhtp_connection_write_hook(evhtp_connection_t * connection) {
  * @return
  */
 static int
-_evhtp_glob_match(const char * pattern, const char * string) {
-    size_t pat_len;
-    size_t str_len;
-
+_evhtp_glob_match(const char * pattern, size_t pat_len, const char * string, size_t str_len) {
     if (!pattern || !string) {
         return 0;
     }
 
-    pat_len = strlen(pattern);
-    str_len = strlen(string);
+    if (pat_len == 0) {
+        pat_len = strlen(pattern);
+    }
+
+    if (str_len == 0) {
+        str_len = strlen(string);
+    }
+
+    /* XXX still in testing */
+#if 0
+    return _evhtp_glob_match2(pattern, pat_len, string, str_len);
+#endif
 
     while (pat_len) {
         if (pattern[0] == '*') {
@@ -574,7 +637,7 @@ _evhtp_glob_match(const char * pattern, const char * string) {
             }
 
             while (str_len) {
-                if (_evhtp_glob_match(pattern + 1, string)) {
+                if (_evhtp_glob_match(pattern + 1, pat_len, string, str_len)) {
                     return 1;
                 }
 
@@ -647,12 +710,18 @@ _evhtp_callback_find(evhtp_callbacks_t * cbs,
                 break;
 #endif
             case evhtp_callback_type_glob:
-                if (_evhtp_glob_match(callback->val.glob, path) == 1) {
+            {
+                size_t path_len = strlen(path);
+                size_t glob_len = strlen(callback->val.glob);
+
+                if (_evhtp_glob_match(callback->val.glob, glob_len,
+                                      path, path_len) == 1) {
                     *start_offset = 0;
-                    *end_offset   = (unsigned int)strlen(path);
+                    *end_offset   = (unsigned int)path_len;
 
                     return callback;
                 }
+            }
             default:
                 break;
         } /* switch */
@@ -1111,7 +1180,7 @@ _evhtp_request_find_vhost(evhtp_t * evhtp, const char * name) {
             continue;
         }
 
-        if (_evhtp_glob_match(evhtp_vhost->server_name, name) == 1) {
+        if (_evhtp_glob_match(evhtp_vhost->server_name, 0, name, 0) == 1) {
             return evhtp_vhost;
         }
 
@@ -1120,7 +1189,7 @@ _evhtp_request_find_vhost(evhtp_t * evhtp, const char * name) {
                 continue;
             }
 
-            if (_evhtp_glob_match(evhtp_alias->alias, name) == 1) {
+            if (_evhtp_glob_match(evhtp_alias->alias, 0, name, 0) == 1) {
                 return evhtp_vhost;
             }
         }
@@ -1892,7 +1961,6 @@ _evhtp_connection_eventcb(evbev_t * bev, short events, void * arg) {
     c->connected = 0;
 
     _evhtp_connection_error_hook(c, events);
-
 
     if (c->paused == 1) {
         c->free_connection = 1;
@@ -4123,6 +4191,7 @@ evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
 
     conn->evbase = evbase;
     conn->bev    = bufferevent_socket_new(evbase, -1, BEV_OPT_CLOSE_ON_FREE);
+
     if (conn->bev == NULL) {
         evhtp_connection_free(conn);
 
@@ -4130,7 +4199,6 @@ evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
     }
 
     bufferevent_enable(conn->bev, EV_READ);
-
     bufferevent_setcb(conn->bev, NULL, NULL,
                       _evhtp_connection_eventcb, conn);
 
@@ -4159,12 +4227,16 @@ evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
 
             return NULL;
         }
+
         err = bufferevent_socket_connect(conn->bev, sin, salen);
     }
 
+    /* not needed since any of the bufferevent errors will go straight to
+     * the eventcb
+     */
     if (err) {
-        evhtp_connection_free(conn);
-        conn = NULL;
+	conn->bev = NULL;
+        return NULL;
     }
 
     return conn;

@@ -606,7 +606,7 @@ _evhtp_glob_match2(const char * pattern, size_t plen,
  *
  * @return
  */
-static int
+static inline int
 _evhtp_glob_match(const char * pattern, size_t pat_len, const char * string, size_t str_len) {
     if (!pattern || !string) {
         return 0;
@@ -621,10 +621,9 @@ _evhtp_glob_match(const char * pattern, size_t pat_len, const char * string, siz
     }
 
     /* XXX still in testing */
-#if 0
     return _evhtp_glob_match2(pattern, pat_len, string, str_len);
-#endif
 
+#if 0
     while (pat_len) {
         if (pattern[0] == '*') {
             while (pattern[1] == '*') {
@@ -672,6 +671,7 @@ _evhtp_glob_match(const char * pattern, size_t pat_len, const char * string, siz
     }
 
     return 0;
+#endif
 } /* _evhtp_glob_match */
 
 static evhtp_callback_t *

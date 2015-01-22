@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
-project(reason)
+project(libevhtp)
 
 set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
 set(PROJECT_PATCH_VERSION 9)
 
+#add_definitions(-D_FORTIFY_SOURCE=2)
 
-add_definitions(-D_FORTIFY_SOURCE=2)
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 
@@ -21,7 +21,6 @@ INCLUDE (UseDebugSymbols)
 CHECK_FUNCTION_EXISTS(memcmp  HAVE_MEMCMP)
 CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
 CHECK_FUNCTION_EXISTS(strnlen HAVE_STRNLEN)
-
 CHECK_INCLUDE_FILES(alloca.h HAVE_ALLOCA_H)
 CHECK_INCLUDE_FILES(strings.h HAVE_STRINGS_H)
 CHECK_INCLUDE_FILES(string.h HAVE_STRING_H)
@@ -74,6 +73,15 @@ endif(NOT HAVE_SYS_UN)
 
 if (HOST_BIG_ENDIAN)
 		add_definitions(-DHOST_BIG_ENDIAN)
+endif()
+
+# Test 32/64 bits
+if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+		add_definitions(-DEVHTP_SYS_ARCH=64)
+elseif("${CMAKE_SIZEOF_VOID_P}" EQUAL "4")
+		add_definitions(-DEVHTP_SYS_ARCH=32)
+else()
+	message(ERROR "Unable to determine architecture")
 endif()
 
 # -DEVHTP_DISABLE_SSL:STRING=ON
@@ -220,7 +228,7 @@ if (NOT ${LIBEVENT_OPENSSL_FOUND})
 	set (EVHTP_DISABLE_SSL ON)
 endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
-set(LIBEVHTP_SOURCES evhtp.c htparse/htparse.c)
+set(LIBEVHTP_SOURCES evhtp.c evhtp_numtoa.c htparse/htparse.c)
 
 if (NOT EVHTP_DISABLE_EVTHR)
 	set (LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} pthread)

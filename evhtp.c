@@ -24,7 +24,9 @@
 #include <event2/dns.h>
 
 #include "evhtp-internal.h"
+#include "evhtp_numtoa.h"
 #include "evhtp.h"
+
 
 static int                  _evhtp_request_parser_start(htparser * p);
 static int                  _evhtp_request_parser_host(htparser * p, const char * data, size_t len);
@@ -1456,9 +1458,9 @@ _evhtp_request_parser_headers(htparser * p) {
         }
 
         evbuffer_add_printf(bufferevent_get_output(c->bev),
-                            "HTTP/%d.%d 100 Continue\r\n\r\n",
-                            htparser_get_major(p),
-                            htparser_get_minor(p));
+                            "HTTP/%c.%c 100 Continue\r\n\r\n",
+                            evhtp_modp_uchartoa(htparser_get_major(p)),
+                            evhtp_modp_uchartoa(htparser_get_minor(p)));
     }
 
     return 0;
@@ -1635,37 +1637,35 @@ _evhtp_create_headers(evhtp_header_t * header, void * arg) {
 
 static evbuf_t *
 _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
-    evbuf_t    * buf          = evbuffer_new();
-    const char * content_type = evhtp_header_find(request->headers_out, "Content-Type");
-    char         res_buf[1024];
-    int          sres;
+    evbuf_t     * buf;
+    const char  * content_type;
+    char          res_buf[2048];
+    int           sres;
+    size_t        out_len;
+    unsigned char major;
+    unsigned char minor;
+    char          out_buf[64];
+
+
+    content_type = evhtp_header_find(request->headers_out, "Content-Type");
+    out_len      = evbuffer_get_length(request->buffer_out);
+    buf          = evbuffer_new();
 
     if (htparser_get_multipart(request->conn->parser) == 1) {
         goto check_proto;
     }
 
-    if (evbuffer_get_length(request->buffer_out) && request->chunked == 0) {
+    if (out_len && request->chunked == 0) {
         /* add extra headers (like content-length/type) if not already present */
 
         if (!evhtp_header_find(request->headers_out, "Content-Length")) {
-            char lstr[128];
-#ifndef WIN32
-            sres = snprintf(lstr, sizeof(lstr), "%zu",
-                            evbuffer_get_length(request->buffer_out));
-#else
-            sres = snprintf(lstr, sizeof(lstr), "%u",
-                            evbuffer_get_length(request->buffer_out));
-#endif
-
-            if (sres >= sizeof(lstr) || sres < 0) {
-                /* overflow condition, this should never happen, but if it does,
-                 * well lets just shut the connection down */
-                request->keepalive = 0;
-                goto check_proto;
-            }
+            /* convert the buffer_out length to a string and set
+             * and add the new Content-Length header.
+             */
+            evhtp_modp_sizetoa(out_len, out_buf);
 
             evhtp_headers_add_header(request->headers_out,
-                                     evhtp_header_new("Content-Length", lstr, 0, 1));
+                                     evhtp_header_new("Content-Length", out_buf, 0, 1));
         }
 
         if (!content_type) {
@@ -1716,18 +1716,20 @@ check_proto:
      * we fallback to using evbuffer_add_printf().
      */
 
-    sres = snprintf(res_buf, sizeof(res_buf), "HTTP/%d.%d %d %s\r\n",
-                    htparser_get_major(request->conn->parser),
-                    htparser_get_minor(request->conn->parser),
-                    code, status_code_to_str(code));
+    major = evhtp_modp_uchartoa(htparser_get_major(request->conn->parser));
+    minor = evhtp_modp_uchartoa(htparser_get_minor(request->conn->parser));
+
+    evhtp_modp_u32toa((uint32_t)code, out_buf);
+
+    sres  = snprintf(res_buf, sizeof(res_buf), "HTTP/%c.%c %s %s\r\n",
+                     major, minor, out_buf, status_code_to_str(code));
 
     if (sres >= sizeof(res_buf) || sres < 0) {
         /* failed to fit the whole thing in the res_buf, so just fallback to
          * using evbuffer_add_printf().
          */
-        evbuffer_add_printf(buf, "HTTP/%d.%d %d %s\r\n",
-                            htparser_get_major(request->conn->parser),
-                            htparser_get_minor(request->conn->parser),
+        evbuffer_add_printf(buf, "HTTP/%c.%c %d %s\r\n",
+                            major, minor,
                             code, status_code_to_str(code));
     } else {
         /* copy the res_buf using evbuffer_add() instead of add_printf() */

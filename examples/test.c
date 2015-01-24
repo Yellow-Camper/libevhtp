@@ -139,7 +139,6 @@ test_regex(evhtp_request_t * req, void * arg) {
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
-
 static void
 dynamic_cb(evhtp_request_t * r, void * arg) {
     const char * name = arg;
@@ -168,6 +167,7 @@ create_callback(evhtp_request_t * r, void * arg) {
 
     evhtp_send_reply(r, EVHTP_RES_OK);
 }
+
 #endif
 
 static void
@@ -510,6 +510,7 @@ main(int argc, char ** argv) {
     evhtp_callback_t * cb_3   = NULL;
     evhtp_callback_t * cb_4   = NULL;
     evhtp_callback_t * cb_5   = NULL;
+
 #ifndef EVHTP_DISABLE_REGEX
     evhtp_callback_t * cb_6   = NULL;
 #endif
@@ -530,6 +531,7 @@ main(int argc, char ** argv) {
 
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
+    htp->parser_flags = EVHTP_PARSE_QUERY_FLAG_IGNORE_FRAGMENTS;
 
     evhtp_set_max_keepalive_requests(htp, max_keepalives);
 
@@ -637,4 +639,5 @@ main(int argc, char ** argv) {
 
     return 0;
 } /* main */
+
 #pragma GCC diagnostic pop

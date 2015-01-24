@@ -5,7 +5,6 @@
 extern "C" {
 #endif
 
-
 /**
  * @brief based on the system architecture, convert a size_t
  *        number to a string.
@@ -16,7 +15,6 @@ extern "C" {
  * @return
  */
 size_t evhtp_modp_sizetoa(size_t value, char * str);
-
 
 /**
  * @brief converts uint32_t value to string
@@ -44,7 +42,6 @@ size_t evhtp_modp_u64toa(uint64_t value, char * str);
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif
 

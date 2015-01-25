@@ -2098,7 +2098,9 @@ _evhtp_connection_new(evhtp_t * htp, evutil_socket_t sock, evhtp_type type) {
     htparser_init(connection->parser, ptype);
     htparser_set_userdata(connection->parser, connection);
 
+#ifdef EVHTP_FUTURE_USE
     TAILQ_INIT(&connection->pending);
+#endif
 
     return connection;
 } /* _evhtp_connection_new */

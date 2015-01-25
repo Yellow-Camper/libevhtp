@@ -464,7 +464,10 @@ struct evhtp_connection_s {
                       keepalive       : 1;      /**< set to 1 after the first request has been processed and the connection is kept open */
     struct ev_token_bucket_cfg * ratelimit_cfg; /**< connection-specific ratelimiting configuration. */
 
+#ifdef EVHTP_FUTURE_USE
     TAILQ_HEAD(, evhtp_request_s) pending;      /**< client pending data */
+#endif
+
 };
 
 struct evhtp_hooks_s {

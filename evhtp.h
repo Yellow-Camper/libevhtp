@@ -184,10 +184,10 @@ typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connect
 typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #endif
 
-#define EVHTP_VERSION           "1.2.9"
+#define EVHTP_VERSION           "1.2.10"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
-#define EVHTP_VERSION_PATCH     9
+#define EVHTP_VERSION_PATCH     10
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 
@@ -467,7 +467,6 @@ struct evhtp_connection_s {
 #ifdef EVHTP_FUTURE_USE
     TAILQ_HEAD(, evhtp_request_s) pending;      /**< client pending data */
 #endif
-
 };
 
 struct evhtp_hooks_s {
@@ -1286,7 +1285,7 @@ EVHTP_EXPORT evhtp_connection_t *
 evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port);
 
 #ifndef DISABLE_SSL
-evhtp_connection_t * evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t* ctx);
+evhtp_connection_t * evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t * ctx);
 #endif
 
 

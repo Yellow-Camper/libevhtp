@@ -3,7 +3,7 @@
 
 #ifdef EVHTP_HAS_VISIBILITY_HIDDEN
 #define __visible __attribute__((visibility("default")))
-#define EXPORT_SYMBOL(x) typeof(x)(x)__visible
+#define EXPORT_SYMBOL(x)               typeof(x)(x)__visible
 #else
 #define EXPORT_SYMBOL(n)
 #endif
@@ -15,7 +15,10 @@
          (var) = (tvar))
 #endif
 
-
+#define evhtp_safe_free(_var, _freefn) do { \
+        _freefn((_var));                    \
+        (_var) = NULL;                      \
+}  while (0)
 
 #endif
 

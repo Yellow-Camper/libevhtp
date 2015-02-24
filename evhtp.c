@@ -2090,7 +2090,7 @@ _evhtp_connection_new(evhtp_t * htp, evutil_socket_t sock, evhtp_type type) {
     connection->parser    = htparser_new();
 
     if (!connection->parser) {
-        free(connection);
+        evhtp_safe_free(connection, free);
 
         return NULL;
     }
@@ -2457,7 +2457,7 @@ evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc) {
             char * s;
 
             if (!(s = malloc(kv->klen + 1))) {
-                free(kv);
+                evhtp_safe_free(kv, free);
 
                 return NULL;
             }
@@ -2495,14 +2495,14 @@ evhtp_kv_free(evhtp_kv_t * kv) {
     }
 
     if (kv->k_heaped) {
-        free(kv->key);
+        evhtp_safe_free(kv->key, free);
     }
 
     if (kv->v_heaped) {
-        free(kv->val);
+        evhtp_safe_free(kv->val, free);
     }
 
-    free(kv);
+    evhtp_safe_free(kv, free);
 }
 
 void
@@ -2533,7 +2533,7 @@ evhtp_kvs_free(evhtp_kvs_t * kvs) {
         evhtp_kv_free(kv);
     }
 
-    free(kvs);
+    evhtp_safe_free(kvs, free);
 }
 
 int
@@ -2763,7 +2763,7 @@ evhtp_parse_query_wflags(const char * query, size_t len, int flags) {
     }
 
     if (!(val_buf = malloc(len + 1))) {
-        free(key_buf);
+        evhtp_safe_free(key_buf, free);
 
         return NULL;
     }
@@ -2965,15 +2965,15 @@ evhtp_parse_query_wflags(const char * query, size_t len, int flags) {
     }
 
 #ifndef EVHTP_HAS_C99
-    free(key_buf);
-    free(val_buf);
+    evhtp_safe_free(key_buf, free);
+    evhtp_safe_free(val_buf, free);
 #endif
 
     return query_args;
 error:
 #ifndef EVHTP_HAS_C99
-    free(key_buf);
-    free(val_buf);
+    evhtp_safe_free(key_buf, free);
+    evhtp_safe_free(val_buf, free);
 #endif
 
     return NULL;
@@ -3263,10 +3263,10 @@ evhtp_callbacks_free(evhtp_callbacks_t * callbacks) {
     TAILQ_FOREACH_SAFE(callback, callbacks, next, tmp) {
         TAILQ_REMOVE(callbacks, callback, next);
 
-        evhtp_callback_free(callback);
+        evhtp_safe_free(callback, evhtp_callback_free);
     }
 
-    free(callbacks);
+    evhtp_safe_free(callbacks, free);
 }
 
 evhtp_callback_t *
@@ -3291,8 +3291,8 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
             hcb->val.regex = malloc(sizeof(regex_t));
 
             if (regcomp(hcb->val.regex, (char *)path, REG_EXTENDED) != 0) {
-                free(hcb->val.regex);
-                free(hcb);
+                evhtp_safe_free(hcb->val.regex, free);
+                evhtp_safe_free(hcb, free);
 
                 return NULL;
             }
@@ -3302,7 +3302,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
             hcb->val.glob = strdup(path);
             break;
         default:
-            free(hcb);
+            evhtp_safe_free(hcb, free);
 
             return NULL;
     } /* switch */
@@ -3321,7 +3321,7 @@ evhtp_callback_free(evhtp_callback_t * callback) {
             free(callback->val.path);
             break;
         case evhtp_callback_type_glob:
-            free(callback->val.glob);
+            evhtp_safe_free(callback->val.glob, free);
             break;
 #ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
@@ -3332,10 +3332,10 @@ evhtp_callback_free(evhtp_callback_t * callback) {
     }
 
     if (callback->hooks) {
-        free(callback->hooks);
+        evhtp_safe_free(callback->hooks, free);
     }
 
-    free(callback);
+    evhtp_safe_free(callback, free);
 
     return;
 }
@@ -3519,7 +3519,7 @@ evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
     }
 
     if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
-        evhtp_callback_free(hcb);
+        evhtp_safe_free(hcb, evhtp_callback_free);
         _evhtp_unlock(htp);
 
         return NULL;
@@ -3600,7 +3600,7 @@ evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, vo
     }
 
     if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
-        evhtp_callback_free(hcb);
+        evhtp_safe_free(hcb, evhtp_callback_free);
         _evhtp_unlock(htp);
 
         return NULL;
@@ -3636,7 +3636,7 @@ evhtp_set_glob_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, voi
     }
 
     if (evhtp_callbacks_add_callback(htp->callbacks, hcb)) {
-        evhtp_callback_free(hcb);
+        evhtp_safe_free(hcb, evhtp_callback_free);
         _evhtp_unlock(htp);
 
         return NULL;
@@ -3929,14 +3929,14 @@ evhtp_connection_free(evhtp_connection_t * connection) {
     }
 
     _evhtp_connection_fini_hook(connection);
-    _evhtp_request_free(connection->request);
+    evhtp_safe_free(connection->request, _evhtp_request_free);
 
-    free(connection->parser);
-    free(connection->hooks);
-    free(connection->saddr);
+    evhtp_safe_free(connection->parser, free);
+    evhtp_safe_free(connection->hooks, free);
+    evhtp_safe_free(connection->saddr, free);
 
     if (connection->resume_ev) {
-        event_free(connection->resume_ev);
+        evhtp_safe_free(connection->resume_ev, event_free);
     }
 
     if (connection->bev) {
@@ -3957,7 +3957,7 @@ evhtp_connection_free(evhtp_connection_t * connection) {
         ev_token_bucket_cfg_free(connection->ratelimit_cfg);
     }
 
-    free(connection);
+    evhtp_safe_free(connection, free);
 }     /* evhtp_connection_free */
 
 void

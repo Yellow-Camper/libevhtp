@@ -3,7 +3,7 @@ project(libevhtp)
 
 set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
-set(PROJECT_PATCH_VERSION 9)
+set(PROJECT_PATCH_VERSION 10)
 
 #add_definitions(-D_FORTIFY_SOURCE=2)
 

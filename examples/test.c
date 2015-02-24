@@ -106,7 +106,6 @@ test_pause_cb(evhtp_request_t * request, void * arg) {
     evhtp_send_reply(request, EVHTP_RES_OK);
 }
 
-#ifndef EVHTP_DISABLE_REGEX
 static void
 _owned_readcb(evbev_t * bev, void * arg) {
     /* echo the input back to the client */
@@ -129,6 +128,7 @@ test_ownership(evhtp_request_t * request, void * arg) {
                       _owned_eventcb, NULL);
 }
 
+#ifndef EVHTP_DISABLE_REGEX
 static void
 test_regex(evhtp_request_t * req, void * arg) {
     evbuffer_add_printf(req->buffer_out,
@@ -138,8 +138,6 @@ test_regex(evhtp_request_t * req, void * arg) {
 
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
-
-#endif
 
 static void
 dynamic_cb(evhtp_request_t * r, void * arg) {
@@ -169,6 +167,8 @@ create_callback(evhtp_request_t * r, void * arg) {
 
     evhtp_send_reply(r, EVHTP_RES_OK);
 }
+
+#endif
 
 static void
 test_foo_cb(evhtp_request_t * req, void * arg ) {
@@ -294,7 +294,7 @@ print_data(evhtp_request_t * req, evbuf_t * buf, void * arg) {
     evbuffer_add_printf(req->buffer_out,
                         "got %zu bytes of data\n",
                         evbuffer_get_length(buf));
-    //printf("%.*s", (int)evbuffer_get_length(buf), (char *)evbuffer_pullup(buf, evbuffer_get_length(buf)));
+    /* printf("%.*s", (int)evbuffer_get_length(buf), (char *)evbuffer_pullup(buf, evbuffer_get_length(buf))); */
 #endif
     evbuffer_drain(buf, -1);
     return EVHTP_RES_OK;
@@ -498,6 +498,8 @@ sigint(int sig, short why, void * data) {
     event_base_loopexit(data, NULL);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 int
 main(int argc, char ** argv) {
     struct event     * ev_sigint;
@@ -508,9 +510,14 @@ main(int argc, char ** argv) {
     evhtp_callback_t * cb_3   = NULL;
     evhtp_callback_t * cb_4   = NULL;
     evhtp_callback_t * cb_5   = NULL;
+
+#ifndef EVHTP_DISABLE_REGEX
     evhtp_callback_t * cb_6   = NULL;
+#endif
     evhtp_callback_t * cb_7   = NULL;
+#ifndef EVHTP_DISABLE_REGEX
     evhtp_callback_t * cb_8   = NULL;
+#endif
     evhtp_callback_t * cb_9   = NULL;
     evhtp_callback_t * cb_10  = NULL;
     evhtp_callback_t * cb_11  = NULL;
@@ -524,6 +531,7 @@ main(int argc, char ** argv) {
 
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
+    htp->parser_flags = EVHTP_PARSE_QUERY_FLAG_IGNORE_FRAGMENTS;
 
     evhtp_set_max_keepalive_requests(htp, max_keepalives);
 
@@ -613,7 +621,7 @@ main(int argc, char ** argv) {
     }
 #endif
 
-    if (evhtp_bind_socket(htp, bind_addr, bind_port, 128) < 0) {
+    if (evhtp_bind_socket(htp, bind_addr, bind_port, 2046) < 0) {
         fprintf(stderr, "Could not bind socket: %s\n", strerror(errno));
         exit(-1);
     }
@@ -632,3 +640,4 @@ main(int argc, char ** argv) {
     return 0;
 } /* main */
 
+#pragma GCC diagnostic pop

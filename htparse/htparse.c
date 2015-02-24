@@ -5,9 +5,11 @@
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
+#include <ctype.h>
 #include <unistd.h>
 
 #include "htparse.h"
+#include "evhtp-internal.h"
 
 #ifdef PARSER_DEBUG
 #define __QUOTE(x)                  # x
@@ -48,10 +50,10 @@ enum eval_hdr_val {
 };
 
 enum parser_flags {
-    parser_flag_chunked               = 1 << 0,
-    parser_flag_connection_keep_alive = 1 << 1,
-    parser_flag_connection_close      = 1 << 2,
-    parser_flag_trailing              = 1 << 3,
+    parser_flag_chunked               = (1 << 0),
+    parser_flag_connection_keep_alive = (1 << 1),
+    parser_flag_connection_close      = (1 << 2),
+    parser_flag_trailing              = (1 << 3),
 };
 
 enum parser_state {
@@ -197,6 +199,8 @@ static const char * method_strmap[] = {
 
 #define _MIN_READ(a, b) ((a) < (b) ? (a) : (b))
 
+#ifndef HOST_BIG_ENDIAN
+/* Little-endian cmp macros */
 #define _str3_cmp(m, c0, c1, c2, c3) \
     *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
 
@@ -226,6 +230,37 @@ static const char * method_strmap[] = {
     *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)        \
     && ((uint32_t *)m)[1] == ((c7 << 24) | (c6 << 16) | (c5 << 8) | c4) \
     && m[8] == c8
+#else
+/* Big endian cmp macros */
+#define _str3_cmp(m, c0, c1, c2, c3) \
+    m[0] == c0 && m[1] == c1 && m[2] == c2
+
+#define _str3Ocmp(m, c0, c1, c2, c3) \
+    m[0] == c0 && m[2] == c2 && m[3] == c3
+
+#define _str4cmp(m, c0, c1, c2, c3) \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3
+
+#define _str5cmp(m, c0, c1, c2, c3, c4) \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3 && m[4] == c4
+
+#define _str6cmp(m, c0, c1, c2, c3, c4, c5)              \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3 \
+    && m[4] == c4 && m[5] == c5
+
+#define _str7_cmp(m, c0, c1, c2, c3, c4, c5, c6, c7)     \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3 \
+    && m[4] == c4 && m[5] == c5 && m[6] == c6
+
+#define _str8cmp(m, c0, c1, c2, c3, c4, c5, c6, c7)      \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3 \
+    && m[4] == c4 && m[5] == c5 && m[6] == c6 && m[7] == c7
+
+#define _str9cmp(m, c0, c1, c2, c3, c4, c5, c6, c7, c8)  \
+    m[0] == c0 && m[1] == c1 && m[2] == c2 && m[3] == c3 \
+    && m[4] == c4 && m[5] == c5 && m[6] == c6 && m[7] == c7 && m[8] == c8
+
+#endif
 
 #define __HTPARSE_GENHOOK(__n)                                                    \
     static inline int hook_ ## __n ## _run(htparser * p, htparse_hooks * hooks) { \
@@ -271,6 +306,11 @@ __HTPARSE_GENDHOOK(hostname)
 static inline uint64_t
 str_to_uint64(char * str, size_t n, int * err) {
     uint64_t value;
+
+    /* Trim whitespace after value. */
+    while (n && isblank(str[n-1])) {
+	    n--;
+    }
 
     if (n > 20) {
         /* 18446744073709551615 is 20 bytes */
@@ -457,6 +497,22 @@ htparser_init(htparser * p, htp_type type) {
 htparser *
 htparser_new(void) {
     return malloc(sizeof(htparser));
+}
+
+static int
+is_host_char(unsigned char ch)
+{
+    char c = (unsigned char)(ch | 0x20);
+
+    if (c >= 'a' && c <= 'z') {
+        return 1;
+    }
+
+    if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
+        return 1;
+    }
+
+    return 0;
 }
 
 size_t
@@ -659,6 +715,41 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_spaces_before_uri:
                 htparse_log_debug("[%p] s_spaces_before_uri", p);
 
+                /* CONNECT is special - RFC 2817 section 5.2:
+                 * The Request-URI portion of the Request-Line is
+                 * always an 'authority' as defined by URI Generic
+                 * Syntax [2], which is to say the host name and port
+                 * number destination of the requested connection
+                 * separated by a colon
+                 */
+                if (p->method == htp_method_CONNECT) {
+                    switch (ch) {
+                    case ' ':
+                        break;
+                    case '[':
+                        /* Literal IPv6 address start. */
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+                        p->host_offset       = &p->buf[p->buf_idx];
+
+                        p->state = s_host_ipv6;
+                        break;
+                    default:
+                        if (!is_host_char(ch)) {
+                            p->error = htparse_error_inval_reqline;
+                            return i + 1;
+                        }
+                        p->host_offset       = &p->buf[p->buf_idx];
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+
+                        p->state = s_host;
+                        break;
+                    } /* switch */
+
+                    break;
+                }
+
                 switch (ch) {
                     case ' ':
                         break;
@@ -729,10 +820,6 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                         res                  = hook_scheme_run(p, hooks, p->scheme_offset, (&p->buf[p->buf_idx] - p->scheme_offset));
 
-#if 0
-                        p->buf_idx           = 0;
-                        p->buf[0]            = '\0';
-#endif
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
 
@@ -791,15 +878,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     p->state = s_host_ipv6;
                     break;
                 }
-                c = (unsigned char)(ch | 0x20);
-
-                if (c >= 'a' && c <= 'z') {
-                    p->buf[p->buf_idx++] = ch;
-                    p->buf[p->buf_idx]   = '\0';
-                    break;
-                }
-
-                if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
+                if (is_host_char(ch)) {
                     p->buf[p->buf_idx++] = ch;
                     p->buf[p->buf_idx]   = '\0';
                     break;
@@ -1863,30 +1942,22 @@ hdrline_start:
                     const char * pe      = (const char *)(data + len);
                     size_t       to_read = _MIN_READ(pe - pp, p->content_len);
 
-                    htparse_log_debug("[%p] s_body_read %zu", p, to_read);
-
                     if (to_read > 0) {
                         res = hook_body_run(p, hooks, pp, to_read);
 
                         i  += to_read - 1;
                         p->content_len -= to_read;
+                    }
 
-                        htparse_log_debug("[%p] s_body_read content_len is now %zu", p, p->content_len);
-
-                        if (p->content_len == 0) {
-                            res      = hook_on_msg_complete_run(p, hooks);
-
-                            p->state = s_start;
-                        }
-                    } else {
+                    if (p->content_len == 0) {
                         res      = hook_on_msg_complete_run(p, hooks);
                         p->state = s_start;
                     }
-                }
 
-                if (res) {
-                    p->error = htparse_error_user;
-                    return i + 1;
+                    if (res) {
+                        p->error = htparse_error_user;
+                        return i + 1;
+                    }
                 }
 
                 break;
@@ -1896,8 +1967,36 @@ hdrline_start:
                 p->error = htparse_error_inval_state;
                 return i + 1;
         } /* switch */
+
+	/* If we successfully completed a request/response we return
+	   to caller, and leave it up to him to call us again if
+	   parsing should continue. */
+	if (p->state == s_start) {
+		return i + 1;
+	}
     }
 
     return i;
 }         /* htparser_run */
 
+EXPORT_SYMBOL(htparser_run);
+EXPORT_SYMBOL(htparser_should_keep_alive);
+EXPORT_SYMBOL(htparser_get_scheme);
+EXPORT_SYMBOL(htparser_get_method);
+EXPORT_SYMBOL(htparser_get_methodstr);
+EXPORT_SYMBOL(htparser_get_methodstr_m);
+EXPORT_SYMBOL(htparser_set_major);
+EXPORT_SYMBOL(htparser_set_minor);
+EXPORT_SYMBOL(htparser_get_major);
+EXPORT_SYMBOL(htparser_get_minor);
+EXPORT_SYMBOL(htparser_get_multipart);
+EXPORT_SYMBOL(htparser_get_status);
+EXPORT_SYMBOL(htparser_get_content_length);
+EXPORT_SYMBOL(htparser_get_content_pending);
+EXPORT_SYMBOL(htparser_get_total_bytes_read);
+EXPORT_SYMBOL(htparser_get_error);
+EXPORT_SYMBOL(htparser_get_strerror);
+EXPORT_SYMBOL(htparser_get_userdata);
+EXPORT_SYMBOL(htparser_set_userdata);
+EXPORT_SYMBOL(htparser_init);
+EXPORT_SYMBOL(htparser_new);

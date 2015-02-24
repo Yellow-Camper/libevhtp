@@ -1,9 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
-project(reason)
+project(libevhtp)
 
 set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
-set(PROJECT_PATCH_VERSION 9)
+set(PROJECT_PATCH_VERSION 10)
+
+#add_definitions(-D_FORTIFY_SOURCE=2)
 
 set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
@@ -11,12 +13,14 @@ set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFiles)
 INCLUDE (CheckTypeSize)
+INCLUDE (CheckCCompilerFlag)
+INCLUDE (TestBigEndian)
+INCLUDE (UseDebugSymbols)
 
-CHECK_FUNCTION_EXISTS(alloca  C_ALLOCA)
+
 CHECK_FUNCTION_EXISTS(memcmp  HAVE_MEMCMP)
 CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
 CHECK_FUNCTION_EXISTS(strnlen HAVE_STRNLEN)
-
 CHECK_INCLUDE_FILES(alloca.h HAVE_ALLOCA_H)
 CHECK_INCLUDE_FILES(strings.h HAVE_STRINGS_H)
 CHECK_INCLUDE_FILES(string.h HAVE_STRING_H)
@@ -33,6 +37,19 @@ CHECK_INCLUDE_FILES(sys/un.h HAVE_SYS_UN)
 CHECK_TYPE_SIZE("int" SIZEOF_INT)
 CHECK_TYPE_SIZE("long" SIZEOF_LONG)
 CHECK_TYPE_SIZE("short" SIZEOF_SHORT)
+
+TEST_BIG_ENDIAN(HOST_BIG_ENDIAN)
+
+check_c_compiler_flag(-fvisibility=hidden EVHTP_HAS_VISIBILITY_HIDDEN)
+check_c_compiler_flag(-std=c99 EVHTP_HAS_C99)
+
+if (EVHTP_HAS_C99)
+	add_definitions(-DEVHTP_HAS_C99)
+endif()
+
+if (EVHTP_HAS_VISIBILITY_HIDDEN)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
+endif()
 
 if (NOT HAVE_SYS_TREE)
     CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in ${CMAKE_CURRENT_BINARY_DIR}/compat/sys/tree.h)
@@ -53,6 +70,19 @@ endif(NOT HAVE_STRNLEN)
 if (NOT HAVE_SYS_UN)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_SYS_UN")
 endif(NOT HAVE_SYS_UN)
+
+if (HOST_BIG_ENDIAN)
+		add_definitions(-DHOST_BIG_ENDIAN)
+endif()
+
+# Test 32/64 bits
+if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+		add_definitions(-DEVHTP_SYS_ARCH=64)
+elseif("${CMAKE_SIZEOF_VOID_P}" EQUAL "4")
+		add_definitions(-DEVHTP_SYS_ARCH=32)
+else()
+	message(ERROR "Unable to determine architecture")
+endif()
 
 # -DEVHTP_DISABLE_SSL:STRING=ON
 OPTION(EVHTP_DISABLE_SSL       "Disable ssl support"      OFF)
@@ -77,10 +107,10 @@ SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include(BaseConfig)
 
-message("Build Type: ${CMAKE_BUILD_TYPE}")
-message("Std CFLAGS: ${CMAKE_C_FLAGS}")
-message("Dbg CFLAGS: ${CMAKE_C_FLAGS_DEBUG}")
-message("Rel CFLAGS: ${CMAKE_C_FLAGS_RELEASE}")
+message(STATUS "Build Type               : ${CMAKE_BUILD_TYPE}")
+message(STATUS "std Debug CFLAGS         : ${CMAKE_C_FLAGS_DEBUG}")
+message(STATUS "Std Release CFLAGS       : ${CMAKE_C_FLAGS_RELEASE}")
+message(STATUS "Std ReleaseWDebug CFLAGS : ${CMAKE_C_FLAGS_RELWITHDEBINFO}")
 
 find_package(LibEvent REQUIRED)
 
@@ -99,12 +129,17 @@ if (NOT EVHTP_DISABLE_REGEX)
 endif()
 
 if (NOT OPENSSL_FOUND)
-	message("Diabling SSL")
-	set (EVHTP_DISABLE_SSL ON)
-	set (OPENSSL_CRYPTO_LIBRARY "")
-	set (OPENSSL_INCLUDE_DIR "")
-	set (OPENSSL_LIBRARIES "")
+	message(WARN"Unable to find OpenSSL, will continue, but without the support")
+
+	set (EVHTP_DISABLE_SSL        ON)
+	set (OPENSSL_CRYPTO_LIBRARY   "")
+	set (OPENSSL_INCLUDE_DIR      "")
+	set (OPENSSL_LIBRARIES        "")
 	set (LIBEVENT_OPENSSL_LIBRARY "")
+elseif(APPLE)
+	# darwin based hosts have deprecated normal openssl functions, which is
+	# annoying to see warnings, for now, just ignore them.
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-deprecated-declarations")
 endif()
 
 if (NOT EVHTP_DISABLE_REGEX)
@@ -193,16 +228,12 @@ if (NOT ${LIBEVENT_OPENSSL_FOUND})
 	set (EVHTP_DISABLE_SSL ON)
 endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
-set(LIBEVHTP_SOURCES evhtp.c htparse/htparse.c)
+set(LIBEVHTP_SOURCES evhtp.c evhtp_numtoa.c htparse/htparse.c)
 
 if (NOT EVHTP_DISABLE_EVTHR)
 	set (LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} pthread)
 	set (LIBEVHTP_SOURCES ${LIBEVHTP_SOURCES} evthr/evthr.c)
 endif(NOT EVHTP_DISABLE_EVTHR)
-
-if (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG")
-endif (NOT ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 
 IF (WIN32)
 	ADD_DEFINITIONS(-DWIN32)
@@ -219,7 +250,6 @@ ELSE ()
 		find_library (LIB_RT rt)
 		set (SYS_LIBS ${SYS_LIBS} ${LIB_RT})
 	endif()
-
 ENDIF (WIN32)
 
 add_custom_target(examples)
@@ -234,24 +264,29 @@ configure_file(
 	${CMAKE_CURRENT_SOURCE_DIR}/evhtp-config.h.in
 	${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h)
 
-add_library(libevhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
-
-set_target_properties(libevhtp PROPERTIES OUTPUT_NAME "evhtp")
-target_link_libraries(libevhtp ${LIBEVHTP_EXTERNAL_LIBS})
+add_library(evhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
+target_link_libraries(evhtp ${LIBEVHTP_EXTERNAL_LIBS})
 
 add_executable(test EXCLUDE_FROM_ALL examples/test.c)
 add_executable(test_basic EXCLUDE_FROM_ALL examples/test_basic.c)
 add_executable(test_vhost EXCLUDE_FROM_ALL examples/test_vhost.c)
 add_executable(test_client EXCLUDE_FROM_ALL examples/test_client.c)
-add_executable(test_proxy EXCLUDE_FROM_ALL examples/test_proxy.c)
+add_executable(test_query EXCLUDE_FROM_ALL examples/test_query.c)
 
-target_link_libraries(test libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_basic libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_vhost libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_client libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_proxy libevhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+strip_debug_symbols(test_query)
 
-add_dependencies(examples test test_basic test_vhost test_client test_proxy)
+if (NOT EVHTP_DISABLE_EVTHR)
+	add_executable(test_proxy EXCLUDE_FROM_ALL examples/test_proxy.c)
+	target_link_libraries(test_proxy evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+endif()
+
+target_link_libraries(test evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_basic evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_vhost evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_client evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_query evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+add_dependencies(examples test test_basic test_vhost test_client test_proxy test_query)
 
 if (NOT LIB_INSTALL_DIR)
   set (LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib")
@@ -261,7 +296,7 @@ if(NOT INCLUDE_INSTALL_DIR)
 	set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
 endif()
 
-install (TARGETS libevhtp DESTINATION ${LIB_INSTALL_DIR})
+install (TARGETS evhtp DESTINATION ${LIB_INSTALL_DIR})
 install (FILES evhtp.h DESTINATION ${INCLUDE_INSTALL_DIR})
 install (FILES htparse/htparse.h DESTINATION ${INCLUDE_INSTALL_DIR})
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h DESTINATION ${INCLUDE_INSTALL_DIR})
@@ -282,3 +317,33 @@ IF (WIN32)
    install (FILES compat/sys/queue.h DESTINATION ${INCLUDE_INSTALL_DIR}/sys)
    install (FILES oniguruma/onigposix.h DESTINATION ${INCLUDE_INSTALL_DIR})
 ENDIF (WIN32)
+
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/evhtp.pc.in
+	${CMAKE_CURRENT_BINARY_DIR}/evhtp.pc @ONLY)
+
+message(STATUS "CMAKE_BUILD_TYPE         : " ${CMAKE_BUILD_TYPE})
+message(STATUS "CMAKE_BINARY_DIR         : " ${CMAKE_BINARY_DIR})
+message(STATUS "CMAKE_CURRENT_BINARY_DIR : " ${CMAKE_CURRENT_BINARY_DIR})
+message(STATUS "CMAKE_SOURCE_DIR         : " ${CMAKE_SOURCE_DIR})
+message(STATUS "CMAKE_CURRENT_SOURCE_DIR : " ${CMAKE_CURRENT_SOURCE_DIR})
+message(STATUS "PROJECT_BINARY_DIR       : " ${PROJECT_BINARY_DIR})
+message(STATUS "PROJECT_SOURCE_DIR       : " ${PROJECT_SOURCE_DIR})
+message(STATUS "CMAKE_MODULE_PATH        : " ${CMAKE_MODULE_PATH})
+message(STATUS "CMAKE_COMMAND            : " ${CMAKE_COMMAND})
+message(STATUS "CMAKE_ROOT               : " ${CMAKE_ROOT})
+message(STATUS "CMAKE_SYSTEM             : " ${CMAKE_SYSTEM})
+message(STATUS "CMAKE_SYSTEM_NAME        : " ${CMAKE_SYSTEM_NAME})
+message(STATUS "CMAKE_SYSTEM_VERSION     : " ${CMAKE_SYSTEM_VERSION})
+message(STATUS "CMAKE_SYSTEM_PROCESSOR   : " ${CMAKE_SYSTEM_PROCESSOR})
+message(STATUS "CMAKE_C_FLAGS            : " ${CMAKE_C_FLAGS})
+message(STATUS "CMAKE_CXX_FLAGS          : " ${CMAKE_CXX_FLAGS})
+message(STATUS "CMAKE_C_COMPILER         : " ${CMAKE_C_COMPILER})
+message(STATUS "CMAKE_CXX_COMPILER       : " ${CMAKE_CXX_COMPILER})
+message(STATUS "CMAKE_AR                 : " ${CMAKE_AR})
+message(STATUS "CMAKE_RANLIB             : " ${CMAKE_RANLIB})
+message(STATUS "CMAKE_C_FLAGS_DEBUG      : " ${CMAKE_C_FLAGS_DEBUG})
+message(STATUS "CMAKE_C_FLAGS_RELEASE    : " ${CMAKE_C_FLAGS_RELEASE})
+message(STATUS "CMAKE_C_FLAGS_RELWDBGIFO : " ${CMAKE_C_FLAGS_RELWITHDEBINFO})
+message(STATUS "CMAKE_INSTALL_PREFIX     : " ${CMAKE_INSTALL_PREFIX})
+message(STATUS "Version                  : " ${PROJECT_VERSION})

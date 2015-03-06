@@ -125,6 +125,8 @@ SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include(BaseConfig)
 
+find_package(LibEvent REQUIRED)
+
 if (NOT LIBEVENT_OPENSSL_LIBRARY)
 	set (EVHTP_DISABLE_SSL ON)
 endif()

@@ -5,85 +5,6 @@ set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
 set(PROJECT_PATCH_VERSION 10)
 
-#add_definitions(-D_FORTIFY_SOURCE=2)
-
-set (PROJECT_VERSION ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
-set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
-
-INCLUDE (CheckFunctionExists)
-INCLUDE (CheckIncludeFiles)
-INCLUDE (CheckTypeSize)
-INCLUDE (CheckCCompilerFlag)
-INCLUDE (TestBigEndian)
-INCLUDE (UseDebugSymbols)
-
-
-CHECK_FUNCTION_EXISTS(memcmp  HAVE_MEMCMP)
-CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
-CHECK_FUNCTION_EXISTS(strnlen HAVE_STRNLEN)
-CHECK_INCLUDE_FILES(alloca.h HAVE_ALLOCA_H)
-CHECK_INCLUDE_FILES(strings.h HAVE_STRINGS_H)
-CHECK_INCLUDE_FILES(string.h HAVE_STRING_H)
-CHECK_INCLUDE_FILES(stdlib.h HAVE_STDLIB_H)
-CHECK_INCLUDE_FILES(sys/time.h HAVE_SYS_TIME_H)
-CHECK_INCLUDE_FILES(sys/times.h HAVE_SYS_TIMES_H)
-CHECK_INCLUDE_FILES(unistd.h HAVE_UNISTD_H)
-CHECK_INCLUDE_FILES(memory.h HAVE_MEMORY_H)
-CHECK_INCLUDE_FILES(stdarg.h HAVE_STDARG_PROTOTYPES)
-CHECK_INCLUDE_FILES(sys/tree.h HAVE_SYS_TREE)
-CHECK_INCLUDE_FILES(sys/queue.h HAVE_SYS_QUEUE)
-CHECK_INCLUDE_FILES(sys/un.h HAVE_SYS_UN)
-
-CHECK_TYPE_SIZE("int" SIZEOF_INT)
-CHECK_TYPE_SIZE("long" SIZEOF_LONG)
-CHECK_TYPE_SIZE("short" SIZEOF_SHORT)
-
-TEST_BIG_ENDIAN(HOST_BIG_ENDIAN)
-
-check_c_compiler_flag(-fvisibility=hidden EVHTP_HAS_VISIBILITY_HIDDEN)
-check_c_compiler_flag(-std=c99 EVHTP_HAS_C99)
-
-if (EVHTP_HAS_C99)
-	add_definitions(-DEVHTP_HAS_C99)
-endif()
-
-if (EVHTP_HAS_VISIBILITY_HIDDEN)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
-endif()
-
-if (NOT HAVE_SYS_TREE)
-    CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in ${CMAKE_CURRENT_BINARY_DIR}/compat/sys/tree.h)
-endif(NOT HAVE_SYS_TREE)
-
-if (NOT HAVE_SYS_QUEUE)
-		CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/queue.h.in ${CMAKE_CURRENT_BINARY_DIR}/compat/sys/queue.h)
-endif(NOT HAVE_SYS_QUEUE)
-
-if (NOT HAVE_STRNDUP)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_STRNDUP")
-endif(NOT HAVE_STRNDUP)
-
-if (NOT HAVE_STRNLEN)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_STRNLEN")
-endif(NOT HAVE_STRNLEN)
-
-if (NOT HAVE_SYS_UN)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_SYS_UN")
-endif(NOT HAVE_SYS_UN)
-
-if (HOST_BIG_ENDIAN)
-		add_definitions(-DHOST_BIG_ENDIAN)
-endif()
-
-# Test 32/64 bits
-if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-		add_definitions(-DEVHTP_SYS_ARCH=64)
-elseif("${CMAKE_SIZEOF_VOID_P}" EQUAL "4")
-		add_definitions(-DEVHTP_SYS_ARCH=32)
-else()
-	message(ERROR "Unable to determine architecture")
-endif()
-
 # -DEVHTP_DISABLE_SSL:STRING=ON
 OPTION(EVHTP_DISABLE_SSL       "Disable ssl support"      OFF)
 
@@ -99,20 +20,110 @@ OPTION(EVHTP_BUILD_SHARED      "Build shared library too" OFF)
 # -DEVHTP_USE_DEFER_ACCEPT:STRING=ON
 OPTION(EVHTP_USE_DEFER_ACCEPT  "Enable TCP_DEFER_ACCEPT"  OFF)
 
+# fun color stuff
+if(NOT WIN32)
+    string(ASCII 27 Esc)
+    set(ColourReset "${Esc}[m")
+    set(ColourBold  "${Esc}[1m")
+    set(Red         "${Esc}[31m")
+    set(Green       "${Esc}[32m")
+    set(Yellow      "${Esc}[33m")
+    set(Blue        "${Esc}[34m")
+    set(Magenta     "${Esc}[35m")
+    set(Cyan        "${Esc}[36m")
+    set(White       "${Esc}[37m")
+    set(BoldRed     "${Esc}[1;31m")
+    set(BoldGreen   "${Esc}[1;32m")
+    set(BoldYellow  "${Esc}[1;33m")
+    set(BoldBlue    "${Esc}[1;34m")
+    set(BoldMagenta "${Esc}[1;35m")
+    set(BoldCyan    "${Esc}[1;36m")
+    set(BoldWhite   "${Esc}[1;37m")
+endif()
+
+set (PROJECT_VERSION   ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
+set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
+
+INCLUDE (CheckFunctionExists)
+INCLUDE (CheckIncludeFiles)
+INCLUDE (CheckTypeSize)
+INCLUDE (CheckCCompilerFlag)
+INCLUDE (TestBigEndian)
+INCLUDE (UseDebugSymbols)
+
+CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
+CHECK_FUNCTION_EXISTS(strnlen HAVE_STRNLEN)
+
+CHECK_INCLUDE_FILES(strings.h   HAVE_STRINGS_H)
+CHECK_INCLUDE_FILES(string.h    HAVE_STRING_H)
+CHECK_INCLUDE_FILES(stdlib.h    HAVE_STDLIB_H)
+CHECK_INCLUDE_FILES(sys/time.h  HAVE_SYS_TIME_H)
+CHECK_INCLUDE_FILES(sys/times.h HAVE_SYS_TIMES_H)
+CHECK_INCLUDE_FILES(unistd.h    HAVE_UNISTD_H)
+CHECK_INCLUDE_FILES(stdarg.h    HAVE_STDARG_PROTOTYPES)
+CHECK_INCLUDE_FILES(sys/tree.h  HAVE_SYS_TREE)
+CHECK_INCLUDE_FILES(sys/queue.h HAVE_SYS_QUEUE)
+CHECK_INCLUDE_FILES(sys/un.h    HAVE_SYS_UN)
+
+CHECK_TYPE_SIZE("int" SIZEOF_INT)
+CHECK_TYPE_SIZE("long" SIZEOF_LONG)
+CHECK_TYPE_SIZE("short" SIZEOF_SHORT)
+
+TEST_BIG_ENDIAN(HOST_BIG_ENDIAN)
+
+check_c_compiler_flag(-fvisibility=hidden EVHTP_HAS_VISIBILITY_HIDDEN)
+check_c_compiler_flag(-std=c99 EVHTP_HAS_C99)
+
+if (EVHTP_HAS_C99)
+	add_definitions(-DEVHTP_HAS_C99)
+endif()
+
+if (EVHTP_HAS_VISIBILITY_HIDDEN)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
+endif()
+
+if (NOT HAVE_SYS_TREE)
+    CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in
+			${CMAKE_CURRENT_BINARY_DIR}/compat/sys/tree.h)
+endif(NOT HAVE_SYS_TREE)
+
+if (NOT HAVE_SYS_QUEUE)
+		CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/queue.h.in
+			${CMAKE_CURRENT_BINARY_DIR}/compat/sys/queue.h)
+endif(NOT HAVE_SYS_QUEUE)
+
+if (NOT HAVE_STRNDUP)
+	add_definitions(-DNO_STRNDUP)
+endif()
+
+if (NOT HAVE_STRNLEN)
+	add_definitions(-DNO_STRNLEN)
+endif()
+
+if (NOT HAVE_SYS_UN)
+	add_definitions(-DNO_SYS_UN)
+endif(NOT HAVE_SYS_UN)
+
+if (HOST_BIG_ENDIAN)
+	add_definitions(-DHOST_BIG_ENDIAN)
+endif()
+
+# Test 32/64 bits
+if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+	add_definitions(-DEVHTP_SYS_ARCH=64)
+elseif("${CMAKE_SIZEOF_VOID_P}" EQUAL "4")
+	add_definitions(-DEVHTP_SYS_ARCH=32)
+else()
+	message(ERROR "Unable to determine architecture")
+endif()
+
 if (EVHTP_USE_DEFER_ACCEPT)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_DEFER_ACCEPT")
+	add_definitions(-DUSE_DEFER_ACCEPT)
 endif(EVHTP_USE_DEFER_ACCEPT)
 
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include(BaseConfig)
-
-message(STATUS "Build Type               : ${CMAKE_BUILD_TYPE}")
-message(STATUS "std Debug CFLAGS         : ${CMAKE_C_FLAGS_DEBUG}")
-message(STATUS "Std Release CFLAGS       : ${CMAKE_C_FLAGS_RELEASE}")
-message(STATUS "Std ReleaseWDebug CFLAGS : ${CMAKE_C_FLAGS_RELWITHDEBINFO}")
-
-find_package(LibEvent REQUIRED)
 
 if (NOT LIBEVENT_OPENSSL_LIBRARY)
 	set (EVHTP_DISABLE_SSL ON)
@@ -129,7 +140,7 @@ if (NOT EVHTP_DISABLE_REGEX)
 endif()
 
 if (NOT OPENSSL_FOUND)
-	message(WARN"Unable to find OpenSSL, will continue, but without the support")
+	message(STATUS "${Yellow}Unable to find libssl.. Disabling SSL support ${ColourReset}")
 
 	set (EVHTP_DISABLE_SSL        ON)
 	set (OPENSSL_CRYPTO_LIBRARY   "")
@@ -139,12 +150,15 @@ if (NOT OPENSSL_FOUND)
 elseif(APPLE)
 	# darwin based hosts have deprecated normal openssl functions, which is
 	# annoying to see warnings, for now, just ignore them.
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-deprecated-declarations")
+	add_definitions(-Wno-deprecated-declarations)
 endif()
 
 if (NOT EVHTP_DISABLE_REGEX)
 	if (NOT HAS_SYS_ONIG)
-		CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/oniguruma/config.h)
+		message(STATUS "${Blue}Using the built-in onigurma source.${ColourReset}")
+		CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/config.h.in
+			${CMAKE_CURRENT_BINARY_DIR}/oniguruma/config.h)
+
 		set(ONIG_SOURCES
 			oniguruma/regerror.c
 			oniguruma/regparse.c
@@ -189,9 +203,11 @@ if (NOT EVHTP_DISABLE_REGEX)
 			oniguruma/enc/gb18030.c
 			oniguruma/enc/koi8_r.c
 			oniguruma/enc/cp1251.c)
+
 		set (ONIG_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/oniguruma;${CMAKE_CURRENT_SOURCE_DIR}/oniguruma)
 	else()
-		message("-- Using system libonig")
+		message(STATUS "${YELLOW}Using the system-wide version of oniguruma${ColourReset}")
+
 		set(ONIG_SOURCES "")
 		set(ONIG_LIBS ${HAS_SYS_ONIG})
 		set(ONIG_INCLUDE_DIR "")
@@ -236,8 +252,7 @@ if (NOT EVHTP_DISABLE_EVTHR)
 endif(NOT EVHTP_DISABLE_EVTHR)
 
 IF (WIN32)
-	ADD_DEFINITIONS(-DWIN32)
-	ADD_DEFINITIONS(-march=i486)
+	add_definitions(-DWIN32 -march=i486)
 	find_library (LIB_WS32 ws2_32)
 	set (SYS_LIBS ${SYS_LIBS} ${LIB_WS32})
 ELSE ()
@@ -273,18 +288,16 @@ add_executable(test_vhost EXCLUDE_FROM_ALL examples/test_vhost.c)
 add_executable(test_client EXCLUDE_FROM_ALL examples/test_client.c)
 add_executable(test_query EXCLUDE_FROM_ALL examples/test_query.c)
 
-strip_debug_symbols(test_query)
-
 if (NOT EVHTP_DISABLE_EVTHR)
 	add_executable(test_proxy EXCLUDE_FROM_ALL examples/test_proxy.c)
 	target_link_libraries(test_proxy evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 endif()
 
-target_link_libraries(test evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_basic evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_vhost evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test        evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_basic  evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_vhost  evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 target_link_libraries(test_client evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-target_link_libraries(test_query evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+target_link_libraries(test_query  evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
 add_dependencies(examples test test_basic test_vhost test_client test_proxy test_query)
 
@@ -322,28 +335,44 @@ configure_file(
 	${CMAKE_CURRENT_SOURCE_DIR}/evhtp.pc.in
 	${CMAKE_CURRENT_BINARY_DIR}/evhtp.pc @ONLY)
 
-message(STATUS "CMAKE_BUILD_TYPE         : " ${CMAKE_BUILD_TYPE})
-message(STATUS "CMAKE_BINARY_DIR         : " ${CMAKE_BINARY_DIR})
-message(STATUS "CMAKE_CURRENT_BINARY_DIR : " ${CMAKE_CURRENT_BINARY_DIR})
-message(STATUS "CMAKE_SOURCE_DIR         : " ${CMAKE_SOURCE_DIR})
-message(STATUS "CMAKE_CURRENT_SOURCE_DIR : " ${CMAKE_CURRENT_SOURCE_DIR})
-message(STATUS "PROJECT_BINARY_DIR       : " ${PROJECT_BINARY_DIR})
-message(STATUS "PROJECT_SOURCE_DIR       : " ${PROJECT_SOURCE_DIR})
-message(STATUS "CMAKE_MODULE_PATH        : " ${CMAKE_MODULE_PATH})
-message(STATUS "CMAKE_COMMAND            : " ${CMAKE_COMMAND})
-message(STATUS "CMAKE_ROOT               : " ${CMAKE_ROOT})
-message(STATUS "CMAKE_SYSTEM             : " ${CMAKE_SYSTEM})
-message(STATUS "CMAKE_SYSTEM_NAME        : " ${CMAKE_SYSTEM_NAME})
-message(STATUS "CMAKE_SYSTEM_VERSION     : " ${CMAKE_SYSTEM_VERSION})
-message(STATUS "CMAKE_SYSTEM_PROCESSOR   : " ${CMAKE_SYSTEM_PROCESSOR})
-message(STATUS "CMAKE_C_FLAGS            : " ${CMAKE_C_FLAGS})
-message(STATUS "CMAKE_CXX_FLAGS          : " ${CMAKE_CXX_FLAGS})
-message(STATUS "CMAKE_C_COMPILER         : " ${CMAKE_C_COMPILER})
-message(STATUS "CMAKE_CXX_COMPILER       : " ${CMAKE_CXX_COMPILER})
-message(STATUS "CMAKE_AR                 : " ${CMAKE_AR})
-message(STATUS "CMAKE_RANLIB             : " ${CMAKE_RANLIB})
-message(STATUS "CMAKE_C_FLAGS_DEBUG      : " ${CMAKE_C_FLAGS_DEBUG})
-message(STATUS "CMAKE_C_FLAGS_RELEASE    : " ${CMAKE_C_FLAGS_RELEASE})
-message(STATUS "CMAKE_C_FLAGS_RELWDBGIFO : " ${CMAKE_C_FLAGS_RELWITHDEBINFO})
-message(STATUS "CMAKE_INSTALL_PREFIX     : " ${CMAKE_INSTALL_PREFIX})
-message(STATUS "Version                  : " ${PROJECT_VERSION})
+
+# add_definitions() calls do not show up in the C_FLAGS var
+# it is instead a property of COMPILE_DEFINITIONS.
+#
+# so we fetch the property into the variable CDEFS, iterate over each entry,
+# append it to a list, and finally replace ";" separators to -D to mimic a CFLAG
+
+get_property(CDEFS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_DEFINITIONS)
+
+foreach(CDEF ${CDEFS})
+	list(APPEND CFLAG_LIST ${CDEF})
+endforeach()
+
+string(REPLACE ";" " -D" CFLAG_DEFS "${CFLAG_LIST}")
+
+message("")
+message(STATUS "${BoldBlue}EVHTP_VERSION${ColourReset}            : "${BoldGreen} ${PROJECT_VERSION}        ${ColourReset})
+message(STATUS "${BoldBlue}EVHTP_DISABLE_SSL${ColourReset}        : "${BoldGreen} ${EVHTP_DISABLE_SSL}      ${ColourReset})
+message(STATUS "${BoldBlue}EVHTP_DISABLE_EVTHR${ColourReset}      : "${BoldGreen} ${EVHTP_DISABLE_EVTHR}    ${ColourReset})
+message(STATUS "${BoldBlue}EVHTP_DISABLE_REGEX${ColourReset}      : "${BoldGreen} ${EVHTP_DISABLE_REGEX}    ${ColourReset})
+message(STATUS "${BoldBlue}EVHTP_BUILD_SHARED${ColourReset}       : "${BoldGreen} ${EVHTP_BUILD_SHARED}     ${ColourReset})
+message(STATUS "${BoldBlue}EVHTP_USE_DEFER_ACCEPT${ColourReset}   : "${BoldGreen} ${EVHTP_USE_DEFER_ACCEPT} ${ColourReset})
+message("")
+message(STATUS "${Blue}CMAKE_BUILD_TYPE${ColourReset}         : " ${BoldRed}${CMAKE_BUILD_TYPE}${ColourReset})
+message(STATUS "${Blue}CMAKE_INSTALL_PREFIX${ColourReset}     : " ${BoldMagenta}${CMAKE_INSTALL_PREFIX}${ColourReset})
+message(STATUS "${Blue}CMAKE_BINARY_DIR${ColourReset}         : " ${CMAKE_BINARY_DIR})
+message(STATUS "${Blue}CMAKE_CURRENT_BINARY_DIR${ColourReset} : " ${CMAKE_CURRENT_BINARY_DIR})
+message(STATUS "${Blue}CMAKE_SOURCE_DIR${ColourReset}         : " ${CMAKE_SOURCE_DIR})
+message(STATUS "${Blue}CMAKE_CURRENT_SOURCE_DIR${ColourReset} : " ${CMAKE_CURRENT_SOURCE_DIR})
+message(STATUS "${Blue}PROJECT_BINARY_DIR${ColourReset}       : " ${PROJECT_BINARY_DIR})
+message(STATUS "${Blue}PROJECT_SOURCE_DIR${ColourReset}       : " ${PROJECT_SOURCE_DIR})
+message(STATUS "${Blue}CMAKE_MODULE_PATH${ColourReset}        : " ${CMAKE_MODULE_PATH})
+message(STATUS "${Blue}CMAKE_SYSTEM_NAME${ColourReset}        : " ${CMAKE_SYSTEM_NAME})
+message(STATUS "${Blue}CMAKE_SYSTEM_VERSION${ColourReset}     : " ${CMAKE_SYSTEM_VERSION})
+message(STATUS "${Blue}CMAKE_C_COMPILER${ColourReset}         : " ${CMAKE_C_COMPILER})
+message(STATUS "${Blue}CMAKE_AR${ColourReset}                 : " ${CMAKE_AR})
+message(STATUS "${Blue}CMAKE_RANLIB${ColourReset}             : " ${CMAKE_RANLIB})
+message(STATUS "${Blue}CFLAGS${ColourReset}                   : -D${CFLAG_DEFS} ${CMAKE_C_FLAGS}")
+
+
+message("")

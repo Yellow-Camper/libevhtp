@@ -498,8 +498,6 @@ sigint(int sig, short why, void * data) {
     event_base_loopexit(data, NULL);
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 int
 main(int argc, char ** argv) {
     struct event     * ev_sigint;
@@ -640,4 +638,3 @@ main(int argc, char ** argv) {
     return 0;
 } /* main */
 
-#pragma GCC diagnostic pop

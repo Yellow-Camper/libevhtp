@@ -1,6 +1,10 @@
 #ifndef __HTPARSE_H__
 #define __HTPARSE_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct htparser;
 
 enum htp_type {
@@ -62,8 +66,8 @@ typedef enum htp_method      htp_method;
 typedef enum htp_type        htp_type;
 typedef enum htpparse_error  htpparse_error;
 
-typedef int (*htparse_hook)(htparser *);
-typedef int (*htparse_data_hook)(htparser *, const char *, size_t);
+typedef int (* htparse_hook)(htparser *);
+typedef int (* htparse_data_hook)(htparser *, const char *, size_t);
 
 
 struct htparse_hooks {
@@ -109,6 +113,10 @@ void         * htparser_get_userdata(htparser *);
 void           htparser_set_userdata(htparser *, void *);
 void           htparser_init(htparser *, htp_type);
 htparser     * htparser_new(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

@@ -1,6 +1,10 @@
 #ifndef __EVHTP_INTERNAL_H__
 #define __EVHTP_INTERNAL_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef EVHTP_HAS_VISIBILITY_HIDDEN
 #define __visible __attribute__((visibility("default")))
 #define EXPORT_SYMBOL(x)               typeof(x)(x)__visible
@@ -19,6 +23,10 @@
         _freefn((_var));                    \
         (_var) = NULL;                      \
 }  while (0)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

@@ -1,6 +1,10 @@
 #ifndef __EVHTP_CONFIG_H__
 #define __EVHTP_CONFIG_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #undef EVHTP_DISABLE_EVTHR
 #undef EVHTP_DISABLE_REGEX
 #undef EVHTP_DISABLE_SSL
@@ -10,5 +14,9 @@
 #cmakedefine EVHTP_DISABLE_REGEX
 #cmakedefine EVHTP_DISABLE_SSL
 #cmakedefine EVHTP_DISABLE_EVTHR
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

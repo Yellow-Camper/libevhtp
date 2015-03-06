@@ -115,3 +115,8 @@ application under very high load
 
 ![ZIMG GRAPH](/zimg_vs_nginx.png)
 
+The X-axis is the number of connections, while the Y-axis is requests per
+second.
+
+You can read the whole article here: [Architecture Design of an Image Server](http://zimg.buaa.us/documents/Architecture_Design_of_Image_Server/)
+

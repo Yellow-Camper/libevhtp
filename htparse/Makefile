@@ -1,7 +1,7 @@
 SRC      = htparse.c
 OUT      = libhtparse.a
 OBJ      = $(SRC:.c=.o)
-INCLUDES = -I.
+INCLUDES = -I. -I..
 CFLAGS   += -ggdb
 LDFLAGS  +=
 CC       = gcc

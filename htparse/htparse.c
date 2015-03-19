@@ -308,8 +308,8 @@ str_to_uint64(char * str, size_t n, int * err) {
     uint64_t value;
 
     /* Trim whitespace after value. */
-    while (n && isblank(str[n-1])) {
-	    n--;
+    while (n && isblank(str[n - 1])) {
+        n--;
     }
 
     if (n > 20) {
@@ -500,8 +500,7 @@ htparser_new(void) {
 }
 
 static int
-is_host_char(unsigned char ch)
-{
+is_host_char(unsigned char ch) {
     char c = (unsigned char)(ch | 0x20);
 
     if (c >= 'a' && c <= 'z') {
@@ -514,6 +513,95 @@ is_host_char(unsigned char ch)
 
     return 0;
 }
+
+static htp_method
+get_method(const char * m, const size_t sz) {
+    switch (sz) {
+        case 3:
+            if (_str3_cmp(m, 'G', 'E', 'T', '\0')) {
+                return htp_method_GET;
+            }
+
+            if (_str3_cmp(m, 'P', 'U', 'T', '\0')) {
+                return htp_method_PUT;
+            }
+
+            break;
+        case 4:
+            if (m[1] == 'O') {
+                if (_str3Ocmp(m, 'P', 'O', 'S', 'T')) {
+                    return htp_method_POST;
+                }
+
+                if (_str3Ocmp(m, 'C', 'O', 'P', 'Y')) {
+                    return htp_method_COPY;
+                }
+
+                if (_str3Ocmp(m, 'M', 'O', 'V', 'E')) {
+                    return htp_method_MOVE;
+                }
+
+                if (_str3Ocmp(m, 'L', 'O', 'C', 'K')) {
+                    return htp_method_LOCK;
+                }
+            } else {
+                if (_str4cmp(m, 'H', 'E', 'A', 'D')) {
+                    return htp_method_HEAD;
+                }
+            }
+
+            break;
+        case 5:
+            if (_str5cmp(m, 'M', 'K', 'C', 'O', 'L')) {
+                return htp_method_MKCOL;
+            }
+
+            if (_str5cmp(m, 'T', 'R', 'A', 'C', 'E')) {
+                return htp_method_TRACE;
+            }
+
+            if (_str5cmp(m, 'P', 'A', 'T', 'C', 'H')) {
+                return htp_method_PATCH;
+            }
+
+            break;
+        case 6:
+            if (_str6cmp(m, 'D', 'E', 'L', 'E', 'T', 'E')) {
+                return htp_method_DELETE;
+            }
+
+            if (_str6cmp(m, 'U', 'N', 'L', 'O', 'C', 'K')) {
+                return htp_method_UNLOCK;
+            }
+
+            break;
+        case 7:
+            if (_str7_cmp(m, 'O', 'P', 'T', 'I', 'O', 'N', 'S', '\0')) {
+                return htp_method_OPTIONS;
+            }
+
+            if (_str7_cmp(m, 'C', 'O', 'N', 'N', 'E', 'C', 'T', '\0')) {
+                return htp_method_CONNECT;
+            }
+
+            break;
+        case 8:
+            if (_str8cmp(m, 'P', 'R', 'O', 'P', 'F', 'I', 'N', 'D')) {
+                return htp_method_PROPFIND;
+            }
+
+            break;
+
+        case 9:
+            if (_str9cmp(m, 'P', 'R', 'O', 'P', 'P', 'A', 'T', 'C', 'H')) {
+                return htp_method_PROPPATCH;
+            }
+
+            break;
+    }                 /* switch */
+
+    return htp_method_UNKNOWN;
+} /* get_method */
 
 size_t
 htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len) {
@@ -547,23 +635,6 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_start:
                 htparse_log_debug("[%p] s_start", p);
 
-                p->flags            = 0;
-                p->error            = htparse_error_none;
-                p->method           = htp_method_UNKNOWN;
-                p->multipart        = 0;
-                p->major            = 0;
-                p->minor            = 0;
-                p->content_len      = 0;
-                p->orig_content_len = 0;
-                p->status           = 0;
-                p->status_count     = 0;
-                p->scheme_offset    = NULL;
-                p->host_offset      = NULL;
-                p->port_offset      = NULL;
-                p->path_offset      = NULL;
-                p->args_offset      = NULL;
-
-
                 if (ch == CR || ch == LF) {
                     break;
                 }
@@ -572,6 +643,24 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     p->error = htparse_error_inval_reqline;
                     return i + 1;
                 }
+
+
+                p->flags             = 0;
+                p->error             = htparse_error_none;
+                p->method            = htp_method_UNKNOWN;
+                p->multipart         = 0;
+                p->major             = 0;
+                p->minor             = 0;
+                p->content_len       = 0;
+                p->orig_content_len  = 0;
+                p->status            = 0;
+                p->status_count      = 0;
+                p->scheme_offset     = NULL;
+                p->host_offset       = NULL;
+                p->port_offset       = NULL;
+                p->path_offset       = NULL;
+                p->args_offset       = NULL;
+
 
                 res = hook_on_msg_begin_run(p, hooks);
 
@@ -597,119 +686,32 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_method:
                 htparse_log_debug("[%p] s_method", p);
 
-                if (ch == ' ') {
-                    char * m = p->buf;
+                do {
+                    if (ch == ' ') {
+                        p->method  = get_method(p->buf, p->buf_idx);
+                        res        = hook_method_run(p, hooks, p->buf, p->buf_idx);
 
-                    switch (p->buf_idx) {
-                        case 3:
-                            if (_str3_cmp(m, 'G', 'E', 'T', '\0')) {
-                                p->method = htp_method_GET;
-                                break;
-                            }
+                        p->buf_idx = 0;
+                        p->state   = s_spaces_before_uri;
 
-                            if (_str3_cmp(m, 'P', 'U', 'T', '\0')) {
-                                p->method = htp_method_PUT;
-                                break;
-                            }
+                        if (res) {
+                            p->error = htparse_error_user;
+                            return i + 1;
+                        }
 
-                            break;
-                        case 4:
-                            if (m[1] == 'O') {
-                                if (_str3Ocmp(m, 'P', 'O', 'S', 'T')) {
-                                    p->method = htp_method_POST;
-                                    break;
-                                }
+                        break;
+                    } else {
+                        if ((ch < 'A' || ch > 'Z') && ch != '_') {
+                            p->error = htparse_error_inval_method;
+                            return i + 1;
+                        }
 
-                                if (_str3Ocmp(m, 'C', 'O', 'P', 'Y')) {
-                                    p->method = htp_method_COPY;
-                                    break;
-                                }
-
-                                if (_str3Ocmp(m, 'M', 'O', 'V', 'E')) {
-                                    p->method = htp_method_MOVE;
-                                    break;
-                                }
-
-                                if (_str3Ocmp(m, 'L', 'O', 'C', 'K')) {
-                                    p->method = htp_method_LOCK;
-                                    break;
-                                }
-                            } else {
-                                if (_str4cmp(m, 'H', 'E', 'A', 'D')) {
-                                    p->method = htp_method_HEAD;
-                                    break;
-                                }
-                            }
-                            break;
-                        case 5:
-                            if (_str5cmp(m, 'M', 'K', 'C', 'O', 'L')) {
-                                p->method = htp_method_MKCOL;
-                                break;
-                            }
-
-                            if (_str5cmp(m, 'T', 'R', 'A', 'C', 'E')) {
-                                p->method = htp_method_TRACE;
-                                break;
-                            }
-
-                            if (_str5cmp(m, 'P', 'A', 'T', 'C', 'H')) {
-                                p->method = htp_method_PATCH;
-                                break;
-                            }
-                            break;
-                        case 6:
-                            if (_str6cmp(m, 'D', 'E', 'L', 'E', 'T', 'E')) {
-                                p->method = htp_method_DELETE;
-                                break;
-                            }
-
-                            if (_str6cmp(m, 'U', 'N', 'L', 'O', 'C', 'K')) {
-                                p->method = htp_method_UNLOCK;
-                                break;
-                            }
-                            break;
-                        case 7:
-                            if (_str7_cmp(m, 'O', 'P', 'T', 'I', 'O', 'N', 'S', '\0')) {
-                                p->method = htp_method_OPTIONS;
-                            }
-
-                            if (_str7_cmp(m, 'C', 'O', 'N', 'N', 'E', 'C', 'T', '\0')) {
-                                p->method = htp_method_CONNECT;
-                            }
-                            break;
-                        case 8:
-                            if (_str8cmp(m, 'P', 'R', 'O', 'P', 'F', 'I', 'N', 'D')) {
-                                p->method = htp_method_PROPFIND;
-                            }
-
-                            break;
-
-                        case 9:
-                            if (_str9cmp(m, 'P', 'R', 'O', 'P', 'P', 'A', 'T', 'C', 'H')) {
-                                p->method = htp_method_PROPPATCH;
-                            }
-                            break;
-                    } /* switch */
-
-                    res        = hook_method_run(p, hooks, p->buf, p->buf_idx);
-                    p->buf_idx = 0;
-                    p->state   = s_spaces_before_uri;
-
-                    if (res) {
-                        p->error = htparse_error_user;
-                        return i + 1;
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
                     }
 
-                    break;
-                }
-
-                if ((ch < 'A' || ch > 'Z') && ch != '_') {
-                    p->error = htparse_error_inval_method;
-                    return i + 1;
-                }
-
-                p->buf[p->buf_idx++] = ch;
-                p->buf[p->buf_idx]   = '\0';
+                    ch = data[++i];
+                } while (i < len);
 
                 break;
             case s_spaces_before_uri:
@@ -724,27 +726,27 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                  */
                 if (p->method == htp_method_CONNECT) {
                     switch (ch) {
-                    case ' ':
-                        break;
-                    case '[':
-                        /* Literal IPv6 address start. */
-                        p->buf[p->buf_idx++] = ch;
-                        p->buf[p->buf_idx]   = '\0';
-                        p->host_offset       = &p->buf[p->buf_idx];
+                        case ' ':
+                            break;
+                        case '[':
+                            /* Literal IPv6 address start. */
+                            p->buf[p->buf_idx++] = ch;
+                            p->buf[p->buf_idx]   = '\0';
+                            p->host_offset       = &p->buf[p->buf_idx];
 
-                        p->state = s_host_ipv6;
-                        break;
-                    default:
-                        if (!is_host_char(ch)) {
-                            p->error = htparse_error_inval_reqline;
-                            return i + 1;
-                        }
-                        p->host_offset       = &p->buf[p->buf_idx];
-                        p->buf[p->buf_idx++] = ch;
-                        p->buf[p->buf_idx]   = '\0';
+                            p->state = s_host_ipv6;
+                            break;
+                        default:
+                            if (!is_host_char(ch)) {
+                                p->error = htparse_error_inval_reqline;
+                                return i + 1;
+                            }
+                            p->host_offset       = &p->buf[p->buf_idx];
+                            p->buf[p->buf_idx++] = ch;
+                            p->buf[p->buf_idx]   = '\0';
 
-                        p->state = s_host;
-                        break;
+                            p->state = s_host;
+                            break;
                     } /* switch */
 
                     break;
@@ -1158,11 +1160,16 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 res = 0;
 
-                if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
-                    p->buf[p->buf_idx++] = ch;
-                    p->buf[p->buf_idx]   = '\0';
-                    break;
-                }
+                do {
+                    if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+                    } else {
+                        break;
+                    }
+
+                    ch = data[++i];
+                } while (i < len);
 
                 switch (ch) {
                     case ' ':
@@ -1481,9 +1488,8 @@ hdrline_start:
             case s_hdrline_hdr_key:
                 htparse_log_debug("[%p] s_hdrline_hdr_key", p);
 
-                res = 0;
-                switch (ch) {
-                    case ':':
+                do {
+                    if (ch == ':') {
                         res      = hook_hdr_key_run(p, hooks, p->buf, p->buf_idx);
 
                         /* figure out if the value of this header is valueable */
@@ -1522,28 +1528,39 @@ hdrline_start:
                                 break;
                         } /* switch */
 
-                        p->buf_idx           = 0;
-                        p->state             = s_hdrline_hdr_space_before_val;
+                        p->buf_idx = 0;
+                        p->state   = s_hdrline_hdr_space_before_val;
+
+                        if (res) {
+                            p->error = htparse_error_user;
+                            return i + 1;
+                        }
 
                         break;
-                    case CR:
-                        p->state             = s_hdrline_hdr_almost_done;
-                        break;
-                    case LF:
-                        p->state             = s_hdrline_hdr_done;
-                        break;
-                    default:
-                        p->buf[p->buf_idx++] = ch;
-                        p->buf[p->buf_idx]   = '\0';
-                        break;
-                } /* switch */
+                    }
 
-                if (res) {
-                    p->error = htparse_error_user;
-                    return i + 1;
-                }
+                    switch (ch) {
+                        case CR:
+                            p->state             = s_hdrline_hdr_almost_done;
+                            break;
+                        case LF:
+                            p->state             = s_hdrline_hdr_done;
+                            break;
+                        default:
+                            p->buf[p->buf_idx++] = ch;
+                            p->buf[p->buf_idx]   = '\0';
+                            break;
+                    }
+
+                    if (p->state != s_hdrline_hdr_key) {
+                        break;
+                    }
+
+                    ch = data[++i];
+                } while (i < len);
 
                 break;
+
             case s_hdrline_hdr_space_before_val:
                 htparse_log_debug("[%p] s_hdrline_hdr_space_before_val", p);
 
@@ -1584,13 +1601,18 @@ hdrline_start:
                 err = 0;
                 res = 0;
 
-                switch (ch) {
-                    case CR:
+                do {
+                    if (ch == CR) {
                         switch (p->heval) {
                             case eval_hdr_val_none:
                                 break;
                             case eval_hdr_val_hostname:
-                                res = hook_hostname_run(p, hooks, p->buf, p->buf_idx);
+                                if (hook_hostname_run(p, hooks, p->buf, p->buf_idx)) {
+                                    p->state = s_hdrline_hdr_almost_done;
+                                    p->error = htparse_error_user;
+                                    return i + 1;
+                                }
+
                                 break;
                             case eval_hdr_val_content_length:
                                 p->content_len      = str_to_uint64(p->buf, p->buf_idx, &err);
@@ -1670,22 +1692,28 @@ hdrline_start:
                                 break;
                         } /* switch */
 
-                        p->state             = s_hdrline_hdr_almost_done;
-                        break;
-                    case LF:
-                        /* LF before CR? invalid */
-                        p->error             = htparse_error_inval_hdr;
-                        return i + 1;
-                    default:
-                        p->buf[p->buf_idx++] = ch;
-                        p->buf[p->buf_idx]   = '\0';
-                        break;
-                } /* switch */
+                        p->state = s_hdrline_hdr_almost_done;
 
-                if (res) {
-                    p->error = htparse_error_user;
-                    return i + 1;
-                }
+                        break;
+                    }
+
+                    switch (ch) {
+                        case LF:
+                            /* LF before CR? invalid */
+                            p->error             = htparse_error_inval_hdr;
+                            return i + 1;
+                        default:
+                            p->buf[p->buf_idx++] = ch;
+                            p->buf[p->buf_idx]   = '\0';
+                            break;
+                    } /* switch */
+
+                    if (p->state != s_hdrline_hdr_val) {
+                        break;
+                    }
+
+                    ch = data[++i];
+                } while (i < len);
 
                 break;
             case s_hdrline_hdr_almost_done:
@@ -1759,7 +1787,7 @@ hdrline_start:
                         }
 
                         break;
-                } /* switch */
+                }         /* switch */
                 break;
             case s_hdrline_almost_done:
                 htparse_log_debug("[%p] s_hdrline_almost_done", p);
@@ -1793,7 +1821,7 @@ hdrline_start:
                     default:
                         p->error = htparse_error_inval_hdr;
                         return i + 1;
-                } /* switch */
+                }         /* switch */
 
                 if (res) {
                     p->error = htparse_error_user;
@@ -1968,13 +1996,13 @@ hdrline_start:
                 return i + 1;
         } /* switch */
 
-	/* If we successfully completed a request/response we return
-	   to caller, and leave it up to him to call us again if
-	   parsing should continue. */
-	if (p->state == s_start) {
-		return i + 1;
-	}
-    }
+        /* If we successfully completed a request/response we return
+         * to caller, and leave it up to him to call us again if
+         * parsing should continue. */
+        if (p->state == s_start) {
+            return i + 1;
+        }
+    }     /* switch */
 
     return i;
 }         /* htparser_run */

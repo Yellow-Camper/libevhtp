@@ -202,33 +202,33 @@ static const char * method_strmap[] = {
 #ifndef HOST_BIG_ENDIAN
 /* Little-endian cmp macros */
 #define _str3_cmp(m, c0, c1, c2, c3) \
-    *(uint32_t*)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
+    *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
 
 #define _str3Ocmp(m, c0, c1, c2, c3) \
-    *(uint32_t*)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
+    *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
 
 #define _str4cmp(m, c0, c1, c2, c3) \
-    *(uint32_t*)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
+    *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
 
-#define _str5cmp(m, c0, c1, c2, c3, c4)                         \
-    *(uint32_t*)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0) \
+#define _str5cmp(m, c0, c1, c2, c3, c4)                          \
+    *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0) \
     && m[4] == c4
 
-#define _str6cmp(m, c0, c1, c2, c3, c4, c5)                     \
-    *(uint32_t*)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0) \
-    && (((uint32_t*)m)[1] & 0xffff) == ((c5 << 8) | c4)
+#define _str6cmp(m, c0, c1, c2, c3, c4, c5)                      \
+    *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0) \
+    && (((uint32_t *)m)[1] & 0xffff) == ((c5 << 8) | c4)
 
-#define _str7_cmp(m, c0, c1, c2, c3, c4, c5, c6, c7)            \
-    *(uint32_t*)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0) \
-    && ((uint32_t*)m)[1] == ((c7 << 24) | (c6 << 16) | (c5 << 8) | c4)
+#define _str7_cmp(m, c0, c1, c2, c3, c4, c5, c6, c7)             \
+    *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0) \
+    && ((uint32_t *)m)[1] == ((c7 << 24) | (c6 << 16) | (c5 << 8) | c4)
 
-#define _str8cmp(m, c0, c1, c2, c3, c4, c5, c6, c7)             \
-    *(uint32_t*)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0) \
-    && ((uint32_t*)m)[1] == ((c7 << 24) | (c6 << 16) | (c5 << 8) | c4)
+#define _str8cmp(m, c0, c1, c2, c3, c4, c5, c6, c7)              \
+    *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0) \
+    && ((uint32_t *)m)[1] == ((c7 << 24) | (c6 << 16) | (c5 << 8) | c4)
 
-#define _str9cmp(m, c0, c1, c2, c3, c4, c5, c6, c7, c8)                \
-    *(uint32_t*)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)        \
-    && ((uint32_t*)m)[1] == ((c7 << 24) | (c6 << 16) | (c5 << 8) | c4) \
+#define _str9cmp(m, c0, c1, c2, c3, c4, c5, c6, c7, c8)                 \
+    *(uint32_t *)m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)        \
+    && ((uint32_t *)m)[1] == ((c7 << 24) | (c6 << 16) | (c5 << 8) | c4) \
     && m[8] == c8
 #else
 /* Big endian cmp macros */
@@ -1608,7 +1608,7 @@ hdrline_start:
                                 break;
                             case eval_hdr_val_hostname:
                                 if (hook_hostname_run(p, hooks, p->buf, p->buf_idx)) {
-				    p->state = s_hdrline_hdr_almost_done;
+                                    p->state = s_hdrline_hdr_almost_done;
                                     p->error = htparse_error_user;
                                     return i + 1;
                                 }
@@ -1914,7 +1914,7 @@ hdrline_start:
                 res = 0;
                 {
                     const char * pp      = &data[i];
-                    const char * pe      = (const char*)(data + len);
+                    const char * pe      = (const char *)(data + len);
                     size_t       to_read = _MIN_READ(pe - pp, p->content_len);
 
                     if (to_read > 0) {
@@ -1967,7 +1967,7 @@ hdrline_start:
 
                 {
                     const char * pp      = &data[i];
-                    const char * pe      = (const char*)(data + len);
+                    const char * pe      = (const char *)(data + len);
                     size_t       to_read = _MIN_READ(pe - pp, p->content_len);
 
                     if (to_read > 0) {

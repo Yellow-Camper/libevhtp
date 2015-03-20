@@ -601,7 +601,29 @@ EVHTP_EXPORT int evhtp_use_callback_locks(evhtp_t * htp);
  * @param arg user-defined argument passed to the callback
  */
 EVHTP_EXPORT void evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * arg);
+
+
+/**
+ * @brief call a user-defined function before the connection is accepted.
+ *
+ * @param htp
+ * @param evhtp_pre_accept_cb
+ * @param arg
+ *
+ * @return
+ */
 EVHTP_EXPORT void evhtp_set_pre_accept_cb(evhtp_t * htp, evhtp_pre_accept_cb, void * arg);
+
+
+/**
+ * @brief call a user-defined function right after a connection is accepted.
+ *
+ * @param htp
+ * @param evhtp_post_accept_cb
+ * @param arg
+ *
+ * @return
+ */
 EVHTP_EXPORT void evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept_cb, void * arg);
 
 /**
@@ -616,7 +638,6 @@ EVHTP_EXPORT void evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept_cb, 
  */
 EVHTP_EXPORT evhtp_callback_t * evhtp_set_cb(evhtp_t * htp, const char * path,
     evhtp_callback_cb cb, void * arg);
-
 
 
 /**
@@ -924,7 +945,6 @@ EVHTP_EXPORT void evhtp_kv_free(evhtp_kv_t * kv);
  */
 EVHTP_EXPORT void evhtp_kvs_free(evhtp_kvs_t * kvs);
 
-
 /**
  * @brief free's resources associated with 'kv' if ONLY found within the key/value list
  *
@@ -932,7 +952,6 @@ EVHTP_EXPORT void evhtp_kvs_free(evhtp_kvs_t * kvs);
  * @param kv
  */
 EVHTP_EXPORT void evhtp_kv_rm_and_free(evhtp_kvs_t * kvs, evhtp_kv_t * kv);
-
 
 /**
  * @brief find the string value of 'key' from the key/value list 'kvs'
@@ -1265,8 +1284,7 @@ evhtp_connection_set_ratelimit(evhtp_connection_t * c,
 /**
  * @brief allocate a new connection
  */
-EVHTP_EXPORT evhtp_connection_t *
-evhtp_connection_new_dns(evbase_t * evbase,
+EVHTP_EXPORT evhtp_connection_t * evhtp_connection_new_dns(evbase_t * evbase,
     struct evdns_base * dns_base,
     const char * addr, uint16_t port);
 

@@ -3,13 +3,13 @@
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQEcBAABAgAGBQJVBnAyAAoJEPIKXr0GpbbCn44H+QFS79X11wUT/99yeTMYNnwu
-oVcjuY/HwIcMOINvYYfW7b/DORh6ArE6LMIfDaL7QqYSvmjUKUGg+B1WhSgn4os6
-SQ6OQ6xu+UJX477Z8s5ZMCnqje4UdEWwZ/8pMxokGrh0zCbHpLlV8+eAbHkCtT6V
-0cdkWUExB8OP58GetqyJ2r8cpO8GxkXXeaN4uOC7FD2KvGaDv/8TWar/3By3C/mO
-7LrLTpRUsAU+D2FYBnhtzhIpRlXX6YZFYn7s9aNGI/easVjNDEPdlYuo4vlPMp6r
-Snjd/BIdpdY/KGIggq8JwWHGZYM9Whgi9huCJfubmTzsT1YDMxBpLaVkzTMl93I=
-=fXSF
+iQEcBAABAgAGBQJVC7HUAAoJEPIKXr0GpbbCZ1wIAJ5MwoT3jggOf6d+MBfLJb6Z
+n9lL8B+MAVzDL5u0beZzY9AFPnHn+Npj1rf49SOrbiGYgDPqOJPk7ZrxNv+wAFGz
+m6xiiOWUta0qaTIS1RgnXih0WOcir+5lm/5DuWlW4a7obUs30IEZzsvUqMVsxcX9
+70CFuvJBwTzf1NAMTpzGweZ/00yRVMacBO56aWMKLyHT7at3rMFRm8TSBBmvnO6y
+zFmprtPDQpV7GgAh5PTspfPkT4dLmfwgCTvgC+hoAef/6+XtIfESl0EdWZTjg3OO
+ZWukfeoCvIBXAxmGd/ns/mahLM2jFDRoGL09LyezrGUQvx6A8t2PWUHYsExnD1g=
+=h8Wj
 -----END PGP SIGNATURE-----
 
 ```
@@ -24,7 +24,7 @@ Snjd/BIdpdY/KGIggq8JwWHGZYM9Whgi9huCJfubmTzsT1YDMxBpLaVkzTMl93I=
 size    exec  file                       contents                                                                                                                         
               ./                                                                                                                                                          
 173             .gitignore               372447fe4ebc48d242af7873ca6e8e18d73bee6a21525d7898c82d67dda48728                                                                 
-12369           CMakeLists.txt           a941a143fd88e981e0a7e76442e88dc0dadada83303703b60281aaba9c264806                                                                 
+12269           CMakeLists.txt           b4d807ff26d14ebeaa27516a0923fb43bc709b07c1a8837538f3bb8c877b679f                                                                 
                 CMakeModules/                                                                                                                                             
 3926              AddOptions.cmake       b89e00b3a04af81f1d7fad2ad9ec09e43d227a8740e74c6af38ff320e4bc7798                                                                 
 1213              BaseConfig.cmake       b69f6aab9039f6dbdc5e337b2ab2bac3d58956097a3685be37568be6f9b64c18                                                                 
@@ -35,36 +35,32 @@ size    exec  file                       contents
 69989           Doxyfile                 80cee7da0b443cb608470527dfb3eb25caf8318deeb8ba1734aeafadc9871552                                                                 
 1781            LICENSE                  b013218ca11124c57d295516987989a3d7d8dcf17bb22b0923ddf5eb9982b3c5                                                                 
 5308            README.markdown          737a395d07c1c4f80bfc00fca84b2a5ddc844d4ea8695ee1819105e59262b942                                                                 
+                build/                                                                                                                                                    
+0                 placeholder            e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855                                                                 
                 compat/                                                                                                                                                   
                   sys/                                                                                                                                                    
 16674               queue.h.in           f5b69cf714d6c0bccb69c3a3b66839634ea8be6905b0dd141613889d155b489f                                                                 
 74192               tree.h.in            ae4dad3d8437c922d215f15d8dcba74fa60b5b43851bdd12a6da652471eee43d                                                                 
-369             evhtp-config.h.in        e1c3cd0d942cf7a1266ffaaa51e5c07db93bb586b50d66e1d421037f5649658f                                                                 
+590             evhtp-config.h.in        d3090a15e212f00ede0dac030481eb41a33bfd30934e7b5640c8a12332057a75                                                                 
 720             evhtp-internal.h         bf88199b54863f56a58ad7dcb249bb967a7dfaa6d58567c9fd10d3e73e15d4b6                                                                 
 116275          evhtp.c                  4fd2c70a560d8a5fa854ae004dd8dd799032ac8c59044aaa538179035c219e8a                                                                 
-43136           evhtp.h                  007889ce6e5576f01c5a06c88a66e40a7b657f19f429be0da5bf81f9e53cd3f5                                                                 
+42916           evhtp.h                  718f3957ad317937b737c58cc268a10b8069067e1091292e4709369ff551b1a8                                                                 
 287             evhtp.pc.in              0d68fca6310508d446ebc8ee963c97136772ea3e69a00123968f0b613937ecc7                                                                 
 1507            evhtp_numtoa.c           17c99ca11204b848accd5aaf3aa17f3ffa81927bb727c7b1e2e2f36293e5a4a8                                                                 
 876             evhtp_numtoa.h           8ac8153c37984ea6082702ae9e715af989bc7260455a6ec67e84c92422fab005                                                                 
-                evthr/                                                                                                                                                    
-405               Makefile               cf6557ebdab5ab3aa38cf630ee77eb7abd0e9b139ef79ecda75e5a6dd29917d3                                                                 
-1852              README                 76e6af3af4031cceab245fba402a097405de65879a7c44c7b94dd29994d0799d                                                                 
-7462              evthr.c                3e439e9c4eba69763ad79b788a19616acc26509fb50d454c696a80a355faabc8                                                                 
-1469              evthr.h                6a45beb6ae105d13d470ca12d6415f6d3b2090f8953b3cb18e945bdd044404db                                                                 
-1648              test.c                 220650017938d75a504b76add1d35609e07f725d21a15ddb1079c6cefb674c17                                                                 
+7073            evthr.c                  0d68eef07fd63a8b3a4e89d083068ffa9c1d7a84cd469ed5b98a708f15cdd34b                                                                 
+1643            evthr.h                  bf1ea48887450deb3b9f1e623c01d90a42eb7bf1f63cd5d087d597fa88079d94                                                                 
                 examples/                                                                                                                                                 
 18422             test.c                 e42e9425289f5852a4b7373a848e1e58bb54cdd83d77181c29de89e1c3f6702b                                                                 
 846               test_basic.c           302e23d3475099f9efd9c22b19a9f17463baf9c91f93cdd4bb5732b6c1f2df2e                                                                 
 2060              test_client.c          9d06f74af2272a7f7cc3a0fc03e5ec7b9f7bd4c7c7f64aaee40532043100cb49                                                                 
+11962             test_htparse.c         4e2e659ae2be92e1cf9decb9a42040e7a2ee6d2efd41ec29f4c1a0feb7971e7b                                                                 
 3545              test_proxy.c           7ca2c2fda2755457ab15221165ec8a6f59128260b58bf6a001a173e91597864e                                                                 
 7533              test_query.c           29c3092d9d0a54ed36b505ca5d38444bd10562cfd746366989abdec3f19095c5                                                                 
 1317              test_vhost.c           fe1ef3b75a10a043ba8c827717240bfabe860b4880e5c5b3e165cbd2127b85ef                                                                 
 10340             thread_design.c        0991b37d7f2be57ca696dccb5728e61b51b66aece0d2e125fbefcf0a4cbcc6ff                                                                 
-                htparse/                                                                                                                                                  
-358               Makefile               925123843e175bb1f3e22f568180137c90f3a7595cc8c6b915d047666c9f3b03                                                                 
-67677             htparse.c              9049e4b9fe4ddb83c3f3c47746eb3500f5eb94369f53aedd3461d84bb69d0455                                                                 
-3801              htparse.h              fbe06e8488248048baac677c7953ee87763c310a8c65cf73858cceff3f78198f                                                                 
-11962             test.c                 4e2e659ae2be92e1cf9decb9a42040e7a2ee6d2efd41ec29f4c1a0feb7971e7b                                                                 
+67336           htparse.c                d954a62926dce13b92439177232658144daa27ea406a00a291e10e563599227e                                                                 
+3801            htparse.h                fbe06e8488248048baac677c7953ee87763c310a8c65cf73858cceff3f78198f                                                                 
                 oniguruma/                                                                                                                                                
 41                AUTHORS                d74e190700c96963a9a4d883c2780d6f0c9a035f9d84d21a7ff977bd0bef3b54                                                                 
 1881              CMakeLists.txt         c979eaa21f6cc50bb38432305166fc08e969866c7dc59df3f326d498d00645ed                                                                 

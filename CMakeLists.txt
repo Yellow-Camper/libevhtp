@@ -222,8 +222,6 @@ endif()
 
 include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}/compat
-	${CMAKE_CURRENT_SOURCE_DIR}/htparse
-	${CMAKE_CURRENT_SOURCE_DIR}/evthr
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${ONIG_INCLUDE_DIR}
 	${OPENSSL_INCLUDE_DIR}
@@ -246,11 +244,11 @@ if (NOT ${LIBEVENT_OPENSSL_FOUND})
 	set (EVHTP_DISABLE_SSL ON)
 endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
-set(LIBEVHTP_SOURCES evhtp.c evhtp_numtoa.c htparse/htparse.c)
+set(LIBEVHTP_SOURCES evhtp.c evhtp_numtoa.c htparse.c)
 
 if (NOT EVHTP_DISABLE_EVTHR)
 	set (LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} pthread)
-	set (LIBEVHTP_SOURCES ${LIBEVHTP_SOURCES} evthr/evthr.c)
+	set (LIBEVHTP_SOURCES ${LIBEVHTP_SOURCES} evthr.c)
 endif(NOT EVHTP_DISABLE_EVTHR)
 
 IF (WIN32)
@@ -313,11 +311,11 @@ endif()
 
 install (TARGETS evhtp DESTINATION ${LIB_INSTALL_DIR})
 install (FILES evhtp.h DESTINATION ${INCLUDE_INSTALL_DIR})
-install (FILES htparse/htparse.h DESTINATION ${INCLUDE_INSTALL_DIR})
+install (FILES htparse.h DESTINATION ${INCLUDE_INSTALL_DIR})
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h DESTINATION ${INCLUDE_INSTALL_DIR})
 
 if (NOT EVHTP_DISABLE_EVTHR)
-	install (FILES evthr/evthr.h DESTINATION ${INCLUDE_INSTALL_DIR})
+	install (FILES evthr.h DESTINATION ${INCLUDE_INSTALL_DIR})
 endif()
 
 # oniguruma/onigposix.h

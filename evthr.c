@@ -369,17 +369,3 @@ evthr_pool_start(evthr_pool_t * pool) {
 
     return 0;
 }
-
-EXPORT_SYMBOL(evthr_new);
-EXPORT_SYMBOL(evthr_get_base);
-EXPORT_SYMBOL(evthr_set_aux);
-EXPORT_SYMBOL(evthr_get_aux);
-EXPORT_SYMBOL(evthr_start);
-EXPORT_SYMBOL(evthr_stop);
-EXPORT_SYMBOL(evthr_defer);
-EXPORT_SYMBOL(evthr_free);
-EXPORT_SYMBOL(evthr_pool_new);
-EXPORT_SYMBOL(evthr_pool_start);
-EXPORT_SYMBOL(evthr_pool_stop);
-EXPORT_SYMBOL(evthr_pool_defer);
-EXPORT_SYMBOL(evthr_pool_free);

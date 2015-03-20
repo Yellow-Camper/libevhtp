@@ -3,14 +3,6 @@
 
 #include <evhtp-config.h>
 
-#ifndef EVHTP_EXPORT
-# if (defined __GNUC__ && __GNUC__ >= 4) || defined __INTEL_COMPILER || defined __clang__
-#  define EVHTP_EXPORT __attribute__ ((visibility("default")))
-# else
-#  define EVHTP_EXPORT
-# endif
-#endif
-
 #ifndef EVHTP_DISABLE_EVTHR
 #include <evthr.h>
 #endif

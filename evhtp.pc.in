@@ -1,6 +1,6 @@
 prefix=@CMAKE_INSTALL_PREFIX@
 libdir=@LIB_INSTALL_DIR@
-includedir=@INCLUDE_INSTALL_DIR@
+includedir=@INCLUDE_INSTALL_DIR@/evhtp
 
 Name: libevhtp
 Description: A more flexible replacement for libevent's httpd API

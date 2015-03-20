@@ -343,6 +343,7 @@ _evhtp_quick_hash(const char * str) {
  *
  * @return 1 if HTTP/1.1, else 0
  */
+
 #define _evhtp_is_http_10(_major, _minor) \
     (_major >= 1 && _minor <= 0)
 
@@ -622,58 +623,7 @@ _evhtp_glob_match(const char * pattern, size_t pat_len, const char * string, siz
         str_len = strlen(string);
     }
 
-    /* XXX still in testing */
     return _evhtp_glob_match2(pattern, pat_len, string, str_len);
-
-#if 0
-    while (pat_len) {
-        if (pattern[0] == '*') {
-            while (pattern[1] == '*') {
-                pattern++;
-                pat_len--;
-            }
-
-            if (pat_len == 1) {
-                return 1;
-            }
-
-            while (str_len) {
-                if (_evhtp_glob_match(pattern + 1, pat_len, string, str_len)) {
-                    return 1;
-                }
-
-                string++;
-                str_len--;
-            }
-
-            return 0;
-        } else {
-            if (pattern[0] != string[0]) {
-                return 0;
-            }
-
-            string++;
-            str_len--;
-        }
-
-        pattern++;
-        pat_len--;
-
-        if (str_len == 0) {
-            while (*pattern == '*') {
-                pattern++;
-                pat_len--;
-            }
-            break;
-        }
-    }
-
-    if (pat_len == 0 && str_len == 0) {
-        return 1;
-    }
-
-    return 0;
-#endif
 } /* _evhtp_glob_match */
 
 static evhtp_callback_t *
@@ -2072,7 +2022,6 @@ _evhtp_connection_new(evhtp_t * htp, evutil_socket_t sock, evhtp_type type) {
             ptype = htp_type_request;
             break;
         default:
-
             return NULL;
     }
 

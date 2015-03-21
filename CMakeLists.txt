@@ -20,6 +20,8 @@ OPTION(EVHTP_BUILD_SHARED      "Build shared library too" OFF)
 # -DEVHTP_USE_DEFER_ACCEPT:STRING=ON
 OPTION(EVHTP_USE_DEFER_ACCEPT  "Enable TCP_DEFER_ACCEPT"  OFF)
 
+OPTION(EVHTP_THR_SHARED_PIPE   "Enabled shared socketpair for evthr" ON)
+
 # fun color stuff
 if(NOT WIN32)
     string(ASCII 27 Esc)
@@ -53,6 +55,11 @@ INCLUDE (UseDebugSymbols)
 
 CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
 CHECK_FUNCTION_EXISTS(strnlen HAVE_STRNLEN)
+
+if (EVHTP_THR_SHARED_PIPE)
+	add_definitions(-DEVTHR_SHARED_PIPE)
+endif()
+	
 
 CHECK_INCLUDE_FILES(strings.h   HAVE_STRINGS_H)
 CHECK_INCLUDE_FILES(string.h    HAVE_STRING_H)
@@ -357,6 +364,7 @@ message(STATUS "${BoldBlue}EVHTP_DISABLE_EVTHR${ColourReset}      : ${BoldGreen}
 message(STATUS "${BoldBlue}EVHTP_DISABLE_REGEX${ColourReset}      : ${BoldGreen} ${EVHTP_DISABLE_REGEX}    ${ColourReset}")
 message(STATUS "${BoldBlue}EVHTP_BUILD_SHARED${ColourReset}       : ${BoldGreen} ${EVHTP_BUILD_SHARED}     ${ColourReset}")
 message(STATUS "${BoldBlue}EVHTP_USE_DEFER_ACCEPT${ColourReset}   : ${BoldGreen} ${EVHTP_USE_DEFER_ACCEPT} ${ColourReset}")
+message(STATUS "${BoldBlue}EVHTP_THR_SHARED_PIPE${ColourReset}   : ${BoldGreen} ${EVHTP_THR_SHARED_PIPE} ${ColourReset}")
 message("")
 message(STATUS "${Blue}CMAKE_BUILD_TYPE${ColourReset}         : " ${BoldRed}${CMAKE_BUILD_TYPE}${ColourReset})
 message(STATUS "${Blue}CMAKE_INSTALL_PREFIX${ColourReset}     : " ${BoldMagenta}${CMAKE_INSTALL_PREFIX}${ColourReset})

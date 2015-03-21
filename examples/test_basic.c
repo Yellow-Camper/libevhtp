@@ -9,7 +9,7 @@ void
 testcb(evhtp_request_t * req, void * a) {
     const char * str = a;
 
-    evbuffer_add_printf(req->buffer_out, "%s", str);
+    evbuffer_add(req->buffer_out, str, strlen(str));
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
@@ -21,12 +21,10 @@ main(int argc, char ** argv) {
     evhtp_set_cb(htp, "/simple/", testcb, "simple");
     evhtp_set_cb(htp, "/1/ping", testcb, "one");
     evhtp_set_cb(htp, "/1/ping.json", testcb, "two");
-#if 0
 #ifndef EVHTP_DISABLE_EVTHR
-    evhtp_use_threads(htp, NULL, 4, NULL);
+    evhtp_use_threads(htp, NULL, 8, NULL);
 #endif
-#endif
-    evhtp_bind_socket(htp, "0.0.0.0", 8081, 1024);
+    evhtp_bind_socket(htp, "0.0.0.0", 8081, 2048);
 
     event_base_loop(evbase, 0);
 

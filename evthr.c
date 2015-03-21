@@ -29,11 +29,15 @@ struct evthr_cmd {
     uint8_t  stop;
     void   * args;
     evthr_cb cb;
-};
+} __attribute__((packed));
 
 TAILQ_HEAD(evthr_pool_slist, evthr);
 
 struct evthr_pool {
+#ifdef EVTHR_SHARED_PIPE
+    int rdr;
+    int wdr;
+#endif
     int                nthreads;
     evthr_pool_slist_t threads;
 };
@@ -45,23 +49,20 @@ struct evthr {
     ev_t          * event;
     evbase_t      * evbase;
     pthread_mutex_t lock;
-    pthread_mutex_t rlock;
     pthread_t     * thr;
     evthr_init_cb   init_cb;
     void          * arg;
     void          * aux;
 
+#ifdef EVTHR_SHARED_PIPE
+    int            pool_rdr;
+    struct event * shared_pool_ev;
+#endif
     TAILQ_ENTRY(evthr) next;
 };
 
-static inline int
-_evthr_read(evthr_t * thr, evthr_cmd_t * cmd, evutil_socket_t sock) {
-    if (recv(sock, cmd, sizeof(evthr_cmd_t), 0) != sizeof(evthr_cmd_t)) {
-        return 0;
-    }
-
-    return 1;
-}
+#define _evthr_read(thr, cmd, sock) \
+    (recv(sock, cmd, sizeof(evthr_cmd_t), 0) == sizeof(evthr_cmd_t)) ? 1 : 0
 
 static void
 _evthr_read_cmd(evutil_socket_t sock, short which, void * args) {
@@ -73,24 +74,17 @@ _evthr_read_cmd(evutil_socket_t sock, short which, void * args) {
         return;
     }
 
-    pthread_mutex_lock(&thread->rlock);
-
     stopped = 0;
 
-    while (_evthr_read(thread, &cmd, sock) == 1) {
-        if (cmd.stop == 1) {
-            stopped = 1;
-            break;
-        }
+    if (evhtp_likely(_evthr_read(thread, &cmd, sock) == 1)) {
+        stopped = cmd.stop;
 
-        if (cmd.cb != NULL) {
+        if (evhtp_likely(cmd.cb != NULL)) {
             (cmd.cb)(thread, cmd.args, thread->arg);
         }
     }
 
-    pthread_mutex_unlock(&thread->rlock);
-
-    if (stopped == 1) {
+    if (evhtp_unlikely(stopped == 1)) {
         event_base_loopbreak(thread->evbase);
     }
 
@@ -115,6 +109,14 @@ _evthr_loop(void * args) {
 
     event_add(thread->event, NULL);
 
+#ifdef EVTHR_SHARED_PIPE
+    if (thread->pool_rdr > 0) {
+        thread->shared_pool_ev = event_new(thread->evbase, thread->pool_rdr,
+                                           EV_READ | EV_PERSIST, _evthr_read_cmd, args);
+        event_add(thread->shared_pool_ev, NULL);
+    }
+#endif
+
     pthread_mutex_lock(&thread->lock);
 
     if (thread->init_cb != NULL) {
@@ -130,46 +132,35 @@ _evthr_loop(void * args) {
     }
 
     pthread_exit(NULL);
-}
+} /* _evthr_loop */
 
 evthr_res
 evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
-    evthr_cmd_t cmd;
-
-
-    cmd.cb   = cb;
-    cmd.args = arg;
-    cmd.stop = 0;
-
-    pthread_mutex_lock(&thread->rlock);
+    evthr_cmd_t cmd = {
+        .cb   = cb,
+        .args = arg,
+        .stop = 0
+    };
 
     if (send(thread->wdr, &cmd, sizeof(cmd), 0) <= 0) {
-        pthread_mutex_unlock(&thread->rlock);
         return EVTHR_RES_RETRY;
     }
-
-    pthread_mutex_unlock(&thread->rlock);
 
     return EVTHR_RES_OK;
 }
 
 evthr_res
 evthr_stop(evthr_t * thread) {
-    evthr_cmd_t cmd;
+    evthr_cmd_t cmd = {
+        .cb   = NULL,
+        .args = NULL,
+        .stop = 1
+    };
 
-    /* cmd.magic = _EVTHR_MAGIC; */
-    cmd.cb   = NULL;
-    cmd.args = NULL;
-    cmd.stop = 1;
-
-    pthread_mutex_lock(&thread->rlock);
-
-    if (write(thread->wdr, &cmd, sizeof(evthr_cmd_t)) < 0) {
-        pthread_mutex_unlock(&thread->rlock);
+    if (send(thread->wdr, &cmd, sizeof(evthr_cmd_t), 0) < 0) {
         return EVTHR_RES_RETRY;
     }
 
-    pthread_mutex_unlock(&thread->rlock);
     pthread_join(*thread->thr, NULL);
     return EVTHR_RES_OK;
 }
@@ -212,11 +203,6 @@ evthr_new(evthr_init_cb init_cb, void * args) {
     thread->wdr     = fds[1];
 
     if (pthread_mutex_init(&thread->lock, NULL)) {
-        evthr_free(thread);
-        return NULL;
-    }
-
-    if (pthread_mutex_init(&thread->rlock, NULL)) {
         evthr_free(thread);
         return NULL;
     }
@@ -302,6 +288,20 @@ evthr_pool_stop(evthr_pool_t * pool) {
 
 evthr_res
 evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
+#ifdef EVTHR_SHARED_PIPE
+    evthr_cmd_t cmd = {
+        .cb   = cb,
+        .args = arg,
+        .stop = 0
+    };
+
+    if (evhtp_unlikely(send(pool->wdr, &cmd, sizeof(cmd), 0) == -1)) {
+        fprintf(stderr, "send() %s\n", strerror(errno));
+        return EVTHR_RES_RETRY;
+    }
+
+    return EVTHR_RES_OK;
+#else
     evthr_t * thr = NULL;
 
     if (pool == NULL) {
@@ -319,12 +319,17 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
 
 
     return evthr_defer(thr, cb, arg);
+#endif
 } /* evthr_pool_defer */
 
 evthr_pool_t *
 evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared) {
     evthr_pool_t * pool;
     int            i;
+
+#ifdef EVTHR_SHARED_PIPE
+    int fds[2];
+#endif
 
     if (nthreads == 0) {
         return NULL;
@@ -337,6 +342,18 @@ evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared) {
     pool->nthreads = nthreads;
     TAILQ_INIT(&pool->threads);
 
+#ifdef EVTHR_SHARED_PIPE
+    if (evutil_socketpair(AF_UNIX, SOCK_DGRAM, 0, fds) == -1) {
+        return NULL;
+    }
+
+    evutil_make_socket_nonblocking(fds[0]);
+    evutil_make_socket_nonblocking(fds[1]);
+
+    pool->rdr = fds[0];
+    pool->wdr = fds[1];
+#endif
+
     for (i = 0; i < nthreads; i++) {
         evthr_t * thread;
 
@@ -345,11 +362,15 @@ evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared) {
             return NULL;
         }
 
+#ifdef EVTHR_SHARED_PIPE
+        thread->pool_rdr = fds[0];
+#endif
+
         TAILQ_INSERT_TAIL(&pool->threads, thread, next);
     }
 
     return pool;
-}
+} /* evthr_pool_new */
 
 int
 evthr_pool_start(evthr_pool_t * pool) {
@@ -369,3 +390,4 @@ evthr_pool_start(evthr_pool_t * pool) {
 
     return 0;
 }
+

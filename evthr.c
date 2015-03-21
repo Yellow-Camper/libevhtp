@@ -70,7 +70,7 @@ _evthr_read_cmd(evutil_socket_t sock, short which, void * args) {
     evthr_cmd_t cmd;
     int         stopped;
 
-    if (!(thread = (evthr_t*)args)) {
+    if (!(thread = (evthr_t *)args)) {
         return;
     }
 
@@ -95,7 +95,7 @@ static void *
 _evthr_loop(void * args) {
     evthr_t * thread;
 
-    if (!(thread = (evthr_t*)args)) {
+    if (!(thread = (evthr_t *)args)) {
         return NULL;
     }
 
@@ -216,7 +216,7 @@ evthr_start(evthr_t * thread) {
         return -1;
     }
 
-    if (pthread_create(thread->thr, NULL, _evthr_loop, (void*)thread)) {
+    if (pthread_create(thread->thr, NULL, _evthr_loop, (void *)thread)) {
         return -1;
     }
 

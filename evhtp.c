@@ -982,11 +982,11 @@ static int
 _evhtp_request_parser_start(htparser * p) {
     evhtp_connection_t * c = htparser_get_userdata(p);
 
-    if (c->type == evhtp_type_client) {
+    if (evhtp_unlikely(c->type == evhtp_type_client)) {
         return 0;
     }
 
-    if (c->paused == 1) {
+    if (evhtp_unlikely(c->paused == 1)) {
         return -1;
     }
 
@@ -1331,13 +1331,16 @@ _evhtp_request_parser_host(htparser * p, const char * data, size_t len) {
     }
 
     authority           = c->request->uri->authority;
-    authority->hostname = strndup(data, len);
+    authority->hostname = malloc(len + 1);
 
     if (!authority->hostname) {
         c->request->status = EVHTP_RES_FATAL;
 
         return -1;
     }
+
+    memcpy(authority->hostname, data, len);
+    authority->hostname[len] = '\0';
 
     return 0;
 }
@@ -3139,11 +3142,12 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
 #endif
 
     htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
-                                          LEV_OPT_THREADSAFE | LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
+                                          LEV_OPT_THREADSAFE
+                                          | LEV_OPT_CLOSE_ON_FREE
+                                          | LEV_OPT_REUSEABLE,
                                           backlog, sa, sin_len);
-    if (!htp->server) {
-        return -1;
-    }
+
+    evhtp_errno_assert(htp->server != NULL);
 
 #ifdef USE_DEFER_ACCEPT
     {
@@ -3152,8 +3156,12 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
 
         sock = evconnlistener_get_fd(htp->server);
 
+#if defined TCP_DEFER_ACCEPT
         setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, &one, (ev_socklen_t)sizeof(one));
+#endif
+#if defined TCP_NODELAY
         setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &one, (ev_socklen_t)sizeof(one));
+#endif
     }
 #endif
 
@@ -3172,7 +3180,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
 #endif
 
     return 0;
-}
+} /* evhtp_bind_sockaddr */
 
 int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog) {
@@ -3255,9 +3263,8 @@ evhtp_callback_t *
 evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_cb cb, void * arg) {
     evhtp_callback_t * hcb;
 
-    if (!(hcb = calloc(sizeof(evhtp_callback_t), 1))) {
-        return NULL;
-    }
+    hcb        = calloc(sizeof(evhtp_callback_t), 1);
+    evhtp_alloc_assert(hcb);
 
     hcb->type  = type;
     hcb->cb    = cb;
@@ -4064,13 +4071,10 @@ evhtp_t *
 evhtp_new(evbase_t * evbase, void * arg) {
     evhtp_t * htp;
 
-    if (evbase == NULL) {
-        return NULL;
-    }
+    evhtp_assert(evbase != NULL);
 
-    if (!(htp = calloc(sizeof(evhtp_t), 1))) {
-        return NULL;
-    }
+    htp            = calloc(sizeof(evhtp_t), 1);
+    evhtp_alloc_assert(htp);
 
     htp->arg       = arg;
     htp->evbase    = evbase;
@@ -4106,19 +4110,20 @@ evhtp_free(evhtp_t * evhtp) {
 #endif
 
     if (evhtp->server_name) {
-        free(evhtp->server_name);
+        evhtp_safe_free(evhtp->server_name, free);
     }
 
     if (evhtp->callbacks) {
-        evhtp_callbacks_free(evhtp->callbacks);
+        evhtp_safe_free(evhtp->callbacks, evhtp_callbacks_free);
     }
 
     TAILQ_FOREACH_SAFE(evhtp_alias, &evhtp->aliases, next, tmp) {
         if (evhtp_alias->alias != NULL) {
-            free(evhtp_alias->alias);
+            evhtp_safe_free(evhtp_alias->alias, free);
         }
+
         TAILQ_REMOVE(&evhtp->aliases, evhtp_alias, next);
-        free(evhtp_alias);
+        evhtp_safe_free(evhtp_alias, free);
     }
 
 #ifndef EVHTP_DISABLE_SSL
@@ -4127,7 +4132,7 @@ evhtp_free(evhtp_t * evhtp) {
     }
 #endif
 
-    free(evhtp);
+    evhtp_safe_free(evhtp, free);
 } /* evhtp_free */
 
 int
@@ -4137,7 +4142,7 @@ evhtp_connection_set_rate_limit(evhtp_connection_t * conn,
                                 const struct timeval * tick) {
     struct ev_token_bucket_cfg * tcfg;
 
-    if (conn == NULL || conn->bev == NULL) {
+    if (evhtp_unlikely(conn == NULL || conn->bev == NULL)) {
         return -1;
     }
 
@@ -4168,9 +4173,7 @@ evhtp_connection_new_dns(evbase_t * evbase, struct evdns_base * dns_base,
     evhtp_connection_t * conn;
     int                  err;
 
-    if (evbase == NULL) {
-        return NULL;
-    }
+    evhtp_assert(evbase != NULL);
 
     if (!(conn = _evhtp_connection_new(NULL, -1, evhtp_type_client))) {
         return NULL;
@@ -4234,9 +4237,7 @@ evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, ev
     evhtp_connection_t * conn;
     struct sockaddr_in   sin;
 
-    if (evbase == NULL) {
-        return NULL;
-    }
+    evhtp_assert(evbase != NULL);
 
     if (!(conn = _evhtp_connection_new(NULL, -1, evhtp_type_client))) {
         return NULL;
@@ -4248,10 +4249,10 @@ evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, ev
 
     conn->ssl           = SSL_new(ctx);
     conn->evbase        = evbase;
-    conn->bev           = bufferevent_openssl_socket_new(evbase, -1, conn->ssl, BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE);
+    conn->bev           = bufferevent_openssl_socket_new(evbase, -1, conn->ssl,
+                                                         BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE);
 
     bufferevent_enable(conn->bev, EV_READ);
-
     bufferevent_setcb(conn->bev, NULL, NULL,
                       _evhtp_connection_eventcb, conn);
 
@@ -4269,9 +4270,8 @@ evhtp_request_t *
 evhtp_request_new(evhtp_callback_cb cb, void * arg) {
     evhtp_request_t * r;
 
-    if (!(r = _evhtp_request_new(NULL))) {
-        return NULL;
-    }
+    r        = _evhtp_request_new(NULL);
+    evhtp_alloc_assert(r);
 
     r->cb    = cb;
     r->cbarg = arg;

@@ -296,7 +296,6 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
     };
 
     if (evhtp_unlikely(send(pool->wdr, &cmd, sizeof(cmd), 0) == -1)) {
-        fprintf(stderr, "send() %s\n", strerror(errno));
         return EVTHR_RES_RETRY;
     }
 

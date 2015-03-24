@@ -804,11 +804,11 @@ _evhtp_authority_free(evhtp_authority_t * authority) {
         return;
     }
 
-    free(authority->username);
-    free(authority->password);
-    free(authority->hostname);
+    evhtp_safe_free(authority->username, free);
+    evhtp_safe_free(authority->password, free);
+    evhtp_safe_free(authority->hostname, free);
 
-    free(authority);
+    evhtp_safe_free(authority, free);
 }
 
 /**

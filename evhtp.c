@@ -1637,23 +1637,7 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
             evhtp_headers_add_header(request->headers_out,
                                      evhtp_header_new("Content-Length", out_buf, 0, 1));
         }
-
-        if (!content_type) {
-            evhtp_headers_add_header(request->headers_out,
-                                     evhtp_header_new("Content-Type", "text/plain", 0, 0));
-        }
-    } else {
-        if (!evhtp_header_find(request->headers_out, "Content-Length")) {
-            const char * chunked = evhtp_header_find(request->headers_out,
-                                                     "transfer-encoding");
-
-            if (!chunked || !strstr(chunked, "chunked")) {
-                evhtp_headers_add_header(request->headers_out,
-                                         evhtp_header_new("Content-Length", "0", 0, 0));
-            }
-        }
     }
-
 check_proto:
     /* add the proper keep-alive type headers based on http version */
     switch (request->proto) {
@@ -1679,6 +1663,11 @@ check_proto:
             break;
     } /* switch */
 
+
+    if (!content_type) {
+        evhtp_headers_add_header(request->headers_out,
+                                 evhtp_header_new("Content-Type", "text/plain", 0, 0));
+    }
 
     /* attempt to add the status line into a temporary buffer and then use
      * evbuffer_add(). Using plain old snprintf() will be faster than
@@ -3052,8 +3041,10 @@ evhtp_send_reply_chunk_start(evhtp_request_t * request, evhtp_res code) {
                  */
                 evhtp_kv_rm_and_free(request->headers_out, content_len);
 
+#if 0
                 evhtp_headers_add_header(request->headers_out,
                                          evhtp_header_new("Content-Length", "0", 0, 0));
+#endif
 
                 request->chunked = 1;
                 break;
@@ -3879,9 +3870,19 @@ evhtp_request_set_bev(evhtp_request_t * request, evbev_t * bev) {
     evhtp_connection_set_bev(request->conn, bev);
 }
 
+void
+evhtp_request_set_keepalive(evhtp_request_t * request, int val) {
+    request->keepalive = (val > 0) ? 1 : 0;
+}
+
 evhtp_connection_t *
 evhtp_request_get_connection(evhtp_request_t * request) {
     return request->conn;
+}
+
+evhtp_proto
+evhtp_request_get_proto(evhtp_request_t * request) {
+    return request->proto;
 }
 
 inline void

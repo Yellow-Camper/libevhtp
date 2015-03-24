@@ -17,7 +17,10 @@ void
 issue161cb(evhtp_request_t * req, void * a) {
     struct evbuffer * b = evbuffer_new();
 
-    evhtp_request_set_keepalive(req, 0);
+    if (evhtp_request_get_proto(req) == EVHTP_PROTO_10) {
+        evhtp_request_set_keepalive(req, 0);
+    }
+
     evhtp_send_reply_start(req, EVHTP_RES_OK);
 
     evbuffer_add(b, "foo", 3);

@@ -1628,14 +1628,20 @@ hdrline_start:
                                 break;
                             case eval_hdr_val_connection:
                                 switch (p->buf[0]) {
+                                    char A_case = 'A';
+
                                     case 'K':
                                     case 'k':
                                         if (p->buf_idx != 10) {
                                             break;
                                         }
 
+                                        if (p->buf[5] == 'a') {
+                                            A_case = 'a';
+                                        }
+
                                         if (_str9cmp((p->buf + 1),
-                                                     'e', 'e', 'p', '-', 'A', 'l', 'i', 'v', 'e')) {
+                                                     'e', 'e', 'p', '-', A_case, 'l', 'i', 'v', 'e')) {
                                             p->flags |= parser_flag_connection_keep_alive;
                                         }
                                         break;
@@ -1754,13 +1760,6 @@ hdrline_start:
                             return i + 1;
                         }
 
-                        res = hook_on_hdrs_complete_run(p, hooks);
-
-                        if (res) {
-                            p->error = htparse_error_user;
-                            return i + 1;
-                        }
-
                         break;
                     case LF:
                         /* got LFLF? is this valid? */
@@ -1796,6 +1795,14 @@ hdrline_start:
 
                 switch (ch) {
                     case LF:
+                        res = hook_on_hdrs_complete_run(p, hooks);
+
+                        if (res) {
+                            p->error = htparse_error_user;
+                            return i + 1;
+                        }
+
+
                         p->buf_idx = 0;
                         htparse_log_debug("[%p] HERE", p);
 

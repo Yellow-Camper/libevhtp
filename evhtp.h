@@ -1131,7 +1131,8 @@ EVHTP_EXPORT const char * evhtp_header_find(evhtp_headers_t * headers, const cha
  *
  * @return htp_method enum
  */
-EVHTP_EXPORT htp_method evhtp_request_get_method(evhtp_request_t * r);
+EVHTP_EXPORT htp_method  evhtp_request_get_method(evhtp_request_t * r);
+EVHTP_EXPORT evhtp_proto evhtp_request_get_proto(evhtp_request_t * r);
 
 /* the following functions all do the same thing, pause and the processing */
 EVHTP_EXPORT void evhtp_connection_pause(evhtp_connection_t * connection);
@@ -1247,6 +1248,7 @@ EVHTP_EXPORT void evhtp_connection_set_max_body_size(evhtp_connection_t * conn, 
  * @param len
  */
 EVHTP_EXPORT void evhtp_request_set_max_body_size(evhtp_request_t * request, uint64_t len);
+EVHTP_EXPORT void evhtp_request_set_keepalive(evhtp_request_t * request, int val);
 
 /**
  * @brief sets a maximum number of requests that a single connection can make.

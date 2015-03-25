@@ -3147,12 +3147,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
 
         sock = evconnlistener_get_fd(htp->server);
 
-#if defined TCP_DEFER_ACCEPT
         setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, &one, (ev_socklen_t)sizeof(one));
-#endif
-#if defined TCP_NODELAY
-        setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &one, (ev_socklen_t)sizeof(one));
-#endif
     }
 #endif
 

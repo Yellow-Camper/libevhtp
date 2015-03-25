@@ -667,7 +667,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 p->buf[p->buf_idx++] = ch;
                 p->buf[p->buf_idx]   = '\0';
 
-                if (p->type == htp_type_request) {
+                if (evhtp_likely(p->type == htp_type_request)) {
                     p->state = s_method;
                 } else if (p->type == htp_type_response && ch == 'H') {
                     p->state = s_http_H;
@@ -1334,7 +1334,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_minor_digit:
                 switch (ch) {
                     case ' ':
-                        if (p->type == htp_type_request) {
+                        if (evhtp_likely(p->type == htp_type_request)) {
                             p->state = s_spaces_after_digit;
                         } else if (p->type == htp_type_response) {
                             p->state = s_status;
@@ -1489,7 +1489,7 @@ hdrline_start:
                 htparse_log_debug("[%p] s_hdrline_hdr_key", p);
 
                 do {
-                    if (ch == ':') {
+                    if (evhtp_unlikely(ch == ':')) {
                         res      = hook_hdr_key_run(p, hooks, p->buf, p->buf_idx);
 
                         /* figure out if the value of this header is valueable */
@@ -1628,7 +1628,7 @@ hdrline_start:
                                 break;
                             case eval_hdr_val_connection:
                                 switch (p->buf[0]) {
-                                    char A_case = 'A';
+                                    char A_case;
 
                                     case 'K':
                                     case 'k':
@@ -1636,9 +1636,7 @@ hdrline_start:
                                             break;
                                         }
 
-                                        if (p->buf[5] == 'a') {
-                                            A_case = 'a';
-                                        }
+                                        A_case = (p->buf[5] == 'A') ?  'A' : 'a';
 
                                         if (_str9cmp((p->buf + 1),
                                                      'e', 'e', 'p', '-', A_case, 'l', 'i', 'v', 'e')) {

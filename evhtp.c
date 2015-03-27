@@ -3166,7 +3166,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     int             on = 1;
 
     fd = socket(sa->sa_family, SOCK_STREAM, 0);
-    evhtp_errno_assert(fd == -1);
+    evhtp_errno_assert(fd != -1);
 
     evutil_make_socket_closeonexec(fd);
     evutil_make_socket_nonblocking(fd);

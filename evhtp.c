@@ -3169,6 +3169,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     evhtp_errno_assert(fd == -1);
 
     evutil_make_socket_closeonexec(fd);
+    evutil_make_socket_nonblocking(fd);
 
     setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&on, sizeof(on));
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, sizeof(on));

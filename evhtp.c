@@ -28,6 +28,18 @@
 #include "evhtp.h"
 
 
+#ifdef EVHTP_DEBUG
+static void
+htp_log_connection(evhtp_connection_t * c) {
+    htp_log_debug("connection = %p\n", c);
+    htp_log_debug("request = %p\n", c->request);
+}
+
+#endif
+
+
+
+
 static int                  _evhtp_request_parser_start(htparser * p);
 static int                  _evhtp_request_parser_host(htparser * p, const char * data, size_t len);
 static int                  _evhtp_request_parser_port(htparser * p, const char * data, size_t len);
@@ -1745,7 +1757,11 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
     size_t               nread;
     size_t               avail;
 
+    htp_log_debug("enter sock = %d", c->sock);
+
     avail = evbuffer_get_length(bufferevent_get_input(bev));
+
+    htp_log_debug("available bytes %zu", avail);
 
     if (evhtp_unlikely(avail == 0)) {
         return;
@@ -1760,7 +1776,12 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
     }
 
     buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
+
+    htp_log_debug("buffer is\n----\n%.*s\n-----", (int)avail, (const char *)buf);
+
     nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
+
+    htp_log_debug("nread = %zu", nread);
 
     if (evhtp_unlikely(c->owner != 1)) {
         /*
@@ -1791,12 +1812,17 @@ _evhtp_connection_readcb(evbev_t * bev, void * arg) {
         evhtp_request_pause(c->request);
     } else if (htparser_get_error(c->parser) != htparse_error_none) {
         evhtp_connection_free(c);
+    } else if (nread < avail) {
+        /* we still have more data to read (piped request probably) */
+        evhtp_connection_resume(c);
     }
 } /* _evhtp_connection_readcb */
 
 static void
 _evhtp_connection_writecb(evbev_t * bev, void * arg) {
     evhtp_connection_t * c = arg;
+
+    htp_log_debug("c->request = %p", c->request);
 
     if (evhtp_unlikely(c->request == NULL)) {
         return;
@@ -1823,7 +1849,6 @@ _evhtp_connection_writecb(evbev_t * bev, void * arg) {
     if (c->request->finished == 0 || evbuffer_get_length(bufferevent_get_output(bev))) {
         return;
     }
-
 
     /*
      * if there is a set maximum number of keepalive requests configured, check
@@ -1976,6 +2001,9 @@ _evhtp_connection_accept(evbase_t * evbase, evhtp_connection_t * connection) {
     connection->bev = bufferevent_socket_new(evbase,
                                              connection->sock,
                                              connection->htp->bev_flags);
+
+    htp_log_debug("enter sock=%d\n", connection->sock);
+
 #ifndef EVHTP_DISABLE_SSL
 end:
 #endif
@@ -2124,6 +2152,9 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
         return;
     }
 
+
+    htp_log_debug("fd = %d, conn = %p", fd, connection);
+
     connection->saddr = malloc(sl);
     evhtp_alloc_assert(connection->saddr);
 
@@ -2155,7 +2186,7 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
 
         return;
     }
-}
+} /* _evhtp_accept_cb */
 
 #ifndef EVHTP_DISABLE_SSL
 #ifndef EVHTP_DISABLE_EVTHR
@@ -3131,25 +3162,41 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
 #ifndef WIN32
     signal(SIGPIPE, SIG_IGN);
 #endif
+    evutil_socket_t fd;
+    int             on = 1;
 
-    htp->server = evconnlistener_new_bind(htp->evbase, _evhtp_accept_cb, (void *)htp,
-                                          LEV_OPT_THREADSAFE
-                                          | LEV_OPT_CLOSE_ON_FREE
-                                          | LEV_OPT_REUSEABLE,
-                                          backlog, sa, sin_len);
+    fd = socket(sa->sa_family, SOCK_STREAM, 0);
+    evhtp_errno_assert(fd == -1);
 
-    evhtp_errno_assert(htp->server != NULL);
+    evutil_make_socket_closeonexec(fd);
 
-#ifdef USE_DEFER_ACCEPT
-    {
-        evutil_socket_t sock;
-        int             one = 1;
+    setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&on, sizeof(on));
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, sizeof(on));
 
-        sock = evconnlistener_get_fd(htp->server);
-
-        setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, &one, (ev_socklen_t)sizeof(one));
+#if defined SO_REUSEPORT
+    if (htp->enable_reuseport) {
+        setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (void *)&on, sizeof(on));
     }
 #endif
+
+#if defined TCP_NODELAY
+    if (htp->enable_nodelay == 1) {
+        setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on));
+    }
+#endif
+
+#if defined TCP_DEFER_ACCEPT
+    if (htp->enable_defer_accept == 1) {
+        setsockopt(fd, IPPROTO_TCP, TCP_DEFER_ACCEPT, (void *)&on, sizeof(on));
+    }
+#endif
+
+    evhtp_errno_assert(bind(fd, sa, sin_len) != -1);
+
+    htp->server = evconnlistener_new(htp->evbase, _evhtp_accept_cb, htp,
+                                     LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
+				     backlog, fd);
+    evhtp_errno_assert(htp->server != NULL);
 
 #ifndef EVHTP_DISABLE_SSL
     if (htp->ssl_ctx != NULL) {

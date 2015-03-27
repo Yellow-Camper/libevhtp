@@ -529,8 +529,8 @@ main(int argc, char ** argv) {
 
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
-    htp->parser_flags = EVHTP_PARSE_QUERY_FLAG_IGNORE_FRAGMENTS;
 
+    evhtp_set_parser_flags(htp, EVHTP_PARSE_QUERY_FLAG_LENIENT);
     evhtp_set_max_keepalive_requests(htp, max_keepalives);
 
     cb_1   = evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");

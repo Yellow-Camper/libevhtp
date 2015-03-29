@@ -1457,7 +1457,10 @@ _evhtp_request_parser_body(htparser * p, const char * data, size_t len) {
         return -1;
     }
 
-    buf = evbuffer_new();
+    buf = c->scratch_buf; /* evbuffer_new(); */
+    evhtp_assert(buf != NULL);
+
+
     evbuffer_add(buf, data, len);
 
     if ((c->request->status = _evhtp_body_hook(c->request, buf)) != EVHTP_RES_OK) {
@@ -1468,7 +1471,7 @@ _evhtp_request_parser_body(htparser * p, const char * data, size_t len) {
         evbuffer_add_buffer(c->request->buffer_in, buf);
     }
 
-    evbuffer_free(buf);
+    evbuffer_drain(buf, -1);
 
     c->body_bytes_read += len;
 
@@ -1630,8 +1633,13 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
     content_type = evhtp_header_find(request->headers_out, "Content-Type");
     out_len      = evbuffer_get_length(request->buffer_out);
 
-    buf          = evbuffer_new();
-    evhtp_alloc_assert(buf);
+    buf          = request->conn->scratch_buf;
+    evhtp_assert(buf != NULL);
+
+    evbuffer_drain(buf, -1);
+
+    /* buf          = evbuffer_new(); */
+    /* evhtp_alloc_assert(buf); */
 
     if (htparser_get_multipart(request->conn->parser) == 1) {
         goto check_proto;
@@ -2062,24 +2070,22 @@ _evhtp_connection_new(evhtp_t * htp, evutil_socket_t sock, evhtp_type type) {
             return NULL;
     }
 
-    connection            = calloc(sizeof(evhtp_connection_t), 1);
+    connection = calloc(sizeof(evhtp_connection_t), 1);
     evhtp_alloc_assert(connection);
 
+    connection->scratch_buf = evbuffer_new();
+    evhtp_alloc_assert(connection->scratch_buf);
 
-    connection->error     = 0;
-    connection->owner     = 1;
-    connection->paused    = 0;
-    connection->connected = 0;
-    connection->sock      = sock;
-    connection->htp       = htp;
-    connection->type      = type;
-    connection->parser    = htparser_new();
+    connection->error       = 0;
+    connection->owner       = 1;
+    connection->paused      = 0;
+    connection->connected   = 0;
+    connection->sock        = sock;
+    connection->htp         = htp;
+    connection->type        = type;
+    connection->parser      = htparser_new();
 
-    if (!connection->parser) {
-        evhtp_safe_free(connection, free);
-
-        return NULL;
-    }
+    evhtp_alloc_assert(connection->parser);
 
     htparser_init(connection->parser, ptype);
     htparser_set_userdata(connection->parser, connection);
@@ -3003,7 +3009,8 @@ evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code) {
     }
 
     bufferevent_write_buffer(c->bev, reply_buf);
-    evbuffer_free(reply_buf);
+    evbuffer_drain(reply_buf, -1);
+    /* evbuffer_free(reply_buf); */
 }
 
 void
@@ -3035,7 +3042,8 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
     }
 
     bufferevent_write_buffer(evhtp_connection_get_bev(c), reply_buf);
-    evbuffer_free(reply_buf);
+    evbuffer_drain(reply_buf, -1);
+    /* evbuffer_free(reply_buf); */
 }
 
 int
@@ -3196,7 +3204,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
 
     htp->server = evconnlistener_new(htp->evbase, _evhtp_accept_cb, htp,
                                      LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
-				     backlog, fd);
+                                     backlog, fd);
     evhtp_errno_assert(htp->server != NULL);
 
 #ifndef EVHTP_DISABLE_SSL
@@ -3967,6 +3975,7 @@ evhtp_connection_free(evhtp_connection_t * connection) {
     evhtp_safe_free(connection->parser, free);
     evhtp_safe_free(connection->hooks, free);
     evhtp_safe_free(connection->saddr, free);
+    evhtp_safe_free(connection->scratch_buf, evbuffer_free);
 
     if (connection->resume_ev) {
         evhtp_safe_free(connection->resume_ev, event_free);

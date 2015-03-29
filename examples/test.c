@@ -537,8 +537,9 @@ main(int argc, char ** argv) {
     evhtp_set_parser_flags(htp, EVHTP_PARSE_QUERY_FLAG_LENIENT);
     evhtp_set_max_keepalive_requests(htp, max_keepalives);
 
-    htp->enable_nodelay = 1;
-    htp->enable_defer_accept = 1;
+    //htp->enable_nodelay = 1;
+    //htp->enable_defer_accept = 1;
+    htp->enable_reuseport = 1;
 
     cb_1   = evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
     cb_2   = evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");

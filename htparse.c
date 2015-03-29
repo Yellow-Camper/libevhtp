@@ -1082,15 +1082,20 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 break;
 
             case s_check_uri:
-                htparse_log_debug("[%p] s_check_uri", p);
 
                 res = 0;
 
-                if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
-                    p->buf[p->buf_idx++] = ch;
-                    p->buf[p->buf_idx]   = '\0';
-                    break;
-                }
+                do {
+                    htparse_log_debug("[%p] s_check_uri", p);
+                    if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+                    } else {
+                        break;
+                    }
+
+                    ch = data[++i];
+                } while (i < len);
 
                 switch (ch) {
                     case ' ':
@@ -1597,11 +1602,11 @@ hdrline_start:
                 } /* switch */
                 break;
             case s_hdrline_hdr_val:
-                htparse_log_debug("[%p] s_hdrline_hdr_val", p);
                 err = 0;
                 res = 0;
 
                 do {
+                    htparse_log_debug("[%p] s_hdrline_hdr_val", p);
                     if (ch == CR) {
                         switch (p->heval) {
                             case eval_hdr_val_none:

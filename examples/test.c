@@ -21,6 +21,7 @@ char   * ssl_ca         = NULL;
 char   * ssl_capath     = NULL;
 size_t   bw_limit       = 0;
 uint64_t max_keepalives = 0;
+int backlog = 1024;
 
 struct pauser {
     event_t         * timer_ev;
@@ -409,7 +410,7 @@ dummy_check_issued_cb(X509_STORE_CTX * ctx, X509 * x, X509 * issuer) {
 
 #endif
 
-const char * optstr = "htn:a:p:r:s:c:C:l:N:m:";
+const char * optstr = "htn:a:p:r:s:c:C:l:N:m:b:";
 
 const char * help   =
     "Options: \n"
@@ -478,6 +479,9 @@ parse_args(int argc, char ** argv) {
             case 'm':
                 max_keepalives = atoll(optarg);
                 break;
+	    case 'b':
+		backlog = atoll(optarg);
+		break;
             default:
                 printf("Unknown opt %s\n", optarg);
                 return -1;
@@ -533,6 +537,9 @@ main(int argc, char ** argv) {
     evhtp_set_parser_flags(htp, EVHTP_PARSE_QUERY_FLAG_LENIENT);
     evhtp_set_max_keepalive_requests(htp, max_keepalives);
 
+    htp->enable_nodelay = 1;
+    htp->enable_defer_accept = 1;
+
     cb_1   = evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
     cb_2   = evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
     cb_3   = evhtp_set_cb(htp, "/foo/", test_foo_cb, "bar");
@@ -570,7 +577,7 @@ main(int argc, char ** argv) {
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
 
     /* set a callback invoked before a connection is accepted */
-    evhtp_set_pre_accept_cb(htp, test_pre_accept, &bind_port);
+    //evhtp_set_pre_accept_cb(htp, test_pre_accept, &bind_port);
 
     /* set a callback to set per-connection hooks (via a post_accept cb) */
     evhtp_set_post_accept_cb(htp, set_my_connection_handlers, NULL);
@@ -619,7 +626,7 @@ main(int argc, char ** argv) {
     }
 #endif
 
-    if (evhtp_bind_socket(htp, bind_addr, bind_port, 1024) < 0) {
+    if (evhtp_bind_socket(htp, bind_addr, bind_port, backlog) < 0) {
         fprintf(stderr, "Could not bind socket: %s\n", strerror(errno));
         exit(-1);
     }

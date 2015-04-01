@@ -880,6 +880,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     p->state = s_host_ipv6;
                     break;
                 }
+
                 if (is_host_char(ch)) {
                     p->buf[p->buf_idx++] = ch;
                     p->buf[p->buf_idx]   = '\0';
@@ -887,6 +888,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 }
 
                 res = hook_host_run(p, hooks, p->host_offset, (&p->buf[p->buf_idx] - p->host_offset));
+
                 if (res) {
                     p->error = htparse_error_user;
                     return i + 1;
@@ -1634,6 +1636,7 @@ hdrline_start:
                             case eval_hdr_val_connection:
                                 switch (p->buf[0]) {
                                     char A_case;
+                                    char C_case;
 
                                     case 'K':
                                     case 'k':
@@ -1654,7 +1657,9 @@ hdrline_start:
                                             break;
                                         }
 
-                                        if (_str5cmp(p->buf, 'c', 'l', 'o', 's', 'e')) {
+                                        C_case = (p->buf[0] == 'C') ? 'C' : 'c';
+
+                                        if (_str5cmp(p->buf, C_case, 'l', 'o', 's', 'e')) {
                                             p->flags |= parser_flag_connection_close;
                                         }
                                         break;

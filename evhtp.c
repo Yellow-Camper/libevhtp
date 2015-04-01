@@ -1190,11 +1190,11 @@ _evhtp_request_set_callbacks(evhtp_request_t * request) {
         return -1;
     }
 
-    if ((evhtp = request->htp) == NULL) {
+    if (evhtp_unlikely((evhtp = request->htp) == NULL)) {
         return -1;
     }
 
-    if ((conn = request->conn) == NULL) {
+    if (evhtp_unlikely((conn = request->conn) == NULL)) {
         return -1;
     }
 
@@ -1416,7 +1416,10 @@ _evhtp_request_parser_path(htparser * p, const char * data, size_t len) {
 
 static int
 _evhtp_request_parser_headers(htparser * p) {
-    evhtp_connection_t * c = htparser_get_userdata(p);
+    evhtp_connection_t * c;
+
+    c = htparser_get_userdata(p);
+    evhtp_assert(c != NULL);
 
     /* XXX proto should be set with htparsers on_hdrs_begin hook */
     c->request->keepalive = htparser_should_keep_alive(p);
@@ -1457,7 +1460,7 @@ _evhtp_request_parser_body(htparser * p, const char * data, size_t len) {
         return -1;
     }
 
-    buf = c->scratch_buf; /* evbuffer_new(); */
+    buf = c->scratch_buf;
     evhtp_assert(buf != NULL);
 
 
@@ -1638,8 +1641,10 @@ _evhtp_create_reply(evhtp_request_t * request, evhtp_res code) {
 
     evbuffer_drain(buf, -1);
 
-    /* buf          = evbuffer_new(); */
-    /* evhtp_alloc_assert(buf); */
+    /*
+     * buf          = evbuffer_new();
+     * evhtp_alloc_assert(buf);
+     */
 
     if (htparser_get_multipart(request->conn->parser) == 1) {
         goto check_proto;
@@ -1667,6 +1672,14 @@ check_proto:
                 evhtp_headers_add_header(request->headers_out,
                                          evhtp_header_new("Connection", "close", 0, 0));
             }
+
+#if 0
+            if (!out_len && !evhtp_header_find(request->headers_out, "Content-Length")) {
+                evhtp_headers_add_header(request->headers_out,
+                                         evhtp_header_new("Content-Length", "0", 0, 0));
+            }
+#endif
+
             break;
         case EVHTP_PROTO_10:
             if (request->keepalive == 1) {
@@ -3161,8 +3174,7 @@ evhtp_send_reply_chunk_end(evhtp_request_t * request) {
 
 void
 evhtp_unbind_socket(evhtp_t * htp) {
-    evconnlistener_free(htp->server);
-    htp->server = NULL;
+    evhtp_safe_free(htp->server, evconnlistener_free);
 }
 
 int
@@ -3448,7 +3460,6 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void
             (*hooks)->on_event_arg            = arg;
             break;
         default:
-
             return -1;
     }     /* switch */
 
@@ -3940,13 +3951,12 @@ inline void
 evhtp_connection_set_timeouts(evhtp_connection_t   * c,
                               const struct timeval * rtimeo,
                               const struct timeval * wtimeo) {
-    if (!c) {
+    if (evhtp_unlikely(c == NULL)) {
         return;
     }
 
-    if (rtimeo || wtimeo) {
-        bufferevent_set_timeouts(c->bev, rtimeo, wtimeo);
-    }
+
+    bufferevent_set_timeouts(c->bev, rtimeo, wtimeo);
 }
 
 void
@@ -3993,10 +4003,6 @@ evhtp_connection_free(evhtp_connection_t * connection) {
 #endif
         bufferevent_free(connection->bev);
 #endif
-    }
-
-    if (connection->ratelimit_cfg != NULL) {
-        ev_token_bucket_cfg_free(connection->ratelimit_cfg);
     }
 
     evhtp_safe_free(connection, free);
@@ -4187,29 +4193,6 @@ evhtp_free(evhtp_t * evhtp) {
 
     evhtp_safe_free(evhtp, free);
 } /* evhtp_free */
-
-int
-evhtp_connection_set_rate_limit(evhtp_connection_t * conn,
-                                size_t read_rate, size_t read_burst,
-                                size_t write_rate, size_t write_burst,
-                                const struct timeval * tick) {
-    struct ev_token_bucket_cfg * tcfg;
-
-    if (evhtp_unlikely(conn == NULL || conn->bev == NULL)) {
-        return -1;
-    }
-
-    tcfg = ev_token_bucket_cfg_new(read_rate, read_burst,
-                                   write_rate, write_burst, tick);
-
-    if (tcfg == NULL) {
-        return -1;
-    }
-
-    conn->ratelimit_cfg = tcfg;
-
-    return bufferevent_set_rate_limit(conn->bev, tcfg);
-}
 
 /*****************************************************************
 * client request functions                                      *

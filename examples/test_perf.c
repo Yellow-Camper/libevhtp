@@ -67,7 +67,6 @@ main(int argc, char ** argv) {
 
     {
         struct event_base * evbase;
-        struct event      * sigint_ev;
         evhtp_t           * htp;
         char                payload[payload_sz];
 

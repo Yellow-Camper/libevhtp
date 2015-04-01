@@ -5,6 +5,9 @@ set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
 set(PROJECT_PATCH_VERSION 10)
 
+# will use later for htexpress API
+# add_executable(lambda-pp lambda-pp.c)
+
 # -DEVHTP_DISABLE_SSL:STRING=ON
 OPTION(EVHTP_DISABLE_SSL       "Disable ssl support"      OFF)
 
@@ -17,10 +20,8 @@ OPTION(EVHTP_DISABLE_REGEX     "Disable regex support"    OFF)
 # -DEVHTP_BUILD_SHARED:STRING=ON
 OPTION(EVHTP_BUILD_SHARED      "Build shared library too" OFF)
 
-# -DEVHTP_USE_DEFER_ACCEPT:STRING=ON
-OPTION(EVHTP_USE_DEFER_ACCEPT  "Enable TCP_DEFER_ACCEPT"  OFF)
-
-OPTION(EVHTP_THR_SHARED_PIPE   "Enabled shared socketpair for evthr" ON)
+OPTION(EVHTP_USE_JEMALLOC      "Enable jemalloc allocator" OFF)
+OPTION(EVHTP_USE_TCMALLOC      "Enable tcmalloc allocator" OFF)
 
 # fun color stuff
 if(NOT WIN32)
@@ -253,6 +254,15 @@ endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
 set(LIBEVHTP_SOURCES evhtp.c evhtp_numtoa.c htparse.c)
 
+if (EVHTP_USE_JEMALLOC)
+		set(LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} jemalloc)
+endif()
+
+if (EVHTP_USE_TCMALLOC)
+		set(LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} tcmalloc)
+endif()
+
+
 if (NOT EVHTP_DISABLE_EVTHR)
 	set (LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} pthread)
 	set (LIBEVHTP_SOURCES ${LIBEVHTP_SOURCES} evthr.c)
@@ -327,8 +337,6 @@ if (NOT EVHTP_DISABLE_EVTHR)
 	install (FILES evthr.h DESTINATION ${INCLUDE_INSTALL_DIR}/evhtp)
 endif()
 
-# oniguruma/onigposix.h
-
 if (NOT EVHTP_DISABLE_REGEX)
 		if (NOT HAS_SYS_ONIG)
 				install (FILES oniguruma/onigposix.h DESTINATION ${INCLUDE_INSTALL_DIR}/evhtp)
@@ -365,8 +373,8 @@ message(STATUS "${BoldBlue}EVHTP_DISABLE_SSL${ColourReset}        : ${BoldGreen}
 message(STATUS "${BoldBlue}EVHTP_DISABLE_EVTHR${ColourReset}      : ${BoldGreen} ${EVHTP_DISABLE_EVTHR}    ${ColourReset}")
 message(STATUS "${BoldBlue}EVHTP_DISABLE_REGEX${ColourReset}      : ${BoldGreen} ${EVHTP_DISABLE_REGEX}    ${ColourReset}")
 message(STATUS "${BoldBlue}EVHTP_BUILD_SHARED${ColourReset}       : ${BoldGreen} ${EVHTP_BUILD_SHARED}     ${ColourReset}")
-message(STATUS "${BoldBlue}EVHTP_USE_DEFER_ACCEPT${ColourReset}   : ${BoldGreen} ${EVHTP_USE_DEFER_ACCEPT} ${ColourReset}")
-message(STATUS "${BoldBlue}EVHTP_THR_SHARED_PIPE${ColourReset}   : ${BoldGreen} ${EVHTP_THR_SHARED_PIPE} ${ColourReset}")
+message(STATUS "${BoldBlue}EVHTP_USE_JEMALLOC${ColourReset}       : ${BoldGreen} ${EVHTP_USE_JEMALLOC} ${ColourReset}")
+message(STATUS "${BoldBlue}EVHTP_USE_TCMALLOC${ColourReset}       : ${BoldGreen} ${EVHTP_USE_TCMALLOC} ${ColourReset}")
 message("")
 message(STATUS "${Blue}CMAKE_BUILD_TYPE${ColourReset}         : " ${BoldRed}${CMAKE_BUILD_TYPE}${ColourReset})
 message(STATUS "${Blue}CMAKE_INSTALL_PREFIX${ColourReset}     : " ${BoldMagenta}${CMAKE_INSTALL_PREFIX}${ColourReset})

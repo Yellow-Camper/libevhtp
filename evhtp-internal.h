@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+
 #if defined __GNUC__ || defined __llvm__
 #       define evhtp_likely(x)         __builtin_expect(!!(x), 1)
 #       define evhtp_unlikely(x)       __builtin_expect(!!(x), 0)

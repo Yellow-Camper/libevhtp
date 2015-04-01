@@ -1,7 +1,8 @@
+#include <evhtp-config.h>
+
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
 
-#include <evhtp-config.h>
 
 #ifndef EVHTP_DISABLE_EVTHR
 #include <evthr.h>
@@ -455,7 +456,9 @@ struct evhtp_connection_s {
     evhtp_t  * htp;
     evbase_t * evbase;
     evbev_t  * bev;
+#ifndef EVHTP_DISABLE_EVTHR
     evthr_t  * thread;
+#endif
 #ifndef EVHTP_DISABLE_SSL
     evhtp_ssl_t * ssl;
 #endif
@@ -479,7 +482,6 @@ struct evhtp_connection_s {
                       waiting         : 1,      /**< used to make sure resuming  happens AFTER sending a reply */
                       free_connection : 1,
                       keepalive       : 1;      /**< set to 1 after the first request has been processed and the connection is kept open */
-    struct ev_token_bucket_cfg * ratelimit_cfg; /**< connection-specific ratelimiting configuration. */
     struct evbuffer * scratch_buf; /**< always zero'd out after used */
 
 #ifdef EVHTP_FUTURE_USE
@@ -1284,26 +1286,6 @@ EVHTP_EXPORT void evhtp_request_set_keepalive(evhtp_request_t * request, int val
  */
 EVHTP_EXPORT void evhtp_set_max_keepalive_requests(evhtp_t * htp, uint64_t num);
 
-
-/**
- * @brief set a bufferevent ratelimit on a evhtp_connection_t structure. The
- *        logic is the same as libevent's rate-limiting code.
- *
- * @param c
- * @param read_rate
- * @param read_burst
- * @param write_rate
- * @param write_burst
- * @param tick
- *
- * @return
- */
-EVHTP_EXPORT int
-evhtp_connection_set_ratelimit(evhtp_connection_t * c,
-    size_t read_rate, size_t read_burst,
-    size_t write_rate,
-    size_t write_burst,
-    const struct timeval * tick);
 
 /*****************************************************************
 * client request functions                                      *

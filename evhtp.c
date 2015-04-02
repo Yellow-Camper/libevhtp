@@ -2064,6 +2064,8 @@ end:
 
 static void
 _evhtp_default_request_cb(evhtp_request_t * request, void * arg) {
+    evhtp_headers_add_header(request->headers_out,
+                             evhtp_header_new("Content-Length", "0", 0, 0));
     evhtp_send_reply(request, EVHTP_RES_NOTFOUND);
 }
 

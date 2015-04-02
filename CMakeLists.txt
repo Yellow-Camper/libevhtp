@@ -4,6 +4,12 @@ project(libevhtp)
 set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
 set(PROJECT_PATCH_VERSION 10)
+set(PROJECT_VERSION      ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
+
+set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -DPROJECT_VERSION=\"${PROJECT_VERSION}\" -Wall")
+set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG} -O0 -ggdb")
+
+SET(CMAKE_BUILD_TYPE Release CACHE STRING "default to Release")
 
 # will use later for htexpress API
 # add_executable(lambda-pp lambda-pp.c)
@@ -44,15 +50,13 @@ if(NOT WIN32)
     set(BoldWhite   "${Esc}[1;37m")
 endif()
 
-set (PROJECT_VERSION   ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
-set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
+set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 INCLUDE (CheckFunctionExists)
 INCLUDE (CheckIncludeFiles)
 INCLUDE (CheckTypeSize)
 INCLUDE (CheckCCompilerFlag)
 INCLUDE (TestBigEndian)
-INCLUDE (UseDebugSymbols)
 
 CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
 CHECK_FUNCTION_EXISTS(strnlen HAVE_STRNLEN)
@@ -130,8 +134,6 @@ if (EVHTP_USE_DEFER_ACCEPT)
 endif(EVHTP_USE_DEFER_ACCEPT)
 
 SET(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-include(BaseConfig)
 
 find_package(LibEvent REQUIRED)
 
@@ -373,5 +375,10 @@ message(STATUS "${Blue}CMAKE_AR${ColourReset}                 : " ${CMAKE_AR})
 message(STATUS "${Blue}CMAKE_RANLIB${ColourReset}             : " ${CMAKE_RANLIB})
 message(STATUS "${Blue}CFLAGS${ColourReset}                   : -D${CFLAG_DEFS} ${CMAKE_C_FLAGS}")
 
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+		message("                              ${CMAKE_C_FLAGS_DEBUG}")
+else(CMAKE_BUILD_TYPE MATCHES Release)
+		message("                              ${CMAKE_C_FLAGS_RELEASE}")
+endif()
 
 message("")

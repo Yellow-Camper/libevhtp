@@ -33,7 +33,7 @@ extern "C" {
 #define calloc(count, size) tc_calloc(count, size)
 #define realloc(ptr, size)  tc_realloc(ptr, size)
 #define free(ptr)           tc_free(ptr)
-#elif EVHTP_USE_JEMALLOC
+#elif defined EVHTP_USE_JEMALLOC
 #define JEMALLOC_NO_DEMANGLE
 #include <jemalloc/jemalloc.h>
 #define malloc(size)        je_malloc(size)

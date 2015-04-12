@@ -300,6 +300,10 @@ configure_file(
 add_library(evhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
 target_link_libraries(evhtp ${LIBEVHTP_EXTERNAL_LIBS})
 
+if (EVHTP_BUILD_SHARED)
+		set_target_properties(evhtp PROPERTIES SOVERSION "${PROJECT_VERSION}")
+endif()
+
 add_subdirectory(tools)
 add_subdirectory(examples)
 
@@ -326,6 +330,11 @@ if (NOT EVHTP_DISABLE_REGEX)
 		endif()
 endif()
 
+if (NOT HAVE_SYS_QUEUE)
+		install(FILES ${CMAKE_CURRENT_BINARY_DIR}/compat/sys/queue.h
+				DESTINATION ${INCLUDE_INSTALL_DIR}/evhtp/sys)
+endif()
+
 IF (WIN32)
    install (FILES compat/sys/queue.h DESTINATION ${INCLUDE_INSTALL_DIR}/sys)
    install (FILES oniguruma/onigposix.h DESTINATION ${INCLUDE_INSTALL_DIR})
@@ -334,7 +343,6 @@ ENDIF (WIN32)
 configure_file(
 	${CMAKE_CURRENT_SOURCE_DIR}/evhtp.pc.in
 	${CMAKE_CURRENT_BINARY_DIR}/evhtp.pc @ONLY)
-
 
 # add_definitions() calls do not show up in the C_FLAGS var
 # it is instead a property of COMPILE_DEFINITIONS.
@@ -351,13 +359,13 @@ endforeach()
 string(REPLACE ";" " -D" CFLAG_DEFS "${CFLAG_LIST}")
 
 message("")
-message(STATUS "${BoldBlue}EVHTP_VERSION${ColourReset}            : ${BoldGreen} ${PROJECT_VERSION}        ${ColourReset}")
-message(STATUS "${BoldBlue}EVHTP_DISABLE_SSL${ColourReset}        : ${BoldGreen} ${EVHTP_DISABLE_SSL}      ${ColourReset}")
-message(STATUS "${BoldBlue}EVHTP_DISABLE_EVTHR${ColourReset}      : ${BoldGreen} ${EVHTP_DISABLE_EVTHR}    ${ColourReset}")
-message(STATUS "${BoldBlue}EVHTP_DISABLE_REGEX${ColourReset}      : ${BoldGreen} ${EVHTP_DISABLE_REGEX}    ${ColourReset}")
-message(STATUS "${BoldBlue}EVHTP_BUILD_SHARED${ColourReset}       : ${BoldGreen} ${EVHTP_BUILD_SHARED}     ${ColourReset}")
-message(STATUS "${BoldBlue}EVHTP_USE_JEMALLOC${ColourReset}       : ${BoldGreen} ${EVHTP_USE_JEMALLOC} ${ColourReset}")
-message(STATUS "${BoldBlue}EVHTP_USE_TCMALLOC${ColourReset}       : ${BoldGreen} ${EVHTP_USE_TCMALLOC} ${ColourReset}")
+message(STATUS "${BoldBlue}EVHTP_VERSION${ColourReset}            : ${BoldGreen} ${PROJECT_VERSION}${ColourReset}")
+message(STATUS "${BoldBlue}EVHTP_DISABLE_SSL${ColourReset}        : ${BoldGreen} ${EVHTP_DISABLE_SSL}${ColourReset}")
+message(STATUS "${BoldBlue}EVHTP_DISABLE_EVTHR${ColourReset}      : ${BoldGreen} ${EVHTP_DISABLE_EVTHR}${ColourReset}")
+message(STATUS "${BoldBlue}EVHTP_DISABLE_REGEX${ColourReset}      : ${BoldGreen} ${EVHTP_DISABLE_REGEX}${ColourReset}")
+message(STATUS "${BoldBlue}EVHTP_BUILD_SHARED${ColourReset}       : ${BoldGreen} ${EVHTP_BUILD_SHARED}${ColourReset}")
+message(STATUS "${BoldBlue}EVHTP_USE_JEMALLOC${ColourReset}       : ${BoldGreen} ${EVHTP_USE_JEMALLOC}${ColourReset}")
+message(STATUS "${BoldBlue}EVHTP_USE_TCMALLOC${ColourReset}       : ${BoldGreen} ${EVHTP_USE_TCMALLOC}${ColourReset}")
 message("")
 message(STATUS "${Blue}CMAKE_BUILD_TYPE${ColourReset}         : " ${BoldRed}${CMAKE_BUILD_TYPE}${ColourReset})
 message(STATUS "${Blue}CMAKE_INSTALL_PREFIX${ColourReset}     : " ${BoldMagenta}${CMAKE_INSTALL_PREFIX}${ColourReset})

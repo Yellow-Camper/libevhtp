@@ -1635,8 +1635,9 @@ hdrline_start:
                                 break;
                             case eval_hdr_val_connection:
                                 switch (p->buf[0]) {
-                                    char A_case;
-                                    char C_case;
+                                    char         A_case;
+                                    char         C_case;
+                                    const char * S_buf;
 
                                     case 'K':
                                     case 'k':
@@ -1645,8 +1646,9 @@ hdrline_start:
                                         }
 
                                         A_case = (p->buf[5] == 'A') ?  'A' : 'a';
+                                        S_buf  = (const char *)(p->buf + 1);
 
-                                        if (_str9cmp((p->buf + 1),
+                                        if (_str9cmp(S_buf,
                                                      'e', 'e', 'p', '-', A_case, 'l', 'i', 'v', 'e')) {
                                             p->flags |= parser_flag_connection_keep_alive;
                                         }
@@ -1658,8 +1660,9 @@ hdrline_start:
                                         }
 
                                         C_case = (p->buf[0] == 'C') ? 'C' : 'c';
+                                        S_buf  = (const char *)p->buf;
 
-                                        if (_str5cmp(p->buf, C_case, 'l', 'o', 's', 'e')) {
+                                        if (_str5cmp(S_buf, C_case, 'l', 'o', 's', 'e')) {
                                             p->flags |= parser_flag_connection_close;
                                         }
                                         break;
@@ -1671,13 +1674,17 @@ hdrline_start:
                                 }
 
                                 switch (p->buf[0]) {
+                                    const char * S_buf;
+
                                     case 'c':
                                     case 'C':
                                         if (p->buf_idx != 7) {
                                             break;
                                         }
 
-                                        if (_str6cmp((p->buf + 1), 'h', 'u', 'n', 'k', 'e', 'd')) {
+                                        S_buf = (const char *)(p->buf + 1);
+
+                                        if (_str6cmp(S_buf, 'h', 'u', 'n', 'k', 'e', 'd')) {
                                             p->flags |= parser_flag_chunked;
                                         }
 
@@ -1691,9 +1698,13 @@ hdrline_start:
                                 }
 
                                 switch (p->buf[0]) {
+                                    const char * S_buf;
+
                                     case 'm':
                                     case 'M':
-                                        if (_str8cmp((p->buf + 1), 'u', 'l', 't', 'i', 'p', 'a', 'r', 't')) {
+                                        S_buf = (const char *)(p->buf + 1);
+
+                                        if (_str8cmp(S_buf, 'u', 'l', 't', 'i', 'p', 'a', 'r', 't')) {
                                             p->multipart = 1;
                                         }
 

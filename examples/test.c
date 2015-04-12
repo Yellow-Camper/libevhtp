@@ -6,8 +6,11 @@
 #include <errno.h>
 #include <signal.h>
 #include <inttypes.h>
-#include <evhtp.h>
 #include <event2/event.h>
+
+#include "../evhtp-internal.h"
+#include "../evhtp.h"
+
 
 #ifndef EVHTP_DISABLE_EVTHR
 int      use_threads    = 0;
@@ -21,7 +24,7 @@ char   * ssl_ca         = NULL;
 char   * ssl_capath     = NULL;
 size_t   bw_limit       = 0;
 uint64_t max_keepalives = 0;
-int backlog = 1024;
+int      backlog        = 1024;
 
 struct pauser {
     event_t         * timer_ev;
@@ -479,9 +482,9 @@ parse_args(int argc, char ** argv) {
             case 'm':
                 max_keepalives = atoll(optarg);
                 break;
-	    case 'b':
-		backlog = atoll(optarg);
-		break;
+            case 'b':
+                backlog        = atoll(optarg);
+                break;
             default:
                 printf("Unknown opt %s\n", optarg);
                 return -1;
@@ -537,32 +540,50 @@ main(int argc, char ** argv) {
     evhtp_set_parser_flags(htp, EVHTP_PARSE_QUERY_FLAG_LENIENT);
     evhtp_set_max_keepalive_requests(htp, max_keepalives);
 
-    //htp->enable_nodelay = 1;
-    //htp->enable_defer_accept = 1;
+    /* htp->enable_nodelay = 1; */
+    /* htp->enable_defer_accept = 1; */
     htp->enable_reuseport = 1;
 
-    cb_1   = evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
-    cb_2   = evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
-    cb_3   = evhtp_set_cb(htp, "/foo/", test_foo_cb, "bar");
-    cb_4   = evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
-    cb_5   = evhtp_set_cb(htp, "/500", test_500_cb, "500");
+    cb_1  = evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
+    evhtp_assert(cb_1 != NULL);
+
+    cb_2  = evhtp_set_cb(htp, "/foo", test_foo_cb, "bar");
+    evhtp_assert(cb_2 != NULL);
+
+    cb_3  = evhtp_set_cb(htp, "/foo/", test_foo_cb, "bar");
+    evhtp_assert(cb_3 != NULL);
+
+    cb_4  = evhtp_set_cb(htp, "/bar", test_bar_cb, "baz");
+    evhtp_assert(cb_4 != NULL);
+
+    cb_5  = evhtp_set_cb(htp, "/500", test_500_cb, "500");
+    evhtp_assert(cb_5 != NULL);
+
 #ifndef EVHTP_DISABLE_REGEX
-    cb_6   = evhtp_set_regex_cb(htp, "^(/anything/).*", test_regex, NULL);
+    cb_6  = evhtp_set_regex_cb(htp, "^(/anything/).*", test_regex, NULL);
+    evhtp_assert(cb_6 != NULL);
 #endif
-    cb_7   = evhtp_set_cb(htp, "/pause", test_pause_cb, NULL);
+    cb_7  = evhtp_set_cb(htp, "/pause", test_pause_cb, NULL);
+    evhtp_assert(cb_7 != NULL);
 #ifndef EVHTP_DISABLE_REGEX
-    cb_8   = evhtp_set_regex_cb(htp, "^/create/(.*)", create_callback, NULL);
+    cb_8  = evhtp_set_regex_cb(htp, "^/create/(.*)", create_callback, NULL);
+    evhtp_assert(cb_8 != NULL);
 #endif
-    cb_9   = evhtp_set_glob_cb(htp, "*/glob/*", test_glob_cb, NULL);
-    cb_10  = evhtp_set_cb(htp, "/max_body_size", test_max_body, NULL);
+    cb_9  = evhtp_set_glob_cb(htp, "*/glob/*", test_glob_cb, NULL);
+    evhtp_assert(cb_9 != NULL);
+
+    cb_10 = evhtp_set_cb(htp, "/max_body_size", test_max_body, NULL);
+    evhtp_assert(cb_10 != NULL);
 
     /* set a callback to test out chunking API */
-    cb_11  = evhtp_set_cb(htp, "/chunkme", test_chunking, NULL);
+    cb_11 = evhtp_set_cb(htp, "/chunkme", test_chunking, NULL);
+    evhtp_assert(cb_11 != NULL);
 
     /* set a callback which takes ownership of the underlying bufferevent and
      * just starts echoing things
      */
-    cb_12  = evhtp_set_cb(htp, "/ownme", test_ownership, NULL);
+    cb_12 = evhtp_set_cb(htp, "/ownme", test_ownership, NULL);
+    evhtp_assert(cb_12 != NULL);
 
     /* set a callback to pause on each header for cb_7 */
     evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, NULL);
@@ -578,7 +599,7 @@ main(int argc, char ** argv) {
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
 
     /* set a callback invoked before a connection is accepted */
-    //evhtp_set_pre_accept_cb(htp, test_pre_accept, &bind_port);
+    evhtp_set_pre_accept_cb(htp, test_pre_accept, &bind_port);
 
     /* set a callback to set per-connection hooks (via a post_accept cb) */
     evhtp_set_post_accept_cb(htp, set_my_connection_handlers, NULL);

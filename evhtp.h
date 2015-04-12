@@ -700,6 +700,34 @@ EVHTP_EXPORT evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * p
 EVHTP_EXPORT evhtp_callback_t * evhtp_set_glob_cb(evhtp_t * htp, const char * pattern,
     evhtp_callback_cb cb, void * arg);
 
+
+/**
+ * @brief attempts to find the callback matching the exact string 'needle'. This is useful
+ *        in cases where we want to get the original handle, but is not in scope.
+ *
+ *        with pattern based callbacks, this does not attempt to find a callback that would
+ *        match the string if the pattern matcher was executed.
+ *
+ *        Meaning:
+ *          evhtp_set_glob_cb(htp, "/foo/bar*", ....);
+ *
+ *        Calling
+ *          evhtp_get_cb(htp, "/foo/bar/baz");
+ *
+ *        Will return NULL since it's not the exact pattern set
+ *
+ *        Calling
+ *          evhtp_get_cb(htp, "/foo/bar*");
+ *
+ *        Is the correct usage.
+ *
+ * @param htp
+ * @param needle
+ *
+ * @return NULL if callback is not not found 
+ */
+EVHTP_EXPORT evhtp_callback_t * evhtp_get_cb(evhtp_t * htp, const char * needle);
+
 /**
  * @brief sets a callback hook for either a connection or a path/regex .
  *

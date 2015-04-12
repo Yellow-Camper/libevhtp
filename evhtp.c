@@ -3574,6 +3574,19 @@ evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
     return hcb;
 }
 
+evhtp_callback_t *
+evhtp_get_cb(evhtp_t * htp, const char * path) {
+    evhtp_callback_t * callback;
+
+    TAILQ_FOREACH(callback, htp->callbacks, next) {
+        if (strcmp(callback->val.path, path) == 0) {
+            return callback;
+        }
+    }
+
+    return NULL;
+}
+
 #ifndef EVHTP_DISABLE_EVTHR
 static void
 _evhtp_thread_init(evthr_t * thr, void * arg) {

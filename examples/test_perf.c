@@ -22,7 +22,7 @@ static size_t   payload_sz   = 100;
 static void
 response_cb(evhtp_request_t * r, void * a) {
     evbuffer_add_reference(r->buffer_out,
-	    (const char *)a, payload_sz, NULL, NULL);
+                           (const char *)a, payload_sz, NULL, NULL);
 
     evhtp_send_reply(r, EVHTP_RES_OK);
 }
@@ -46,8 +46,8 @@ main(int argc, char ** argv) {
             case 'p':
                 bport        = atoi(optarg);
                 break;
-	    case 'b':
-		backlog = atoll(optarg);
+            case 'b':
+                backlog      = atoll(optarg);
             case 'n':
                 nodelay      = 1;
                 break;
@@ -61,6 +61,15 @@ main(int argc, char ** argv) {
                 payload_sz   = atoll(optarg);
                 break;
             default:
+                fprintf(stdout, "Usage: %s [flags]\n", argv[0]);
+                fprintf(stdout, "  -t <n> : number of worker threads [Default: %d]\n", num_threads);
+                fprintf(stdout, "  -a <s> : bind address             [Default: %s]\n", baddr);
+                fprintf(stdout, "  -p <n> : bind port                [Default: %d]\n", bport);
+                fprintf(stdout, "  -b <b> : listen backlog           [Default: %d]\n", backlog);
+                fprintf(stdout, "  -s <n> : size of the response     [Default: %zu]\n", payload_sz);
+                fprintf(stdout, "  -n     : disable nagle (nodelay)  [Default: %s]\n", nodelay ? "true" : "false");
+                fprintf(stdout, "  -d     : enable deferred accept   [Default: %s]\n", defer_accept ? "true" : "false");
+                fprintf(stdout, "  -r     : enable linux reuseport   [Default: %s]\n", reuse_port ? "true" : "false");
                 exit(EXIT_FAILURE);
         } /* switch */
     }
@@ -82,7 +91,7 @@ main(int argc, char ** argv) {
         htp->enable_defer_accept = defer_accept;
         htp->enable_reuseport    = reuse_port;
 
-	memset(payload, 0x42, payload_sz);
+        memset(payload, 0x42, payload_sz);
 
         evhtp_assert(evhtp_set_cb(htp, "/data", response_cb, payload));
 

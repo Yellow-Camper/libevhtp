@@ -343,6 +343,7 @@ ENDIF (WIN32)
 configure_file(
 	${CMAKE_CURRENT_SOURCE_DIR}/evhtp.pc.in
 	${CMAKE_CURRENT_BINARY_DIR}/evhtp.pc @ONLY)
+
 install(FILES       "${CMAKE_CURRENT_BINARY_DIR}/evhtp.pc"
         DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig")
 

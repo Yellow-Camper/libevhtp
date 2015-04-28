@@ -885,7 +885,7 @@ _evhtp_path_new(const char * data, size_t len) {
     req_path = calloc(sizeof(evhtp_path_t), 1);
     evhtp_alloc_assert(req_path);
 
-    if (len == 0) {
+    if (evhtp_unlikely(len == 0)) {
         /*
          * odd situation here, no preceding "/", so just assume the path is "/"
          */
@@ -2172,7 +2172,6 @@ _evhtp_accept_cb(evserv_t * serv, int fd, struct sockaddr * s, int sl, void * ar
     if (evhtp_unlikely(!(connection = _evhtp_connection_new(htp, fd, evhtp_type_server)))) {
         return;
     }
-
 
     htp_log_debug("fd = %d, conn = %p", fd, connection);
 

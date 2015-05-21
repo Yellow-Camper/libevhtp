@@ -3,7 +3,7 @@
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
 
-
+/** @file */ 
 #ifndef EVHTP_DISABLE_EVTHR
 #include <evthr.h>
 #endif
@@ -211,6 +211,7 @@ typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_DATA_TOO_LONG 4
 #define EVHTP_RES_OK            200
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 #define EVHTP_RES_100           100
 #define EVHTP_RES_CONTINUE      100
 #define EVHTP_RES_SWITCH_PROTO  101
@@ -266,6 +267,7 @@ typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_GWTIMEOUT     504
 #define EVHTP_RES_VERNSUPPORT   505
 #define EVHTP_RES_BWEXEED       509
+#endif
 
 struct evhtp_defaults_s {
     evhtp_callback_cb    cb;

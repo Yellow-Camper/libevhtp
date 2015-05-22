@@ -1,10 +1,5 @@
 ![LOGO](http://i.imgur.com/uBd4iIz.png)
 
-<a href="https://scan.coverity.com/projects/5084">
-  <img alt="Coverity Scan Build Status"
-       src="https://scan.coverity.com/projects/5084/badge.svg"/>
-</a>
-
 # Libevhtp
 *****
 
@@ -127,3 +122,8 @@ second.
 
 You can read the whole article here: [Architecture Design of an Image Server](http://zimg.buaa.us/documents/Architecture_Design_of_Image_Server/)
 
+
+<a href="https://scan.coverity.com/projects/5084">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/5084/badge.svg"/>
+</a>

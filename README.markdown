@@ -1,7 +1,10 @@
+![LOGO](http://i.imgur.com/uBd4iIz.png)
+
 <a href="https://scan.coverity.com/projects/5084">
   <img alt="Coverity Scan Build Status"
        src="https://scan.coverity.com/projects/5084/badge.svg"/>
 </a>
+
 # Libevhtp
 *****
 

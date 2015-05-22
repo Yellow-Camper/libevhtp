@@ -120,6 +120,8 @@ second.
 
 You can read the whole article here: [Architecture Design of an Image Server](http://zimg.buaa.us/documents/Architecture_Design_of_Image_Server/)
 
+Slightly outdated (Now faster!)
+![HI NGINX](http://i.imgur.com/kiSkSLH.png)
 
 <a href="https://scan.coverity.com/projects/5084">
   <img alt="Coverity Scan Build Status"

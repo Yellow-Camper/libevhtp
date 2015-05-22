@@ -1,7 +1,5 @@
-| ![LOGO](http://i.imgur.com/uBd4iIz.png) | <h1>Libevhtp |
-| :-------------------------------------- | -----------: |
-
-==
+| ![LOGO](http://i.imgur.com/uBd4iIz.png) | <h1>Libevhtp</h1> |
+| :------------- | -------------: |
 
 This document describes details on using the evhtp API. This document is
 probably not very awesome, it's best to look at test.c to see advanced usage.

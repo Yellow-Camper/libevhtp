@@ -4146,12 +4146,16 @@ evhtp_new(evbase_t * evbase, void * arg) {
 
     evhtp_assert(evbase != NULL);
 
-    htp            = calloc(sizeof(evhtp_t), 1);
+    htp               = calloc(sizeof(evhtp_t), 1);
     evhtp_alloc_assert(htp);
 
-    htp->arg       = arg;
-    htp->evbase    = evbase;
-    htp->bev_flags = BEV_OPT_CLOSE_ON_FREE;
+    htp->arg          = arg;
+    htp->evbase       = evbase;
+    htp->bev_flags    = BEV_OPT_CLOSE_ON_FREE;
+
+    /* default to lenient argument parsing */
+    htp->parser_flags = EVHTP_PARSE_QUERY_FLAG_LENIENT;
+
 
     TAILQ_INIT(&htp->vhosts);
     TAILQ_INIT(&htp->aliases);
@@ -4363,4 +4367,3 @@ unsigned int
 evhtp_request_status(evhtp_request_t * r) {
     return htparser_get_status(r->conn->parser);
 }
-

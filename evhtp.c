@@ -3195,6 +3195,13 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&on, sizeof(on));
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, sizeof(on));
 
+    if (sa->sa_family == AF_INET6) {
+        int rc;
+
+        rc = setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
+        evhtp_errno_assert(rc != -1);
+    }
+
 #if defined SO_REUSEPORT
     if (htp->enable_reuseport) {
         setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, (void *)&on, sizeof(on));
@@ -3773,6 +3780,8 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
 
     htp->ssl_cfg = cfg;
     htp->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
+
+    evhtp_alloc_assert(htp->ssl_ctx);
 
 #if OPENSSL_VERSION_NUMBER >= 0x10000000L
     SSL_CTX_set_options(htp->ssl_ctx, SSL_MODE_RELEASE_BUFFERS | SSL_OP_NO_COMPRESSION);

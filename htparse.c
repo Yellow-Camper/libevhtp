@@ -328,7 +328,7 @@ str_to_uint64(char * str, size_t n, int * err) {
 
         check = value * 10 + (*str - '0');
 
-        if ((value && check <= value) || check > UINT64_MAX) {
+        if ((value && check <= value)) {
             *err = 1;
             return 0;
         }

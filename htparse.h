@@ -1,6 +1,12 @@
 #ifndef __HTPARSE_H__
 #define __HTPARSE_H__
 
+#include "evhtp-config.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct htparser;
 
 enum htp_type {
@@ -62,8 +68,8 @@ typedef enum htp_method      htp_method;
 typedef enum htp_type        htp_type;
 typedef enum htpparse_error  htpparse_error;
 
-typedef int (*htparse_hook)(htparser *);
-typedef int (*htparse_data_hook)(htparser *, const char *, size_t);
+typedef int (* htparse_hook)(htparser *);
+typedef int (* htparse_data_hook)(htparser *, const char *, size_t);
 
 
 struct htparse_hooks {
@@ -88,27 +94,31 @@ struct htparse_hooks {
 };
 
 
-size_t         htparser_run(htparser *, htparse_hooks *, const char *, size_t);
-int            htparser_should_keep_alive(htparser * p);
-htp_scheme     htparser_get_scheme(htparser *);
-htp_method     htparser_get_method(htparser *);
-const char   * htparser_get_methodstr(htparser *);
-const char   * htparser_get_methodstr_m(htp_method);
-void           htparser_set_major(htparser *, unsigned char);
-void           htparser_set_minor(htparser *, unsigned char);
-unsigned char  htparser_get_major(htparser *);
-unsigned char  htparser_get_minor(htparser *);
-unsigned char  htparser_get_multipart(htparser *);
-unsigned int   htparser_get_status(htparser *);
-uint64_t       htparser_get_content_length(htparser *);
-uint64_t       htparser_get_content_pending(htparser *);
-uint64_t       htparser_get_total_bytes_read(htparser *);
-htpparse_error htparser_get_error(htparser *);
-const char   * htparser_get_strerror(htparser *);
-void         * htparser_get_userdata(htparser *);
-void           htparser_set_userdata(htparser *, void *);
-void           htparser_init(htparser *, htp_type);
-htparser     * htparser_new(void);
+EVHTP_EXPORT size_t         htparser_run(htparser *, htparse_hooks *, const char *, size_t);
+EVHTP_EXPORT int            htparser_should_keep_alive(htparser * p);
+EVHTP_EXPORT htp_scheme     htparser_get_scheme(htparser *);
+EVHTP_EXPORT htp_method     htparser_get_method(htparser *);
+EVHTP_EXPORT const char   * htparser_get_methodstr(htparser *);
+EVHTP_EXPORT const char   * htparser_get_methodstr_m(htp_method);
+EVHTP_EXPORT void           htparser_set_major(htparser *, unsigned char);
+EVHTP_EXPORT void           htparser_set_minor(htparser *, unsigned char);
+EVHTP_EXPORT unsigned char  htparser_get_major(htparser *);
+EVHTP_EXPORT unsigned char  htparser_get_minor(htparser *);
+EVHTP_EXPORT unsigned char  htparser_get_multipart(htparser *);
+EVHTP_EXPORT unsigned int   htparser_get_status(htparser *);
+EVHTP_EXPORT uint64_t       htparser_get_content_length(htparser *);
+EVHTP_EXPORT uint64_t       htparser_get_content_pending(htparser *);
+EVHTP_EXPORT uint64_t       htparser_get_total_bytes_read(htparser *);
+EVHTP_EXPORT htpparse_error htparser_get_error(htparser *);
+EVHTP_EXPORT const char   * htparser_get_strerror(htparser *);
+EVHTP_EXPORT void         * htparser_get_userdata(htparser *);
+EVHTP_EXPORT void           htparser_set_userdata(htparser *, void *);
+EVHTP_EXPORT void           htparser_init(htparser *, htp_type);
+EVHTP_EXPORT htparser     * htparser_new(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

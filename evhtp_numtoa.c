@@ -42,8 +42,6 @@ evhtp_modp_u64toa(uint64_t value, char * str) {
     return (size_t)(wstr - str);
 }
 
-EXPORT_SYMBOL(evhtp_modp_u64toa);
-
 size_t
 evhtp_modp_u32toa(uint32_t value, char * str) {
     char * wstr = str;
@@ -61,8 +59,6 @@ evhtp_modp_u32toa(uint32_t value, char * str) {
     return (size_t)(wstr - str);
 }
 
-EXPORT_SYMBOL(evhtp_modp_u32toa);
-
 inline size_t
 evhtp_modp_sizetoa(size_t value, char * str) {
 #if EVHTP_SYS_ARCH == 64
@@ -74,4 +70,3 @@ evhtp_modp_sizetoa(size_t value, char * str) {
 #endif
 }
 
-EXPORT_SYMBOL(evhtp_modp_sizetoa);

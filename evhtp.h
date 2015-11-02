@@ -1,16 +1,9 @@
+#include <evhtp-config.h>
+
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
 
-#include <evhtp-config.h>
-
-#ifndef EVHTP_EXPORT
-# if (defined __GNUC__ && __GNUC__ >= 4) || defined __INTEL_COMPILER || defined __clang__
-#  define EVHTP_EXPORT __attribute__ ((visibility("default")))
-# else
-#  define EVHTP_EXPORT
-# endif
-#endif
-
+/** @file */
 #ifndef EVHTP_DISABLE_EVTHR
 #include <evthr.h>
 #endif
@@ -37,6 +30,26 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#ifdef EVHTP_DEBUG
+#define __QUOTE(x)              # x
+#define  _QUOTE(x)              __QUOTE(x)
+#define htp_debug_strlen(x)     strlen(x)
+
+#define htp_log_debug(fmt, ...) do {                                                               \
+        time_t      t  = time(NULL);                                                               \
+        struct tm * dm = localtime(&t);                                                            \
+                                                                                                   \
+        fprintf(stdout, "[%02d:%02d:%02d] evhtp.c:[" _QUOTE(__LINE__) "]\t                %-26s: " \
+                fmt "\n", dm->tm_hour, dm->tm_min, dm->tm_sec, __func__, ## __VA_ARGS__);          \
+        fflush(stdout);                                                                            \
+} while (0)
+
+#else
+#define htp_debug_strlen(x)     0
+#define htp_log_debug(fmt, ...) do {} while (0)
+#endif
+
 
 #ifndef EVHTP_DISABLE_SSL
 typedef SSL_SESSION               evhtp_ssl_sess_t;
@@ -184,10 +197,10 @@ typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connect
 typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #endif
 
-#define EVHTP_VERSION           "1.2.10"
+#define EVHTP_VERSION           "1.2.11"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
-#define EVHTP_VERSION_PATCH     10
+#define EVHTP_VERSION_PATCH     11
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 
@@ -198,6 +211,7 @@ typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_DATA_TOO_LONG 4
 #define EVHTP_RES_OK            200
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 #define EVHTP_RES_100           100
 #define EVHTP_RES_CONTINUE      100
 #define EVHTP_RES_SWITCH_PROTO  101
@@ -253,6 +267,7 @@ typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_GWTIMEOUT     504
 #define EVHTP_RES_VERNSUPPORT   505
 #define EVHTP_RES_BWEXEED       509
+#endif
 
 struct evhtp_defaults_s {
     evhtp_callback_cb    cb;
@@ -273,28 +288,33 @@ struct evhtp_alias_s {
  * @brief main structure containing all configuration information
  */
 struct evhtp_s {
-    evhtp_t  * parent;           /**< only when this is a vhost */
-    evbase_t * evbase;           /**< the initialized event_base */
-    evserv_t * server;           /**< the libevent listener struct */
-    char     * server_name;      /**< the name included in Host: responses */
-    void     * arg;              /**< user-defined evhtp_t specific arguments */
-    int        bev_flags;        /**< bufferevent flags to use on bufferevent_*_socket_new() */
+    evhtp_t  * parent;                  /**< only when this is a vhost */
+    evbase_t * evbase;                  /**< the initialized event_base */
+    evserv_t * server;                  /**< the libevent listener struct */
+    char     * server_name;             /**< the name included in Host: responses */
+    void     * arg;                     /**< user-defined evhtp_t specific arguments */
+    int        bev_flags;               /**< bufferevent flags to use on bufferevent_*_socket_new() */
     uint64_t   max_body_size;
     uint64_t   max_keepalive_requests;
-    int        disable_100_cont; /**< if set, evhtp will not respond to Expect: 100-continue */
-    int        parser_flags;     /**< default query flags to alter 'strictness' (see EVHTP_PARSE_QUERY_FLAG_*) */
+    uint8_t    disable_100_cont    : 1, /**< if set, evhtp will not respond to Expect: 100-continue */
+               enable_reuseport    : 1,
+               enable_nodelay      : 1,
+               enable_defer_accept : 1,
+               pad                 : 4;
+
+    int parser_flags;                   /**< default query flags to alter 'strictness' (see EVHTP_PARSE_QUERY_FLAG_*) */
 
 #ifndef EVHTP_DISABLE_SSL
-    evhtp_ssl_ctx_t * ssl_ctx;   /**< if ssl enabled, this is the servers CTX */
+    evhtp_ssl_ctx_t * ssl_ctx;          /**< if ssl enabled, this is the servers CTX */
     evhtp_ssl_cfg_t * ssl_cfg;
 #endif
 
 #ifndef EVHTP_DISABLE_EVTHR
-    evthr_pool_t * thr_pool;     /**< connection threadpool */
+    evthr_pool_t * thr_pool;            /**< connection threadpool */
 #endif
 
 #ifndef EVHTP_DISABLE_EVTHR
-    pthread_mutex_t    * lock;   /**< parent lock for add/del cbs in threads */
+    pthread_mutex_t    * lock;          /**< parent lock for add/del cbs in threads */
     evhtp_thread_init_cb thread_init_cb;
     void               * thread_init_cbarg;
 #endif
@@ -438,7 +458,9 @@ struct evhtp_connection_s {
     evhtp_t  * htp;
     evbase_t * evbase;
     evbev_t  * bev;
-    evthr_t  * thread;
+#ifndef EVHTP_DISABLE_EVTHR
+    evthr_t * thread;
+#endif
 #ifndef EVHTP_DISABLE_SSL
     evhtp_ssl_t * ssl;
 #endif
@@ -446,26 +468,26 @@ struct evhtp_connection_s {
     htparser        * parser;
     event_t         * resume_ev;
     struct sockaddr * saddr;
-    struct timeval    recv_timeo;               /**< conn read timeouts (overrides global) */
-    struct timeval    send_timeo;               /**< conn write timeouts (overrides global) */
+    struct timeval    recv_timeo;          /**< conn read timeouts (overrides global) */
+    struct timeval    send_timeo;          /**< conn write timeouts (overrides global) */
     evutil_socket_t   sock;
-    evhtp_request_t * request;                  /**< the request currently being processed */
+    evhtp_request_t * request;             /**< the request currently being processed */
     uint64_t          max_body_size;
     uint64_t          body_bytes_read;
     uint64_t          num_requests;
-    evhtp_type        type;                     /**< server or client */
+    evhtp_type        type;                /**< server or client */
     uint8_t           error           : 1,
-                      owner           : 1,      /**< set to 1 if this structure owns the bufferevent */
-                      vhost_via_sni   : 1,      /**< set to 1 if the vhost was found via SSL SNI */
-                      paused          : 1,      /**< this connection has been marked as paused */
-                      connected       : 1,      /**< client specific - set after successful connection */
-                      waiting         : 1,      /**< used to make sure resuming  happens AFTER sending a reply */
+                      owner           : 1, /**< set to 1 if this structure owns the bufferevent */
+                      vhost_via_sni   : 1, /**< set to 1 if the vhost was found via SSL SNI */
+                      paused          : 1, /**< this connection has been marked as paused */
+                      connected       : 1, /**< client specific - set after successful connection */
+                      waiting         : 1, /**< used to make sure resuming  happens AFTER sending a reply */
                       free_connection : 1,
-                      keepalive       : 1;      /**< set to 1 after the first request has been processed and the connection is kept open */
-    struct ev_token_bucket_cfg * ratelimit_cfg; /**< connection-specific ratelimiting configuration. */
+                      keepalive       : 1; /**< set to 1 after the first request has been processed and the connection is kept open */
+    struct evbuffer * scratch_buf;         /**< always zero'd out after used */
 
 #ifdef EVHTP_FUTURE_USE
-    TAILQ_HEAD(, evhtp_request_s) pending;      /**< client pending data */
+    TAILQ_HEAD(, evhtp_request_s) pending; /**< client pending data */
 #endif
 };
 
@@ -609,7 +631,29 @@ EVHTP_EXPORT int evhtp_use_callback_locks(evhtp_t * htp);
  * @param arg user-defined argument passed to the callback
  */
 EVHTP_EXPORT void evhtp_set_gencb(evhtp_t * htp, evhtp_callback_cb cb, void * arg);
+
+
+/**
+ * @brief call a user-defined function before the connection is accepted.
+ *
+ * @param htp
+ * @param evhtp_pre_accept_cb
+ * @param arg
+ *
+ * @return
+ */
 EVHTP_EXPORT void evhtp_set_pre_accept_cb(evhtp_t * htp, evhtp_pre_accept_cb, void * arg);
+
+
+/**
+ * @brief call a user-defined function right after a connection is accepted.
+ *
+ * @param htp
+ * @param evhtp_post_accept_cb
+ * @param arg
+ *
+ * @return
+ */
 EVHTP_EXPORT void evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept_cb, void * arg);
 
 /**
@@ -624,7 +668,6 @@ EVHTP_EXPORT void evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept_cb, 
  */
 EVHTP_EXPORT evhtp_callback_t * evhtp_set_cb(evhtp_t * htp, const char * path,
     evhtp_callback_cb cb, void * arg);
-
 
 
 /**
@@ -658,6 +701,34 @@ EVHTP_EXPORT evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * p
  */
 EVHTP_EXPORT evhtp_callback_t * evhtp_set_glob_cb(evhtp_t * htp, const char * pattern,
     evhtp_callback_cb cb, void * arg);
+
+
+/**
+ * @brief attempts to find the callback matching the exact string 'needle'. This is useful
+ *        in cases where we want to get the original handle, but is not in scope.
+ *
+ *        with pattern based callbacks, this does not attempt to find a callback that would
+ *        match the string if the pattern matcher was executed.
+ *
+ *        Meaning:
+ *          evhtp_set_glob_cb(htp, "/foo/bar*", ....);
+ *
+ *        Calling
+ *          evhtp_get_cb(htp, "/foo/bar/baz");
+ *
+ *        Will return NULL since it's not the exact pattern set
+ *
+ *        Calling
+ *          evhtp_get_cb(htp, "/foo/bar*");
+ *
+ *        Is the correct usage.
+ *
+ * @param htp
+ * @param needle
+ *
+ * @return NULL if callback is not not found
+ */
+EVHTP_EXPORT evhtp_callback_t * evhtp_get_cb(evhtp_t * htp, const char * needle);
 
 /**
  * @brief sets a callback hook for either a connection or a path/regex .
@@ -932,7 +1003,6 @@ EVHTP_EXPORT void evhtp_kv_free(evhtp_kv_t * kv);
  */
 EVHTP_EXPORT void evhtp_kvs_free(evhtp_kvs_t * kvs);
 
-
 /**
  * @brief free's resources associated with 'kv' if ONLY found within the key/value list
  *
@@ -940,7 +1010,6 @@ EVHTP_EXPORT void evhtp_kvs_free(evhtp_kvs_t * kvs);
  * @param kv
  */
 EVHTP_EXPORT void evhtp_kv_rm_and_free(evhtp_kvs_t * kvs, evhtp_kv_t * kv);
-
 
 /**
  * @brief find the string value of 'key' from the key/value list 'kvs'
@@ -1120,7 +1189,8 @@ EVHTP_EXPORT const char * evhtp_header_find(evhtp_headers_t * headers, const cha
  *
  * @return htp_method enum
  */
-EVHTP_EXPORT htp_method evhtp_request_get_method(evhtp_request_t * r);
+EVHTP_EXPORT htp_method  evhtp_request_get_method(evhtp_request_t * r);
+EVHTP_EXPORT evhtp_proto evhtp_request_get_proto(evhtp_request_t * r);
 
 /* the following functions all do the same thing, pause and the processing */
 EVHTP_EXPORT void evhtp_connection_pause(evhtp_connection_t * connection);
@@ -1236,6 +1306,7 @@ EVHTP_EXPORT void evhtp_connection_set_max_body_size(evhtp_connection_t * conn, 
  * @param len
  */
 EVHTP_EXPORT void evhtp_request_set_max_body_size(evhtp_request_t * request, uint64_t len);
+EVHTP_EXPORT void evhtp_request_set_keepalive(evhtp_request_t * request, int val);
 
 /**
  * @brief sets a maximum number of requests that a single connection can make.
@@ -1246,26 +1317,6 @@ EVHTP_EXPORT void evhtp_request_set_max_body_size(evhtp_request_t * request, uin
 EVHTP_EXPORT void evhtp_set_max_keepalive_requests(evhtp_t * htp, uint64_t num);
 
 
-/**
- * @brief set a bufferevent ratelimit on a evhtp_connection_t structure. The
- *        logic is the same as libevent's rate-limiting code.
- *
- * @param c
- * @param read_rate
- * @param read_burst
- * @param write_rate
- * @param write_burst
- * @param tick
- *
- * @return
- */
-EVHTP_EXPORT int
-evhtp_connection_set_ratelimit(evhtp_connection_t * c,
-    size_t read_rate, size_t read_burst,
-    size_t write_rate,
-    size_t write_burst,
-    const struct timeval * tick);
-
 /*****************************************************************
 * client request functions                                      *
 *****************************************************************/
@@ -1273,8 +1324,7 @@ evhtp_connection_set_ratelimit(evhtp_connection_t * c,
 /**
  * @brief allocate a new connection
  */
-EVHTP_EXPORT evhtp_connection_t *
-evhtp_connection_new_dns(evbase_t * evbase,
+EVHTP_EXPORT evhtp_connection_t * evhtp_connection_new_dns(evbase_t * evbase,
     struct evdns_base * dns_base,
     const char * addr, uint16_t port);
 
@@ -1284,8 +1334,8 @@ evhtp_connection_new_dns(evbase_t * evbase,
 EVHTP_EXPORT evhtp_connection_t *
 evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port);
 
-#ifndef DISABLE_SSL
-evhtp_connection_t * evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t * ctx);
+#ifndef EVHTP_DISABLE_SSL
+EVHTP_EXPORT evhtp_connection_t * evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t * ctx);
 #endif
 
 

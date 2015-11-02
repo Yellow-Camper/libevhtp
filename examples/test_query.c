@@ -133,7 +133,7 @@ struct test base_tests[] = {
                 { NULL,                      NULL },
             } },
     { "hexa%z=some",             0, {
-                { "hexa\%%z",                "some" },
+                { "hexa%z",                  "some" },
                 { NULL,                      NULL },
             } },
     { "aaa=some\%az",            1 },

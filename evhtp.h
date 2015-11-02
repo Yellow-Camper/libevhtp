@@ -3,7 +3,7 @@
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
 
-/** @file */ 
+/** @file */
 #ifndef EVHTP_DISABLE_EVTHR
 #include <evthr.h>
 #endif
@@ -197,10 +197,10 @@ typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connect
 typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #endif
 
-#define EVHTP_VERSION           "1.2.10"
+#define EVHTP_VERSION           "1.2.11"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
-#define EVHTP_VERSION_PATCH     10
+#define EVHTP_VERSION_PATCH     11
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 
@@ -726,7 +726,7 @@ EVHTP_EXPORT evhtp_callback_t * evhtp_set_glob_cb(evhtp_t * htp, const char * pa
  * @param htp
  * @param needle
  *
- * @return NULL if callback is not not found 
+ * @return NULL if callback is not not found
  */
 EVHTP_EXPORT evhtp_callback_t * evhtp_get_cb(evhtp_t * htp, const char * needle);
 

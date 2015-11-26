@@ -3599,20 +3599,30 @@ _evhtp_thread_init(evthr_t * thr, void * arg) {
     evhtp_t * htp = (evhtp_t *)arg;
 
     if (htp->thread_init_cb) {
-        htp->thread_init_cb(htp, thr, htp->thread_init_cbarg);
+        htp->thread_init_cb(htp, thr, htp->thread_cbarg);
+    }
+}
+
+static void
+_evhtp_thread_exit(evthr_t * thr, void * arg) {
+    evhtp_t * htp = (evhtp_t *)arg;
+
+    if (htp->thread_exit_cb) {
+        htp->thread_exit_cb(htp, thr, htp->thread_cbarg);
     }
 }
 
 int
-evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg) {
-    htp->thread_init_cb    = init_cb;
-    htp->thread_init_cbarg = arg;
+evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, evhtp_thread_exit_cb exit_cb, int nthreads, void * arg) {
+    htp->thread_cbarg   = arg;
+    htp->thread_init_cb = init_cb;
+    htp->thread_exit_cb = exit_cb;
 
 #ifndef EVHTP_DISABLE_SSL
     evhtp_ssl_use_threads();
 #endif
 
-    if (!(htp->thr_pool = evthr_pool_new(nthreads, _evhtp_thread_init, htp))) {
+    if (!(htp->thr_pool = evthr_pool_new(nthreads, _evhtp_thread_init, _evhtp_thread_exit, htp))) {
         return -1;
     }
 

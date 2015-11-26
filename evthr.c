@@ -51,6 +51,7 @@ struct evthr {
     pthread_mutex_t lock;
     pthread_t     * thr;
     evthr_init_cb   init_cb;
+    evthr_init_cb   exit_cb;
     void          * arg;
     void          * aux;
 
@@ -118,14 +119,18 @@ _evthr_loop(void * args) {
 #endif
 
     pthread_mutex_lock(&thread->lock);
-
     if (thread->init_cb != NULL) {
         thread->init_cb(thread, thread->arg);
     }
-
     pthread_mutex_unlock(&thread->lock);
 
     event_base_loop(thread->evbase, 0);
+
+    pthread_mutex_lock(&thread->lock);
+    if (thread->exit_cb != NULL) {
+        thread->exit_cb(thread, thread->arg);
+    }
+    pthread_mutex_unlock(&thread->lock);
 
     if (thread->err == 1) {
         fprintf(stderr, "FATAL ERROR!\n");
@@ -181,7 +186,7 @@ evthr_get_aux(evthr_t * thr) {
 }
 
 evthr_t *
-evthr_new(evthr_init_cb init_cb, void * args) {
+evthr_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args) {
     evthr_t * thread;
     int       fds[2];
 
@@ -198,6 +203,7 @@ evthr_new(evthr_init_cb init_cb, void * args) {
 
     thread->thr     = malloc(sizeof(pthread_t));
     thread->init_cb = init_cb;
+    thread->exit_cb = exit_cb;
     thread->arg     = args;
     thread->rdr     = fds[0];
     thread->wdr     = fds[1];
@@ -322,7 +328,7 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
 } /* evthr_pool_defer */
 
 evthr_pool_t *
-evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared) {
+evthr_pool_new(int nthreads, evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * shared) {
     evthr_pool_t * pool;
     int            i;
 
@@ -356,7 +362,7 @@ evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared) {
     for (i = 0; i < nthreads; i++) {
         evthr_t * thread;
 
-        if (!(thread = evthr_new(init_cb, shared))) {
+        if (!(thread = evthr_new(init_cb, exit_cb, shared))) {
             evthr_pool_free(pool);
             return NULL;
         }

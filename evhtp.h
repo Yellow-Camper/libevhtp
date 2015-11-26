@@ -161,6 +161,7 @@ typedef enum evhtp_ssl_scache_type evhtp_ssl_scache_type;
 typedef enum evhtp_type            evhtp_type;
 
 typedef void (* evhtp_thread_init_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
+typedef void (* evhtp_thread_exit_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
 typedef void (* evhtp_callback_cb)(evhtp_request_t * req, void * arg);
 typedef void (* evhtp_hook_err_cb)(evhtp_request_t * req, evhtp_error_flags errtype, void * arg);
 typedef void (* evhtp_hook_event_cb)(evhtp_connection_t * conn, short events, void * arg);
@@ -315,8 +316,9 @@ struct evhtp_s {
 
 #ifndef EVHTP_DISABLE_EVTHR
     pthread_mutex_t    * lock;          /**< parent lock for add/del cbs in threads */
+    void               * thread_cbarg;
     evhtp_thread_init_cb thread_init_cb;
-    void               * thread_init_cbarg;
+    evhtp_thread_init_cb thread_exit_cb;
 #endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
@@ -840,12 +842,13 @@ EVHTP_EXPORT int evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *,
  *
  * @param htp
  * @param init_cb
+ * @param exit_cb
  * @param nthreads
  * @param arg
  *
  * @return
  */
-EVHTP_EXPORT int evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
+EVHTP_EXPORT int evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, evhtp_thread_exit_cb exit_cb, int nthreads, void * arg);
 
 
 /**

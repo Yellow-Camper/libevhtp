@@ -834,7 +834,7 @@ EVHTP_EXPORT void evhtp_unbind_socket(evhtp_t * htp);
  *
  * @return 0 on success, -1 on error (check errno)
  */
-EVHTP_EXPORT int evhtp_accept_socke(evhtp_t * htp, evutil_socket_t sock, int backlog);
+EVHTP_EXPORT int evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog);
 
 /**
  * @brief bind to an already allocated sockaddr.

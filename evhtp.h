@@ -318,7 +318,7 @@ struct evhtp_s {
     pthread_mutex_t    * lock;          /**< parent lock for add/del cbs in threads */
     void               * thread_cbarg;
     evhtp_thread_init_cb thread_init_cb;
-    evhtp_thread_init_cb thread_exit_cb;
+    evhtp_thread_exit_cb thread_exit_cb;
 #endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;

@@ -3046,6 +3046,7 @@ void
 evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
     evhtp_connection_t * c;
     evbuf_t            * reply_buf;
+    struct bufferevent * bev;
 
     c = evhtp_request_get_connection(request);
     request->finished = 1;
@@ -3056,7 +3057,14 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code) {
         return;
     }
 
-    bufferevent_write_buffer(evhtp_connection_get_bev(c), reply_buf);
+    bev = evhtp_connection_get_bev(c);
+
+    bufferevent_lock(bev);
+    {
+        bufferevent_write_buffer(bev, reply_buf);
+    }
+    bufferevent_unlock(bev);
+
     evbuffer_drain(reply_buf, -1);
     /* evbuffer_free(reply_buf); */
 }
@@ -3635,9 +3643,8 @@ _evhtp_use_threads(evhtp_t * htp,
                    evhtp_thread_init_cb init_cb,
                    evhtp_thread_exit_cb exit_cb,
                    int nthreads, void * arg) {
-
     if (htp == NULL) {
-	return -1;
+        return -1;
     }
 
     htp->thread_cbarg   = arg;
@@ -3672,6 +3679,7 @@ evhtp_use_threads_wexit(evhtp_t * htp,
                         int nthreads, void * arg) {
     return _evhtp_use_threads(htp, init_cb, exit_cb, nthreads, arg);
 }
+
 #endif
 
 #ifndef EVHTP_DISABLE_EVTHR

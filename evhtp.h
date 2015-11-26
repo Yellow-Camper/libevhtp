@@ -161,6 +161,7 @@ typedef enum evhtp_ssl_scache_type evhtp_ssl_scache_type;
 typedef enum evhtp_type            evhtp_type;
 
 typedef void (* evhtp_thread_init_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
+typedef void (* evhtp_thread_exit_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
 typedef void (* evhtp_callback_cb)(evhtp_request_t * req, void * arg);
 typedef void (* evhtp_hook_err_cb)(evhtp_request_t * req, evhtp_error_flags errtype, void * arg);
 typedef void (* evhtp_hook_event_cb)(evhtp_connection_t * conn, short events, void * arg);
@@ -310,13 +311,17 @@ struct evhtp_s {
 #endif
 
 #ifndef EVHTP_DISABLE_EVTHR
-    evthr_pool_t * thr_pool;            /**< connection threadpool */
-#endif
+    evthr_pool_t    * thr_pool;         /**< connection threadpool */
+    pthread_mutex_t * lock;             /**< parent lock for add/del cbs in threads */
 
-#ifndef EVHTP_DISABLE_EVTHR
-    pthread_mutex_t    * lock;          /**< parent lock for add/del cbs in threads */
     evhtp_thread_init_cb thread_init_cb;
-    void               * thread_init_cbarg;
+    evhtp_thread_exit_cb thread_exit_cb;
+
+    /* keep backwards compat because I'm dumb and didn't
+     * make these structs private
+     */
+    #define thread_init_cbarg thread_cbarg
+    void * thread_cbarg;
 #endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
@@ -853,13 +858,23 @@ EVHTP_EXPORT int evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *,
  *
  * @param htp
  * @param init_cb
+ * @param exit_cb
  * @param nthreads
  * @param arg
  *
  * @return
  */
-EVHTP_EXPORT int evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
+EVHTP_EXPORT int evhtp_use_threads(evhtp_t *, evhtp_thread_init_cb, int nthreads, void *)
+    DEPRECATED("will take on the syntax of evhtp_use_threads_wexit");
 
+/**
+ * @brief Temporary function which will be renamed evhtp_use_threads in the
+ *        future. evhtp_use_threads() has been noted as deprecated for now
+ */
+EVHTP_EXPORT int evhtp_use_threads_wexit(evhtp_t *,
+    evhtp_thread_init_cb,
+    evhtp_thread_exit_cb,
+    int nthreads, void * arg);
 
 /**
  * @brief generates all the right information for a reply to be sent to the client

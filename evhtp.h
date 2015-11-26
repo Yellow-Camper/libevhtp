@@ -818,6 +818,19 @@ EVHTP_EXPORT int evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t po
  */
 EVHTP_EXPORT void evhtp_unbind_socket(evhtp_t * htp);
 
+
+/**
+ * @brief create the listener plus setup various options with an already-bound
+ *        socket.
+ *
+ * @param htp
+ * @param sock
+ * @param backlog
+ *
+ * @return 0 on success, -1 on error (check errno)
+ */
+EVHTP_EXPORT int evhtp_accept_socke(evhtp_t * htp, evutil_socket_t sock, int backlog);
+
 /**
  * @brief bind to an already allocated sockaddr.
  *

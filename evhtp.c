@@ -3000,6 +3000,8 @@ error:
     evhtp_safe_free(val_buf, free);
 #endif
 
+    evhtp_query_free(query_args);
+
     return NULL;
 }     /* evhtp_parse_query */
 

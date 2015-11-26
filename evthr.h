@@ -1,6 +1,3 @@
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif
 #ifndef __EVTHR_H__
 #define __EVTHR_H__
 
@@ -34,20 +31,27 @@ typedef void (* evthr_cb)(evthr_t * thr, void * cmd_arg, void * shared);
 typedef void (* evthr_init_cb)(evthr_t * thr, void * shared);
 typedef void (* evthr_exit_cb)(evthr_t * thr, void * shared);
 
-EVHTP_EXPORT evthr_t      * evthr_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * arg);
+EVHTP_EXPORT evthr_t * evthr_new(evthr_init_cb, void *)
+    DEPRECATED("will take on the syntax of evthr_wexit_new");
+
 EVHTP_EXPORT evbase_t     * evthr_get_base(evthr_t * thr);
 EVHTP_EXPORT void           evthr_set_aux(evthr_t * thr, void * aux);
 EVHTP_EXPORT void         * evthr_get_aux(evthr_t * thr);
 EVHTP_EXPORT int            evthr_start(evthr_t * evthr);
 EVHTP_EXPORT evthr_res      evthr_stop(evthr_t * evthr);
-EVHTP_EXPORT evthr_res      evthr_defer(evthr_t * evthr, evthr_cb cb, void * arg);
+EVHTP_EXPORT evthr_res      evthr_defer(evthr_t * evthr, evthr_cb cb, void *);
 EVHTP_EXPORT void           evthr_free(evthr_t * evthr);
 
-EVHTP_EXPORT evthr_pool_t * evthr_pool_new(int nthreads, evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * shared);
+EVHTP_EXPORT evthr_pool_t * evthr_pool_new(int nthreads, evthr_init_cb, void *)
+    DEPRECATED("will take on the syntax of evthr_pool_wexit_new");
+
 EVHTP_EXPORT int            evthr_pool_start(evthr_pool_t * pool);
 EVHTP_EXPORT evthr_res      evthr_pool_stop(evthr_pool_t * pool);
 EVHTP_EXPORT evthr_res      evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg);
 EVHTP_EXPORT void           evthr_pool_free(evthr_pool_t * pool);
+
+EVHTP_EXPORT evthr_t      * evthr_wexit_new(evthr_init_cb, evthr_exit_cb, void * shared);
+EVHTP_EXPORT evthr_pool_t * evthr_pool_wexit_new(int nthreads, evthr_init_cb, evthr_exit_cb, void *);
 
 #ifdef __cplusplus
 }

@@ -120,7 +120,7 @@ _evthr_loop(void * args) {
 
     pthread_mutex_lock(&thread->lock);
     if (thread->init_cb != NULL) {
-        thread->init_cb(thread, thread->arg);
+        (thread->init_cb)(thread, thread->arg);
     }
     pthread_mutex_unlock(&thread->lock);
 
@@ -128,7 +128,7 @@ _evthr_loop(void * args) {
 
     pthread_mutex_lock(&thread->lock);
     if (thread->exit_cb != NULL) {
-        thread->exit_cb(thread, thread->arg);
+        (thread->exit_cb)(thread, thread->arg);
     }
     pthread_mutex_unlock(&thread->lock);
 
@@ -172,21 +172,45 @@ evthr_stop(evthr_t * thread) {
 
 evbase_t *
 evthr_get_base(evthr_t * thr) {
-    return thr->evbase;
+    return thr ? thr->evbase : NULL;
 }
 
 void
 evthr_set_aux(evthr_t * thr, void * aux) {
-    thr->aux = aux;
+    if (thr) {
+        thr->aux = aux;
+    }
 }
 
 void *
 evthr_get_aux(evthr_t * thr) {
-    return thr->aux;
+    return thr ? thr->aux : NULL;
 }
 
-evthr_t *
-evthr_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args) {
+int
+evthr_set_initcb(evthr_t * thr, evthr_init_cb cb) {
+    if (thr == NULL) {
+        return -1;
+    }
+
+    thr->init_cb = cb;
+
+    return 01;
+}
+
+int
+evthr_set_exitcb(evthr_t * thr, evthr_exit_cb cb) {
+    if (thr == NULL) {
+        return -1;
+    }
+
+    thr->exit_cb = cb;
+
+    return 0;
+}
+
+static evthr_t *
+_evthr_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args) {
     evthr_t * thread;
     int       fds[2];
 
@@ -201,12 +225,13 @@ evthr_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args) {
         return NULL;
     }
 
-    thread->thr     = malloc(sizeof(pthread_t));
-    thread->init_cb = init_cb;
-    thread->exit_cb = exit_cb;
-    thread->arg     = args;
-    thread->rdr     = fds[0];
-    thread->wdr     = fds[1];
+    thread->thr = malloc(sizeof(pthread_t));
+    thread->arg = args;
+    thread->rdr = fds[0];
+    thread->wdr = fds[1];
+
+    evthr_set_initcb(thread, init_cb);
+    evthr_set_exitcb(thread, exit_cb);
 
     if (pthread_mutex_init(&thread->lock, NULL)) {
         evthr_free(thread);
@@ -215,6 +240,16 @@ evthr_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args) {
 
     return thread;
 } /* evthr_new */
+
+evthr_t *
+evhtr_new(evthr_init_cb init_cb, void * args) {
+    return _evthr_new(init_cb, NULL, args);
+}
+
+evthr_t *
+evthr_wexit_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args) {
+    return _evthr_new(init_cb, exit_cb, args);
+}
 
 int
 evthr_start(evthr_t * thread) {
@@ -327,8 +362,11 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
 #endif
 } /* evthr_pool_defer */
 
-evthr_pool_t *
-evthr_pool_new(int nthreads, evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * shared) {
+static evthr_pool_t *
+_evthr_pool_new(int           nthreads,
+                evthr_init_cb init_cb,
+                evthr_exit_cb exit_cb,
+                void        * shared) {
     evthr_pool_t * pool;
     int            i;
 
@@ -362,7 +400,7 @@ evthr_pool_new(int nthreads, evthr_init_cb init_cb, evthr_exit_cb exit_cb, void 
     for (i = 0; i < nthreads; i++) {
         evthr_t * thread;
 
-        if (!(thread = evthr_new(init_cb, exit_cb, shared))) {
+        if (!(thread = evthr_wexit_new(init_cb, exit_cb, shared))) {
             evthr_pool_free(pool);
             return NULL;
         }
@@ -375,7 +413,19 @@ evthr_pool_new(int nthreads, evthr_init_cb init_cb, evthr_exit_cb exit_cb, void 
     }
 
     return pool;
-} /* evthr_pool_new */
+} /* _evthr_pool_new */
+
+evthr_pool_t *
+evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared) {
+    return _evthr_pool_new(nthreads, init_cb, NULL, shared);
+}
+
+evthr_pool_t *
+evthr_pool_wexit_new(int nthreads,
+                     evthr_init_cb init_cb,
+                     evthr_exit_cb exit_cb, void * shared) {
+    return _evthr_pool_new(nthreads, init_cb, exit_cb, shared);
+}
 
 int
 evthr_pool_start(evthr_pool_t * pool) {

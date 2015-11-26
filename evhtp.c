@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -3614,8 +3613,16 @@ _evhtp_thread_exit(evthr_t * thr, void * arg) {
     }
 }
 
-int
-evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, evhtp_thread_exit_cb exit_cb, int nthreads, void * arg) {
+static int
+_evhtp_use_threads(evhtp_t * htp,
+                   evhtp_thread_init_cb init_cb,
+                   evhtp_thread_exit_cb exit_cb,
+                   int nthreads, void * arg) {
+
+    if (htp == NULL) {
+	return -1;
+    }
+
     htp->thread_cbarg   = arg;
     htp->thread_init_cb = init_cb;
     htp->thread_exit_cb = exit_cb;
@@ -3624,7 +3631,9 @@ evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, evhtp_thread_exit
     evhtp_ssl_use_threads();
 #endif
 
-    if (!(htp->thr_pool = evthr_pool_new(nthreads, _evhtp_thread_init, _evhtp_thread_exit, htp))) {
+    if (!(htp->thr_pool = evthr_pool_wexit_new(nthreads,
+                                               _evhtp_thread_init,
+                                               _evhtp_thread_exit, htp))) {
         return -1;
     }
 
@@ -3633,6 +3642,19 @@ evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, evhtp_thread_exit
     return 0;
 }
 
+int
+evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb,
+                  int nthreads, void * arg) {
+    return _evhtp_use_threads(htp, init_cb, NULL, nthreads, arg);
+}
+
+int
+evhtp_use_threads_wexit(evhtp_t * htp,
+                        evhtp_thread_init_cb init_cb,
+                        evhtp_thread_exit_cb exit_cb,
+                        int nthreads, void * arg) {
+    return _evhtp_use_threads(htp, init_cb, exit_cb, nthreads, arg);
+}
 #endif
 
 #ifndef EVHTP_DISABLE_EVTHR
@@ -4391,3 +4413,4 @@ unsigned int
 evhtp_request_status(evhtp_request_t * r) {
     return htparser_get_status(r->conn->parser);
 }
+

@@ -311,14 +311,17 @@ struct evhtp_s {
 #endif
 
 #ifndef EVHTP_DISABLE_EVTHR
-    evthr_pool_t * thr_pool;            /**< connection threadpool */
-#endif
+    evthr_pool_t    * thr_pool;         /**< connection threadpool */
+    pthread_mutex_t * lock;             /**< parent lock for add/del cbs in threads */
 
-#ifndef EVHTP_DISABLE_EVTHR
-    pthread_mutex_t    * lock;          /**< parent lock for add/del cbs in threads */
-    void               * thread_cbarg;
     evhtp_thread_init_cb thread_init_cb;
     evhtp_thread_exit_cb thread_exit_cb;
+
+    /* keep backwards compat because I'm dumb and didn't
+     * make these structs private
+     */
+    #define thread_init_cbarg thread_cbarg
+    void * thread_cbarg;
 #endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
@@ -848,8 +851,17 @@ EVHTP_EXPORT int evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *,
  *
  * @return
  */
-EVHTP_EXPORT int evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, evhtp_thread_exit_cb exit_cb, int nthreads, void * arg);
+EVHTP_EXPORT int evhtp_use_threads(evhtp_t *, evhtp_thread_init_cb, int nthreads, void *)
+    DEPRECATED("will take on the syntax of evhtp_use_threads_wexit");
 
+/**
+ * @brief Temporary function which will be renamed evhtp_use_threads in the
+ *        future. evhtp_use_threads() has been noted as deprecated for now
+ */
+EVHTP_EXPORT int evhtp_use_threads_wexit(evhtp_t *,
+    evhtp_thread_init_cb,
+    evhtp_thread_exit_cb,
+    int nthreads, void * arg);
 
 /**
  * @brief generates all the right information for a reply to be sent to the client

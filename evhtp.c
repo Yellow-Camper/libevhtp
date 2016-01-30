@@ -4250,7 +4250,7 @@ evhtp_free(evhtp_t * evhtp) {
 
 #ifndef EVHTP_DISABLE_SSL
     if (evhtp->ssl_ctx) {
-        SSL_CTX_free(evhtp->ssl_ctx);
+        evhtp_safe_free(evhtp->ssl_ctx, SSL_CTX_free);
     }
 #endif
 
@@ -4270,12 +4270,6 @@ evhtp_free(evhtp_t * evhtp) {
         TAILQ_REMOVE(&evhtp->aliases, evhtp_alias, next);
         evhtp_safe_free(evhtp_alias, free);
     }
-
-#ifndef EVHTP_DISABLE_SSL
-    if (evhtp->ssl_ctx) {
-        SSL_CTX_free(evhtp->ssl_ctx);
-    }
-#endif
 
     evhtp_safe_free(evhtp, free);
 } /* evhtp_free */

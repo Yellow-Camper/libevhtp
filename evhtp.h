@@ -3,7 +3,7 @@
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
 
-/** @file */ 
+/** @file */
 #ifndef EVHTP_DISABLE_EVTHR
 #include <evthr.h>
 #endif
@@ -161,6 +161,7 @@ typedef enum evhtp_ssl_scache_type evhtp_ssl_scache_type;
 typedef enum evhtp_type            evhtp_type;
 
 typedef void (* evhtp_thread_init_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
+typedef void (* evhtp_thread_exit_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
 typedef void (* evhtp_callback_cb)(evhtp_request_t * req, void * arg);
 typedef void (* evhtp_hook_err_cb)(evhtp_request_t * req, evhtp_error_flags errtype, void * arg);
 typedef void (* evhtp_hook_event_cb)(evhtp_connection_t * conn, short events, void * arg);
@@ -197,10 +198,10 @@ typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connect
 typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #endif
 
-#define EVHTP_VERSION           "1.2.10"
+#define EVHTP_VERSION           "1.2.11"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
-#define EVHTP_VERSION_PATCH     10
+#define EVHTP_VERSION_PATCH     11
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 
@@ -311,13 +312,17 @@ struct evhtp_s {
 #endif
 
 #ifndef EVHTP_DISABLE_EVTHR
-    evthr_pool_t * thr_pool;            /**< connection threadpool */
-#endif
+    evthr_pool_t    * thr_pool;         /**< connection threadpool */
+    pthread_mutex_t * lock;             /**< parent lock for add/del cbs in threads */
 
-#ifndef EVHTP_DISABLE_EVTHR
-    pthread_mutex_t    * lock;          /**< parent lock for add/del cbs in threads */
     evhtp_thread_init_cb thread_init_cb;
-    void               * thread_init_cbarg;
+    evhtp_thread_exit_cb thread_exit_cb;
+
+    /* keep backwards compat because I'm dumb and didn't
+     * make these structs private
+     */
+    #define thread_init_cbarg thread_cbarg
+    void * thread_cbarg;
 #endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
@@ -743,7 +748,7 @@ EVHTP_EXPORT evhtp_callback_t * evhtp_set_glob_cb(evhtp_t * htp, const char * pa
  * @param htp
  * @param needle
  *
- * @return NULL if callback is not not found 
+ * @return NULL if callback is not not found
  */
 EVHTP_EXPORT evhtp_callback_t * evhtp_get_cb(evhtp_t * htp, const char * needle);
 
@@ -835,6 +840,19 @@ EVHTP_EXPORT int evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t po
  */
 EVHTP_EXPORT void evhtp_unbind_socket(evhtp_t * htp);
 
+
+/**
+ * @brief create the listener plus setup various options with an already-bound
+ *        socket.
+ *
+ * @param htp
+ * @param sock
+ * @param backlog
+ *
+ * @return 0 on success, -1 on error (check errno)
+ */
+EVHTP_EXPORT int evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog);
+
 /**
  * @brief bind to an already allocated sockaddr.
  *
@@ -857,13 +875,23 @@ EVHTP_EXPORT int evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *,
  *
  * @param htp
  * @param init_cb
+ * @param exit_cb
  * @param nthreads
  * @param arg
  *
  * @return
  */
-EVHTP_EXPORT int evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
+EVHTP_EXPORT int evhtp_use_threads(evhtp_t *, evhtp_thread_init_cb, int nthreads, void *)
+    DEPRECATED("will take on the syntax of evhtp_use_threads_wexit");
 
+/**
+ * @brief Temporary function which will be renamed evhtp_use_threads in the
+ *        future. evhtp_use_threads() has been noted as deprecated for now
+ */
+EVHTP_EXPORT int evhtp_use_threads_wexit(evhtp_t *,
+    evhtp_thread_init_cb,
+    evhtp_thread_exit_cb,
+    int nthreads, void * arg);
 
 /**
  * @brief generates all the right information for a reply to be sent to the client
@@ -1351,8 +1379,8 @@ EVHTP_EXPORT evhtp_connection_t * evhtp_connection_new_dns(evbase_t * evbase,
 EVHTP_EXPORT evhtp_connection_t *
 evhtp_connection_new(evbase_t * evbase, const char * addr, uint16_t port);
 
-#ifndef DISABLE_SSL
-evhtp_connection_t * evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t * ctx);
+#ifndef EVHTP_DISABLE_SSL
+EVHTP_EXPORT evhtp_connection_t * evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t * ctx);
 #endif
 
 

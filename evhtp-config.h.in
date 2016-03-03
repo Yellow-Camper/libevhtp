@@ -14,6 +14,20 @@ extern "C" {
 #endif
 
 
+#if defined(_MSC_VER) && _MSC_VER >= 1500 // MSVC 2008
+#  define DEPRECATED(message) __declspec(deprecated(message))
+#elif defined(__clang__) && defined(__has_feature)
+#  if __has_feature(attribute_deprecated_with_message)
+#    define DEPRECATED(message)  __attribute__ ((deprecated(message)))
+#  endif
+#  elif defined(__GNUC__) &&  (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))
+#    define DEPRECATED(message)  __attribute__ ((deprecated(message)))
+#  elif defined(__GNUC__) &&  (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+#    define DEPRECATED(message)  __attribute__((__deprecated__))
+#  else
+#   define DEPRECATED(message)
+#endif
+
 #undef EVHTP_DISABLE_EVTHR
 #undef EVHTP_DISABLE_REGEX
 #undef EVHTP_DISABLE_SSL

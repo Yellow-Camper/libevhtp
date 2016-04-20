@@ -135,12 +135,12 @@ struct htparser {
 
     void * userdata;
 
-    unsigned int buf_idx;
+    size_t buf_idx;
     /* Must be last since htparser_init memsets up to the offset of this buffer */
     char buf[PARSER_STACK_MAX];
 };
 
-static uint32_t     usual[] = {
+static uint32_t usual[] = {
     0xffffdbfe,
     0x7fff37d6,
     0xffffffff,
@@ -151,7 +151,7 @@ static uint32_t     usual[] = {
     0xffffffff
 };
 
-static int8_t       unhex[256] = {
+static int8_t unhex[256] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -623,7 +623,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
         htparse_log_debug("[%p] data[%d] = %c (%x)", p, i, isprint(ch) ? ch : ' ', ch);
 
-        if (p->buf_idx >= sizeof(p->buf)) {
+        if (p->buf_idx >= PARSER_STACK_MAX) {
             p->error = htparse_error_too_big;
             return i + 1;
         }
@@ -1020,11 +1020,15 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 res = 0;
 
                 if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
-                    p->buf[p->buf_idx++] = ch;
-                    p->buf[p->buf_idx]   = '\0';
-                    p->state = s_check_uri;
+                    if (lz_likely(buf_idx + 1) < PARSER_STACK_MAX) {
+                        p->buf[p->buf_idx++] = ch;
+                        p->buf[p->buf_idx]   = '\0';
+                        p->state = s_check_uri;
+                    }
                     break;
                 }
+
+                break;
 
                 switch (ch) {
                     case ' ':
@@ -1814,13 +1818,13 @@ hdrline_start:
 
                 switch (ch) {
                     case LF:
+			res = 0;
                         res = hook_on_hdrs_complete_run(p, hooks);
 
-                        if (res) {
+                        if (res != 0) {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
-
 
                         p->buf_idx = 0;
                         htparse_log_debug("[%p] HERE", p);
@@ -1839,17 +1843,18 @@ hdrline_start:
                             p->state = s_hdrline_done;
                         }
 
-                        if (res) {
+                        if (res != 0) {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
                         break;
+
                     default:
                         p->error = htparse_error_inval_hdr;
                         return i + 1;
                 }         /* switch */
 
-                if (res) {
+                if (res != 0) {
                     p->error = htparse_error_user;
                     return i + 1;
                 }

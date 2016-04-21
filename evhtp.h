@@ -286,6 +286,7 @@ struct evhtp_alias_s {
 };
 
 /**
+ * @ingroup evhtp_core
  * @brief main structure containing all configuration information
  */
 struct evhtp_s {
@@ -558,6 +559,11 @@ struct evhtp_ssl_cfg_s {
 #endif
 
 /**
+ * @defgroup evhtp_core Core evhtp functions 
+ * @{
+ */
+
+/**
  * @brief creates a new evhtp_t instance
  *
  * @param evbase the initialized event base
@@ -566,8 +572,18 @@ struct evhtp_ssl_cfg_s {
  * @return a new evhtp_t structure or NULL on error
  */
 EVHTP_EXPORT evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
+
+
+/**
+ * @brief free a evhtp_t context
+ *
+ * @param evhtp
+ *
+ * @return 
+ */
 EVHTP_EXPORT void      evhtp_free(evhtp_t * evhtp);
 
+/** @} */
 
 /**
  * @brief set a read/write timeout on all things evhtp_t. When the timeout
@@ -579,6 +595,7 @@ EVHTP_EXPORT void      evhtp_free(evhtp_t * evhtp);
  * @param w write-timeout in timeval.
  */
 EVHTP_EXPORT void evhtp_set_timeouts(evhtp_t * htp, const struct timeval * r, const struct timeval * w);
+
 
 
 /**

@@ -39,69 +39,74 @@ htp_log_connection(evhtp_connection_t * c) {
 
 
 
-static int                  _evhtp_request_parser_start(htparser * p);
-static int                  _evhtp_request_parser_host(htparser * p, const char * data, size_t len);
-static int                  _evhtp_request_parser_port(htparser * p, const char * data, size_t len);
-static int                  _evhtp_request_parser_path(htparser * p, const char * data, size_t len);
-static int                  _evhtp_request_parser_args(htparser * p, const char * data, size_t len);
-static int                  _evhtp_request_parser_header_key(htparser * p, const char * data, size_t len);
-static int                  _evhtp_request_parser_header_val(htparser * p, const char * data, size_t len);
-static int                  _evhtp_request_parser_hostname(htparser * p, const char * data, size_t len);
-static int                  _evhtp_request_parser_headers(htparser * p);
-static int                  _evhtp_request_parser_body(htparser * p, const char * data, size_t len);
-static int                  _evhtp_request_parser_fini(htparser * p);
-static int                  _evhtp_request_parser_chunk_new(htparser * p);
-static int                  _evhtp_request_parser_chunk_fini(htparser * p);
-static int                  _evhtp_request_parser_chunks_fini(htparser * p);
-static int                  _evhtp_request_parser_headers_start(htparser * p);
+static int _evhtp_request_parser_start(htparser * p);
+static int _evhtp_request_parser_host(htparser * p, const char * data, size_t len);
+static int _evhtp_request_parser_port(htparser * p, const char * data, size_t len);
+static int _evhtp_request_parser_path(htparser * p, const char * data, size_t len);
+static int _evhtp_request_parser_args(htparser * p, const char * data, size_t len);
+static int _evhtp_request_parser_header_key(htparser * p, const char * data, size_t len);
+static int _evhtp_request_parser_header_val(htparser * p, const char * data, size_t len);
+static int _evhtp_request_parser_hostname(htparser * p, const char * data, size_t len);
+static int _evhtp_request_parser_headers(htparser * p);
+static int _evhtp_request_parser_body(htparser * p, const char * data, size_t len);
+static int _evhtp_request_parser_fini(htparser * p);
+static int _evhtp_request_parser_chunk_new(htparser * p);
+static int _evhtp_request_parser_chunk_fini(htparser * p);
+static int _evhtp_request_parser_chunks_fini(htparser * p);
+static int _evhtp_request_parser_headers_start(htparser * p);
 
-static void                 _evhtp_connection_readcb(evbev_t * bev, void * arg);
+static void _evhtp_connection_readcb(evbev_t * bev, void * arg);
 
 static evhtp_connection_t * _evhtp_connection_new(evhtp_t * htp, evutil_socket_t sock, evhtp_type type);
 
-static evhtp_uri_t        * _evhtp_uri_new(void);
-static void                 _evhtp_uri_free(evhtp_uri_t * uri);
+static evhtp_uri_t * _evhtp_uri_new(void);
+static void          _evhtp_uri_free(evhtp_uri_t * uri);
 
-static evhtp_authority_t  * _evhtp_authority_new(void);
-static void                 _evhtp_authority_free(evhtp_authority_t * authority);
+static evhtp_authority_t * _evhtp_authority_new(void);
+static void                _evhtp_authority_free(evhtp_authority_t * authority);
 
-static evhtp_path_t       * _evhtp_path_new(const char * data, size_t len);
-static void                 _evhtp_path_free(evhtp_path_t * path);
+static evhtp_path_t * _evhtp_path_new(const char * data, size_t len);
+static void           _evhtp_path_free(evhtp_path_t * path);
 
-static void                 _evhtp_request_free(evhtp_request_t *);
+static void _evhtp_request_free(evhtp_request_t *);
 
-#define HOOK_AVAIL(var, hook_name)                 (var->hooks && var->hooks->hook_name)
-#define HOOK_FUNC(var, hook_name)                  (var->hooks->hook_name)
-#define HOOK_ARGS(var, hook_name)                  var->hooks->hook_name ## _arg
+#define HOOK_AVAIL(var, hook_name)                   (var->hooks && var->hooks->hook_name)
+#define HOOK_FUNC(var, hook_name)                    (var->hooks->hook_name)
+#define HOOK_ARGS(var, hook_name)                    var->hooks->hook_name ## _arg
 
-#define HOOK_REQUEST_RUN(request, hook_name, ...)  do {                                       \
+#define HOOK_REQUEST_RUN(request, hook_name, ...)    do {                                     \
         if (HOOK_AVAIL(request, hook_name)) {                                                 \
             return HOOK_FUNC(request, hook_name) (request, __VA_ARGS__,                       \
                                                   HOOK_ARGS(request, hook_name));             \
         }                                                                                     \
                                                                                               \
-        if (HOOK_AVAIL(evhtp_request_get_connection(request), hook_name)) {                   \
+        if (request->conn && HOOK_AVAIL(request->conn, hook_name)) {                          \
             return HOOK_FUNC(request->conn, hook_name) (request, __VA_ARGS__,                 \
                                                         HOOK_ARGS(request->conn, hook_name)); \
         }                                                                                     \
 } while (0)
 
-#define HOOK_REQUEST_RUN_NARGS(request, hook_name) do {                                       \
-        if (HOOK_AVAIL(request, hook_name)) {                                                 \
-            return HOOK_FUNC(request, hook_name) (request,                                    \
-                                                  HOOK_ARGS(request, hook_name));             \
-        }                                                                                     \
-                                                                                              \
-        if (HOOK_AVAIL(request->conn, hook_name)) {                                           \
-            return HOOK_FUNC(request->conn, hook_name) (request,                              \
-                                                        HOOK_ARGS(request->conn, hook_name)); \
-        }                                                                                     \
+#define HOOK_REQUEST_RUN_NARGS(__request, hook_name) do {                                         \
+        if (HOOK_AVAIL(__request, hook_name)) {                                                   \
+            return HOOK_FUNC(__request, hook_name) (__request,                                    \
+                                                    HOOK_ARGS(__request, hook_name));             \
+        }                                                                                         \
+                                                                                                  \
+        if (__request->conn && HOOK_AVAIL(__request->conn, hook_name)) {                          \
+            return HOOK_FUNC(__request->conn, hook_name) (request,                                \
+                                                          HOOK_ARGS(__request->conn, hook_name)); \
+        }                                                                                         \
 } while (0);
 
-#define HOOK_CONN_RUN(conn, hook_name, ...)        do {                         \
-        if (conn->request) {                                                    \
+/* how the fuck did this get so messy???? in-scope macro defs? git blame is your doom!
+ * rm'ing it in all functions that use it.
+ */
+
+#if 0
+#define HOOK_CONN_RUN(conn, hook_name, ...)          do {                       \
+        if (conn != NULL && conn->request) {                                    \
             evhtp_request_t * request = conn->request;                          \
-            if (HOOK_AVAIL(request, hook_name)) {                               \
+            if (request != NULL && HOOK_AVAIL(request, hook_name)) {            \
                 return HOOK_FUNC(conn, hook_name) (conn, __VA_ARGS__,           \
                                                    HOOK_ARGS(conn, hook_name)); \
             }                                                                   \
@@ -112,22 +117,23 @@ static void                 _evhtp_request_free(evhtp_request_t *);
                                                HOOK_ARGS(conn, hook_name));     \
         }                                                                       \
 } while (0);
+#endif
 
 #ifndef EVHTP_DISABLE_EVTHR
-#define _evhtp_lock(h)                             do { \
-        if (h->lock) {                                  \
-            pthread_mutex_lock(h->lock);                \
-        }                                               \
+#define _evhtp_lock(h)                               do { \
+        if (h->lock) {                                    \
+            pthread_mutex_lock(h->lock);                  \
+        }                                                 \
 } while (0)
 
-#define _evhtp_unlock(h)                           do { \
-        if (h->lock) {                                  \
-            pthread_mutex_unlock(h->lock);              \
-        }                                               \
+#define _evhtp_unlock(h)                             do { \
+        if (h->lock) {                                    \
+            pthread_mutex_unlock(h->lock);                \
+        }                                                 \
 } while (0)
 #else
-#define _evhtp_lock(h)                             do {} while (0)
-#define _evhtp_unlock(h)                           do {} while (0)
+#define _evhtp_lock(h)                               do {} while (0)
+#define _evhtp_unlock(h)                             do {} while (0)
 #endif
 
 #ifndef TAILQ_FOREACH_SAFE
@@ -264,7 +270,7 @@ static htparse_hooks request_psets = {
 };
 
 #ifndef EVHTP_DISABLE_SSL
-static int             session_id_context    = 1;
+static int session_id_context = 1;
 #ifndef EVHTP_DISABLE_EVTHR
 static int             ssl_num_locks;
 static evhtp_mutex_t * ssl_locks;
@@ -441,6 +447,10 @@ _evhtp_headers_hook(evhtp_request_t * request, evhtp_headers_t * headers) {
  */
 static inline evhtp_res
 _evhtp_body_hook(evhtp_request_t * request, evbuf_t * buf) {
+    if (request == NULL) {
+        return 500;
+    }
+
     HOOK_REQUEST_RUN(request, on_read, buf);
 
     return EVHTP_RES_OK;
@@ -456,6 +466,10 @@ _evhtp_body_hook(evhtp_request_t * request, evbuf_t * buf) {
  */
 static inline evhtp_res
 _evhtp_request_fini_hook(evhtp_request_t * request) {
+    if (request == NULL) {
+        return 500;
+    }
+
     HOOK_REQUEST_RUN_NARGS(request, on_request_fini);
 
     return EVHTP_RES_OK;
@@ -499,7 +513,11 @@ _evhtp_headers_start_hook(evhtp_request_t * request) {
  */
 static inline evhtp_res
 _evhtp_connection_fini_hook(evhtp_connection_t * connection) {
-    if (connection->hooks && connection->hooks->on_connection_fini) {
+    if (evhtp_unlikely(connection == NULL)) {
+        return 500;
+    }
+
+    if (connection->hooks != NULL && connection->hooks->on_connection_fini != NULL) {
         return (connection->hooks->on_connection_fini)(connection,
                                                        connection->hooks->on_connection_fini_arg);
     }
@@ -529,11 +547,13 @@ _evhtp_error_hook(evhtp_request_t * request, evhtp_error_flags errtype) {
  */
 static inline evhtp_res
 _evhtp_connection_error_hook(evhtp_connection_t * connection, evhtp_error_flags errtype) {
-    if (connection->request) {
-        _evhtp_error_hook(connection->request, errtype);
+    if (connection == NULL) {
+        return EVHTP_RES_FATAL;
     }
 
-    HOOK_CONN_RUN(connection, on_connection_error, errtype);
+    if (connection->request != NULL) {
+        _evhtp_error_hook(connection->request, errtype);
+    }
 
     return EVHTP_RES_OK;
 }
@@ -644,7 +664,7 @@ _evhtp_callback_find(evhtp_callbacks_t * cbs,
                      unsigned int      * start_offset,
                      unsigned int      * end_offset) {
 #ifndef EVHTP_DISABLE_REGEX
-    regmatch_t         pmatch[28];
+    regmatch_t pmatch[28];
 #endif
     evhtp_callback_t * callback;
 
@@ -742,9 +762,9 @@ _evhtp_request_new(evhtp_connection_t * c) {
         return req;
     }
 
-    _evhtp_request_free(req);
+    evhtp_safe_free(req, _evhtp_request_free);
 
-    return NULL;
+    return req;
 } /* _evhtp_request_new */
 
 /**
@@ -759,25 +779,25 @@ _evhtp_request_free(evhtp_request_t * request) {
     }
 
     _evhtp_request_fini_hook(request);
-    _evhtp_uri_free(request->uri);
 
-    evhtp_headers_free(request->headers_in);
-    evhtp_headers_free(request->headers_out);
+    evhtp_safe_free(request->uri, _evhtp_uri_free);
+    evhtp_safe_free(request->headers_in, evhtp_kvs_free);
+    evhtp_safe_free(request->headers_out, evhtp_kvs_free);
 
     if (request->conn && request->conn->request == request) {
         request->conn->request = NULL;
     }
 
-    if (request->buffer_in) {
-        evbuffer_free(request->buffer_in);
+    if (request->buffer_in != NULL) {
+        evhtp_safe_free(request->buffer_in, evbuffer_free);
     }
 
-    if (request->buffer_out) {
-        evbuffer_free(request->buffer_out);
+    if (request->buffer_out != NULL) {
+        evhtp_safe_free(request->buffer_out, evbuffer_free);
     }
 
-    free(request->hooks);
-    free(request);
+    evhtp_safe_free(request->hooks, free);
+    evhtp_safe_free(request, free);
 }
 
 /**
@@ -2548,6 +2568,9 @@ evhtp_kvs_free(evhtp_kvs_t * kvs) {
         return;
     }
 
+    kv = NULL;
+    save = NULL;
+
     for (kv = TAILQ_FIRST(kvs); kv != NULL; kv = save) {
         save = TAILQ_NEXT(kv, next);
 
@@ -2777,8 +2800,8 @@ evhtp_parse_query_wflags(const char * query, size_t len, int flags) {
     val_idx    = 0;
 
 #ifdef EVHTP_HAS_C99
-    char   key_buf[len + 1];
-    char   val_buf[len + 1];
+    char key_buf[len + 1];
+    char val_buf[len + 1];
 #else
     char * key_buf;
     char * val_buf;
@@ -3271,7 +3294,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
 int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog) {
 #ifndef NO_SYS_UN
-    struct sockaddr_un  sun;
+    struct sockaddr_un sun;
 #endif
     struct sockaddr_in6 sin6;
     struct sockaddr_in  sin;
@@ -3820,7 +3843,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg) {
     evhtp_ssl_scache_get  get_cb  = NULL;
     evhtp_ssl_scache_del  del_cb  = NULL;
 #endif
-    long                  cache_mode;
+    long cache_mode;
 
     if (cfg == NULL || htp == NULL || cfg->pemfile == NULL) {
         return -1;
@@ -4350,7 +4373,7 @@ evhtp_connection_t *
 evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, evhtp_ssl_ctx_t * ctx) {
     evhtp_connection_t * conn;
     struct sockaddr_in   sin;
-    int rc;
+    int                  rc;
 
     evhtp_assert(evbase != NULL);
 
@@ -4363,7 +4386,7 @@ evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, ev
     sin.sin_port        = htons(port);
 
     conn->ssl           = SSL_new(ctx);
-		evhtp_assert(conn->ssl != NULL);
+    evhtp_assert(conn->ssl != NULL);
 
     conn->evbase        = evbase;
     conn->bev           = bufferevent_openssl_socket_new(evbase, -1, conn->ssl,
@@ -4375,7 +4398,7 @@ evhtp_connection_ssl_new(evbase_t * evbase, const char * addr, uint16_t port, ev
                       _evhtp_connection_eventcb, conn);
 
     rc = bufferevent_socket_connect(conn->bev,
-                               (struct sockaddr *)&sin, sizeof(sin));
+                                    (struct sockaddr *)&sin, sizeof(sin));
 
     evhtp_assert(rc == 0);
 

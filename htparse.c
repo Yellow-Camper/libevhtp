@@ -1020,7 +1020,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 res = 0;
 
                 if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
-                    if (lz_likely((p->buf_idx + 1) < PARSER_STACK_MAX)) {
+                    if (evhtp_likely((p->buf_idx + 1) < PARSER_STACK_MAX)) {
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
                         p->state = s_check_uri;

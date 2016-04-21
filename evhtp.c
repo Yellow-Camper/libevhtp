@@ -2568,7 +2568,7 @@ evhtp_kvs_free(evhtp_kvs_t * kvs) {
         return;
     }
 
-    kv = NULL;
+    kv   = NULL;
     save = NULL;
 
     for (kv = TAILQ_FIRST(kvs); kv != NULL; kv = save) {
@@ -3210,7 +3210,8 @@ evhtp_unbind_socket(evhtp_t * htp) {
 
 int
 evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog) {
-    int on = 1;
+    int on  = 1;
+    int res = 0;
 
     evhtp_assert(htp != NULL);
 
@@ -3218,46 +3219,54 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog) {
         return -1;
     }
 
+    do {
 #if defined SO_REUSEPORT
-    if (htp->enable_reuseport) {
-        setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (void *)&on, sizeof(on));
-    }
+        if (htp->enable_reuseport) {
+            if ((res = setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (void *)&on, sizeof(on)) != 0)) {
+                break;
+            }
+        }
 #endif
 
 #if defined TCP_NODELAY
-    if (htp->enable_nodelay == 1) {
-        setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on));
-    }
+        if (htp->enable_nodelay == 1) {
+            if ((res = setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on))) != 0) {
+                break;
+            }
+        }
 #endif
 
 #if defined TCP_DEFER_ACCEPT
-    if (htp->enable_defer_accept == 1) {
-        setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, (void *)&on, sizeof(on));
-    }
+        if (htp->enable_defer_accept == 1) {
+            if ((res = setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, (void *)&on, sizeof(on))) != 0) {
+                break;
+            }
+        }
 #endif
 
-    htp->server = evconnlistener_new(htp->evbase, _evhtp_accept_cb, htp,
-                                     LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
-                                     backlog, sock);
+        htp->server = evconnlistener_new(htp->evbase, _evhtp_accept_cb, htp,
+                                         LEV_OPT_CLOSE_ON_FREE | LEV_OPT_REUSEABLE,
+                                         backlog, sock);
 
-    if (htp->server == NULL) {
-        return -1;
-    }
+        if (htp->server == NULL) {
+            return -1;
+        }
 
 #ifndef EVHTP_DISABLE_SSL
-    if (htp->ssl_ctx != NULL) {
-        /* if ssl is enabled and we have virtual hosts, set our servername
-         * callback. We do this here because we want to make sure that this gets
-         * set after all potential virtualhosts have been set, not just after
-         * ssl_init.
-         */
-        if (TAILQ_FIRST(&htp->vhosts) != NULL) {
-            SSL_CTX_set_tlsext_servername_callback(htp->ssl_ctx,
-                                                   _evhtp_ssl_servername);
+        if (htp->ssl_ctx != NULL) {
+            /* if ssl is enabled and we have virtual hosts, set our servername
+             * callback. We do this here because we want to make sure that this gets
+             * set after all potential virtualhosts have been set, not just after
+             * ssl_init.
+             */
+            if (TAILQ_FIRST(&htp->vhosts) != NULL) {
+                SSL_CTX_set_tlsext_servername_callback(htp->ssl_ctx,
+                                                       _evhtp_ssl_servername);
+            }
         }
-    }
 #endif
-    return 0;
+    } while (0);
+    return res;
 } /* evhtp_accept_socket */
 
 int

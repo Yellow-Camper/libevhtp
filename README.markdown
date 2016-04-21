@@ -1,6 +1,11 @@
 | ![LOGO](http://i.imgur.com/uBd4iIz.png) | <h1>Libevhtp</h1> |
 | :------------- | -------------: |
 
+<a href="https://scan.coverity.com/projects/ellzey-libevhtp">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/5084/badge.svg"/>
+</a>
+
 This document describes details on using the evhtp API. This document is
 probably not very awesome, it's best to look at test.c to see advanced usage.
 

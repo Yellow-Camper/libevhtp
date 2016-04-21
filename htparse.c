@@ -373,7 +373,7 @@ const char *
 htparser_get_strerror(htparser * p) {
     htpparse_error e = htparser_get_error(p);
 
-    if (e > htparse_error_generic) {
+    if (e > (htparse_error_generic + 1)) {
         return "htparse_no_such_error";
     }
 
@@ -1027,8 +1027,6 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     }
                     break;
                 }
-
-                break;
 
                 switch (ch) {
                     case ' ':
@@ -1818,7 +1816,7 @@ hdrline_start:
 
                 switch (ch) {
                     case LF:
-			res = 0;
+                        res = 0;
                         res = hook_on_hdrs_complete_run(p, hooks);
 
                         if (res != 0) {

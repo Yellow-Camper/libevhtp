@@ -32,3 +32,6 @@ under the three-clause BSD license above. The functions include:
 
 evhtp.c: _evhtp_glob_match():
    Copyright (c) 2006-2009, Salvatore Sanfilippo
+
+evhtp_json.c && evhtp_heap.c
+   Ripped from liblz (written by Mark Ellzey)

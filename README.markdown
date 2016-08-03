@@ -65,25 +65,27 @@ Libevhtp attempts to address these problems along with a wide variety of cool me
 
 ##### A very basic example with no optional conditions.
 
-	#include <stdio.h>
-	#include <evhtp.h>
+```C
+#include <stdio.h>
+#include <evhtp.h>
 
-	void
-	testcb(evhtp_request_t * req, void * a) {
-	    evbuffer_add_reference(req->buffer_out, "foobar", 6, NULL, NULL);
-	    evhtp_send_reply(req, EVHTP_RES_OK);
-	}
+void
+testcb(evhtp_request_t * req, void * a) {
+    evbuffer_add_reference(req->buffer_out, "foobar", 6, NULL, NULL);
+    evhtp_send_reply(req, EVHTP_RES_OK);
+}
 
-	int
-	main(int argc, char ** argv) {
-	    evbase_t * evbase = event_base_new();
-	    evhtp_t  * htp    = evhtp_new(evbase, NULL);
+int
+main(int argc, char ** argv) {
+    evbase_t * evbase = event_base_new();
+    evhtp_t  * htp    = evhtp_new(evbase, NULL);
 	
-	    evhtp_set_cb(htp, "/test", testcb, NULL);
-	    evhtp_bind_socket(htp, "0.0.0.0", 8080, 1024);
-	    event_base_loop(evbase, 0);
-	    return 0;
-	}
+    evhtp_set_cb(htp, "/test", testcb, NULL);
+    evhtp_bind_socket(htp, "0.0.0.0", 8080, 1024);
+    event_base_loop(evbase, 0);
+    return 0;
+}
+```
 
 
 ## Is evhtp thread-safe?
@@ -107,9 +109,10 @@ with redis.
 
 ## For Windows MinGW
 
-  	cmake -G "MSYS Makefiles" -DCMAKE_INCLUDE_PATH=/mingw/include -DCMAKE_LIBRARY_PATH=/mingw/lib -DCMAKE_INSTALL_PREFIX=/mingw  .
-
-	make
+```
+ cmake -G "MSYS Makefiles" -DCMAKE_INCLUDE_PATH=/mingw/include -DCMAKE_LIBRARY_PATH=/mingw/lib -DCMAKE_INSTALL_PREFIX=/mingw  .
+ make
+```
 
 ## Performance stuff
 

@@ -4732,15 +4732,25 @@ evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost)
     return 0;
 }
 
-evhtp_t *
-evhtp_new(evbase_t * evbase, void * arg)
+static int
+evhtp__new_(evhtp_t ** out, struct event_base * evbase, void * arg)
 {
     evhtp_t * htp;
 
-    evhtp_assert(evbase != NULL);
+    if (evhtp_unlikely(out == NULL))
+    {
+        return -1;
+    }
 
-    htp               = calloc(sizeof(evhtp_t), 1);
-    evhtp_alloc_assert(htp);
+    if (evhtp_unlikely(evbase == NULL))
+    {
+        return -1;
+    }
+
+    if ((htp = calloc(1, sizeof(evhtp_t))) == NULL)
+    {
+        return -1;
+    }
 
     htp->arg          = arg;
     htp->evbase       = evbase;
@@ -4754,6 +4764,21 @@ evhtp_new(evbase_t * evbase, void * arg)
     TAILQ_INIT(&htp->aliases);
 
     evhtp_set_gencb(htp, htp__default_request_cb_, (void *)htp);
+
+    *out = htp;
+
+    return 0;
+}
+
+evhtp_t *
+evhtp_new(evbase_t * evbase, void * arg)
+{
+    evhtp_t * htp;
+
+    if (evhtp__new_(&htp, evbase, arg) == -1)
+    {
+        return NULL;
+    }
 
     return htp;
 }
@@ -4984,3 +5009,4 @@ evhtp_request_status(evhtp_request_t * r)
 {
     return htparser_get_status(r->conn->parser);
 }
+

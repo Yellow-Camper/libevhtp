@@ -4122,7 +4122,7 @@ int
 evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb,
                   int nthreads, void * arg)
 {
-    return htp___use_threads_(htp, init_cb, NULL, nthreads, arg);
+    return htp__use_threads_(htp, init_cb, NULL, nthreads, arg);
 }
 
 int
@@ -4131,7 +4131,7 @@ evhtp_use_threads_wexit(evhtp_t * htp,
                         evhtp_thread_exit_cb exit_cb,
                         int nthreads, void * arg)
 {
-    return htp_use_threads_(htp, init_cb, exit_cb, nthreads, arg);
+    return htp__use_threads_(htp, init_cb, exit_cb, nthreads, arg);
 }
 
 #endif

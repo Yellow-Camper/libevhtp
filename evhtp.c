@@ -3642,31 +3642,63 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 int
 evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int backlog)
 {
+
+    evutil_socket_t fd  = -1;
+    int             on  = 1;
+    int             error = 1;
+
+    if (htp == NULL) {
+        return -1;
+    }
+
 #ifndef WIN32
     signal(SIGPIPE, SIG_IGN);
 #endif
-    evutil_socket_t fd;
-    int             on = 1;
 
-    fd = socket(sa->sa_family, SOCK_STREAM, 0);
-    evhtp_errno_assert(fd != -1);
+    do {
+        if ((fd = socket(sa->sa_family, SOCK_STREAM, 0)) == -1)
+        {
+            return -1;
+        }
 
-    evutil_make_socket_closeonexec(fd);
-    evutil_make_socket_nonblocking(fd);
 
-    setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&on, sizeof(on));
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, sizeof(on));
+        evutil_make_socket_closeonexec(fd);
+        evutil_make_socket_nonblocking(fd);
 
-    if (sa->sa_family == AF_INET6)
+        if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&on, sizeof(on)) == -1)
+        {
+            break;
+        }
+
+        if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, sizeof(on)) == -1)
+        {
+            break;
+        }
+
+        if (sa->sa_family == AF_INET6)
+        {
+            if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)) == -1)
+            {
+                break;
+            }
+        }
+
+        if (bind(fd, sa, sin_len) == -1)
+        {
+            break;
+        }
+
+        error = 0;
+    } while (0);
+
+
+    if (error == 1)
     {
-        int rc;
+        if (fd != -1)
+        {
+            evutil_closesocket(fd);
+        }
 
-        rc = setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
-        evhtp_errno_assert(rc != -1);
-    }
-
-    if (bind(fd, sa, sin_len) == -1)
-    {
         return -1;
     }
 
@@ -5009,4 +5041,3 @@ evhtp_request_status(evhtp_request_t * r)
 {
     return htparser_get_status(r->conn->parser);
 }
-

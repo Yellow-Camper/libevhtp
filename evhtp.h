@@ -476,26 +476,28 @@ struct evhtp_connection_s {
     htparser        * parser;
     event_t         * resume_ev;
     struct sockaddr * saddr;
-    struct timeval    recv_timeo;          /**< conn read timeouts (overrides global) */
-    struct timeval    send_timeo;          /**< conn write timeouts (overrides global) */
+    struct timeval    recv_timeo;                  /**< conn read timeouts (overrides global) */
+    struct timeval    send_timeo;                  /**< conn write timeouts (overrides global) */
     evutil_socket_t   sock;
-    evhtp_request_t * request;             /**< the request currently being processed */
+    evhtp_request_t * request;                     /**< the request currently being processed */
     uint64_t          max_body_size;
     uint64_t          body_bytes_read;
     uint64_t          num_requests;
-    evhtp_type        type;                /**< server or client */
-    uint8_t           error           : 1,
-                      owner           : 1, /**< set to 1 if this structure owns the bufferevent */
-                      vhost_via_sni   : 1, /**< set to 1 if the vhost was found via SSL SNI */
-                      paused          : 1, /**< this connection has been marked as paused */
-                      connected       : 1, /**< client specific - set after successful connection */
-                      waiting         : 1, /**< used to make sure resuming  happens AFTER sending a reply */
-                      free_connection : 1,
-                      keepalive       : 1; /**< set to 1 after the first request has been processed and the connection is kept open */
-    struct evbuffer * scratch_buf;         /**< always zero'd out after used */
+    evhtp_type        type;                        /**< server or client */
+    #define EVHTP_CONN_FLAG_ERROR         (1 << 1)
+    #define EVHTP_CONN_FLAG_OWNER         (1 << 2) /**< set to 1 if this structure owns the bufferevent */
+    #define EVHTP_CONN_FLAG_VHOST_VIA_SNI (1 << 3) /**< set to 1 if the vhost was found via SSL SNI */
+    #define EVHTP_CONN_FLAG_PAUSED        (1 << 4) /**< this connection has been marked as paused */
+    #define EVHTP_CONN_FLAG_CONNECTED     (1 << 5) /**< client specific - set after successful connection */
+    #define EVHTP_CONN_FLAG_WAITING       (1 << 6) /**< used to make sure resuming  happens AFTER sending a reply */
+    #define EVHTP_CONN_FLAG_FREE_CONN     (1 << 7)
+    #define EVHTP_CONN_FLAG_KEEPALIVE     (1 << 8) /**< set to 1 after the first request has been processed and the connection is kept open */
+    uint16_t flags;
+
+    struct evbuffer * scratch_buf;                 /**< always zero'd out after used */
 
 #ifdef EVHTP_FUTURE_USE
-    TAILQ_HEAD(, evhtp_request_s) pending; /**< client pending data */
+    TAILQ_HEAD(, evhtp_request_s) pending;         /**< client pending data */
 #endif
 };
 

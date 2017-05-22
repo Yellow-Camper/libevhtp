@@ -37,9 +37,6 @@ htp_log_connection(evhtp_connection_t * c)
 
 #endif
 
-
-
-
 static int htp__request_parse_start_(htparser * p);
 static int htp__request_parse_host_(htparser * p, const char * data, size_t len);
 static int htp__request_parse_port_(htparser * p, const char * data, size_t len);
@@ -3572,6 +3569,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 {
     int on  = 1;
     int res = 0;
+    int err = 1;
 
     evhtp_assert(htp != NULL);
 
@@ -3617,7 +3615,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 
         if (htp->server == NULL)
         {
-            return -1;
+            break;
         }
 
 #ifndef EVHTP_DISABLE_SSL
@@ -3635,19 +3633,34 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
             }
         }
 #endif
+        err = 0;
     } while (0);
+
+    if (err == 1)
+    {
+        evutil_closesocket(sock);
+
+        if (htp->server != NULL)
+        {
+            evhtp_safe_free(htp->server, evconnlistener_free);
+        }
+
+        return -1;
+    }
+
+
     return res;
 } /* evhtp_accept_socket */
 
 int
 evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int backlog)
 {
-
-    evutil_socket_t fd  = -1;
-    int             on  = 1;
+    evutil_socket_t fd    = -1;
+    int             on    = 1;
     int             error = 1;
 
-    if (htp == NULL) {
+    if (htp == NULL)
+    {
         return -1;
     }
 

@@ -3568,12 +3568,9 @@ int
 evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 {
     int on  = 1;
-    int res = 0;
     int err = 1;
 
-    evhtp_assert(htp != NULL);
-
-    if (sock == -1)
+    if (htp == NULL || sock == -1)
     {
         return -1;
     }
@@ -3582,7 +3579,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 #if defined SO_REUSEPORT
         if (htp->enable_reuseport)
         {
-            if ((res = setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (void *)&on, sizeof(on)) != 0))
+            if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (void *)&on, sizeof(on)) == -1)
             {
                 break;
             }
@@ -3592,7 +3589,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 #if defined TCP_NODELAY
         if (htp->enable_nodelay == 1)
         {
-            if ((res = setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on))) != 0)
+            if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == -1)
             {
                 break;
             }
@@ -3602,7 +3599,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 #if defined TCP_DEFER_ACCEPT
         if (htp->enable_defer_accept == 1)
         {
-            if ((res = setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, (void *)&on, sizeof(on))) != 0)
+            if (setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, (void *)&on, sizeof(on)) == -1)
             {
                 break;
             }
@@ -3638,8 +3635,6 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 
     if (err == 1)
     {
-        evutil_closesocket(sock);
-
         if (htp->server != NULL)
         {
             evhtp_safe_free(htp->server, evconnlistener_free);
@@ -3648,8 +3643,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
         return -1;
     }
 
-
-    return res;
+    return 0;
 } /* evhtp_accept_socket */
 
 int
@@ -3664,6 +3658,7 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
         return -1;
     }
 
+    /* XXX: API's should not set signals */
 #ifndef WIN32
     signal(SIGPIPE, SIG_IGN);
 #endif
@@ -3715,26 +3710,32 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
         return -1;
     }
 
-    return evhtp_accept_socket(htp, fd, backlog);
+    if (evhtp_accept_socket(htp, fd, backlog) == -1)
+    {
+        /* accept_socket() does not close the descriptor
+         * on error, but this function does.
+         */
+        evutil_closesocket(fd);
+
+        return -1;
+    }
+
+    return 0;
 } /* evhtp_bind_sockaddr */
 
 int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 {
 #ifndef NO_SYS_UN
-    struct sockaddr_un sun;
+    struct sockaddr_un sun   = { 0 };
 #endif
-    struct sockaddr_in6 sin6;
-    struct sockaddr_in  sin;
     struct sockaddr   * sa;
+    struct sockaddr_in6 sin6 = { 0 };
+    struct sockaddr_in  sin  = { 0 };
     size_t              sin_len;
-
-    memset(&sin, 0, sizeof(sin));
 
     if (!strncmp(baddr, "ipv6:", 5))
     {
-        memset(&sin6, 0, sizeof(sin6));
-
         baddr           += 5;
         sin_len          = sizeof(struct sockaddr_in6);
         sin6.sin6_port   = htons(port);
@@ -3751,8 +3752,6 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
         {
             return -1;
         }
-
-        memset(&sun, 0, sizeof(sun));
 
         sin_len        = sizeof(struct sockaddr_un);
         sun.sun_family = AF_UNIX;
@@ -3771,7 +3770,6 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
         }
 
         sin_len             = sizeof(struct sockaddr_in);
-
         sin.sin_family      = AF_INET;
         sin.sin_port        = htons(port);
         sin.sin_addr.s_addr = inet_addr(baddr);
@@ -5041,6 +5039,7 @@ evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r,
 
     evhtp_headers_for_each(r->headers_out, htp__create_headers_, obuf);
     evbuffer_add_reference(obuf, "\r\n", 2, NULL, NULL);
+
     if (evbuffer_get_length(r->buffer_out))
     {
         evbuffer_add_buffer(obuf, r->buffer_out);

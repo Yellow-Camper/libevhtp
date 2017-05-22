@@ -1602,7 +1602,8 @@ htp__request_parse_headers_(htparser * p)
         return -1;
     }
 
-    if (c->type == evhtp_type_server && c->htp->disable_100_cont == 0)
+    if (c->type == evhtp_type_server &&
+        c->htp->flags & EVHTP_FLAG_ENABLE_100_CONT)
     {
         /* only send a 100 continue response if it hasn't been disabled via
          * evhtp_disable_100_continue.
@@ -3577,7 +3578,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 
     do {
 #if defined SO_REUSEPORT
-        if (htp->enable_reuseport)
+        if (htp->flags & EVHTP_FLAG_ENABLE_REUSEPORT)
         {
             if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (void *)&on, sizeof(on)) == -1)
             {
@@ -3587,7 +3588,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 #endif
 
 #if defined TCP_NODELAY
-        if (htp->enable_nodelay == 1)
+        if (htp->flags & EVHTP_FLAG_ENABLE_NODELAY)
         {
             if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == -1)
             {
@@ -3597,7 +3598,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 #endif
 
 #if defined TCP_DEFER_ACCEPT
-        if (htp->enable_defer_accept == 1)
+        if (htp->flags & EVHTP_FLAG_ENABLE_DEFER_ACCEPT)
         {
             if (setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, (void *)&on, sizeof(on)) == -1)
             {
@@ -4688,13 +4689,49 @@ evhtp_set_max_body_size(evhtp_t * htp, uint64_t len)
 void
 evhtp_disable_100_continue(evhtp_t * htp)
 {
-    htp->disable_100_cont = 1;
+    htp->flags &= ~EVHTP_FLAG_ENABLE_100_CONT;
 }
 
 void
 evhtp_set_parser_flags(evhtp_t * htp, int flags)
 {
     htp->parser_flags = flags;
+}
+
+void
+evhtp_set_flags(evhtp_t * htp, uint16_t flags)
+{
+    if (htp == NULL)
+    {
+        return;
+    }
+
+    /* XXX: should we attempt to do all socket ops again
+     * if this changes mid stream?
+     */
+    htp->flags = flags;
+}
+
+void
+evhtp_enable_flag(evhtp_t * htp, uint16_t flag)
+{
+    if (htp == NULL)
+    {
+        return;
+    }
+
+    htp->flags |= flag;
+}
+
+void
+evhtp_disable_flag(evhtp_t * htp, uint16_t flag)
+{
+    if (htp == NULL)
+    {
+        return;
+    }
+
+    htp->flags &= ~flag;
 }
 
 int
@@ -4797,15 +4834,20 @@ evhtp__new_(evhtp_t ** out, struct event_base * evbase, void * arg)
 
     htp->arg          = arg;
     htp->evbase       = evbase;
+    htp->flags        = EVHTP_FLAG_DEFAULTS;
     htp->bev_flags    = BEV_OPT_CLOSE_ON_FREE;
 
     /* default to lenient argument parsing */
-    htp->parser_flags = EVHTP_PARSE_QUERY_FLAG_LENIENT;
+    htp->parser_flags = EVHTP_PARSE_QUERY_FLAG_DEFAULT;
 
 
     TAILQ_INIT(&htp->vhosts);
     TAILQ_INIT(&htp->aliases);
 
+    /* note that we pass the htp context to the callback,
+     * not the user supplied arguments. That is stored
+     * within the context itself.
+     */
     evhtp_set_gencb(htp, htp__default_request_cb_, (void *)htp);
 
     *out = htp;

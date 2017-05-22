@@ -47,7 +47,8 @@ extern "C" {
 
 #else
 #define htp_debug_strlen(x)     0
-#define htp_log_debug(fmt, ...) do {} while (0)
+#define htp_log_debug(fmt, ...) do { \
+} while (0)
 #endif
 
 
@@ -298,22 +299,23 @@ struct evhtp_s {
     int        bev_flags;               /**< bufferevent flags to use on bufferevent_*_socket_new() */
     uint64_t   max_body_size;
     uint64_t   max_keepalive_requests;
-    uint8_t    disable_100_cont    : 1, /**< if set, evhtp will not respond to Expect: 100-continue */
-               enable_reuseport    : 1,
-               enable_nodelay      : 1,
-               enable_defer_accept : 1,
-               pad                 : 4;
 
-    int parser_flags;                   /**< default query flags to alter 'strictness' (see EVHTP_PARSE_QUERY_FLAG_*) */
+    #define EVHTP_FLAG_ENABLE_100_CONT     (1 << 1)
+    #define EVHTP_FLAG_ENABLE_REUSEPORT    (1 << 2)
+    #define EVHTP_FLAG_ENABLE_NODELAY      (1 << 3)
+    #define EVHTP_FLAG_ENABLE_DEFER_ACCEPT (1 << 4)
+    #define EVHTP_FLAG_DEFAULTS            EVHTP_FLAG_ENABLE_100_CONT
+    uint16_t flags;             /**< the base flags set for this context, see: EVHTP_FLAG_* */
+    uint16_t parser_flags;      /**< default query flags to alter 'strictness' (see EVHTP_PARSE_QUERY_FLAG_*) */
 
 #ifndef EVHTP_DISABLE_SSL
-    evhtp_ssl_ctx_t * ssl_ctx;          /**< if ssl enabled, this is the servers CTX */
+    evhtp_ssl_ctx_t * ssl_ctx;  /**< if ssl enabled, this is the servers CTX */
     evhtp_ssl_cfg_t * ssl_cfg;
 #endif
 
 #ifndef EVHTP_DISABLE_EVTHR
-    evthr_pool_t    * thr_pool;         /**< connection threadpool */
-    pthread_mutex_t * lock;             /**< parent lock for add/del cbs in threads */
+    evthr_pool_t    * thr_pool; /**< connection threadpool */
+    pthread_mutex_t * lock;     /**< parent lock for add/del cbs in threads */
 
     evhtp_thread_init_cb thread_init_cb;
     evhtp_thread_exit_cb thread_exit_cb;
@@ -559,7 +561,7 @@ struct evhtp_ssl_cfg_s {
 #endif
 
 /**
- * @defgroup evhtp_core Core evhtp functions 
+ * @defgroup evhtp_core Core evhtp functions
  * @{
  */
 
@@ -579,9 +581,9 @@ EVHTP_EXPORT evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
  *
  * @param evhtp
  *
- * @return 
+ * @return
  */
-EVHTP_EXPORT void      evhtp_free(evhtp_t * evhtp);
+EVHTP_EXPORT void evhtp_free(evhtp_t * evhtp);
 
 /** @} */
 
@@ -634,6 +636,7 @@ EVHTP_EXPORT int evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
  * @param htp
  */
 EVHTP_EXPORT void evhtp_disable_100_continue(evhtp_t * htp);
+DEPRECATED("evhtp_disable_100 will soon be deprecated, use htp->flags instead");
 
 /**
  * @brief creates a lock around callbacks and hooks, allowing for threaded
@@ -885,7 +888,7 @@ EVHTP_EXPORT int evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *,
  * @return
  */
 EVHTP_EXPORT int evhtp_use_threads(evhtp_t *, evhtp_thread_init_cb, int nthreads, void *)
-    DEPRECATED("will take on the syntax of evhtp_use_threads_wexit");
+DEPRECATED("will take on the syntax of evhtp_use_threads_wexit");
 
 /**
  * @brief Temporary function which will be renamed evhtp_use_threads in the
@@ -1120,6 +1123,8 @@ EVHTP_EXPORT int evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, vo
     | EVHTP_PARSE_QUERY_FLAG_ALLOW_EMPTY_VALS \
     | EVHTP_PARSE_QUERY_FLAG_ALLOW_NULL_VALS  \
     | EVHTP_PARSE_QUERY_FLAG_TREAT_SEMICOLON_AS_SEP
+
+#define EVHTP_PARSE_QUERY_FLAG_DEFAULT                EVHTP_PARSE_QUERY_FLAG_LENIENT
 
 /**
  * @brief Parses the query portion of the uri into a set of key/values

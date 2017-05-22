@@ -537,12 +537,10 @@ main(int argc, char ** argv) {
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
 
+    evhtp_enable_flag(htp, EVHTP_FLAG_ENABLE_REUSEPORT);
     evhtp_set_parser_flags(htp, EVHTP_PARSE_QUERY_FLAG_LENIENT);
     evhtp_set_max_keepalive_requests(htp, max_keepalives);
 
-    /* htp->enable_nodelay = 1; */
-    /* htp->enable_defer_accept = 1; */
-    htp->enable_reuseport = 1;
 
     cb_1  = evhtp_set_cb(htp, "/ref", test_default_cb, "fjdkls");
     evhtp_assert(cb_1 != NULL);

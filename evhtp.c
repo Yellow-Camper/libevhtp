@@ -1121,7 +1121,7 @@ htp__request_parse_start_(htparser * p)
 
     if (c->request)
     {
-        if (c->request->finished == 1)
+        if (c->request->flags & EVHTP_REQ_FLAG_FINISHED)
         {
             htp__request_free_(c->request);
         } else {
@@ -1593,17 +1593,22 @@ htp__request_parse_headers_(htparser * p)
     evhtp_assert(c != NULL);
 
     /* XXX proto should be set with htparsers on_hdrs_begin hook */
-    c->request->keepalive = htparser_should_keep_alive(p);
-    c->request->proto     = htp__protocol_(htparser_get_major(p), htparser_get_minor(p));
-    c->request->status    = htp__hook_headers_(c->request, c->request->headers_in);
+
+    if (htparser_should_keep_alive(p) == 1)
+    {
+        c->request->flags |= EVHTP_REQ_FLAG_KEEPALIVE;
+    }
+
+    c->request->proto  = htp__protocol_(htparser_get_major(p), htparser_get_minor(p));
+    c->request->status = htp__hook_headers_(c->request, c->request->headers_in);
 
     if (c->request->status != EVHTP_RES_OK)
     {
         return -1;
     }
 
-    if (c->type == evhtp_type_server &&
-        c->htp->flags & EVHTP_FLAG_ENABLE_100_CONT)
+    if (c->type == evhtp_type_server
+        && c->htp->flags & EVHTP_FLAG_ENABLE_100_CONT)
     {
         /* only send a 100 continue response if it hasn't been disabled via
          * evhtp_disable_100_continue.
@@ -1850,7 +1855,7 @@ htp__create_reply_(evhtp_request_t * request, evhtp_res code)
         goto check_proto;
     }
 
-    if (out_len && request->chunked == 0)
+    if (out_len && !(request->flags & EVHTP_REQ_FLAG_CHUNKED))
     {
         /* add extra headers (like content-length/type) if not already present */
 
@@ -1869,7 +1874,7 @@ check_proto:
     /* add the proper keep-alive type headers based on http version */
     switch (request->proto) {
         case EVHTP_PROTO_11:
-            if (request->keepalive == 0)
+            if (!(request->flags & EVHTP_REQ_FLAG_KEEPALIVE))
             {
                 /* protocol is HTTP/1.1 but client wanted to close */
                 evhtp_headers_add_header(request->headers_out,
@@ -1884,7 +1889,7 @@ check_proto:
 
             break;
         case EVHTP_PROTO_10:
-            if (request->keepalive == 1)
+            if (request->flags & EVHTP_REQ_FLAG_KEEPALIVE)
             {
                 /* protocol is HTTP/1.0 and clients wants to keep established */
                 evhtp_headers_add_header(request->headers_out,
@@ -2091,7 +2096,8 @@ htp__connection_writecb_(evbev_t * bev, void * arg)
         return;
     }
 
-    if (c->request->finished == 0 || evbuffer_get_length(bufferevent_get_output(bev)))
+    if (!(c->request->flags & EVHTP_REQ_FLAG_FINISHED)
+        || evbuffer_get_length(bufferevent_get_output(bev)))
     {
         return;
     }
@@ -2105,11 +2111,11 @@ htp__connection_writecb_(evbev_t * bev, void * arg)
     {
         if (++c->num_requests >= c->htp->max_keepalive_requests)
         {
-            c->request->keepalive = 0;
+            c->request->flags &= ~EVHTP_REQ_FLAG_KEEPALIVE;
         }
     }
 
-    if (c->request->keepalive == 1)
+    if (c->request->flags & EVHTP_REQ_FLAG_KEEPALIVE)
     {
         htp__request_free_(c->request);
 
@@ -2174,7 +2180,7 @@ htp__connection_eventcb_(evbev_t * bev, short events, void * arg)
 
         if (c->request)
         {
-            c->request->error = 1;
+            c->request->flags |= EVHTP_REQ_FLAG_ERROR;
         }
     }
 #endif
@@ -3402,7 +3408,7 @@ evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf)
 void
 evhtp_send_reply_end(evhtp_request_t * request)
 {
-    request->finished = 1;
+    request->flags |= EVHTP_REQ_FLAG_FINISHED;
 }
 
 void
@@ -3413,7 +3419,7 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code)
     struct bufferevent * bev;
 
     c = evhtp_request_get_connection(request);
-    request->finished = 1;
+    request->flags |= EVHTP_REQ_FLAG_FINISHED;
 
     if (!(reply_buf = htp__create_reply_(request, code)))
     {
@@ -3462,7 +3468,8 @@ evhtp_send_reply_chunk_start(evhtp_request_t * request, evhtp_res code)
                  */
 
                 evhtp_kv_rm_and_free(request->headers_out, content_len);
-                request->chunked = 1;
+
+                request->flags |= EVHTP_REQ_FLAG_CHUNKED;
                 break;
             case EVHTP_PROTO_10:
                 /*
@@ -3471,22 +3478,17 @@ evhtp_send_reply_chunk_start(evhtp_request_t * request, evhtp_res code)
                  */
                 evhtp_kv_rm_and_free(request->headers_out, content_len);
 
-#if 0
-                evhtp_headers_add_header(request->headers_out,
-                                         evhtp_header_new("Content-Length", "0", 0, 0));
-#endif
-
-                request->chunked = 1;
+                request->flags |= EVHTP_REQ_FLAG_CHUNKED;
                 break;
             default:
-                request->chunked = 0;
+                request->flags &= ~EVHTP_REQ_FLAG_CHUNKED;
                 break;
         } /* switch */
     } else {
-        request->chunked = 0;
+        request->flags &= ~EVHTP_REQ_FLAG_CHUNKED;
     }
 
-    if (request->chunked == 1)
+    if (request->flags & EVHTP_REQ_FLAG_CHUNKED)
     {
         evhtp_headers_add_header(request->headers_out,
                                  evhtp_header_new("Transfer-Encoding", "chunked", 0, 0));
@@ -3531,7 +3533,7 @@ evhtp_send_reply_chunk(evhtp_request_t * request, evbuf_t * buf)
 
     output = bufferevent_get_output(request->conn->bev);
 
-    if (request->chunked == 1)
+    if (request->flags & EVHTP_REQ_FLAG_CHUNKED)
     {
         evbuffer_add_printf(output, "%x\r\n",
                             (unsigned)evbuffer_get_length(buf));
@@ -3539,7 +3541,7 @@ evhtp_send_reply_chunk(evhtp_request_t * request, evbuf_t * buf)
 
     evhtp_send_reply_body(request, buf);
 
-    if (request->chunked)
+    if (request->flags & EVHTP_REQ_FLAG_CHUNKED)
     {
         evbuffer_add(output, "\r\n", 2);
     }
@@ -3550,7 +3552,7 @@ evhtp_send_reply_chunk(evhtp_request_t * request, evbuf_t * buf)
 void
 evhtp_send_reply_chunk_end(evhtp_request_t * request)
 {
-    if (request->chunked == 1)
+    if (request->flags & EVHTP_REQ_FLAG_CHUNKED)
     {
         evbuffer_add(bufferevent_get_output(evhtp_request_get_bev(request)),
                      "0\r\n\r\n", 5);
@@ -4556,7 +4558,10 @@ evhtp_request_set_bev(evhtp_request_t * request, evbev_t * bev)
 void
 evhtp_request_set_keepalive(evhtp_request_t * request, int val)
 {
-    request->keepalive = (val > 0) ? 1 : 0;
+    if (val)
+    {
+        request->flags |= EVHTP_REQ_FLAG_KEEPALIVE;
+    }
 }
 
 evhtp_connection_t *

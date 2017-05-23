@@ -845,6 +845,9 @@ EVHTP_EXPORT void evhtp_unbind_socket(evhtp_t * htp);
  * @brief create the listener plus setup various options with an already-bound
  *        socket.
  *
+ * @note Since the file descriptor is passed to the function, it will not
+ * attempt to close it if an error occurs.
+ *
  * @param htp
  * @param sock
  * @param backlog

@@ -3573,11 +3573,9 @@ int
 evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 {
     int on  = 1;
-    int res = 0;
+    int err = 1;
 
-    evhtp_assert(htp != NULL);
-
-    if (sock == -1)
+    if (htp == NULL || sock == -1)
     {
         return -1;
     }
@@ -3586,7 +3584,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 #if defined SO_REUSEPORT
         if (htp->enable_reuseport)
         {
-            if ((res = setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (void *)&on, sizeof(on)) != 0))
+            if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (void *)&on, sizeof(on)) == -1)
             {
                 break;
             }
@@ -3596,7 +3594,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 #if defined TCP_NODELAY
         if (htp->enable_nodelay == 1)
         {
-            if ((res = setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on))) != 0)
+            if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == -1)
             {
                 break;
             }
@@ -3606,7 +3604,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 #if defined TCP_DEFER_ACCEPT
         if (htp->enable_defer_accept == 1)
         {
-            if ((res = setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, (void *)&on, sizeof(on))) != 0)
+            if (setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, (void *)&on, sizeof(on)) == -1)
             {
                 break;
             }
@@ -3619,7 +3617,7 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 
         if (htp->server == NULL)
         {
-            return -1;
+            break;
         }
 
 #ifndef EVHTP_DISABLE_SSL
@@ -3637,61 +3635,112 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
             }
         }
 #endif
+        err = 0;
     } while (0);
-    return res;
+
+    if (err == 1)
+    {
+        if (htp->server != NULL)
+        {
+            evhtp_safe_free(htp->server, evconnlistener_free);
+        }
+
+        return -1;
+    }
+
+    return 0;
 } /* evhtp_accept_socket */
 
 int
 evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int backlog)
 {
-#ifndef WIN32
-    signal(SIGPIPE, SIG_IGN);
-#endif
-    evutil_socket_t fd;
-    int             on = 1;
+    evutil_socket_t fd    = -1;
+    int             on    = 1;
+    int             error = 1;
 
-    fd = socket(sa->sa_family, SOCK_STREAM, 0);
-    evhtp_errno_assert(fd != -1);
-
-    evutil_make_socket_closeonexec(fd);
-    evutil_make_socket_nonblocking(fd);
-
-    setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&on, sizeof(on));
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, sizeof(on));
-
-    if (sa->sa_family == AF_INET6)
-    {
-        int rc;
-
-        rc = setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on));
-        evhtp_errno_assert(rc != -1);
-    }
-
-    if (bind(fd, sa, sin_len) == -1)
+    if (htp == NULL)
     {
         return -1;
     }
 
-    return evhtp_accept_socket(htp, fd, backlog);
+    /* XXX: API's should not set signals */
+#ifndef WIN32
+    signal(SIGPIPE, SIG_IGN);
+#endif
+
+    do {
+        if ((fd = socket(sa->sa_family, SOCK_STREAM, 0)) == -1)
+        {
+            return -1;
+        }
+
+
+        evutil_make_socket_closeonexec(fd);
+        evutil_make_socket_nonblocking(fd);
+
+        if (setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, (void *)&on, sizeof(on)) == -1)
+        {
+            break;
+        }
+
+        if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, sizeof(on)) == -1)
+        {
+            break;
+        }
+
+        if (sa->sa_family == AF_INET6)
+        {
+            if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)) == -1)
+            {
+                break;
+            }
+        }
+
+        if (bind(fd, sa, sin_len) == -1)
+        {
+            break;
+        }
+
+        error = 0;
+    } while (0);
+
+
+    if (error == 1)
+    {
+        if (fd != -1)
+        {
+            evutil_closesocket(fd);
+        }
+
+        return -1;
+    }
+
+    if (evhtp_accept_socket(htp, fd, backlog) == -1)
+    {
+        /* accept_socket() does not close the descriptor
+         * on error, but this function does.
+         */
+        evutil_closesocket(fd);
+
+        return -1;
+    }
+
+    return 0;
 } /* evhtp_bind_sockaddr */
 
 int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 {
 #ifndef NO_SYS_UN
-    struct sockaddr_un sun;
+    struct sockaddr_un sun   = { 0 };
 #endif
-    struct sockaddr_in6 sin6;
-    struct sockaddr_in  sin;
     struct sockaddr   * sa;
+    struct sockaddr_in6 sin6 = { 0 };
+    struct sockaddr_in  sin  = { 0 };
     size_t              sin_len;
-
-    memset(&sin, 0, sizeof(sin));
 
     if (!strncmp(baddr, "ipv6:", 5))
     {
-        memset(&sin6, 0, sizeof(sin6));
-
         baddr           += 5;
         sin_len          = sizeof(struct sockaddr_in6);
         sin6.sin6_port   = htons(port);
@@ -3708,8 +3757,6 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
         {
             return -1;
         }
-
-        memset(&sun, 0, sizeof(sun));
 
         sin_len        = sizeof(struct sockaddr_un);
         sun.sun_family = AF_UNIX;
@@ -3728,7 +3775,6 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
         }
 
         sin_len             = sizeof(struct sockaddr_in);
-
         sin.sin_family      = AF_INET;
         sin.sin_port        = htons(port);
         sin.sin_addr.s_addr = inet_addr(baddr);

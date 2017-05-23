@@ -20,7 +20,8 @@ static int      reuse_port   = 0;
 static size_t   payload_sz   = 100;
 
 static void
-response_cb(evhtp_request_t * r, void * a) {
+response_cb(evhtp_request_t * r, void * a)
+{
     evbuffer_add_reference(r->buffer_out,
                            (const char *)a, payload_sz, NULL, NULL);
 
@@ -28,14 +29,16 @@ response_cb(evhtp_request_t * r, void * a) {
 }
 
 int
-main(int argc, char ** argv) {
+main(int argc, char ** argv)
+{
     extern char * optarg;
     extern int    optind;
     extern int    opterr;
     extern int    optopt;
     int           c;
 
-    while ((c = getopt(argc, argv, "t:a:p:b:ndrs:")) != -1) {
+    while ((c = getopt(argc, argv, "t:a:p:b:ndrs:")) != -1)
+    {
         switch (c) {
             case 't':
                 num_threads  = atoi(optarg);
@@ -87,16 +90,28 @@ main(int argc, char ** argv) {
 
         evhtp_set_parser_flags(htp, EVHTP_PARSE_QUERY_FLAG_LENIENT);
 
-        htp->enable_nodelay      = nodelay;
-        htp->enable_defer_accept = defer_accept;
-        htp->enable_reuseport    = reuse_port;
+        if (nodelay)
+        {
+            evhtp_enable_flag(htp, EVHTP_FLAG_ENABLE_NODELAY);
+        }
+
+        if (defer_accept)
+        {
+            evhtp_enable_flag(htp, EVHTP_FLAG_ENABLE_DEFER_ACCEPT);
+        }
+
+        if (reuse_port)
+        {
+            evhtp_enable_flag(htp, EVHTP_FLAG_ENABLE_REUSEPORT);
+        }
 
         memset(payload, 0x42, payload_sz);
 
         evhtp_assert(evhtp_set_cb(htp, "/data", response_cb, payload));
 
 #ifndef EVHTP_DISABLE_EVTHR
-        if (num_threads > 0) {
+        if (num_threads > 0)
+        {
             evhtp_assert(evhtp_use_threads(htp, NULL, num_threads, NULL) != -1);
         }
 #endif
@@ -108,4 +123,3 @@ main(int argc, char ** argv) {
 
     return 0;
 } /* main */
-

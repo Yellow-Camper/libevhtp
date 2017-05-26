@@ -4508,7 +4508,7 @@ evhtp_request_get_bev(evhtp_request_t * request)
 struct bufferevent *
 evhtp_request_take_ownership(evhtp_request_t * request)
 {
-    return evhtp_connection_take_ownership(evhtp_request_get_connection(request));
+    return evhtp_connection_take_ownership(request->conn);
 }
 
 void
@@ -4681,6 +4681,15 @@ evhtp_set_parser_flags(evhtp_t * htp, int flags)
         evhtp ## NAME ## _disable_flag(TYPE v, int flag) \
     {                                                    \
         HTP_FLAG_OFF(v, flag);                           \
+    }                                                    \
+                                                         \
+    int                                                  \
+        evhtp ## NAME ## _get_flags(TYPE v)              \
+    {                                                    \
+        if (v)                                           \
+        {                                                \
+            return v->flags;                             \
+        }                                                \
     }
 
 HTP_FLAG_FNGEN(, evhtp_t *);

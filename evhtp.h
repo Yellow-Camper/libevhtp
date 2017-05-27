@@ -47,7 +47,8 @@ extern "C" {
 
 #else
 #define htp_debug_strlen(x)     0
-#define htp_log_debug(fmt, ...) do {} while (0)
+#define htp_log_debug(fmt, ...) do { \
+} while (0)
 #endif
 
 
@@ -161,6 +162,7 @@ typedef enum evhtp_ssl_scache_type evhtp_ssl_scache_type;
 typedef enum evhtp_type            evhtp_type;
 
 typedef void (* evhtp_thread_init_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
+typedef void (* evhtp_thread_exit_cb)(evhtp_t * htp, evthr_t * thr, void * arg);
 typedef void (* evhtp_callback_cb)(evhtp_request_t * req, void * arg);
 typedef void (* evhtp_hook_err_cb)(evhtp_request_t * req, evhtp_error_flags errtype, void * arg);
 typedef void (* evhtp_hook_event_cb)(evhtp_connection_t * conn, short events, void * arg);
@@ -285,6 +287,7 @@ struct evhtp_alias_s {
 };
 
 /**
+ * @ingroup evhtp_core
  * @brief main structure containing all configuration information
  */
 struct evhtp_s {
@@ -296,27 +299,32 @@ struct evhtp_s {
     int        bev_flags;               /**< bufferevent flags to use on bufferevent_*_socket_new() */
     uint64_t   max_body_size;
     uint64_t   max_keepalive_requests;
-    uint8_t    disable_100_cont    : 1, /**< if set, evhtp will not respond to Expect: 100-continue */
-               enable_reuseport    : 1,
-               enable_nodelay      : 1,
-               enable_defer_accept : 1,
-               pad                 : 4;
 
-    int parser_flags;                   /**< default query flags to alter 'strictness' (see EVHTP_PARSE_QUERY_FLAG_*) */
+    #define EVHTP_FLAG_ENABLE_100_CONT     (1 << 1)
+    #define EVHTP_FLAG_ENABLE_REUSEPORT    (1 << 2)
+    #define EVHTP_FLAG_ENABLE_NODELAY      (1 << 3)
+    #define EVHTP_FLAG_ENABLE_DEFER_ACCEPT (1 << 4)
+    #define EVHTP_FLAG_DEFAULTS            EVHTP_FLAG_ENABLE_100_CONT
+    uint16_t flags;             /**< the base flags set for this context, see: EVHTP_FLAG_* */
+    uint16_t parser_flags;      /**< default query flags to alter 'strictness' (see EVHTP_PARSE_QUERY_FLAG_*) */
 
 #ifndef EVHTP_DISABLE_SSL
-    evhtp_ssl_ctx_t * ssl_ctx;          /**< if ssl enabled, this is the servers CTX */
+    evhtp_ssl_ctx_t * ssl_ctx;  /**< if ssl enabled, this is the servers CTX */
     evhtp_ssl_cfg_t * ssl_cfg;
 #endif
 
 #ifndef EVHTP_DISABLE_EVTHR
-    evthr_pool_t * thr_pool;            /**< connection threadpool */
-#endif
+    evthr_pool_t    * thr_pool; /**< connection threadpool */
+    pthread_mutex_t * lock;     /**< parent lock for add/del cbs in threads */
 
-#ifndef EVHTP_DISABLE_EVTHR
-    pthread_mutex_t    * lock;          /**< parent lock for add/del cbs in threads */
     evhtp_thread_init_cb thread_init_cb;
-    void               * thread_init_cbarg;
+    evhtp_thread_exit_cb thread_exit_cb;
+
+    /* keep backwards compat because I'm dumb and didn't
+     * make these structs private
+     */
+    #define thread_init_cbarg thread_cbarg
+    void * thread_cbarg;
 #endif
     evhtp_callbacks_t * callbacks;
     evhtp_defaults_t    defaults;
@@ -440,11 +448,11 @@ struct evhtp_request_s {
     evhtp_proto          proto;         /**< HTTP protocol used */
     htp_method           method;        /**< HTTP method used */
     evhtp_res            status;        /**< The HTTP response code or other error conditions */
-    uint8_t              keepalive : 1, /**< set to 1 if the connection is keep-alive */
-                         finished  : 1, /**< set to 1 if the request is fully processed */
-                         chunked   : 1, /**< set to 1 if the request is chunked */
-                         error     : 1, /**< set if any sort of error has occurred. */
-                         pad       : 4; /**< to be used in evhtp2 for new stuff */
+    #define EVHTP_REQ_FLAG_KEEPALIVE (1 << 1)
+    #define EVHTP_REQ_FLAG_FINISHED  (1 << 2)
+    #define EVHTP_REQ_FLAG_CHUNKED   (1 << 3)
+    #define EVHTP_REQ_FLAG_ERROR     (1 << 4)
+    uint16_t flags;
 
     evhtp_callback_cb cb;               /**< the function to call when fully processed */
     void            * cbarg;            /**< argument which is passed to the cb function */
@@ -468,26 +476,28 @@ struct evhtp_connection_s {
     htparser        * parser;
     event_t         * resume_ev;
     struct sockaddr * saddr;
-    struct timeval    recv_timeo;          /**< conn read timeouts (overrides global) */
-    struct timeval    send_timeo;          /**< conn write timeouts (overrides global) */
+    struct timeval    recv_timeo;                  /**< conn read timeouts (overrides global) */
+    struct timeval    send_timeo;                  /**< conn write timeouts (overrides global) */
     evutil_socket_t   sock;
-    evhtp_request_t * request;             /**< the request currently being processed */
+    evhtp_request_t * request;                     /**< the request currently being processed */
     uint64_t          max_body_size;
     uint64_t          body_bytes_read;
     uint64_t          num_requests;
-    evhtp_type        type;                /**< server or client */
-    uint8_t           error           : 1,
-                      owner           : 1, /**< set to 1 if this structure owns the bufferevent */
-                      vhost_via_sni   : 1, /**< set to 1 if the vhost was found via SSL SNI */
-                      paused          : 1, /**< this connection has been marked as paused */
-                      connected       : 1, /**< client specific - set after successful connection */
-                      waiting         : 1, /**< used to make sure resuming  happens AFTER sending a reply */
-                      free_connection : 1,
-                      keepalive       : 1; /**< set to 1 after the first request has been processed and the connection is kept open */
-    struct evbuffer * scratch_buf;         /**< always zero'd out after used */
+    evhtp_type        type;                        /**< server or client */
+    #define EVHTP_CONN_FLAG_ERROR         (1 << 1)
+    #define EVHTP_CONN_FLAG_OWNER         (1 << 2) /**< set to 1 if this structure owns the bufferevent */
+    #define EVHTP_CONN_FLAG_VHOST_VIA_SNI (1 << 3) /**< set to 1 if the vhost was found via SSL SNI */
+    #define EVHTP_CONN_FLAG_PAUSED        (1 << 4) /**< this connection has been marked as paused */
+    #define EVHTP_CONN_FLAG_CONNECTED     (1 << 5) /**< client specific - set after successful connection */
+    #define EVHTP_CONN_FLAG_WAITING       (1 << 6) /**< used to make sure resuming  happens AFTER sending a reply */
+    #define EVHTP_CONN_FLAG_FREE_CONN     (1 << 7)
+    #define EVHTP_CONN_FLAG_KEEPALIVE     (1 << 8) /**< set to 1 after the first request has been processed and the connection is kept open */
+    uint16_t flags;
+
+    struct evbuffer * scratch_buf;                 /**< always zero'd out after used */
 
 #ifdef EVHTP_FUTURE_USE
-    TAILQ_HEAD(, evhtp_request_s) pending; /**< client pending data */
+    TAILQ_HEAD(, evhtp_request_s) pending;         /**< client pending data */
 #endif
 };
 
@@ -553,6 +563,11 @@ struct evhtp_ssl_cfg_s {
 #endif
 
 /**
+ * @defgroup evhtp_core Core evhtp functions
+ * @{
+ */
+
+/**
  * @brief creates a new evhtp_t instance
  *
  * @param evbase the initialized event base
@@ -561,8 +576,18 @@ struct evhtp_ssl_cfg_s {
  * @return a new evhtp_t structure or NULL on error
  */
 EVHTP_EXPORT evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
-EVHTP_EXPORT void      evhtp_free(evhtp_t * evhtp);
 
+
+/**
+ * @brief free a evhtp_t context
+ *
+ * @param evhtp
+ *
+ * @return
+ */
+EVHTP_EXPORT void evhtp_free(evhtp_t * evhtp);
+
+/** @} */
 
 /**
  * @brief set a read/write timeout on all things evhtp_t. When the timeout
@@ -574,6 +599,7 @@ EVHTP_EXPORT void      evhtp_free(evhtp_t * evhtp);
  * @param w write-timeout in timeval.
  */
 EVHTP_EXPORT void evhtp_set_timeouts(evhtp_t * htp, const struct timeval * r, const struct timeval * w);
+
 
 
 /**
@@ -612,6 +638,7 @@ EVHTP_EXPORT int evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
  * @param htp
  */
 EVHTP_EXPORT void evhtp_disable_100_continue(evhtp_t * htp);
+DEPRECATED("evhtp_disable_100 will soon be deprecated, use htp->flags instead");
 
 /**
  * @brief creates a lock around callbacks and hooks, allowing for threaded
@@ -818,6 +845,22 @@ EVHTP_EXPORT int evhtp_bind_socket(evhtp_t * htp, const char * addr, uint16_t po
  */
 EVHTP_EXPORT void evhtp_unbind_socket(evhtp_t * htp);
 
+
+/**
+ * @brief create the listener plus setup various options with an already-bound
+ *        socket.
+ *
+ * @note Since the file descriptor is passed to the function, it will not
+ * attempt to close it if an error occurs.
+ *
+ * @param htp
+ * @param sock
+ * @param backlog
+ *
+ * @return 0 on success, -1 on error (check errno)
+ */
+EVHTP_EXPORT int evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog);
+
 /**
  * @brief bind to an already allocated sockaddr.
  *
@@ -840,13 +883,23 @@ EVHTP_EXPORT int evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *,
  *
  * @param htp
  * @param init_cb
+ * @param exit_cb
  * @param nthreads
  * @param arg
  *
  * @return
  */
-EVHTP_EXPORT int evhtp_use_threads(evhtp_t * htp, evhtp_thread_init_cb init_cb, int nthreads, void * arg);
+EVHTP_EXPORT int evhtp_use_threads(evhtp_t *, evhtp_thread_init_cb, int nthreads, void *)
+DEPRECATED("will take on the syntax of evhtp_use_threads_wexit");
 
+/**
+ * @brief Temporary function which will be renamed evhtp_use_threads in the
+ *        future. evhtp_use_threads() has been noted as deprecated for now
+ */
+EVHTP_EXPORT int evhtp_use_threads_wexit(evhtp_t *,
+    evhtp_thread_init_cb,
+    evhtp_thread_exit_cb,
+    int nthreads, void * arg);
 
 /**
  * @brief generates all the right information for a reply to be sent to the client
@@ -1072,6 +1125,8 @@ EVHTP_EXPORT int evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, vo
     | EVHTP_PARSE_QUERY_FLAG_ALLOW_EMPTY_VALS \
     | EVHTP_PARSE_QUERY_FLAG_ALLOW_NULL_VALS  \
     | EVHTP_PARSE_QUERY_FLAG_TREAT_SEMICOLON_AS_SEP
+
+#define EVHTP_PARSE_QUERY_FLAG_DEFAULT                EVHTP_PARSE_QUERY_FLAG_LENIENT
 
 /**
  * @brief Parses the query portion of the uri into a set of key/values

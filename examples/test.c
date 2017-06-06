@@ -97,9 +97,15 @@ pause_init_cb(evhtp_request_t * req, evhtp_path_t * path, void * arg) {
     pause->timer_ev = evtimer_new(evbase, resume_request_timer, pause);
     pause->request  = req;
 
-    evhtp_set_hook(&req->hooks, evhtp_hook_on_header, pause_cb, pause);
-    evhtp_set_hook(&req->hooks, evhtp_hook_on_request_fini, pause_request_fini, pause);
-    evhtp_set_hook(&req->conn->hooks, evhtp_hook_on_connection_fini, pause_connection_fini, NULL);
+    evhtp_request_set_hook(req,
+            evhtp_hook_on_header, pause_cb, pause);
+
+    evhtp_request_set_hook(req,
+            evhtp_hook_on_request_fini, pause_request_fini, pause);
+
+    evhtp_connection_set_hook(req->conn,
+            evhtp_hook_on_connection_fini,
+            pause_connection_fini, NULL);
 
     return EVHTP_RES_OK;
 }
@@ -377,14 +383,13 @@ set_my_connection_handlers(evhtp_connection_t * conn, void * arg) {
     struct timeval               tick;
     struct ev_token_bucket_cfg * tcfg = NULL;
 
-    evhtp_set_hook(&conn->hooks, evhtp_hook_on_header, print_kv, "foo");
-    evhtp_set_hook(&conn->hooks, evhtp_hook_on_headers, print_kvs, "bar");
-    evhtp_set_hook(&conn->hooks, evhtp_hook_on_path, print_path, "baz");
-    evhtp_set_hook(&conn->hooks, evhtp_hook_on_read, print_data, "derp");
-    evhtp_set_hook(&conn->hooks, evhtp_hook_on_new_chunk, print_new_chunk_len, NULL);
-    evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunk_complete, print_chunk_complete, NULL);
-    evhtp_set_hook(&conn->hooks, evhtp_hook_on_chunks_complete, print_chunks_complete, NULL);
-    /* evhtp_set_hook(&conn->hooks, evhtp_hook_on_hostname, print_hostname, NULL); */
+    evhtp_connection_set_hook(conn, evhtp_hook_on_header, print_kv, "foo");
+    evhtp_connection_set_hook(conn, evhtp_hook_on_headers, print_kvs, "bar");
+    evhtp_connection_set_hook(conn, evhtp_hook_on_path, print_path, "baz");
+    evhtp_connection_set_hook(conn, evhtp_hook_on_read, print_data, "derp");
+    evhtp_connection_set_hook(conn, evhtp_hook_on_new_chunk, print_new_chunk_len, NULL);
+    evhtp_connection_set_hook(conn, evhtp_hook_on_chunk_complete, print_chunk_complete, NULL);
+    evhtp_connection_set_hook(conn, evhtp_hook_on_chunks_complete, print_chunks_complete, NULL);
 
     if (bw_limit > 0) {
         tick.tv_sec  = 0;
@@ -395,7 +400,7 @@ set_my_connection_handlers(evhtp_connection_t * conn, void * arg) {
         bufferevent_set_rate_limit(conn->bev, tcfg);
     }
 
-    evhtp_set_hook(&conn->hooks, evhtp_hook_on_request_fini, test_fini, tcfg);
+    evhtp_connection_set_hook(conn, evhtp_hook_on_request_fini, test_fini, tcfg);
 
     return EVHTP_RES_OK;
 }
@@ -585,14 +590,14 @@ main(int argc, char ** argv) {
     evhtp_assert(cb_12 != NULL);
 
     /* set a callback to pause on each header for cb_7 */
-    evhtp_set_hook(&cb_7->hooks, evhtp_hook_on_path, pause_init_cb, NULL);
+    evhtp_callback_set_hook(cb_7, evhtp_hook_on_path, pause_init_cb, NULL);
 
     /* set a callback to set hooks specifically for the cb_6 callback */
 #ifndef EVHTP_DISABLE_REGEX
-    evhtp_set_hook(&cb_6->hooks, evhtp_hook_on_headers, test_regex_hdrs_cb, NULL);
+    evhtp_callback_set_hook(cb_6, evhtp_hook_on_headers, test_regex_hdrs_cb, NULL);
 #endif
 
-    evhtp_set_hook(&cb_10->hooks, evhtp_hook_on_headers, set_max_body, NULL);
+    evhtp_callback_set_hook(cb_10, evhtp_hook_on_headers, set_max_body, NULL); 
 
     /* set a default request handler */
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");

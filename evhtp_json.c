@@ -10,7 +10,6 @@
 #include <ctype.h>
 #include <unistd.h>
 
-#include "internal.h"
 
 #include "evhtp_heap.h"
 #include "evhtp_json.h"

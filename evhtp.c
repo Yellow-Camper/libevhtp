@@ -26,6 +26,40 @@
 #include "evhtp_numtoa.h"
 #include "evhtp.h"
 
+/**
+ * @brief structure containing a single callback and configuration
+ *
+ * The definition structure which is used within the evhtp_callbacks_t
+ * structure. This holds information about what should execute for either
+ * a single or regex path.
+ *
+ * For example, if you registered a callback to be executed on a request
+ * for "/herp/derp", your defined callback will be executed.
+ *
+ * Optionally you can set callback-specific hooks just like per-connection
+ * hooks using the same rules.
+ *
+ */
+struct evhtp_callback_s {
+    evhtp_callback_type type;           /**< the type of callback (regex|path) */
+    evhtp_callback_cb   cb;             /**< the actual callback function */
+    void              * cbarg;          /**< user-defind arguments passed to the cb */
+    evhtp_hooks_t     * hooks;          /**< per-callback hooks */
+    size_t              len;
+
+    union {
+        char * path;
+        char * glob;
+#ifndef EVHTP_DISABLE_REGEX
+        regex_t * regex;
+#endif
+    } val;
+
+    TAILQ_ENTRY(evhtp_callback_s) next;
+};
+
+TAILQ_HEAD(evhtp_callbacks_s, evhtp_callback_s);
+
 
 #ifdef EVHTP_DEBUG
 static void
@@ -261,26 +295,6 @@ strndup(const char * s, size_t n)
 /*
  * PRIVATE FUNCTIONS
  */
-
-/**
- * @brief a weak hash function
- *
- * @param str a null terminated string
- *
- * @return an unsigned integer hash of str
- */
-static inline unsigned int
-htp__quick_hash_(const char * str)
-{
-    unsigned int h = 0;
-
-    for (; *str; str++)
-    {
-        h = 31 * h + *str;
-    }
-
-    return h;
-}
 
 /**
  *
@@ -554,8 +568,8 @@ htp__hook_connection_write_(evhtp_connection_t * connection)
  * @return
  */
 static int
-htp__glob_match2_(const char * pattern, size_t plen,
-                  const char * string, size_t str_len)
+htp__glob_match_(const char * pattern, size_t plen,
+                 const char * string, size_t str_len)
 {
     while (plen)
     {
@@ -574,8 +588,8 @@ htp__glob_match2_(const char * pattern, size_t plen,
 
                 while (str_len)
                 {
-                    if (htp__glob_match2_(pattern + 1, plen - 1,
-                                          string, str_len))
+                    if (htp__glob_match_(pattern + 1, plen - 1,
+                                         string, str_len))
                     {
                         return 1; /* match */
                     }
@@ -617,27 +631,6 @@ htp__glob_match2_(const char * pattern, size_t plen,
     }
 
     return 0;
-} /* htp__glob_match2_ */
-
-static inline int
-htp__glob_match_(const char * pattern, size_t pat_len, const char * string, size_t str_len)
-{
-    if (evhtp_unlikely(!pattern || !string))
-    {
-        return 0;
-    }
-
-    if (pat_len == 0)
-    {
-        pat_len = strlen(pattern);
-    }
-
-    if (str_len == 0)
-    {
-        str_len = strlen(string);
-    }
-
-    return htp__glob_match2_(pattern, pat_len, string, str_len);
 } /* htp__glob_match_ */
 
 static evhtp_callback_t *
@@ -660,6 +653,11 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
     {
         switch (callback->type) {
             case evhtp_callback_type_hash:
+                if (callback->val.path[1] != path[1])
+                {
+                    continue;
+                }
+
                 if (strcmp(callback->val.path, path) == 0)
                 {
                     *start_offset = 0;
@@ -1224,7 +1222,7 @@ htp__request_find_vhost_(evhtp_t * evhtp, const char * name)
             continue;
         }
 
-        if (htp__glob_match_(evhtp_vhost->server_name, 0, name, 0) == 1)
+        if (htp__glob_match_(evhtp_vhost->server_name, strlen(evhtp_vhost->server_name), name, strlen(name)) == 1)
         {
             return evhtp_vhost;
         }
@@ -1236,7 +1234,7 @@ htp__request_find_vhost_(evhtp_t * evhtp, const char * name)
                 continue;
             }
 
-            if (htp__glob_match_(evhtp_alias->alias, 0, name, 0) == 1)
+            if (htp__glob_match_(evhtp_alias->alias, strlen(evhtp_alias->alias), name, strlen(name)) == 1)
             {
                 return evhtp_vhost;
             }
@@ -3779,7 +3777,6 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
 
     switch (type) {
         case evhtp_callback_type_hash:
-            hcb->hash      = htp__quick_hash_(path);
             hcb->val.path  = strdup(path);
             break;
 #ifndef EVHTP_DISABLE_REGEX
@@ -3848,8 +3845,8 @@ evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb)
     return 0;
 }
 
-int
-evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg)
+static int
+htp__set_hook_(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg)
 {
     if (*hooks == NULL)
     {
@@ -3925,7 +3922,31 @@ evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void
     }     /* switch */
 
     return 0;
-}         /* evhtp_set_hook */
+} /* htp__set_hook_ */
+
+int
+evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg)
+{
+    return htp__set_hook_(hooks, type, cb, arg);
+}
+
+int
+evhtp_callback_set_hook(evhtp_callback_t * callback, evhtp_hook_type type, evhtp_hook cb, void * arg)
+{
+    return htp__set_hook_(&callback->hooks, type, cb, arg);
+}
+
+int
+evhtp_request_set_hook(evhtp_request_t * req, evhtp_hook_type type, evhtp_hook cb, void * arg)
+{
+    return htp__set_hook_(&req->hooks, type, cb, arg);
+}
+
+int
+evhtp_connection_set_hook(evhtp_connection_t * conn, evhtp_hook_type type, evhtp_hook cb, void * arg)
+{
+    return htp__set_hook_(&conn->hooks, type, cb, arg);
+}
 
 int
 evhtp_unset_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type)
@@ -4015,6 +4036,34 @@ evhtp_unset_all_hooks(evhtp_hooks_t ** hooks)
 
     return res;
 }     /* evhtp_unset_all_hooks */
+
+evhtp_hooks_t *
+evhtp_connection_get_hooks(evhtp_connection_t * c)
+{
+    if (evhtp_unlikely(c == NULL))
+    {
+        return NULL;
+    }
+
+    return c->hooks;
+}
+
+evhtp_hooks_t *
+evhtp_request_get_hooks(evhtp_request_t * r)
+{
+    if (evhtp_unlikely(r == NULL))
+    {
+        return NULL;
+    }
+
+    return r->hooks;
+}
+
+evhtp_hooks_t *
+evhtp_callback_get_hooks(evhtp_callback_t * cb)
+{
+    return cb->hooks;
+}
 
 evhtp_callback_t *
 evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
@@ -4690,6 +4739,7 @@ evhtp_set_parser_flags(evhtp_t * htp, int flags)
         {                                                \
             return v->flags;                             \
         }                                                \
+        return -1;                                       \
     }
 
 HTP_FLAG_FNGEN(, evhtp_t *);

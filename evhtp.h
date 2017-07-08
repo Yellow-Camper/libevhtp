@@ -546,6 +546,15 @@ struct evhtp_ssl_cfg_s {
  */
 EVHTP_EXPORT evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
 
+EVHTP_EXPORT void evhtp_enable_flag(evhtp_t *, int);
+EVHTP_EXPORT void evhtp_connection_enable_flag(evhtp_connection_t *, int);
+EVHTP_EXPORT void evhtp_request_enable_flag(evhtp_request_t *, int);
+EVHTP_EXPORT int evhtp_get_flags(evhtp_t *);
+EVHTP_EXPORT int evhtp_connection_get_flags(evhtp_connection_t *);
+EVHTP_EXPORT int evhtp_request_get_flags(evhtp_request_t *);
+EVHTP_EXPORT void evhtp_disable_flag(evhtp_t *, int);
+EVHTP_EXPORT void evhtp_connection_disable_flag(evhtp_connection_t *, int);
+EVHTP_EXPORT void evhtp_request_disable_flag(evhtp_request_t *, int);
 
 /**
  * @brief free a evhtp_t context

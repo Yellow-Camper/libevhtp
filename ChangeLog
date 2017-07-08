@@ -1,3 +1,10 @@
+v1.2.12-pre2
+ o Internalize some structs / deprecate evhtp_set_hook() (50ab327 Nathan French)
+ o remove cruft (1b1a037 Nathan French)
+ o add include directory for compat/sys headers (948c547 Nathan French)
+ o export flag functions (3467cbb Nathan French)
+ o formatting (4ec8dd3 Nathan French)
+
 v1.2.11
  o Grab reference to bufferevent during write. (a976a2f Marcus Sundberg)
  o add thread exit callback for cleaning (0c7d9c4 jgli)

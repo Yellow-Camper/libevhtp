@@ -96,6 +96,9 @@ endif()
 if (NOT HAVE_SYS_TREE)
     CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in
 			${CMAKE_CURRENT_BINARY_DIR}/compat/sys/tree.h)
+
+        include_directories(${PROJECT_BINARY_DIR}/compat)
+
 endif(NOT HAVE_SYS_TREE)
 
 if (NOT HAVE_SYS_QUEUE)
@@ -303,7 +306,6 @@ if (EVHTP_BUILD_SHARED)
 		set_target_properties(evhtp PROPERTIES SOVERSION "${PROJECT_VERSION}")
 endif()
 
-add_subdirectory(tools)
 add_subdirectory(examples)
 
 if (NOT LIB_INSTALL_DIR)

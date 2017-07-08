@@ -51,6 +51,8 @@ extern "C" {
 } while (0)
 #endif
 
+struct evhtp_callback_s;
+struct evhtp_callbacks_s;
 
 #ifndef EVHTP_DISABLE_SSL
 typedef SSL_SESSION               evhtp_ssl_sess_t;
@@ -337,39 +339,6 @@ struct evhtp_s {
     TAILQ_ENTRY(evhtp_s) next_vhost;
 };
 
-/**
- * @brief structure containing a single callback and configuration
- *
- * The definition structure which is used within the evhtp_callbacks_t
- * structure. This holds information about what should execute for either
- * a single or regex path.
- *
- * For example, if you registered a callback to be executed on a request
- * for "/herp/derp", your defined callback will be executed.
- *
- * Optionally you can set callback-specific hooks just like per-connection
- * hooks using the same rules.
- *
- */
-struct evhtp_callback_s {
-    evhtp_callback_type type;           /**< the type of callback (regex|path) */
-    evhtp_callback_cb   cb;             /**< the actual callback function */
-    unsigned int        hash;           /**< the full hash generated integer */
-    void              * cbarg;          /**< user-defind arguments passed to the cb */
-    evhtp_hooks_t     * hooks;          /**< per-callback hooks */
-
-    union {
-        char * path;
-        char * glob;
-#ifndef EVHTP_DISABLE_REGEX
-        regex_t * regex;
-#endif
-    } val;
-
-    TAILQ_ENTRY(evhtp_callback_s) next;
-};
-
-TAILQ_HEAD(evhtp_callbacks_s, evhtp_callback_s);
 
 /**
  * @brief a generic key/value structure
@@ -577,6 +546,15 @@ struct evhtp_ssl_cfg_s {
  */
 EVHTP_EXPORT evhtp_t * evhtp_new(evbase_t * evbase, void * arg);
 
+EVHTP_EXPORT void evhtp_enable_flag(evhtp_t *, int);
+EVHTP_EXPORT void evhtp_connection_enable_flag(evhtp_connection_t *, int);
+EVHTP_EXPORT void evhtp_request_enable_flag(evhtp_request_t *, int);
+EVHTP_EXPORT int  evhtp_get_flags(evhtp_t *);
+EVHTP_EXPORT int  evhtp_connection_get_flags(evhtp_connection_t *);
+EVHTP_EXPORT int  evhtp_request_get_flags(evhtp_request_t *);
+EVHTP_EXPORT void evhtp_disable_flag(evhtp_t *, int);
+EVHTP_EXPORT void evhtp_connection_disable_flag(evhtp_connection_t *, int);
+EVHTP_EXPORT void evhtp_request_disable_flag(evhtp_request_t *, int);
 
 /**
  * @brief free a evhtp_t context
@@ -796,9 +774,12 @@ EVHTP_EXPORT evhtp_callback_t * evhtp_get_cb(evhtp_t * htp, const char * needle)
  *
  * @return 0 on success, -1 on error (if hooks is NULL, it is allocated)
  */
-EVHTP_EXPORT int evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type,
-    evhtp_hook cb, void * arg);
+EVHTP_EXPORT int evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg);
+DEPRECATED("use evhtp_[connection|request|callback]_set_hook() instead of set_hook directly");
 
+EVHTP_EXPORT int evhtp_connection_set_hook(evhtp_connection_t * c, evhtp_hook_type type, evhtp_hook cb, void * arg);
+EVHTP_EXPORT int evhtp_request_set_hook(evhtp_request_t * r, evhtp_hook_type type, evhtp_hook cb, void * arg);
+EVHTP_EXPORT int evhtp_callback_set_hook(evhtp_callback_t * cb, evhtp_hook_type type, evhtp_hook hookcb, void * arg);
 
 /**
  * @brief remove a specific hook from being called.

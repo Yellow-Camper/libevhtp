@@ -95,7 +95,7 @@ endif()
 
 if (NOT HAVE_SYS_TREE)
     CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in
-			${CMAKE_CURRENT_BINARY_DIR}/compat/sys/tree.h)
+        ${PROJECT_BINARY_DIR}/compat/sys/tree.h)
 
         include_directories(${PROJECT_BINARY_DIR}/compat)
 
@@ -103,7 +103,9 @@ endif(NOT HAVE_SYS_TREE)
 
 if (NOT HAVE_SYS_QUEUE)
 		CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/queue.h.in
-			${CMAKE_CURRENT_BINARY_DIR}/compat/sys/queue.h)
+            ${PROJECT_BINARY_DIR}/compat/sys/queue.h)
+
+        include_directories(${PROJECT_BINARY_DIR}/compat)
 endif(NOT HAVE_SYS_QUEUE)
 
 if (NOT HAVE_STRNDUP)

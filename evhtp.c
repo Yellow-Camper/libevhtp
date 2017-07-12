@@ -789,9 +789,9 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
                     }
 
                     path = strndup(data, path_len);
-                    file = strndup(&data[i + 1], file_len);
-
                     evhtp_alloc_assert(path);
+
+                    file = strndup(&data[i + 1], file_len);
                     evhtp_alloc_assert(file);
 
                     break;
@@ -854,19 +854,21 @@ htp__path_free_(evhtp_path_t * path)
 /**
  * @brief create an authority structure
  *
- * @return evhtp_authority_t
+ * @return 0 on success, -1 on error
  */
-static evhtp_authority_t *
-htp__authority_new_(void)
+static int
+htp__authority_new_(evhtp_authority_t ** out)
 {
     evhtp_authority_t * authority;
 
     if (!(authority = calloc(1, sizeof(*authority))))
     {
-        return NULL;
+        return -1;
     }
 
-    return authority;
+    *out = authority;
+
+    return 0;
 }
 
 /**
@@ -915,28 +917,31 @@ htp__uri_free_(evhtp_uri_t * uri)
 /**
  * @brief create an overlay URI structure
  *
- * @return evhtp_uri_t
+ * @return 0 on success, -1 on error.
  */
-static evhtp_uri_t *
-htp__uri_new_(void)
+static int
+htp__uri_new_(evhtp_uri_t ** out)
 {
     evhtp_uri_t * uri;
 
     if (!(uri = calloc(sizeof(evhtp_uri_t), 1)))
     {
-        return NULL;
+        return -1;
     }
 
-    uri->authority = htp__authority_new_();
+    uri->authority = NULL;
 
-    if (!uri->authority)
+    if (htp__authority_new_(&uri->authority) == -1)
     {
-        htp__uri_free_(uri);
+        evhtp_safe_free(uri, htp__uri_free_);
 
-        return NULL;
+        return -1;
     }
 
-    return uri;
+
+    *out = uri;
+
+    return 0;
 }
 
 /**
@@ -1417,10 +1422,11 @@ htp__request_parse_hostname_(htparser * p, const char * data, size_t len)
 static int
 htp__require_uri_(evhtp_connection_t * c)
 {
-    if (c && c->request && !c->request->uri)
+    if (c != NULL && c->request != NULL && c->request->uri == NULL)
     {
-        c->request->uri = htp__uri_new_();
-        evhtp_alloc_assert(c->request->uri);
+        evhtp_assert(htp__uri_new_(&c->request->uri) == 0);
+
+        return -1;
     }
 
     return 0;
@@ -1432,7 +1438,7 @@ htp__request_parse_host_(htparser * p, const char * data, size_t len)
     evhtp_connection_t * c = htparser_get_userdata(p);
     evhtp_authority_t  * authority;
 
-    if (htp__require_uri_(c) != 0)
+    if (htp__require_uri_(c) == -1)
     {
         return -1;
     }
@@ -1440,7 +1446,7 @@ htp__request_parse_host_(htparser * p, const char * data, size_t len)
     authority           = c->request->uri->authority;
     authority->hostname = malloc(len + 1);
 
-    if (!authority->hostname)
+    if (authority->hostname == NULL)
     {
         c->request->status = EVHTP_RES_FATAL;
 
@@ -1461,7 +1467,7 @@ htp__request_parse_port_(htparser * p, const char * data, size_t len)
     char               * endptr;
     unsigned long        port;
 
-    if (htp__require_uri_(c) != 0)
+    if (htp__require_uri_(c) == -1)
     {
         return -1;
     }
@@ -1487,7 +1493,7 @@ htp__request_parse_path_(htparser * p, const char * data, size_t len)
     evhtp_connection_t * c = htparser_get_userdata(p);
     evhtp_path_t       * path;
 
-    if (htp__require_uri_(c) != 0)
+    if (htp__require_uri_(c) == -1)
     {
         return -1;
     }

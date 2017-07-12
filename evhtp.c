@@ -1423,8 +1423,6 @@ htp__require_uri_(evhtp_connection_t * c)
     if (c != NULL && c->request != NULL && c->request->uri == NULL)
     {
         evhtp_assert(htp__uri_new_(&c->request->uri) == 0);
-
-        return -1;
     }
 
     return 0;

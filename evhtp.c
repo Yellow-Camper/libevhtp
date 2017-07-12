@@ -729,8 +729,11 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
     char         * path     = NULL;
     char         * file     = NULL;
 
-    req_path = calloc(sizeof(evhtp_path_t), 1);
+
+    req_path = calloc(1, sizeof(*req_path));
     evhtp_alloc_assert(req_path);
+
+    *out = NULL;
 
     if (evhtp_unlikely(len == 0))
     {
@@ -745,9 +748,9 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
          * assume the path is "/"
          */
         path = strdup("/");
-        file = strndup(data, len);
-
         evhtp_alloc_assert(path);
+
+        file = strndup(data, len);
         evhtp_alloc_assert(file);
     } else {
         if (data[len - 1] != '/')
@@ -861,16 +864,9 @@ htp__authority_new_(evhtp_authority_t ** out)
 {
     evhtp_authority_t * authority;
 
-    out = NULL;
+    *out = calloc(1, sizeof(*authority));
 
-    if (!(authority = calloc(1, sizeof(*authority))))
-    {
-        return -1;
-    }
-
-    *out = authority;
-
-    return 0;
+    return (*out != NULL) ? 0 : -1;
 }
 
 /**
@@ -926,9 +922,10 @@ htp__uri_new_(evhtp_uri_t ** out)
 {
     evhtp_uri_t * uri;
 
-    if (!(uri = calloc(sizeof(evhtp_uri_t), 1)))
+    *out = NULL;
+
+    if ((uri = calloc(1, sizeof(*uri))) == NULL)
     {
-        *out = NULL;
         return -1;
     }
 
@@ -937,10 +934,8 @@ htp__uri_new_(evhtp_uri_t ** out)
     if (htp__authority_new_(&uri->authority) == -1)
     {
         evhtp_safe_free(uri, htp__uri_free_);
-
         return -1;
     }
-
 
     *out = uri;
 
@@ -3001,15 +2996,11 @@ evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len)
     size_t             i;
     enum unscape_state state;
 
-    if (out == NULL || *out == NULL)
-    {
-        return -1;
-    }
-
     state = unscape_state_start;
     optr  = *out;
     sptr  = str;
     d     = 0;
+    *out  = NULL;
 
     for (i = 0; i < str_len; i++)
     {
@@ -3074,7 +3065,7 @@ evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len)
 }         /* evhtp_unescape_string */
 
 evhtp_query_t *
-evhtp_parse_query_wflags(const char * query, size_t len, int flags)
+evhtp_parse_query_wflags(const char * query, const size_t len, const int flags)
 {
     evhtp_query_t    * query_args;
     query_parser_state state;
@@ -4841,20 +4832,19 @@ evhtp__new_(evhtp_t ** out, struct event_base * evbase, void * arg)
 {
     evhtp_t * htp;
 
-    if (evhtp_unlikely(out == NULL))
-    {
-        return -1;
-    }
 
     if (evhtp_unlikely(evbase == NULL))
     {
         return -1;
     }
 
-    if ((htp = calloc(1, sizeof(evhtp_t))) == NULL)
+    *out = NULL;
+
+    if ((htp = calloc(1, sizeof(*htp))) == NULL)
     {
         return -1;
     }
+
 
     htp->arg          = arg;
     htp->evbase       = evbase;

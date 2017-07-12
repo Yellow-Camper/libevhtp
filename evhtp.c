@@ -861,6 +861,8 @@ htp__authority_new_(evhtp_authority_t ** out)
 {
     evhtp_authority_t * authority;
 
+    out = NULL;
+
     if (!(authority = calloc(1, sizeof(*authority))))
     {
         return -1;
@@ -926,6 +928,7 @@ htp__uri_new_(evhtp_uri_t ** out)
 
     if (!(uri = calloc(sizeof(evhtp_uri_t), 1)))
     {
+        *out = NULL;
         return -1;
     }
 
@@ -5110,10 +5113,7 @@ evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r,
     evbuffer_add_printf(obuf, "%s %s HTTP/%s\r\n",
                         htparser_get_methodstr_m(meth), uri, proto);
 
-    evhtp_headers_for_each(
-        r->headers_out,
-        htp__create_headers_, obuf);
-
+    evhtp_headers_for_each(r->headers_out, htp__create_headers_, obuf);
     evbuffer_add_reference(obuf, "\r\n", 2, NULL, NULL);
 
     if (evbuffer_get_length(r->buffer_out))

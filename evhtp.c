@@ -715,13 +715,14 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
  * @details if for example the input was "/a/b/c", the parser will
  *          consider "/a/b/" as the path, and "c" as the file.
  *
+ * @param the unallocated destination buffer.
  * @param data raw input data (assumes a /path/[file] structure)
  * @param len length of the input data
  *
- * @return evhtp_request_t * on success, NULL on error.
+ * @return 0 on success, -1 on error.
  */
-static evhtp_path_t *
-htp__path_new_(const char * data, size_t len)
+static int
+htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
 {
     evhtp_path_t * req_path;
     const char   * data_end = (const char *)(data + len);
@@ -776,7 +777,7 @@ htp__path_new_(const char * data, size_t len)
                     {
                         evhtp_safe_free(req_path, free);
 
-                        return NULL;
+                        return -1;
                     }
 
                     /* check for overflow */
@@ -784,7 +785,7 @@ htp__path_new_(const char * data, size_t len)
                     {
                         evhtp_safe_free(req_path, free);
 
-                        return NULL;
+                        return -1;
                     }
 
                     path = strndup(data, path_len);
@@ -828,7 +829,9 @@ htp__path_new_(const char * data, size_t len)
     req_path->path = path;
     req_path->file = file;
 
-    return req_path;
+    *out           = req_path;
+
+    return 0;
 }     /* htp__path_new_ */
 
 static void
@@ -1489,7 +1492,7 @@ htp__request_parse_path_(htparser * p, const char * data, size_t len)
         return -1;
     }
 
-    if (evhtp_unlikely(!(path = htp__path_new_(data, len))))
+    if (htp__path_new_(&path, data, len) == -1)
     {
         c->request->status = EVHTP_RES_FATAL;
 

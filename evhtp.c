@@ -2145,7 +2145,7 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
             c->htp = orig_htp;
         }
 
-        htparser_init(c->parser, htp_type_request);
+        htparser_init(c->parser, c->type);
         htparser_set_userdata(c->parser, c);
 
         return;

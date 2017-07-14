@@ -137,6 +137,92 @@ htp_log_connection(evhtp_connection_t * c)
          (var) = (tvar))
 #endif
 
+#ifndef EVHTP_DISABLE_MEMFUNCTIONS
+
+static void * (*malloc_)(size_t sz) = malloc;
+static void * (* realloc_)(void * d, size_t sz) = realloc;
+static void   (* free_)(void * d) = free;
+
+static void *
+htp__malloc_(size_t size)
+{
+    return malloc_(size);
+}
+
+static void *
+htp__realloc_(void * ptr, size_t size)
+{
+    return realloc_(ptr, size);
+}
+
+static void
+htp__free_(void * ptr)
+{
+    return free_(ptr);
+}
+
+static void *
+htp__calloc_(size_t nmemb, size_t size)
+{
+    if (malloc_ != malloc)
+    {
+        size_t len = nmemb * size;
+        void * p;
+
+        if ((p = malloc_(len)) != NULL)
+        {
+            memset(p, 0, len);
+        }
+
+        return p;
+    }
+
+    return calloc(nmemb, size);
+}
+
+static char *
+htp__strdup_(const char * str)
+{
+    if (malloc_ != malloc)
+    {
+        size_t len = strlen(str);
+        void * p;
+
+        if ((p = malloc_(len + 1)) != NULL)
+        {
+            memcpy(p, str, len + 1);
+        }
+
+        return p;
+    }
+
+    return strdup(str);
+}
+
+
+#else
+#define htp__malloc_(sz)     malloc(sz)
+#define htp__calloc_(n, sz)  calloc(n, sz)
+#define htp__strdup_(s)      strdup(s)
+#define htp__realloc_(p, sz) realloc(p, sz)
+#define htp__free_(p)        free(p)
+#endif
+
+void
+evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
+                        void *(*reallocfn_)(void * p, size_t sz),
+                        void (* freefn_)(void * p))
+{
+#ifndef EVHTP_DISABLE_MEMFUNCTIONS 
+    malloc_  = mallocfn_;
+    realloc_ = reallocfn_;
+    free_    = freefn_;
+
+    return event_set_mem_functions(malloc_, realloc_, free_);
+#endif
+}
+
+
 static const char *
 status_code_to_str(evhtp_res code)
 {
@@ -279,10 +365,10 @@ strndup(const char * s, size_t n)
 
     if (len < n)
     {
-        return strdup(s);
+        return htp__strdup_(s);
     }
 
-    ret    = malloc(n + 1);
+    ret    = htp__malloc_(n + 1);
     ret[n] = '\0';
 
     memcpy(ret, s, n);
@@ -730,24 +816,24 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
     char         * file     = NULL;
 
 
-    req_path = calloc(1, sizeof(*req_path));
+    req_path = htp__calloc_(1, sizeof(*req_path));
     evhtp_alloc_assert(req_path);
 
-    *out = NULL;
+    *out     = NULL;
 
     if (evhtp_unlikely(len == 0))
     {
         /*
          * odd situation here, no preceding "/", so just assume the path is "/"
          */
-        path = strdup("/");
+        path = htp__strdup_("/");
         evhtp_alloc_assert(path);
     } else if (*data != '/')
     {
         /* request like GET stupid HTTP/1.0, treat stupid as the file, and
          * assume the path is "/"
          */
-        path = strdup("/");
+        path = htp__strdup_("/");
         evhtp_alloc_assert(path);
 
         file = strndup(data, len);
@@ -778,7 +864,7 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
                     /* check for overflow */
                     if ((const char *)(data + path_len) > data_end)
                     {
-                        evhtp_safe_free(req_path, free);
+                        evhtp_safe_free(req_path, htp__free_);
 
                         return -1;
                     }
@@ -786,7 +872,7 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
                     /* check for overflow */
                     if ((const char *)(&data[i + 1] + file_len) > data_end)
                     {
-                        evhtp_safe_free(req_path, free);
+                        evhtp_safe_free(req_path, htp__free_);
 
                         return -1;
                     }
@@ -804,7 +890,7 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
             if (i == 0 && data[i] == '/' && !file && !path)
             {
                 /* drops here if the request is something like GET /foo */
-                path = strdup("/");
+                path = htp__strdup_("/");
                 evhtp_alloc_assert(path);
 
                 if (len > 1)
@@ -824,7 +910,7 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
     {
         req_path->full = strndup(data, len);
     } else {
-        req_path->full = strdup("/");
+        req_path->full = htp__strdup_("/");
     }
 
     evhtp_alloc_assert(req_path->full);
@@ -845,13 +931,13 @@ htp__path_free_(evhtp_path_t * path)
         return;
     }
 
-    evhtp_safe_free(path->full, free);
-    evhtp_safe_free(path->path, free);
-    evhtp_safe_free(path->file, free);
-    evhtp_safe_free(path->match_start, free);
-    evhtp_safe_free(path->match_end, free);
+    evhtp_safe_free(path->full, htp__free_);
+    evhtp_safe_free(path->path, htp__free_);
+    evhtp_safe_free(path->file, htp__free_);
+    evhtp_safe_free(path->match_start, htp__free_);
+    evhtp_safe_free(path->match_end, htp__free_);
 
-    evhtp_safe_free(path, free);
+    evhtp_safe_free(path, htp__free_);
 }
 
 /**
@@ -864,7 +950,7 @@ htp__authority_new_(evhtp_authority_t ** out)
 {
     evhtp_authority_t * authority;
 
-    *out = calloc(1, sizeof(*authority));
+    *out = htp__calloc_(1, sizeof(*authority));
 
     return (*out != NULL) ? 0 : -1;
 }
@@ -882,11 +968,11 @@ htp__authority_free_(evhtp_authority_t * authority)
         return;
     }
 
-    evhtp_safe_free(authority->username, free);
-    evhtp_safe_free(authority->password, free);
-    evhtp_safe_free(authority->hostname, free);
+    evhtp_safe_free(authority->username, htp__free_);
+    evhtp_safe_free(authority->password, htp__free_);
+    evhtp_safe_free(authority->hostname, htp__free_);
 
-    evhtp_safe_free(authority, free);
+    evhtp_safe_free(authority, htp__free_);
 }
 
 /**
@@ -906,10 +992,10 @@ htp__uri_free_(evhtp_uri_t * uri)
     evhtp_safe_free(uri->path, htp__path_free_);
     evhtp_safe_free(uri->authority, htp__authority_free_);
 
-    evhtp_safe_free(uri->fragment, free);
-    evhtp_safe_free(uri->query_raw, free);
+    evhtp_safe_free(uri->fragment, htp__free_);
+    evhtp_safe_free(uri->query_raw, htp__free_);
 
-    evhtp_safe_free(uri, free);
+    evhtp_safe_free(uri, htp__free_);
 }
 
 /**
@@ -924,7 +1010,7 @@ htp__uri_new_(evhtp_uri_t ** out)
 
     *out = NULL;
 
-    if ((uri = calloc(1, sizeof(*uri))) == NULL)
+    if ((uri = htp__calloc_(1, sizeof(*uri))) == NULL)
     {
         return -1;
     }
@@ -976,8 +1062,8 @@ htp__request_free_(evhtp_request_t * request)
         evhtp_safe_free(request->buffer_out, evbuffer_free);
     }
 
-    evhtp_safe_free(request->hooks, free);
-    evhtp_safe_free(request, free);
+    evhtp_safe_free(request->hooks, htp__free_);
+    evhtp_safe_free(request, htp__free_);
 }
 
 /**
@@ -993,7 +1079,7 @@ htp__request_new_(evhtp_connection_t * c)
     evhtp_request_t * req;
     uint8_t           error;
 
-    if (evhtp_unlikely(!(req = calloc(sizeof(evhtp_request_t), 1))))
+    if (evhtp_unlikely(!(req = htp__calloc_(sizeof(evhtp_request_t), 1))))
     {
         return NULL;
     }
@@ -1014,12 +1100,12 @@ htp__request_new_(evhtp_connection_t * c)
             break;
         }
 
-        if (evhtp_unlikely(!(req->headers_in = malloc(sizeof(evhtp_headers_t)))))
+        if (evhtp_unlikely(!(req->headers_in = htp__malloc_(sizeof(evhtp_headers_t)))))
         {
             break;
         }
 
-        if (evhtp_unlikely(!(req->headers_out = malloc(sizeof(evhtp_headers_t)))))
+        if (evhtp_unlikely(!(req->headers_out = htp__malloc_(sizeof(evhtp_headers_t)))))
         {
             break;
         }
@@ -1118,7 +1204,7 @@ htp__request_parse_args_(htparser * p, const char * data, size_t len)
             frag_offset           += 1;
             fraglen                = len - frag_offset;
 
-            uri->fragment          = malloc(fraglen + 1);
+            uri->fragment          = htp__malloc_(fraglen + 1);
             evhtp_alloc_assert(uri->fragment);
 
             memcpy(uri->fragment, fragment, fraglen);
@@ -1137,7 +1223,7 @@ htp__request_parse_args_(htparser * p, const char * data, size_t len)
         return -1;
     }
 
-    uri->query_raw      = malloc(len + 1);
+    uri->query_raw      = htp__malloc_(len + 1);
     evhtp_alloc_assert(uri->query_raw);
 
     memcpy(uri->query_raw, data, len);
@@ -1166,7 +1252,7 @@ htp__request_parse_header_key_(htparser * p, const char * data, size_t len)
     char               * key_s;
     evhtp_header_t     * hdr;
 
-    key_s      = malloc(len + 1);
+    key_s      = htp__malloc_(len + 1);
     evhtp_alloc_assert(key_s);
 
     key_s[len] = '\0';
@@ -1191,7 +1277,7 @@ htp__request_parse_header_val_(htparser * p, const char * data, size_t len)
     char               * val_s;
     evhtp_header_t     * header;
 
-    val_s      = malloc(len + 1);
+    val_s      = htp__malloc_(len + 1);
     evhtp_alloc_assert(val_s);
 
     val_s[len] = '\0';
@@ -1199,7 +1285,7 @@ htp__request_parse_header_val_(htparser * p, const char * data, size_t len)
 
     if ((header = evhtp_header_val_add(c->request->headers_in, val_s, 0)) == NULL)
     {
-        evhtp_safe_free(val_s, free);
+        evhtp_safe_free(val_s, htp__free_);
         c->request->status = EVHTP_RES_FATAL;
 
         return -1;
@@ -1317,13 +1403,13 @@ htp__request_set_callbacks_(evhtp_request_t * request)
 
     if (path->match_start == NULL)
     {
-        path->match_start = calloc(strlen(path->full) + 1, 1);
+        path->match_start = htp__calloc_(strlen(path->full) + 1, 1);
         evhtp_alloc_assert(path->match_start);
     }
 
     if (path->match_end == NULL)
     {
-        path->match_end = calloc(strlen(path->full) + 1, 1);
+        path->match_end = htp__calloc_(strlen(path->full) + 1, 1);
         evhtp_alloc_assert(path->match_end);
     }
 
@@ -1347,7 +1433,7 @@ htp__request_set_callbacks_(evhtp_request_t * request)
     {
         if (request->hooks == NULL)
         {
-            request->hooks = malloc(sizeof(evhtp_hooks_t));
+            request->hooks = htp__malloc_(sizeof(evhtp_hooks_t));
             evhtp_alloc_assert(request->hooks);
         }
 
@@ -1440,7 +1526,7 @@ htp__request_parse_host_(htparser * p, const char * data, size_t len)
     }
 
     authority           = c->request->uri->authority;
-    authority->hostname = malloc(len + 1);
+    authority->hostname = htp__malloc_(len + 1);
 
     if (authority->hostname == NULL)
     {
@@ -1720,7 +1806,7 @@ htp__request_parse_fini_(htparser * p)
         body_len       = evbuffer_get_length(buf_in);
         body           = (const char *)evbuffer_pullup(buf_in, body_len);
 
-        uri->query_raw = calloc(body_len + 1, 1);
+        uri->query_raw = htp__calloc_(body_len + 1, 1);
         evhtp_alloc_assert(uri->query_raw);
 
         memcpy(uri->query_raw, body, body_len);
@@ -2307,7 +2393,7 @@ htp__connection_new_(evhtp_t * htp, evutil_socket_t sock, evhtp_type type)
             return NULL;
     }
 
-    connection = calloc(sizeof(evhtp_connection_t), 1);
+    connection = htp__calloc_(sizeof(evhtp_connection_t), 1);
     evhtp_alloc_assert(connection);
 
     connection->scratch_buf = evbuffer_new();
@@ -2403,7 +2489,7 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
 
     htp_log_debug("fd = %d, conn = %p", fd, connection);
 
-    connection->saddr = malloc(sl);
+    connection->saddr = htp__malloc_(sl);
     evhtp_alloc_assert(connection->saddr);
 
     memcpy(connection->saddr, s, sl);
@@ -2699,7 +2785,7 @@ evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char valloc)
 
     if (valloc == 1)
     {
-        header->val = malloc(header->vlen + 1);
+        header->val = htp__malloc_(header->vlen + 1);
         header->val[header->vlen] = '\0';
         memcpy(header->val, val, header->vlen);
     } else {
@@ -2716,7 +2802,7 @@ evhtp_kvs_new(void)
 {
     evhtp_kvs_t * kvs;
 
-    kvs = malloc(sizeof(evhtp_kvs_t));
+    kvs = htp__malloc_(sizeof(evhtp_kvs_t));
     evhtp_alloc_assert(kvs);
 
     TAILQ_INIT(kvs);
@@ -2729,7 +2815,7 @@ evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc)
 {
     evhtp_kv_t * kv;
 
-    kv           = malloc(sizeof(evhtp_kv_t));
+    kv           = htp__malloc_(sizeof(evhtp_kv_t));
     evhtp_alloc_assert(kv);
 
     kv->k_heaped = kalloc;
@@ -2747,9 +2833,9 @@ evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc)
         {
             char * s;
 
-            if (!(s = malloc(kv->klen + 1)))
+            if (!(s = htp__malloc_(kv->klen + 1)))
             {
-                evhtp_safe_free(kv, free);
+                evhtp_safe_free(kv, htp__free_);
 
                 return NULL;
             }
@@ -2769,7 +2855,7 @@ evhtp_kv_new(const char * key, const char * val, char kalloc, char valloc)
 
         if (valloc == 1)
         {
-            char * s = malloc(kv->vlen + 1);
+            char * s = htp__malloc_(kv->vlen + 1);
 
             s[kv->vlen] = '\0';
             memcpy(s, val, kv->vlen);
@@ -2792,15 +2878,15 @@ evhtp_kv_free(evhtp_kv_t * kv)
 
     if (kv->k_heaped)
     {
-        evhtp_safe_free(kv->key, free);
+        evhtp_safe_free(kv->key, htp__free_);
     }
 
     if (kv->v_heaped)
     {
-        evhtp_safe_free(kv->val, free);
+        evhtp_safe_free(kv->val, htp__free_);
     }
 
-    evhtp_safe_free(kv, free);
+    evhtp_safe_free(kv, htp__free_);
 }
 
 void
@@ -2839,7 +2925,7 @@ evhtp_kvs_free(evhtp_kvs_t * kvs)
         evhtp_safe_free(kv, evhtp_kv_free);
     }
 
-    evhtp_safe_free(kvs, free);
+    evhtp_safe_free(kvs, htp__free_);
 }
 
 int
@@ -3090,10 +3176,10 @@ evhtp_parse_query_wflags(const char * query, const size_t len, const int flags)
     char * key_buf;
     char * val_buf;
 
-    key_buf = malloc(len + 1);
+    key_buf = htp__malloc_(len + 1);
     evhtp_alloc_assert(key_buf);
 
-    val_buf = malloc(len + 1);
+    val_buf = htp__malloc_(len + 1);
     evhtp_alloc_assert(val_buf);
 #endif
 
@@ -3312,15 +3398,15 @@ evhtp_parse_query_wflags(const char * query, const size_t len, const int flags)
     }
 
 #ifndef EVHTP_HAS_C99
-    evhtp_safe_free(key_buf, free);
-    evhtp_safe_free(val_buf, free);
+    evhtp_safe_free(key_buf, htp__free_);
+    evhtp_safe_free(val_buf, htp__free_);
 #endif
 
     return query_args;
 error:
 #ifndef EVHTP_HAS_C99
-    evhtp_safe_free(key_buf, free);
-    evhtp_safe_free(val_buf, free);
+    evhtp_safe_free(key_buf, htp__free_);
+    evhtp_safe_free(val_buf, htp__free_);
 #endif
 
     evhtp_query_free(query_args);
@@ -3761,7 +3847,7 @@ evhtp_callbacks_free(evhtp_callbacks_t * callbacks)
         evhtp_safe_free(callback, evhtp_callback_free);
     }
 
-    evhtp_safe_free(callbacks, free);
+    evhtp_safe_free(callbacks, htp__free_);
 }
 
 evhtp_callback_t *
@@ -3769,7 +3855,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
 {
     evhtp_callback_t * hcb;
 
-    hcb        = calloc(sizeof(evhtp_callback_t), 1);
+    hcb        = htp__calloc_(sizeof(evhtp_callback_t), 1);
     evhtp_alloc_assert(hcb);
 
     hcb->type  = type;
@@ -3778,26 +3864,26 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
 
     switch (type) {
         case evhtp_callback_type_hash:
-            hcb->val.path  = strdup(path);
+            hcb->val.path  = htp__strdup_(path);
             break;
 #ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
-            hcb->val.regex = malloc(sizeof(regex_t));
+            hcb->val.regex = htp__malloc_(sizeof(regex_t));
 
             if (regcomp(hcb->val.regex, (char *)path, REG_EXTENDED) != 0)
             {
-                evhtp_safe_free(hcb->val.regex, free);
-                evhtp_safe_free(hcb, free);
+                evhtp_safe_free(hcb->val.regex, htp__free_);
+                evhtp_safe_free(hcb, htp__free_);
 
                 return NULL;
             }
             break;
 #endif
         case evhtp_callback_type_glob:
-            hcb->val.glob = strdup(path);
+            hcb->val.glob = htp__strdup_(path);
             break;
         default:
-            evhtp_safe_free(hcb, free);
+            evhtp_safe_free(hcb, htp__free_);
 
             return NULL;
     }     /* switch */
@@ -3815,25 +3901,25 @@ evhtp_callback_free(evhtp_callback_t * callback)
 
     switch (callback->type) {
         case evhtp_callback_type_hash:
-            evhtp_safe_free(callback->val.path, free);
+            evhtp_safe_free(callback->val.path, htp__free_);
             break;
         case evhtp_callback_type_glob:
-            evhtp_safe_free(callback->val.glob, free);
+            evhtp_safe_free(callback->val.glob, htp__free_);
             break;
 #ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             regfree(callback->val.regex);
-            evhtp_safe_free(callback->val.regex, free);
+            evhtp_safe_free(callback->val.regex, htp__free_);
             break;
 #endif
     }
 
     if (callback->hooks)
     {
-        evhtp_safe_free(callback->hooks, free);
+        evhtp_safe_free(callback->hooks, htp__free_);
     }
 
-    evhtp_safe_free(callback, free);
+    evhtp_safe_free(callback, htp__free_);
 
     return;
 }
@@ -3851,7 +3937,7 @@ htp__set_hook_(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void
 {
     if (*hooks == NULL)
     {
-        if (!(*hooks = calloc(sizeof(evhtp_hooks_t), 1)))
+        if (!(*hooks = htp__calloc_(sizeof(evhtp_hooks_t), 1)))
         {
             return -1;
         }
@@ -4075,7 +4161,7 @@ evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
 
     if (htp->callbacks == NULL)
     {
-        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), 1)))
+        if (!(htp->callbacks = htp__calloc_(sizeof(evhtp_callbacks_t), 1)))
         {
             htp__unlock_(htp);
 
@@ -4202,7 +4288,7 @@ evhtp_use_callback_locks(evhtp_t * htp)
         return -1;
     }
 
-    if (!(htp->lock = malloc(sizeof(pthread_mutex_t))))
+    if (!(htp->lock = htp__malloc_(sizeof(pthread_mutex_t))))
     {
         return -1;
     }
@@ -4222,7 +4308,7 @@ evhtp_set_regex_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, vo
 
     if (htp->callbacks == NULL)
     {
-        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), 1)))
+        if (!(htp->callbacks = htp__calloc_(sizeof(evhtp_callbacks_t), 1)))
         {
             htp__unlock_(htp);
 
@@ -4263,7 +4349,7 @@ evhtp_set_glob_cb(evhtp_t * htp, const char * pattern, evhtp_callback_cb cb, voi
 
     if (htp->callbacks == NULL)
     {
-        if (!(htp->callbacks = calloc(sizeof(evhtp_callbacks_t), 1)))
+        if (!(htp->callbacks = htp__calloc_(sizeof(evhtp_callbacks_t), 1)))
         {
             htp__unlock_(htp);
 
@@ -4329,7 +4415,7 @@ evhtp_ssl_use_threads(void)
     ssl_locks_initialized = 1;
     ssl_num_locks         = CRYPTO_num_locks();
 
-    if ((ssl_locks = calloc(ssl_num_locks,
+    if ((ssl_locks = htp__calloc_(ssl_num_locks,
                             sizeof(evhtp_mutex_t))) == NULL)
     {
         return -1;
@@ -4636,9 +4722,9 @@ evhtp_connection_free(evhtp_connection_t * connection)
     htp__hook_connection_fini_(connection);
 
     evhtp_safe_free(connection->request, htp__request_free_);
-    evhtp_safe_free(connection->parser, free);
-    evhtp_safe_free(connection->hooks, free);
-    evhtp_safe_free(connection->saddr, free);
+    evhtp_safe_free(connection->parser, htp__free_);
+    evhtp_safe_free(connection->hooks, htp__free_);
+    evhtp_safe_free(connection->saddr, htp__free_);
     evhtp_safe_free(connection->scratch_buf, evbuffer_free);
 
     if (connection->resume_ev)
@@ -4662,7 +4748,7 @@ evhtp_connection_free(evhtp_connection_t * connection)
 #endif
     }
 
-    evhtp_safe_free(connection, free);
+    evhtp_safe_free(connection, htp__free_);
 }     /* evhtp_connection_free */
 
 void
@@ -4757,12 +4843,12 @@ evhtp_add_alias(evhtp_t * evhtp, const char * name)
         return -1;
     }
 
-    if (!(alias = calloc(sizeof(evhtp_alias_t), 1)))
+    if (!(alias = htp__calloc_(sizeof(evhtp_alias_t), 1)))
     {
         return -1;
     }
 
-    alias->alias = strdup(name);
+    alias->alias = htp__strdup_(name);
     evhtp_alloc_assert(alias->alias);
 
     TAILQ_INSERT_TAIL(&evhtp->aliases, alias, next);
@@ -4800,7 +4886,7 @@ evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost)
         return -1;
     }
 
-    if (!(vhost->server_name = strdup(name)))
+    if (!(vhost->server_name = htp__strdup_(name)))
     {
         return -1;
     }
@@ -4838,7 +4924,7 @@ evhtp__new_(evhtp_t ** out, struct event_base * evbase, void * arg)
 
     *out = NULL;
 
-    if ((htp = calloc(1, sizeof(*htp))) == NULL)
+    if ((htp = htp__calloc_(1, sizeof(*htp))) == NULL)
     {
         return -1;
     }
@@ -4907,7 +4993,7 @@ evhtp_free(evhtp_t * evhtp)
 
     if (evhtp->server_name)
     {
-        evhtp_safe_free(evhtp->server_name, free);
+        evhtp_safe_free(evhtp->server_name, htp__free_);
     }
 
     if (evhtp->callbacks)
@@ -4919,14 +5005,14 @@ evhtp_free(evhtp_t * evhtp)
     {
         if (evhtp_alias->alias != NULL)
         {
-            evhtp_safe_free(evhtp_alias->alias, free);
+            evhtp_safe_free(evhtp_alias->alias, htp__free_);
         }
 
         TAILQ_REMOVE(&evhtp->aliases, evhtp_alias, next);
-        evhtp_safe_free(evhtp_alias, free);
+        evhtp_safe_free(evhtp_alias, htp__free_);
     }
 
-    evhtp_safe_free(evhtp, free);
+    evhtp_safe_free(evhtp, htp__free_);
 }     /* evhtp_free */
 
 /*****************************************************************

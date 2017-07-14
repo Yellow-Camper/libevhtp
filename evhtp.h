@@ -531,6 +531,11 @@ struct evhtp_ssl_cfg_s {
 };
 #endif
 
+
+EVHTP_EXPORT void evhtp_set_mem_functions(void *(*malloc_)(size_t),
+    void *(*realloc_)(void *, size_t),
+    void (* free_)(void *));
+
 /**
  * @defgroup evhtp_core Core evhtp functions
  * @{

@@ -199,11 +199,31 @@ htp__strdup_(const char * str)
     return strdup(str);
 }
 
+static char *
+htp__strndup_(const char * str, size_t len)
+{
+    if (malloc_ != malloc)
+    {
+        char * p;
+
+        if ((p = malloc_(len + 1)) != NULL)
+        {
+            memcpy(p, str, len + 1);
+        }
+
+        p[len] = '\0';
+
+        return p;
+    }
+
+    return strndup(str, len);
+}
 
 #else
 #define htp__malloc_(sz)     malloc(sz)
 #define htp__calloc_(n, sz)  calloc(n, sz)
 #define htp__strdup_(s)      strdup(s)
+#define htp__strndup_(n, sz) strndup(n, sz)
 #define htp__realloc_(p, sz) realloc(p, sz)
 #define htp__free_(p)        free(p)
 #endif
@@ -213,7 +233,7 @@ evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
                         void *(*reallocfn_)(void * p, size_t sz),
                         void (* freefn_)(void * p))
 {
-#ifndef EVHTP_DISABLE_MEMFUNCTIONS 
+#ifndef EVHTP_DISABLE_MEMFUNCTIONS
     malloc_  = mallocfn_;
     realloc_ = reallocfn_;
     free_    = freefn_;
@@ -221,7 +241,6 @@ evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
     return event_set_mem_functions(malloc_, realloc_, free_);
 #endif
 }
-
 
 static const char *
 status_code_to_str(evhtp_res code)
@@ -836,7 +855,7 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
         path = htp__strdup_("/");
         evhtp_alloc_assert(path);
 
-        file = strndup(data, len);
+        file = htp__strndup_(data, len);
         evhtp_alloc_assert(file);
     } else {
         if (data[len - 1] != '/')
@@ -877,10 +896,10 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
                         return -1;
                     }
 
-                    path = strndup(data, path_len);
+                    path = htp__strndup_(data, path_len);
                     evhtp_alloc_assert(path);
 
-                    file = strndup(&data[i + 1], file_len);
+                    file = htp__strndup_(&data[i + 1], file_len);
                     evhtp_alloc_assert(file);
 
                     break;
@@ -895,20 +914,20 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
 
                 if (len > 1)
                 {
-                    file = strndup((const char *)(data + 1), len);
+                    file = htp__strndup_((const char *)(data + 1), len);
                     evhtp_alloc_assert(file);
                 }
             }
         } else {
             /* the last character is a "/", thus the request is just a path */
-            path = strndup(data, len);
+            path = htp__strndup_(data, len);
             evhtp_alloc_assert(path);
         }
     }
 
     if (len != 0)
     {
-        req_path->full = strndup(data, len);
+        req_path->full = htp__strndup_(data, len);
     } else {
         req_path->full = htp__strdup_("/");
     }
@@ -3463,7 +3482,7 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code)
     struct evbuffer    * reply_buf;
     struct bufferevent * bev;
 
-    c = evhtp_request_get_connection(request);
+    c = request->conn;
 
     HTP_FLAG_ON(request, EVHTP_REQ_FLAG_FINISHED);
 
@@ -3474,7 +3493,7 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code)
         return;
     }
 
-    bev = evhtp_connection_get_bev(c);
+    bev = c->bev;
 
     bufferevent_lock(bev);
     {
@@ -3483,7 +3502,6 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code)
     bufferevent_unlock(bev);
 
     evbuffer_drain(reply_buf, -1);
-    /* evbuffer_free(reply_buf); */
 }
 
 int
@@ -4416,7 +4434,7 @@ evhtp_ssl_use_threads(void)
     ssl_num_locks         = CRYPTO_num_locks();
 
     if ((ssl_locks = htp__calloc_(ssl_num_locks,
-                            sizeof(evhtp_mutex_t))) == NULL)
+                                  sizeof(evhtp_mutex_t))) == NULL)
     {
         return -1;
     }

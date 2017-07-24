@@ -1,3 +1,14 @@
+v1.3.12-pre3
+ o use PROJECT_BINARY_DIR for sys/ compat headers (012341c Nathan French)
+ o return int for htp__path_new_ (bf59eb1 Nathan French)
+ o more return normalization (91008a6 Nathan French)
+ o allocation functions set *out to NULL (0305c10 Nathan French)
+ o do not return on error from requie_uri (ddc2ce6 Nathan French)
+ o added user-defined custom memory functions (73b54c6 Nathan French)
+ o for some reason, htparser_init was being called manually with type_request?? (a153e5f Nathan French)
+ o Add htp__strndup_ memfn wrapper (763168c Nathan French)
+ o add a callback member in evhtp_ssl_cfg_t for customized decrypt privfile. fixes #16 (b3a4d42 h00360646)
+
 v1.2.12-pre2
  o Internalize some structs / deprecate evhtp_set_hook() (50ab327 Nathan French)
  o remove cruft (1b1a037 Nathan French)

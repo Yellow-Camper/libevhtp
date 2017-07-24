@@ -4585,8 +4585,25 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
     }     /* switch */
 
     SSL_CTX_use_certificate_file(htp->ssl_ctx, cfg->pemfile, SSL_FILETYPE_PEM);
-    SSL_CTX_use_PrivateKey_file(htp->ssl_ctx,
-                                cfg->privfile ? cfg->privfile : cfg->pemfile, SSL_FILETYPE_PEM);
+
+    char * const key = cfg->privfile ?  cfg->privfile : cfg->pemfile;
+
+    if (cfg->decrypt_cb != NULL)
+    {
+        EVP_PKEY * pkey = cfg->decrypt_cb(key);
+
+        if (pkey == NULL)
+        {
+            return -1;
+        }
+
+        SSL_CTX_use_PrivateKey(htp->ssl_ctx, pkey);
+
+        /*cleanup */
+        EVP_PKEY_free(pkey);
+    } else {
+        SSL_CTX_use_PrivateKey_file(htp->ssl_ctx, key, SSL_FILETYPE_PEM);
+    }
 
     SSL_CTX_set_session_id_context(htp->ssl_ctx,
                                    (void *)&session_id_context,

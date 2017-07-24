@@ -194,6 +194,7 @@ typedef int (* evhtp_headers_iterator)(evhtp_header_t * header, void * arg);
 #ifndef EVHTP_DISABLE_SSL
 typedef int (* evhtp_ssl_verify_cb)(int pre_verify, evhtp_x509_store_ctx_t * ctx);
 typedef int (* evhtp_ssl_chk_issued_cb)(evhtp_x509_store_ctx_t * ctx, evhtp_x509_t * x, evhtp_x509_t * issuer);
+typedef EVP_PKEY * (* evhtp_ssl_decrypt_cb)(char * privfile);
 
 typedef int (* evhtp_ssl_scache_add)(evhtp_connection_t * connection, unsigned char * sid, int sid_len, evhtp_ssl_sess_t * sess);
 typedef void (* evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid_len);
@@ -519,6 +520,7 @@ struct evhtp_ssl_cfg_s {
     int                     verify_depth;
     evhtp_ssl_verify_cb     x509_verify_cb;
     evhtp_ssl_chk_issued_cb x509_chk_issued_cb;
+    evhtp_ssl_decrypt_cb    decrypt_cb;
     long                    store_flags;
     evhtp_ssl_scache_type   scache_type;
     long                    scache_timeout;

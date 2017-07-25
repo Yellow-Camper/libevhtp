@@ -3,7 +3,7 @@
 
 #include <pthread.h>
 #include <event2/event.h>
-#include <evhtp-config.h>
+#include <evhtp/config.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -8,8 +8,8 @@
 #include <inttypes.h>
 #include <event2/event.h>
 
-#include "../evhtp-internal.h"
-#include "../evhtp.h"
+#include "internal.h"
+#include "evhtp/evhtp.h"
 
 
 #ifndef EVHTP_DISABLE_EVTHR

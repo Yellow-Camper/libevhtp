@@ -622,7 +622,7 @@ EVHTP_EXPORT int evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
  *
  * @param htp
  */
-EVHTP_EXPORT void evhtp_disable_100_continue(evhtp_t * htp);
+EVHTP_EXPORT void evhtp_disable_100_continue(evhtp_t * htp)
 DEPRECATED("evhtp_disable_100 will soon be deprecated, use htp->flags instead");
 
 /**
@@ -781,7 +781,7 @@ EVHTP_EXPORT evhtp_callback_t * evhtp_get_cb(evhtp_t * htp, const char * needle)
  *
  * @return 0 on success, -1 on error (if hooks is NULL, it is allocated)
  */
-EVHTP_EXPORT int evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg);
+EVHTP_EXPORT int evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg)
 DEPRECATED("use evhtp_[connection|request|callback]_set_hook() instead of set_hook directly");
 
 EVHTP_EXPORT int evhtp_connection_set_hook(evhtp_connection_t * c, evhtp_hook_type type, evhtp_hook cb, void * arg);

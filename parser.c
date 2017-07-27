@@ -8,8 +8,8 @@
 #include <ctype.h>
 #include <unistd.h>
 
-#include "htparse.h"
-#include "evhtp-internal.h"
+#include "evhtp/parser.h"
+#include "internal.h"
 
 #ifdef PARSER_DEBUG
 #define __QUOTE(x)                  # x

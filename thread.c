@@ -19,8 +19,8 @@
 #include <event2/event.h>
 #include <event2/thread.h>
 
-#include "evhtp-internal.h"
-#include "evthr.h"
+#include "internal.h"
+#include "evhtp/thread.h"
 
 typedef struct evthr_cmd        evthr_cmd_t;
 typedef struct evthr_pool_slist evthr_pool_slist_t;

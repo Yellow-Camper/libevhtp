@@ -1,7 +1,7 @@
 #ifndef __HTPARSE_H__
 #define __HTPARSE_H__
 
-#include "evhtp-config.h"
+#include <evhtp/config.h>
 
 #ifdef __cplusplus
 extern "C" {

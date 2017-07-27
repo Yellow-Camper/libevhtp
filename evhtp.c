@@ -22,9 +22,9 @@
 #include <limits.h>
 #include <event2/dns.h>
 
-#include "evhtp-internal.h"
-#include "evhtp_numtoa.h"
-#include "evhtp.h"
+#include "internal.h"
+#include "numtoa.h"
+#include "evhtp/evhtp.h"
 
 /**
  * @brief structure containing a single callback and configuration

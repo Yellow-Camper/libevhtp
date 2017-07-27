@@ -1,14 +1,14 @@
-#include <evhtp-config.h>
+#include <evhtp/config.h>
 
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
 
 /** @file */
 #ifndef EVHTP_DISABLE_EVTHR
-#include <evthr.h>
+#include <evhtp/thread.h>
 #endif
 
-#include <htparse.h>
+#include <evhtp/parser.h>
 
 #ifndef EVHTP_DISABLE_REGEX
 #include <onigposix.h>

@@ -7,8 +7,8 @@
 #include <signal.h>
 #include <inttypes.h>
 
-#include "../evhtp-internal.h"
-#include "../evhtp.h"
+#include "internal.h"
+#include "evhtp/evhtp.h"
 
 static int      num_threads  = 0;
 static char   * baddr        = "127.0.0.1";

@@ -13,8 +13,8 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "evhtp-internal.h"
-#include "evhtp_numtoa.h"
+#include "internal.h"
+#include "numtoa.h"
 
 static inline void
 strreverse(char * begin, char * end) {

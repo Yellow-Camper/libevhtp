@@ -4214,6 +4214,12 @@ evhtp_get_cb(evhtp_t * htp, const char * path)
 {
     evhtp_callback_t * callback;
 
+    evhtp_assert(htp != NULL);
+
+    if (evhtp_unlikely(htp->callbacks == NULL)) {
+        return NULL;
+    }
+
     TAILQ_FOREACH(callback, htp->callbacks, next)
     {
         if (strcmp(callback->val.path, path) == 0)

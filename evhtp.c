@@ -1872,6 +1872,7 @@ htp__create_reply_(evhtp_request_t * request, evhtp_res code)
 {
     struct evbuffer * buf;
     const char      * content_type;
+    const char      * transfer_encoding;
     char              res_buf[2048];
     int               sres;
     size_t            out_len;
@@ -1881,6 +1882,7 @@ htp__create_reply_(evhtp_request_t * request, evhtp_res code)
 
 
     content_type = evhtp_header_find(request->headers_out, "Content-Type");
+    transfer_encoding = evhtp_header_find(request->headers_out, "Transfer-Encoding");
     out_len      = evbuffer_get_length(request->buffer_out);
 
     if ((buf = request->conn->scratch_buf) == NULL)
@@ -1900,7 +1902,7 @@ htp__create_reply_(evhtp_request_t * request, evhtp_res code)
         /* add extra headers (like content-length/type) if not already present */
 
         if (!evhtp_header_find(request->headers_out, "Content-Length") && 
-            strcmp(evhtp_header_find(request->headers_out, "Transfer-Encoding"), "chunked") != 0)
+            (!transfer_encoding || strcmp(transfer_encoding, "chunked") != 0))
         {
             /* convert the buffer_out length to a string and set
              * and add the new Content-Length header.
@@ -1923,7 +1925,7 @@ check_proto:
             }
 
             if (!evhtp_header_find(request->headers_out, "Content-Length") &&
-                strcmp(evhtp_header_find(request->headers_out, "Transfer-Encoding"), "chunked") != 0)
+                (!transfer_encoding || strcmp(transfer_encoding, "chunked") != 0))
             {
                 evhtp_headers_add_header(request->headers_out,
                                          evhtp_header_new("Content-Length", "0", 0, 0));

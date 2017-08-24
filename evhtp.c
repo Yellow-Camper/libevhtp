@@ -1899,7 +1899,8 @@ htp__create_reply_(evhtp_request_t * request, evhtp_res code)
     {
         /* add extra headers (like content-length/type) if not already present */
 
-        if (!evhtp_header_find(request->headers_out, "Content-Length"))
+        if (!evhtp_header_find(request->headers_out, "Content-Length") && 
+            strcmp(evhtp_header_find(request->headers_out, "Transfer-Encoding"), "chunked") != 0)
         {
             /* convert the buffer_out length to a string and set
              * and add the new Content-Length header.
@@ -1921,7 +1922,8 @@ check_proto:
                                          evhtp_header_new("Connection", "close", 0, 0));
             }
 
-            if (!evhtp_header_find(request->headers_out, "Content-Length"))
+            if (!evhtp_header_find(request->headers_out, "Content-Length") &&
+                strcmp(evhtp_header_find(request->headers_out, "Transfer-Encoding"), "chunked") != 0)
             {
                 evhtp_headers_add_header(request->headers_out,
                                          evhtp_header_new("Content-Length", "0", 0, 0));

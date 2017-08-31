@@ -405,7 +405,11 @@ strndup(const char * s, size_t n)
         return htp__strdup_(s);
     }
 
-    ret    = htp__malloc_(n + 1);
+    if ((ret = htp__malloc_(n + 1)) == NULL)
+    {
+        return NULL;
+    }
+
     ret[n] = '\0';
 
     memcpy(ret, s, n);
@@ -985,6 +989,11 @@ htp__authority_new_(evhtp_authority_t ** out)
 {
     evhtp_authority_t * authority;
 
+    if (evhtp_unlikely(out == NULL))
+    {
+        return -1;
+    }
+
     *out = htp__calloc_(1, sizeof(*authority));
 
     return (*out != NULL) ? 0 : -1;
@@ -1114,7 +1123,7 @@ htp__request_new_(evhtp_connection_t * c)
     evhtp_request_t * req;
     uint8_t           error;
 
-    if (evhtp_unlikely(!(req = htp__calloc_(sizeof(evhtp_request_t), 1))))
+    if (evhtp_unlikely(!(req = htp__calloc_(sizeof(*req), 1))))
     {
         return NULL;
     }
@@ -1541,27 +1550,44 @@ htp__request_parse_hostname_(htparser * p, const char * data, size_t len)
 static int
 htp__require_uri_(evhtp_connection_t * c)
 {
-    if (c != NULL && c->request != NULL && c->request->uri == NULL)
+    if (c != NULL && c->request != NULL)
     {
-        evhtp_assert(htp__uri_new_(&c->request->uri) == 0);
+        if (c->request->uri == NULL)
+        {
+            return htp__uri_new_(&c->request->uri);
+        }
+
+        return 0;
     }
 
-    return 0;
+    return -1;
 }
 
 static int
 htp__request_parse_host_(htparser * p, const char * data, size_t len)
 {
-    evhtp_connection_t * c = htparser_get_userdata(p);
+    evhtp_connection_t * c;
     evhtp_authority_t  * authority;
 
+    if (evhtp_unlikely(p == NULL))
+    {
+        return -1;
+    }
+
+    c = htparser_get_userdata(p);
+
+    /* all null checks are done in require_uri_,
+     * no need to check twice
+     */
     if (htp__require_uri_(c) == -1)
     {
         return -1;
     }
 
+
     authority           = c->request->uri->authority;
     authority->hostname = htp__malloc_(len + 1);
+    evhtp_alloc_assert(authority->hostname);
 
     if (authority->hostname == NULL)
     {
@@ -1832,6 +1858,8 @@ htp__request_parse_fini_(htparser * p)
 
     /* check to see if we should use the body of the request as the query
      * arguments.
+     *
+     * htp__should_parse_query_body_ does all the proper null checks.
      */
     if (htp__should_parse_query_body_(c->request) == 1)
     {
@@ -3919,10 +3947,12 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
     switch (type) {
         case evhtp_callback_type_hash:
             hcb->val.path  = htp__strdup_(path);
+            evhtp_alloc_assert(hcb->val.path);
             break;
 #ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             hcb->val.regex = htp__malloc_(sizeof(regex_t));
+            evhtp_alloc_assert(hcb->val.regex);
 
             if (regcomp(hcb->val.regex, (char *)path, REG_EXTENDED) != 0)
             {
@@ -3935,6 +3965,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
 #endif
         case evhtp_callback_type_glob:
             hcb->val.glob = htp__strdup_(path);
+            evhtp_alloc_assert(hcb->val.glob);
             break;
         default:
             evhtp_safe_free(hcb, htp__free_);
@@ -3943,7 +3974,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
     }     /* switch */
 
     return hcb;
-}
+} /* evhtp_callback_new */
 
 void
 evhtp_callback_free(evhtp_callback_t * callback)

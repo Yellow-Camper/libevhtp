@@ -137,9 +137,17 @@ htp_log_connection(evhtp_connection_t * c)
          (var) = (tvar))
 #endif
 
-/* r_c == request->conn. Just little things to make life easier */
-#define rc_scratch conn->scratch_buf
-#define rc_parser  conn->parser
+/* rc == request->conn. Just little things to make life easier */
+#define rc_scratch  conn->scratch_buf
+#define rc_parser   conn->parser
+
+/* ch_ == conn->hooks->on_... */
+#define ch_fini_arg hooks->on_connection_fini_arg
+#define ch_fini     hooks->on_connection_fini
+
+/* rh_ == request->hooks->on_ */
+#define rh_err      hooks->on_error
+#define rh_err_arg  hooks->on_error_arg
 
 #ifndef EVHTP_DISABLE_MEMFUNCTIONS
 
@@ -605,10 +613,9 @@ htp__hook_connection_fini_(evhtp_connection_t * connection)
         return 500;
     }
 
-    if (connection->hooks != NULL && connection->hooks->on_connection_fini != NULL)
+    if (connection->hooks != NULL && connection->ch_fini != NULL)
     {
-        return (connection->hooks->on_connection_fini)(connection,
-                                                       connection->hooks->on_connection_fini_arg);
+        return (connection->ch_fini)(connection, connection->ch_fini_arg);
     }
 
     return EVHTP_RES_OK;
@@ -623,10 +630,9 @@ htp__hook_connection_fini_(evhtp_connection_t * connection)
 static inline void
 htp__hook_error_(evhtp_request_t * request, evhtp_error_flags errtype)
 {
-    if (request && request->hooks && request->hooks->on_error)
+    if (request && request->hooks && request->rh_err)
     {
-        (*request->hooks->on_error)(request, errtype,
-                                    request->hooks->on_error_arg);
+        (*request->rh_err)(request, errtype, request->rh_err_arg);
     }
 }
 

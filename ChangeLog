@@ -1,4 +1,17 @@
-v1.3.12-pre3
+v1.2.12
+ o remove evhtp_heap, never used (d132721 Nathan French)
+ o remove evhtp_json, never used (aec4b3c Nathan French)
+ o [Issue#20] Include pathing (80a69cc Nathan French)
+ o Fix deprecated usage (f4c42c7 Roman Gershman)
+ o Create issue_template.md (8d1a95f Nathan French)
+ o [Issue#25] Return NULL if callbacks == NULL for get_cb (cfcdba4 Nathan French)
+ o adding more null checks. I wish __attr__(nonull) was portable (9b552b7 Nathan French)
+ o adding some struct accessor defines to make life easier (613c5bf Nathan French)
+ o I think I worked out most of the potential derefs (acb42cf Nathan French)
+ o Fix potential null deref in htp__strndup_ (60b85ca Nathan French)
+ o Fix dead assignments in parser.c (e0a48e1 Nathan French)
+ o Eat our own dogfood (use_thread_wexit()) (ea37928 Nathan French)
+ o No use for strlen() in a loop (6833080 Nathan French)
  o use PROJECT_BINARY_DIR for sys/ compat headers (012341c Nathan French)
  o return int for htp__path_new_ (bf59eb1 Nathan French)
  o more return normalization (91008a6 Nathan French)
@@ -8,15 +21,11 @@ v1.3.12-pre3
  o for some reason, htparser_init was being called manually with type_request?? (a153e5f Nathan French)
  o Add htp__strndup_ memfn wrapper (763168c Nathan French)
  o add a callback member in evhtp_ssl_cfg_t for customized decrypt privfile. fixes #16 (b3a4d42 h00360646)
-
-v1.2.12-pre2
  o Internalize some structs / deprecate evhtp_set_hook() (50ab327 Nathan French)
  o remove cruft (1b1a037 Nathan French)
  o add include directory for compat/sys headers (948c547 Nathan French)
  o export flag functions (3467cbb Nathan French)
  o formatting (4ec8dd3 Nathan French)
-
-v1.2.12-pre1
  o (evhtp_send_reply): Grab reference to bufferevent during write. (a976a2f Marcus Sundberg)
  o add thread exit callback for cleaning (0c7d9c4 jgli)
  o fix memory leak (a6b00cc jgli)
@@ -214,7 +223,7 @@ v1.2.9
 
 v1.2.8
  o There's no libdl on FreeBSD. (a683a1f Adrian Chadd)
- o FreeBSD handles the POSIX_C_SOURCE definition very strictly - strncmp() and a lot of other stuff isn't defined in the 2001 standards.  
+ o FreeBSD handles the POSIX_C_SOURCE definition very strictly - strncmp() and a lot of other stuff isn't defined in the 2001 standards.
    Thus, the functions aren't declared when you include the library headers. (0354a67 Adrian Chadd)
 
 v1.2.7

@@ -115,7 +115,7 @@ main(int argc, char ** argv) {
 #endif
 #endif
 
-    evhtp_use_threads(evhtp, init_thread_cb, 8, NULL);
+    evhtp_use_threads_wexit(evhtp, init_thread_cb, NULL, 8, NULL);
 #ifndef WIN32
     ev_sigterm = evsignal_new(evbase, SIGTERM, sigterm_cb, evbase);
     evsignal_add(ev_sigterm, NULL);

@@ -3,7 +3,7 @@ project(libevhtp)
 
 set(PROJECT_MAJOR_VERSION 1)
 set(PROJECT_MINOR_VERSION 2)
-set(PROJECT_PATCH_VERSION 11)
+set(PROJECT_PATCH_VERSION 12)
 set(PROJECT_VERSION      ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 
 set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -DPROJECT_VERSION=${PROJECT_VERSION} -Wall")
@@ -237,7 +237,8 @@ endif()
 include_directories(
 	${CMAKE_CURRENT_BINARY_DIR}
 	${CMAKE_CURRENT_BINARY_DIR}/compat
-	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_BINARY_DIR}/include
 	${ONIG_INCLUDE_DIR}
 	${OPENSSL_INCLUDE_DIR}
 	${LIBEVENT_INCLUDE_DIR}
@@ -259,7 +260,10 @@ if (NOT ${LIBEVENT_OPENSSL_FOUND})
 	set (EVHTP_DISABLE_SSL ON)
 endif(NOT ${LIBEVENT_OPENSSL_FOUND})
 
-set(LIBEVHTP_SOURCES evhtp.c evhtp_numtoa.c htparse.c)
+set (LIBEVHTP_SOURCES
+    evhtp.c
+    numtoa.c
+    parser.c)
 
 if (EVHTP_USE_JEMALLOC)
 		set(LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} jemalloc)
@@ -272,24 +276,24 @@ endif()
 
 if (NOT EVHTP_DISABLE_EVTHR)
 	set (LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} pthread)
-	set (LIBEVHTP_SOURCES ${LIBEVHTP_SOURCES} evthr.c)
-endif(NOT EVHTP_DISABLE_EVTHR)
+	set (LIBEVHTP_SOURCES       ${LIBEVHTP_SOURCES}       thread.c)
+endif()
 
-IF (WIN32)
-	add_definitions(-DWIN32 -march=i486)
-	find_library (LIB_WS32 ws2_32)
-	set (SYS_LIBS ${SYS_LIBS} ${LIB_WS32})
-ELSE ()
+if (WIN32)
+	add_definitions (-DWIN32 -march=i486)
+	find_library    (LIB_WS32 ws2_32)
+	set             (SYS_LIBS ${SYS_LIBS} ${LIB_WS32})
+else ()
 	if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
 		find_library (LIB_DL dl)
-		set (SYS_LIBS ${LIB_DL})
+		set          (SYS_LIBS ${LIB_DL})
 	endif()
 
 	if (NOT APPLE)
 		find_library (LIB_RT rt)
-		set (SYS_LIBS ${SYS_LIBS} ${LIB_RT})
+		set          (SYS_LIBS ${SYS_LIBS} ${LIB_RT})
 	endif()
-ENDIF (WIN32)
+endif ()
 
 if (EVHTP_BUILD_SHARED)
 	set (EVHTP_LIBTYPE SHARED)
@@ -298,11 +302,15 @@ else()
 endif()
 
 configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/evhtp-config.h.in
-	${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h)
+	${CMAKE_CURRENT_SOURCE_DIR}/include/evhtp/config.h.in
+	${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h)
 
-add_library(evhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCES} ${ONIG_SOURCES})
-target_link_libraries(evhtp ${LIBEVHTP_EXTERNAL_LIBS})
+add_library(evhtp ${EVHTP_LIBTYPE}
+    ${LIBEVHTP_SOURCES}
+    ${ONIG_SOURCES})
+
+target_link_libraries(evhtp
+    ${LIBEVHTP_EXTERNAL_LIBS})
 
 if (EVHTP_BUILD_SHARED)
 		set_target_properties(evhtp PROPERTIES SOVERSION "${PROJECT_VERSION}")
@@ -319,12 +327,33 @@ if(NOT INCLUDE_INSTALL_DIR)
 endif()
 
 install (TARGETS evhtp DESTINATION ${LIB_INSTALL_DIR})
-install (FILES evhtp.h DESTINATION ${INCLUDE_INSTALL_DIR}/evhtp)
-install (FILES htparse.h DESTINATION ${INCLUDE_INSTALL_DIR}/evhtp)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/evhtp-config.h DESTINATION ${INCLUDE_INSTALL_DIR}/evhtp)
+
+install (
+    FILES
+        ${PROJECT_SOURCE_DIR}/include/evhtp/evhtp.h
+        ${PROJECT_SOURCE_DIR}/include/evhtp/parser.h
+        ${PROJECT_SOURCE_DIR}/include/evhtp/thread.h
+    DESTINATION
+        ${INCLUDE_INSTALL_DIR}/evhtp)
+
+install (
+    FILES
+        ${PROJECT_SOURCE_DIR}/include/evhtp.h
+    DESTINATION
+        ${INCLUDE_INSTALL_DIR})
+
+install (
+    FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h
+    DESTINATION
+        ${INCLUDE_INSTALL_DIR}/evhtp)
 
 if (NOT EVHTP_DISABLE_EVTHR)
-	install (FILES evthr.h DESTINATION ${INCLUDE_INSTALL_DIR}/evhtp)
+    install (
+        FILES
+            ${PROJECT_SOURCE_DIR}/include/evhtp/thread.h
+        DESTINATION
+            ${INCLUDE_INSTALL_DIR}/evhtp)
 endif()
 
 if (NOT EVHTP_DISABLE_REGEX)
@@ -421,7 +450,7 @@ if(DPKG_PROGRAM)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
   set(CPACK_PACKAGE_FILE_NAME
-"${CPACK_PACKAGE_NAME_LOWERCASE}_${PROJECT_VERSION}-${PROJECT_VERSION_REVISION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")  
+"${CPACK_PACKAGE_NAME_LOWERCASE}_${PROJECT_VERSION}-${PROJECT_VERSION_REVISION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
 
 else(DPKG_PROGRAM)
   set(CPACK_PACKAGE_FILE_NAME

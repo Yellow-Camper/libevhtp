@@ -8,8 +8,8 @@
 #include <ctype.h>
 #include <unistd.h>
 
-#include "htparse.h"
-#include "evhtp-internal.h"
+#include "evhtp/parser.h"
+#include "internal.h"
 
 #ifdef PARSER_DEBUG
 #define __QUOTE(x)                  # x
@@ -970,8 +970,6 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 }
                 break;
             case s_port:
-                res = 0;
-
                 if (ch >= '0' && ch <= '9') {
                     p->buf[p->buf_idx++] = ch;
                     p->buf[p->buf_idx]   = '\0';
@@ -1607,7 +1605,6 @@ hdrline_start:
                 break;
             case s_hdrline_hdr_val:
                 err = 0;
-                res = 0;
 
                 do {
                     htparse_log_debug("[%p] s_hdrline_hdr_val", p);
@@ -1812,11 +1809,8 @@ hdrline_start:
             case s_hdrline_almost_done:
                 htparse_log_debug("[%p] s_hdrline_almost_done", p);
 
-                res = 0;
-
                 switch (ch) {
                     case LF:
-                        res = 0;
                         res = hook_on_hdrs_complete_run(p, hooks);
 
                         if (res != 0) {
@@ -1825,7 +1819,6 @@ hdrline_start:
                         }
 
                         p->buf_idx = 0;
-                        htparse_log_debug("[%p] HERE", p);
 
                         if (p->flags & parser_flag_trailing) {
                             res      = hook_on_msg_complete_run(p, hooks);
@@ -1866,7 +1859,6 @@ hdrline_start:
                 if (p->flags & parser_flag_trailing) {
                     res      = hook_on_msg_complete_run(p, hooks);
                     p->state = s_start;
-                    break;
                 } else if (p->flags & parser_flag_chunked) {
                     p->state = s_chunk_size_start;
                     i--;
@@ -1877,6 +1869,7 @@ hdrline_start:
                     res      = hook_on_msg_complete_run(p, hooks);
                     p->state = s_start;
                 }
+
                 if (res) {
                     p->error = htparse_error_user;
                     return i + 1;
@@ -1912,8 +1905,6 @@ hdrline_start:
                 break;
 
             case s_chunk_size_almost_done:
-                res = 0;
-
                 if (ch != LF) {
                     p->error = htparse_error_inval_chunk_sz;
                     return i + 1;

@@ -1,14 +1,14 @@
-#include <evhtp-config.h>
+#include <evhtp/config.h>
 
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
 
 /** @file */
 #ifndef EVHTP_DISABLE_EVTHR
-#include <evthr.h>
+#include <evhtp/thread.h>
 #endif
 
-#include <htparse.h>
+#include <evhtp/parser.h>
 
 #ifndef EVHTP_DISABLE_REGEX
 #include <onigposix.h>
@@ -202,7 +202,7 @@ typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connect
 typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #endif
 
-#define EVHTP_VERSION           "1.2.12-pre3"
+#define EVHTP_VERSION           "1.2.12"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
 #define EVHTP_VERSION_PATCH     12
@@ -622,7 +622,7 @@ EVHTP_EXPORT int evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
  *
  * @param htp
  */
-EVHTP_EXPORT void evhtp_disable_100_continue(evhtp_t * htp);
+EVHTP_EXPORT void evhtp_disable_100_continue(evhtp_t * htp)
 DEPRECATED("evhtp_disable_100 will soon be deprecated, use htp->flags instead");
 
 /**
@@ -781,7 +781,7 @@ EVHTP_EXPORT evhtp_callback_t * evhtp_get_cb(evhtp_t * htp, const char * needle)
  *
  * @return 0 on success, -1 on error (if hooks is NULL, it is allocated)
  */
-EVHTP_EXPORT int evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg);
+EVHTP_EXPORT int evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg)
 DEPRECATED("use evhtp_[connection|request|callback]_set_hook() instead of set_hook directly");
 
 EVHTP_EXPORT int evhtp_connection_set_hook(evhtp_connection_t * c, evhtp_hook_type type, evhtp_hook cb, void * arg);

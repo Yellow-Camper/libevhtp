@@ -44,7 +44,7 @@ main(int argc, char ** argv) {
     evhtp_set_cb(htp, "/1/ping.json", testcb, "two");
     evhtp_set_cb(htp, "/issue161", issue161cb, NULL);
 #ifndef EVHTP_DISABLE_EVTHR
-    evhtp_use_threads(htp, NULL, 8, NULL);
+    evhtp_use_threads_wexit(htp, NULL, NULL, 8, NULL);
 #endif
     evhtp_bind_socket(htp, "0.0.0.0", 8081, 2048);
 

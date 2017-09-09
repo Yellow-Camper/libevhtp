@@ -766,6 +766,7 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
                     unsigned int      * start_offset,
                     unsigned int      * end_offset)
 {
+    size_t path_len;
 #ifndef EVHTP_DISABLE_REGEX
     regmatch_t pmatch[28];
 #endif
@@ -776,19 +777,16 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
         return NULL;
     }
 
+    path_len = strlen(path);
+
     TAILQ_FOREACH(callback, cbs, next)
     {
         switch (callback->type) {
             case evhtp_callback_type_hash:
-                if (callback->val.path[1] != path[1])
-                {
-                    continue;
-                }
-
-                if (strcmp(callback->val.path, path) == 0)
+                if (strncmp(callback->val.path, path, path_len) == 0)
                 {
                     *start_offset = 0;
-                    *end_offset   = (unsigned int)strlen(path);
+                    *end_offset   = path_len;
 
                     return callback;
                 }
@@ -810,7 +808,6 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
 #endif
             case evhtp_callback_type_glob:
             {
-                size_t path_len = strlen(path);
                 size_t glob_len = strlen(callback->val.glob);
 
                 if (htp__glob_match_(callback->val.glob,
@@ -819,7 +816,7 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
                                      path_len) == 1)
                 {
                     *start_offset = 0;
-                    *end_offset   = (unsigned int)path_len;
+                    *end_offset   = path_len;
 
                     return callback;
                 }

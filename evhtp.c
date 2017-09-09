@@ -227,6 +227,8 @@ htp__strndup_(const char * str, size_t len)
         if ((p = malloc_(len + 1)) != NULL)
         {
             memcpy(p, str, len + 1);
+        } else {
+            return NULL;
         }
 
         p[len] = '\0';

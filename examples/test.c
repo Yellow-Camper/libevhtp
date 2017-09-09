@@ -597,7 +597,7 @@ main(int argc, char ** argv) {
     evhtp_callback_set_hook(cb_6, evhtp_hook_on_headers, test_regex_hdrs_cb, NULL);
 #endif
 
-    evhtp_callback_set_hook(cb_10, evhtp_hook_on_headers, set_max_body, NULL); 
+    evhtp_callback_set_hook(cb_10, evhtp_hook_on_headers, set_max_body, NULL);
 
     /* set a default request handler */
     evhtp_set_gencb(htp, test_default_cb, "foobarbaz");
@@ -648,7 +648,7 @@ main(int argc, char ** argv) {
 
 #ifndef EVHTP_DISABLE_EVTHR
     if (use_threads) {
-        evhtp_use_threads(htp, NULL, num_threads, NULL);
+        evhtp_use_threads_wexit(htp, NULL, NULL, num_threads, NULL);
     }
 #endif
 

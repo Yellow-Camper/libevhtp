@@ -112,7 +112,7 @@ main(int argc, char ** argv)
 #ifndef EVHTP_DISABLE_EVTHR
         if (num_threads > 0)
         {
-            evhtp_assert(evhtp_use_threads(htp, NULL, num_threads, NULL) != -1);
+            evhtp_assert(evhtp_use_threads_wexit(htp, NULL, NULL, num_threads, NULL) != -1);
         }
 #endif
 

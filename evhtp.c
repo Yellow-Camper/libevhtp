@@ -2935,7 +2935,7 @@ evhtp_kv_new(const char * key, const char * val,
     {
         kv->vlen = strlen(val);
 
-        if (val_alloc == 0)
+        if (val_alloc == 1)
         {
             char * s = htp__malloc_(kv->vlen + 1);
 

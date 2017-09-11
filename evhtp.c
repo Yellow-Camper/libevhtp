@@ -767,6 +767,7 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
                     unsigned int      * end_offset)
 {
     size_t path_len;
+
 #ifndef EVHTP_DISABLE_REGEX
     regmatch_t pmatch[28];
 #endif
@@ -3691,6 +3692,11 @@ evhtp_send_reply_chunk_end(evhtp_request_t * request)
 void
 evhtp_unbind_socket(evhtp_t * htp)
 {
+    if (htp == NULL || htp->server == NULL)
+    {
+        return;
+    }
+
     evhtp_safe_free(htp->server, evconnlistener_free);
 }
 

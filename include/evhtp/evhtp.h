@@ -31,26 +31,6 @@
 extern "C" {
 #endif
 
-#ifdef EVHTP_DEBUG
-#define __QUOTE(x)              # x
-#define  _QUOTE(x)              __QUOTE(x)
-#define htp_debug_strlen(x)     strlen(x)
-
-#define htp_log_debug(fmt, ...) do {                                                               \
-        time_t      t  = time(NULL);                                                               \
-        struct tm * dm = localtime(&t);                                                            \
-                                                                                                   \
-        fprintf(stdout, "[%02d:%02d:%02d] evhtp.c:[" _QUOTE(__LINE__) "]\t                %-26s: " \
-                fmt "\n", dm->tm_hour, dm->tm_min, dm->tm_sec, __func__, ## __VA_ARGS__);          \
-        fflush(stdout);                                                                            \
-} while (0)
-
-#else
-#define htp_debug_strlen(x)     0
-#define htp_log_debug(fmt, ...) do { \
-} while (0)
-#endif
-
 struct evhtp_callback_s;
 struct evhtp_callbacks_s;
 

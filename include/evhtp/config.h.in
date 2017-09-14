@@ -32,6 +32,7 @@ extern "C" {
 #undef EVHTP_DISABLE_REGEX
 #undef EVHTP_DISABLE_SSL
 #undef EVHTP_DISABLE_EVTHR
+#undef EVHTP_DEBUG
 
 #cmakedefine EVHTP_DISABLE_EVTHR
 #cmakedefine EVHTP_DISABLE_REGEX
@@ -40,6 +41,7 @@ extern "C" {
 #cmakedefine EVHTP_USE_TCMALLOC
 #cmakedefine EVHTP_USE_JEMALLOC
 #cmakedefine EVHTP_USE_TCMALLOC
+#cmakedefine EVHTP_DEBUG
 
 #ifdef EVHTP_USE_TCMALLOC
 #include <google/tcmalloc.h>

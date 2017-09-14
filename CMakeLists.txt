@@ -29,6 +29,8 @@ OPTION(EVHTP_BUILD_SHARED      "Build shared library too" OFF)
 OPTION(EVHTP_USE_JEMALLOC      "Enable jemalloc allocator" OFF)
 OPTION(EVHTP_USE_TCMALLOC      "Enable tcmalloc allocator" OFF)
 
+OPTION(EVHTP_DEBUG "Enable verbose debug logging" OFF)
+
 # fun color stuff
 if(NOT WIN32)
     string(ASCII 27 Esc)

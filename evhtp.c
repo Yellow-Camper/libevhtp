@@ -26,6 +26,8 @@
 #include "numtoa.h"
 #include "evhtp/evhtp.h"
 
+#include "log.h"
+
 /**
  * @brief structure containing a single callback and configuration
  *
@@ -59,17 +61,6 @@ struct evhtp_callback_s {
 };
 
 TAILQ_HEAD(evhtp_callbacks_s, evhtp_callback_s);
-
-
-#ifdef EVHTP_DEBUG
-static void
-htp_log_connection(evhtp_connection_t * c)
-{
-    htp_log_debug("connection = %p\n", c);
-    htp_log_debug("request = %p\n", c->request);
-}
-
-#endif
 
 #define SET_BIT(VAR, FLAG)                           VAR |= FLAG
 #define UNSET_BIT(VAR, FLAG)                         VAR &= ~FLAG
@@ -2106,7 +2097,7 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
 
     nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
 
-    htp_log_debug("nread = %zu", nread);
+    log_debug("nread = %zu", nread);
 
     if (!(c->flags & EVHTP_CONN_FLAG_OWNER))
     {
@@ -2398,7 +2389,7 @@ htp__connection_accept_(struct event_base * evbase, evhtp_connection_t * connect
                                              connection->sock,
                                              connection->htp->bev_flags);
 
-    htp_log_debug("enter sock=%d\n", connection->sock);
+    log_debug("enter sock=%d\n", connection->sock);
 
 #ifndef EVHTP_DISABLE_SSL
 end:
@@ -2564,7 +2555,7 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
         return;
     }
 
-    htp_log_debug("fd = %d, conn = %p", fd, connection);
+    log_debug("fd = %d, conn = %p", fd, connection);
 
     connection->saddr = htp__malloc_(sl);
     evhtp_alloc_assert(connection->saddr);

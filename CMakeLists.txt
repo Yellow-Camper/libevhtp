@@ -7,12 +7,9 @@ set(PROJECT_PATCH_VERSION 12)
 set(PROJECT_VERSION      ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 
 set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -DPROJECT_VERSION=${PROJECT_VERSION} -Wall")
-set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG} -O0 -ggdb3 -fsanitize=address -fsanitize=leak -fstack-protector-strong")
+set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG} -O0 -ggdb3")
 
 SET(CMAKE_BUILD_TYPE Release CACHE STRING "default to Release")
-
-# will use later for htexpress API
-# add_executable(lambda-pp lambda-pp.c)
 
 # -DEVHTP_DISABLE_SSL:STRING=ON
 OPTION(EVHTP_DISABLE_SSL       "Disable ssl support"      OFF)
@@ -86,6 +83,24 @@ TEST_BIG_ENDIAN(HOST_BIG_ENDIAN)
 
 check_c_compiler_flag(-fvisibility=hidden EVHTP_HAS_VISIBILITY_HIDDEN)
 check_c_compiler_flag(-std=c99 EVHTP_HAS_C99)
+check_c_compiler_flag(-fsanitize=address EVHTP_HAS_SANITIZE_ADDRESS)
+check_c_compiler_flag(-fsanitize=leak EVHTP_HAS_SANITIZE_LEAK)
+
+# NOTE in as of ubuntu 14, this is enabled by default, so if you see it fail
+# the check, don't freak out.
+check_c_compiler_flag(-fstack-protector-strong EVHTP_HAS_STACK_PROTECTOR)
+
+if (EVHTP_HAS_SANITIZE_ADDRESS)
+    set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fsanitize=address")
+endif()
+
+if (EVHTP_HAS_SANITIZE_LEAK)
+    set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fsanitize=leak")
+endif()
+
+if (EVHTP_HAS_STACK_PROTECTOR)
+    set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fstack-protector-strong")
+endif()
 
 if (EVHTP_HAS_C99)
 	add_definitions(-DEVHTP_HAS_C99)

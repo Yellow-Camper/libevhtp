@@ -7,3 +7,5 @@
 docs/
 html/
 build/*
+cmake-build-debug
+.idea

@@ -7,7 +7,7 @@ set(PROJECT_PATCH_VERSION 12)
 set(PROJECT_VERSION      ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
 
 set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -DPROJECT_VERSION=${PROJECT_VERSION} -Wall")
-set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG} -O0 -ggdb3")
+set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG} -O0 -ggdb3 -fsanitize=address -fsanitize=leak -fstack-protector-strong")
 
 SET(CMAKE_BUILD_TYPE Release CACHE STRING "default to Release")
 

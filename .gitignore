@@ -7,3 +7,7 @@
 docs/
 html/
 build/*
+!build/.gitkeep
+cmake-build-debug
+.idea
+

@@ -2105,6 +2105,9 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
          * someone has taken the ownership of this connection, we still need to
          * drain the input buffer that had been read up to this point.
          */
+
+        log_debug("EVHTP_CONN_FLAG_OWNER set, removing contexts");
+
         evbuffer_drain(bufferevent_get_input(bev), nread);
         evhtp_connection_free(c);
 
@@ -2128,13 +2131,20 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
 
     if (c->request && c->request->status == EVHTP_RES_PAUSE)
     {
+        log_debug("Pausing connection");
+
         evhtp_request_pause(c->request);
     } else if (htparser_get_error(c->parser) != htparse_error_none)
     {
+        log_debug("error %d, freeing connection",
+                htparser_get_error(c->parser));
+
         evhtp_connection_free(c);
     } else if (nread < avail)
     {
         /* we still have more data to read (piped request probably) */
+        log_debug("Reading more data via resumption");
+
         evhtp_connection_resume(c);
     }
 }     /* htp__connection_readcb_ */
@@ -5137,6 +5147,7 @@ evhtp_connection_new_dns(struct event_base * evbase, struct evdns_base * dns_bas
     evhtp_connection_t * conn;
     int                  err;
 
+    log_debug("Enter");
     evhtp_assert(evbase != NULL);
 
     if (!(conn = htp__connection_new_(NULL, -1, evhtp_type_client)))

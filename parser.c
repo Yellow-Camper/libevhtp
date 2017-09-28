@@ -123,6 +123,65 @@ struct htparser {
     char buf[PARSER_STACK_MAX];
 };
 
+#ifdef EVHTP_DEBUG
+static void
+log_htparser__s_(struct htparser * p) {
+    log_debug(
+            "struct htparser {\n"
+            "    htpparse_error = %d\n"
+            "    parser_state   = %d\n"
+            "    parser_flags   = %d\n"
+            "    eval_hdr_val   = %d\n"
+            "    htp_type       = %d\n"
+            "    htp_scheme     = %d\n"
+            "    htp_method     = %d\n"
+            "    multipart      = %c\n"
+            "    major          = %c\n"
+            "    minor          = %c\n"
+            "    content_len    = %zu\n"
+            "    orig_clen      = %zu\n"
+            "    bytes_read     = %zu\n"
+            "    total_read     = %zu\n"
+            "    status         = %d\n"
+            "    status_count   = %d\n"
+            "    scheme_offset  = %s\n"
+            "    host_offset    = %s\n"
+            "    port_offset    = %s\n"
+            "    path_offset    = %s\n"
+            "    args_offset    = %s\n"
+            "    userdata       = %p\n"
+            "    buf_idx        = %zu\n"
+            "    buf            = %s\n"
+            "};",
+        p->error,
+        p->state,
+        p->flags,
+        p->heval,
+        p->type,
+        p->scheme,
+        p->method,
+        p->multipart,
+        p->major,
+        p->minor,
+        p->content_len,
+        p->orig_content_len,
+        p->bytes_read,
+        p->total_bytes_read,
+        p->status,
+        p->status_count,
+        p->scheme_offset,
+        p->host_offset,
+        p->port_offset,
+        p->path_offset,
+        p->args_offset,
+        p->userdata,
+        p->buf_idx,
+        p->buf);
+}
+#else
+#define log_htparser__s_(p)
+#endif
+
 static uint32_t usual[] = {
     0xffffdbfe,
     0x7fff37d6,
@@ -624,6 +683,10 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 if ((ch < 'A' || ch > 'Z') && ch != '_') {
                     p->error = htparse_error_inval_reqline;
+
+                    log_debug("s_start invalid fist char '%c'", ch);
+                    log_htparser__s_(p);
+
                     return i + 1;
                 }
 
@@ -655,6 +718,9 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 } else if (p->type == htp_type_response && ch == 'H') {
                     p->state = s_http_H;
                 } else {
+                    log_debug("not type of request or response?");
+                    log_htparser__s_(p);
+
                     p->error = htparse_error_inval_reqline;
                     return i + 1;
                 }
@@ -722,6 +788,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         default:
                             if (!is_host_char(ch)) {
                                 p->error = htparse_error_inval_reqline;
+                                log_htparser__s_(p);
+
                                 return i + 1;
                             }
                             p->host_offset       = &p->buf[p->buf_idx];
@@ -757,6 +825,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         }
 
                         p->error = htparse_error_inval_reqline;
+                        log_htparser__s_(p);
+
                         return i + 1;
                 } /* switch */
 
@@ -986,6 +1056,9 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         break;
                     default:
                         p->error = htparse_error_inval_reqline;
+                        log_debug("[s_port]  inval_reqline");
+                        log_htparser__s_(p);
+
                         return i + 1;
                 } /* switch */
 
@@ -1337,6 +1410,9 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     case LF:
                         /* LF without a CR? error.... */
                         p->error = htparse_error_inval_reqline;
+                        log_debug("[s_minor_digit] LF without CR!");
+                        log_htparser__s_(p);
+
                         return i + 1;
                     default:
                         if (ch < '0' || ch > '9') {
@@ -1439,6 +1515,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         break;
                     default:
                         p->error = htparse_error_inval_reqline;
+                        log_htparser__s_(p);
+
                         return i + 1;
                 } /* switch */
                 break;

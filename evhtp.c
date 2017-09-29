@@ -2137,7 +2137,7 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
     } else if (htparser_get_error(c->parser) != htparse_error_none)
     {
         log_debug("error %d, freeing connection",
-                htparser_get_error(c->parser));
+                  htparser_get_error(c->parser));
 
         evhtp_connection_free(c);
     } else if (nread < avail)
@@ -2200,6 +2200,8 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
 
     if (c->request->flags & EVHTP_REQ_FLAG_KEEPALIVE)
     {
+        htp_type type;
+
         htp__request_free_(c->request);
 
         HTP_FLAG_ON(c, EVHTP_CONN_FLAG_KEEPALIVE);
@@ -2219,7 +2221,19 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
             c->htp = orig_htp;
         }
 
-        htparser_init(c->parser, c->type);
+        switch (c->type) {
+            case evhtp_type_client:
+                type = htp_type_response;
+                break;
+            case evhtp_type_server:
+                type = htp_type_request;
+                break;
+            default:
+                evhtp_connection_free(c);
+                return;
+        }
+
+        htparser_init(c->parser, type);
         htparser_set_userdata(c->parser, c);
 
         return;

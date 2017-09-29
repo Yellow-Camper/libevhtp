@@ -663,7 +663,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
         ch = data[i];
 
-        log_debug("[%p] data[%d] = %c (%x)", p, i, isprint(ch) ? ch : ' ', ch);
+        log_debug("[%p] data[%zu] = %c (%x)", p, i, isprint(ch) ? ch : ' ', ch);
 
         if (p->buf_idx >= PARSER_STACK_MAX) {
             p->error = htparse_error_too_big;

@@ -242,7 +242,7 @@ _evthr_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args) {
 } /* evthr_new */
 
 evthr_t *
-evhtr_new(evthr_init_cb init_cb, void * args) {
+evthr_new(evthr_init_cb init_cb, void * args) {
     return _evthr_new(init_cb, NULL, args);
 }
 

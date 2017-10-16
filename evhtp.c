@@ -136,6 +136,9 @@ TAILQ_HEAD(evhtp_callbacks_s, evhtp_callback_s);
 #define ch_fini_arg hooks->on_connection_fini_arg
 #define ch_fini     hooks->on_connection_fini
 
+/* cr_ == conn->request */
+#define cr_status   request->status
+
 /* rh_ == request->hooks->on_ */
 #define rh_err      hooks->on_error
 #define rh_err_arg  hooks->on_error_arg
@@ -1253,7 +1256,7 @@ htp__request_parse_args_(htparser * p, const char * data, size_t len)
 
     if (evhtp_unlikely(!uri->query))
     {
-        c->request->status = EVHTP_RES_ERROR;
+        c->cr_status = EVHTP_RES_ERROR;
 
         return -1;
     }
@@ -1272,7 +1275,7 @@ htp__request_parse_headers_start_(htparser * p)
 {
     evhtp_connection_t * c = htparser_get_userdata(p);
 
-    if ((c->request->status = htp__hook_headers_start_(c->request)) != EVHTP_RES_OK)
+    if ((c->cr_status = htp__hook_headers_start_(c->request)) != EVHTP_RES_OK)
     {
         return -1;
     }
@@ -1295,7 +1298,7 @@ htp__request_parse_header_key_(htparser * p, const char * data, size_t len)
 
     if ((hdr = evhtp_header_key_add(c->request->headers_in, key_s, 0)) == NULL)
     {
-        c->request->status = EVHTP_RES_FATAL;
+        c->cr_status = EVHTP_RES_FATAL;
 
         return -1;
     }
@@ -1321,14 +1324,14 @@ htp__request_parse_header_val_(htparser * p, const char * data, size_t len)
     if ((header = evhtp_header_val_add(c->request->headers_in, val_s, 0)) == NULL)
     {
         evhtp_safe_free(val_s, htp__free_);
-        c->request->status = EVHTP_RES_FATAL;
+        c->cr_status = EVHTP_RES_FATAL;
 
         return -1;
     }
 
     header->v_heaped = 1;
 
-    if ((c->request->status = htp__hook_header_(c->request, header)) != EVHTP_RES_OK)
+    if ((c->cr_status = htp__hook_header_(c->request, header)) != EVHTP_RES_OK)
     {
         return -1;
     }
@@ -1349,7 +1352,9 @@ htp__request_find_vhost_(evhtp_t * evhtp, const char * name)
             continue;
         }
 
-        if (htp__glob_match_(evhtp_vhost->server_name, strlen(evhtp_vhost->server_name), name, strlen(name)) == 1)
+        if (htp__glob_match_(evhtp_vhost->server_name,
+                             strlen(evhtp_vhost->server_name), name,
+                             strlen(name)) == 1)
         {
             return evhtp_vhost;
         }
@@ -1361,7 +1366,9 @@ htp__request_find_vhost_(evhtp_t * evhtp, const char * name)
                 continue;
             }
 
-            if (htp__glob_match_(evhtp_alias->alias, strlen(evhtp_alias->alias), name, strlen(name)) == 1)
+            if (htp__glob_match_(evhtp_alias->alias,
+                                 strlen(evhtp_alias->alias), name,
+                                 strlen(name)) == 1)
             {
                 return evhtp_vhost;
             }
@@ -1496,7 +1503,7 @@ htp__request_parse_hostname_(htparser * p, const char * data, size_t len)
 
         host = SSL_get_servername(c->ssl, TLSEXT_NAMETYPE_host_name);
 
-        if ((c->request->status = htp__hook_hostname_(c->request, host)) != EVHTP_RES_OK)
+        if ((c->cr_status = htp__hook_hostname_(c->request, host)) != EVHTP_RES_OK)
         {
             return -1;
         }
@@ -1530,7 +1537,7 @@ htp__request_parse_hostname_(htparser * p, const char * data, size_t len)
     }
     htp__unlock_(evhtp);
 
-    if ((c->request->status = htp__hook_hostname_(c->request, data)) != EVHTP_RES_OK)
+    if ((c->cr_status = htp__hook_hostname_(c->request, data)) != EVHTP_RES_OK)
     {
         return -1;
     }
@@ -1575,14 +1582,13 @@ htp__request_parse_host_(htparser * p, const char * data, size_t len)
         return -1;
     }
 
-
     authority           = c->request->uri->authority;
     authority->hostname = htp__malloc_(len + 1);
     evhtp_alloc_assert(authority->hostname);
 
     if (authority->hostname == NULL)
     {
-        c->request->status = EVHTP_RES_FATAL;
+        c->cr_status = EVHTP_RES_FATAL;
 
         return -1;
     }
@@ -1611,7 +1617,7 @@ htp__request_parse_port_(htparser * p, const char * data, size_t len)
 
     if (endptr - data != len || port > 65535)
     {
-        c->request->status = EVHTP_RES_FATAL;
+        c->cr_status = EVHTP_RES_FATAL;
 
         return -1;
     }
@@ -1639,7 +1645,7 @@ htp__request_parse_path_(htparser * p, const char * data, size_t len)
 
     if (htp__path_new_(&path, data, len) == -1)
     {
-        c->request->status = EVHTP_RES_FATAL;
+        c->cr_status = EVHTP_RES_FATAL;
 
         return -1;
     }
@@ -1654,7 +1660,7 @@ htp__request_parse_path_(htparser * p, const char * data, size_t len)
     }
     htp__unlock_(c->htp);
 
-    if ((c->request->status = htp__hook_path_(c->request, path)) != EVHTP_RES_OK)
+    if ((c->cr_status = htp__hook_path_(c->request, path)) != EVHTP_RES_OK)
     {
         return -1;
     }
@@ -1679,10 +1685,10 @@ htp__request_parse_headers_(htparser * p)
         c->request->flags |= EVHTP_REQ_FLAG_KEEPALIVE;
     }
 
-    c->request->proto  = htp__protocol_(htparser_get_major(p), htparser_get_minor(p));
-    c->request->status = htp__hook_headers_(c->request, c->request->headers_in);
+    c->request->proto = htp__protocol_(htparser_get_major(p), htparser_get_minor(p));
+    c->cr_status      = htp__hook_headers_(c->request, c->request->headers_in);
 
-    if (c->request->status != EVHTP_RES_OK)
+    if (c->cr_status != EVHTP_RES_OK)
     {
         return -1;
     }
@@ -1716,8 +1722,8 @@ htp__request_parse_body_(htparser * p, const char * data, size_t len)
 
     if (c->max_body_size > 0 && c->body_bytes_read + len >= c->max_body_size)
     {
-        c->flags          |= EVHTP_CONN_FLAG_ERROR;
-        c->request->status = EVHTP_RES_DATA_TOO_LONG;
+        c->flags    |= EVHTP_CONN_FLAG_ERROR;
+        c->cr_status = EVHTP_RES_DATA_TOO_LONG;
 
         return -1;
     }
@@ -1729,7 +1735,7 @@ htp__request_parse_body_(htparser * p, const char * data, size_t len)
 
     evbuffer_add(buf, data, len);
 
-    if ((c->request->status = htp__hook_body_(c->request, buf)) != EVHTP_RES_OK)
+    if ((c->cr_status = htp__hook_body_(c->request, buf)) != EVHTP_RES_OK)
     {
         res = -1;
     }
@@ -1751,8 +1757,8 @@ htp__request_parse_chunk_new_(htparser * p)
 {
     evhtp_connection_t * c = htparser_get_userdata(p);
 
-    if ((c->request->status = htp__hook_chunk_new_(c->request,
-                                                   htparser_get_content_length(p))) != EVHTP_RES_OK)
+    if ((c->cr_status = htp__hook_chunk_new_(c->request,
+                                             htparser_get_content_length(p))) != EVHTP_RES_OK)
     {
         return -1;
     }
@@ -1765,7 +1771,7 @@ htp__request_parse_chunk_fini_(htparser * p)
 {
     evhtp_connection_t * c = htparser_get_userdata(p);
 
-    if ((c->request->status = htp__hook_chunk_fini_(c->request)) != EVHTP_RES_OK)
+    if ((c->cr_status = htp__hook_chunk_fini_(c->request)) != EVHTP_RES_OK)
     {
         return -1;
     }
@@ -1778,7 +1784,7 @@ htp__request_parse_chunks_fini_(htparser * p)
 {
     evhtp_connection_t * c = htparser_get_userdata(p);
 
-    if ((c->request->status = htp__hook_chunks_fini_(c->request)) != EVHTP_RES_OK)
+    if ((c->cr_status = htp__hook_chunks_fini_(c->request)) != EVHTP_RES_OK)
     {
         return -1;
     }
@@ -2082,7 +2088,7 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
 
     if (c->request)
     {
-        c->request->status = EVHTP_RES_OK;
+        c->cr_status = EVHTP_RES_OK;
     }
 
     if (c->flags & EVHTP_CONN_FLAG_PAUSED)
@@ -2116,7 +2122,7 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
 
     if (c->request)
     {
-        switch (c->request->status) {
+        switch (c->cr_status) {
             case EVHTP_RES_DATA_TOO_LONG:
                 htp__hook_connection_error_(c, -1);
                 evhtp_connection_free(c);
@@ -2129,7 +2135,7 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
 
     evbuffer_drain(bufferevent_get_input(bev), nread);
 
-    if (c->request && c->request->status == EVHTP_RES_PAUSE)
+    if (c->request && c->cr_status == EVHTP_RES_PAUSE)
     {
         log_debug("Pausing connection");
 
@@ -2332,7 +2338,7 @@ htp__connection_resumecb_(int fd, short events, void * arg)
 
     if (c->request)
     {
-        c->request->status = EVHTP_RES_OK;
+        c->cr_status = EVHTP_RES_OK;
     }
 
     if (c->flags & EVHTP_CONN_FLAG_FREE_CONN)

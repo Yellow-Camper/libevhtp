@@ -11,7 +11,11 @@
 #include <evhtp/parser.h>
 
 #ifndef EVHTP_DISABLE_REGEX
+#ifdef EVHTP_USE_SYS_ONIG
+#include <onigposix.h>
+#else
 #include <evhtp/onigposix.h>
+#endif
 #endif
 
 #include <sys/queue.h>

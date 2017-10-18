@@ -3884,7 +3884,7 @@ int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 {
 #ifndef NO_SYS_UN
-    struct sockaddr_un sun   = { 0 };
+    struct sockaddr_un sockun   = { 0 };
 #endif
     struct sockaddr   * sa;
     struct sockaddr_in6 sin6 = { 0 };
@@ -3905,17 +3905,17 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 #ifndef NO_SYS_UN
         baddr += 5;
 
-        if (strlen(baddr) >= sizeof(sun.sun_path))
+        if (strlen(baddr) >= sizeof(sockun.sun_path))
         {
             return -1;
         }
 
         sin_len        = sizeof(struct sockaddr_un);
-        sun.sun_family = AF_UNIX;
+        sockun.sun_family = AF_UNIX;
 
-        strncpy(sun.sun_path, baddr, strlen(baddr));
+        strncpy(sockun.sun_path, baddr, strlen(baddr));
 
-        sa = (struct sockaddr *)&sun;
+        sa = (struct sockaddr *)&sockun;
 #else
 
         return -1;

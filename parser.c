@@ -125,34 +125,35 @@ struct htparser {
 
 #ifdef EVHTP_DEBUG
 static void
-log_htparser__s_(struct htparser * p) {
+log_htparser__s_(struct htparser * p)
+{
     log_debug(
-            "struct htparser {\n"
-            "    htpparse_error = %d\n"
-            "    parser_state   = %d\n"
-            "    parser_flags   = %d\n"
-            "    eval_hdr_val   = %d\n"
-            "    htp_type       = %d\n"
-            "    htp_scheme     = %d\n"
-            "    htp_method     = %d\n"
-            "    multipart      = %c\n"
-            "    major          = %c\n"
-            "    minor          = %c\n"
-            "    content_len    = %zu\n"
-            "    orig_clen      = %zu\n"
-            "    bytes_read     = %zu\n"
-            "    total_read     = %zu\n"
-            "    status         = %d\n"
-            "    status_count   = %d\n"
-            "    scheme_offset  = %s\n"
-            "    host_offset    = %s\n"
-            "    port_offset    = %s\n"
-            "    path_offset    = %s\n"
-            "    args_offset    = %s\n"
-            "    userdata       = %p\n"
-            "    buf_idx        = %zu\n"
-            "    buf            = %s\n"
-            "};",
+        "struct htparser {\n"
+        "    htpparse_error = %d\n"
+        "    parser_state   = %d\n"
+        "    parser_flags   = %d\n"
+        "    eval_hdr_val   = %d\n"
+        "    htp_type       = %d\n"
+        "    htp_scheme     = %d\n"
+        "    htp_method     = %d\n"
+        "    multipart      = %c\n"
+        "    major          = %c\n"
+        "    minor          = %c\n"
+        "    content_len    = %zu\n"
+        "    orig_clen      = %zu\n"
+        "    bytes_read     = %zu\n"
+        "    total_read     = %zu\n"
+        "    status         = %d\n"
+        "    status_count   = %d\n"
+        "    scheme_offset  = %s\n"
+        "    host_offset    = %s\n"
+        "    port_offset    = %s\n"
+        "    path_offset    = %s\n"
+        "    args_offset    = %s\n"
+        "    userdata       = %p\n"
+        "    buf_idx        = %zu\n"
+        "    buf            = %s\n"
+        "};",
         p->error,
         p->state,
         p->flags,
@@ -177,7 +178,8 @@ log_htparser__s_(struct htparser * p) {
         p->userdata,
         p->buf_idx,
         p->buf);
-}
+} /* log_htparser__s_ */
+
 #else
 #define log_htparser__s_(p)
 #endif
@@ -304,24 +306,28 @@ static const char * method_strmap[] = {
 
 #endif
 
-#define __HTPARSE_GENHOOK(__n)                                                    \
-    static inline int hook_ ## __n ## _run(htparser * p, htparse_hooks * hooks) { \
-        log_debug("enter");                                               \
-        if (hooks && (hooks)->__n) {                                              \
-            return (hooks)->__n(p);                                               \
-        }                                                                         \
-                                                                                  \
-        return 0;                                                                 \
+#define __HTPARSE_GENHOOK(__n)                                                  \
+    static inline int hook_ ## __n ## _run(htparser * p, htparse_hooks * hooks) \
+    {                                                                           \
+        log_debug("enter");                                                     \
+        if (hooks && (hooks)->__n)                                              \
+        {                                                                       \
+            return (hooks)->__n(p);                                             \
+        }                                                                       \
+                                                                                \
+        return 0;                                                               \
     }
 
-#define __HTPARSE_GENDHOOK(__n)                                                                             \
-    static inline int hook_ ## __n ## _run(htparser * p, htparse_hooks * hooks, const char * s, size_t l) { \
-        log_debug("enter");                                                                         \
-        if (hooks && (hooks)->__n) {                                                                        \
-            return (hooks)->__n(p, s, l);                                                                   \
-        }                                                                                                   \
-                                                                                                            \
-        return 0;                                                                                           \
+#define __HTPARSE_GENDHOOK(__n)                                                                           \
+    static inline int hook_ ## __n ## _run(htparser * p, htparse_hooks * hooks, const char * s, size_t l) \
+    {                                                                                                     \
+        log_debug("enter");                                                                               \
+        if (hooks && (hooks)->__n)                                                                        \
+        {                                                                                                 \
+            return (hooks)->__n(p, s, l);                                                                 \
+        }                                                                                                 \
+                                                                                                          \
+        return 0;                                                                                         \
     }
 
 __HTPARSE_GENHOOK(on_msg_begin)
@@ -346,31 +352,37 @@ __HTPARSE_GENDHOOK(hostname)
 
 
 static inline uint64_t
-str_to_uint64(char * str, size_t n, int * err) {
+str_to_uint64(char * str, size_t n, int * err)
+{
     uint64_t value;
 
     /* Trim whitespace after value. */
-    while (n && isblank(str[n - 1])) {
+    while (n && isblank(str[n - 1]))
+    {
         n--;
     }
 
-    if (n > 20) {
+    if (n > 20)
+    {
         /* 18446744073709551615 is 20 bytes */
         *err = 1;
         return 0;
     }
 
-    for (value = 0; n--; str++) {
+    for (value = 0; n--; str++)
+    {
         uint64_t check;
 
-        if (*str < '0' || *str > '9') {
+        if (*str < '0' || *str > '9')
+        {
             *err = 1;
             return 0;
         }
 
         check = value * 10 + (*str - '0');
 
-        if ((value && check <= value)) {
+        if ((value && check <= value))
+        {
             *err = 1;
             return 0;
         }
@@ -382,22 +394,27 @@ str_to_uint64(char * str, size_t n, int * err) {
 }
 
 static inline ssize_t
-_str_to_ssize_t(char * str, size_t n) {
+_str_to_ssize_t(char * str, size_t n)
+{
     ssize_t value;
 
-    if (n == 0) {
+    if (n == 0)
+    {
         return -1;
     }
 
-    for (value = 0; n--; str++) {
-        if (*str < '0' || *str > '9') {
+    for (value = 0; n--; str++)
+    {
+        if (*str < '0' || *str > '9')
+        {
             return -1;
         }
 
         value = value * 10 + (*str - '0');
 
 #if 0
-        if (value > INTMAX_MAX) {
+        if (value > INTMAX_MAX)
+        {
             return -1;
         }
 #endif
@@ -407,15 +424,18 @@ _str_to_ssize_t(char * str, size_t n) {
 }
 
 htpparse_error
-htparser_get_error(htparser * p) {
+htparser_get_error(htparser * p)
+{
     return p->error;
 }
 
 const char *
-htparser_get_strerror(htparser * p) {
+htparser_get_strerror(htparser * p)
+{
     htpparse_error e = htparser_get_error(p);
 
-    if (e > (htparse_error_generic + 1)) {
+    if (e > (htparse_error_generic + 1))
+    {
         return "htparse_no_such_error";
     }
 
@@ -423,20 +443,25 @@ htparser_get_strerror(htparser * p) {
 }
 
 unsigned int
-htparser_get_status(htparser * p) {
+htparser_get_status(htparser * p)
+{
     return p->status;
 }
 
 int
-htparser_should_keep_alive(htparser * p) {
-    if (p->major > 0 && p->minor > 0) {
-        if (p->flags & parser_flag_connection_close) {
+htparser_should_keep_alive(htparser * p)
+{
+    if (p->major > 0 && p->minor > 0)
+    {
+        if (p->flags & parser_flag_connection_close)
+        {
             return 0;
         } else {
             return 1;
         }
     } else {
-        if (p->flags & parser_flag_connection_keep_alive) {
+        if (p->flags & parser_flag_connection_keep_alive)
+        {
             return 1;
         } else {
             return 0;
@@ -447,18 +472,22 @@ htparser_should_keep_alive(htparser * p) {
 }
 
 htp_scheme
-htparser_get_scheme(htparser * p) {
+htparser_get_scheme(htparser * p)
+{
     return p->scheme;
 }
 
 htp_method
-htparser_get_method(htparser * p) {
+htparser_get_method(htparser * p)
+{
     return p->method;
 }
 
 const char *
-htparser_get_methodstr_m(htp_method meth) {
-    if (meth >= htp_method_UNKNOWN) {
+htparser_get_methodstr_m(htp_method meth)
+{
+    if (meth >= htp_method_UNKNOWN)
+    {
         return NULL;
     }
 
@@ -466,67 +495,80 @@ htparser_get_methodstr_m(htp_method meth) {
 }
 
 const char *
-htparser_get_methodstr(htparser * p) {
+htparser_get_methodstr(htparser * p)
+{
     return htparser_get_methodstr_m(p->method);
 }
 
 void
-htparser_set_major(htparser * p, unsigned char major) {
+htparser_set_major(htparser * p, unsigned char major)
+{
     p->major = major;
 }
 
 void
-htparser_set_minor(htparser * p, unsigned char minor) {
+htparser_set_minor(htparser * p, unsigned char minor)
+{
     p->minor = minor;
 }
 
 unsigned char
-htparser_get_major(htparser * p) {
+htparser_get_major(htparser * p)
+{
     return p->major;
 }
 
 unsigned char
-htparser_get_minor(htparser * p) {
+htparser_get_minor(htparser * p)
+{
     return p->minor;
 }
 
 unsigned char
-htparser_get_multipart(htparser * p) {
+htparser_get_multipart(htparser * p)
+{
     return p->multipart;
 }
 
 void *
-htparser_get_userdata(htparser * p) {
+htparser_get_userdata(htparser * p)
+{
     return p->userdata;
 }
 
 void
-htparser_set_userdata(htparser * p, void * ud) {
+htparser_set_userdata(htparser * p, void * ud)
+{
     p->userdata = ud;
 }
 
 uint64_t
-htparser_get_content_pending(htparser * p) {
+htparser_get_content_pending(htparser * p)
+{
     return p->content_len;
 }
 
 uint64_t
-htparser_get_content_length(htparser * p) {
+htparser_get_content_length(htparser * p)
+{
     return p->orig_content_len;
 }
 
 uint64_t
-htparser_get_bytes_read(htparser * p) {
+htparser_get_bytes_read(htparser * p)
+{
     return p->bytes_read;
 }
 
 uint64_t
-htparser_get_total_bytes_read(htparser * p) {
+htparser_get_total_bytes_read(htparser * p)
+{
     return p->total_bytes_read;
 }
 
 void
-htparser_init(htparser * p, htp_type type) {
+htparser_init(htparser * p, htp_type type)
+{
     /* Do not memset entire string buffer. */
     memset(p, 0, offsetof(htparser, buf));
     p->buf[0] = '\0';
@@ -537,19 +579,23 @@ htparser_init(htparser * p, htp_type type) {
 }
 
 htparser *
-htparser_new(void) {
+htparser_new(void)
+{
     return malloc(sizeof(htparser));
 }
 
 static int
-is_host_char(unsigned char ch) {
+is_host_char(unsigned char ch)
+{
     char c = (unsigned char)(ch | 0x20);
 
-    if (c >= 'a' && c <= 'z') {
+    if (c >= 'a' && c <= 'z')
+    {
         return 1;
     }
 
-    if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
+    if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-')
+    {
         return 1;
     }
 
@@ -557,85 +603,103 @@ is_host_char(unsigned char ch) {
 }
 
 static htp_method
-get_method(const char * m, const size_t sz) {
+get_method(const char * m, const size_t sz)
+{
     switch (sz) {
         case 3:
-            if (_str3_cmp(m, 'G', 'E', 'T', '\0')) {
+            if (_str3_cmp(m, 'G', 'E', 'T', '\0'))
+            {
                 return htp_method_GET;
             }
 
-            if (_str3_cmp(m, 'P', 'U', 'T', '\0')) {
+            if (_str3_cmp(m, 'P', 'U', 'T', '\0'))
+            {
                 return htp_method_PUT;
             }
 
             break;
         case 4:
-            if (m[1] == 'O') {
-                if (_str3Ocmp(m, 'P', 'O', 'S', 'T')) {
+            if (m[1] == 'O')
+            {
+                if (_str3Ocmp(m, 'P', 'O', 'S', 'T'))
+                {
                     return htp_method_POST;
                 }
 
-                if (_str3Ocmp(m, 'C', 'O', 'P', 'Y')) {
+                if (_str3Ocmp(m, 'C', 'O', 'P', 'Y'))
+                {
                     return htp_method_COPY;
                 }
 
-                if (_str3Ocmp(m, 'M', 'O', 'V', 'E')) {
+                if (_str3Ocmp(m, 'M', 'O', 'V', 'E'))
+                {
                     return htp_method_MOVE;
                 }
 
-                if (_str3Ocmp(m, 'L', 'O', 'C', 'K')) {
+                if (_str3Ocmp(m, 'L', 'O', 'C', 'K'))
+                {
                     return htp_method_LOCK;
                 }
             } else {
-                if (_str4cmp(m, 'H', 'E', 'A', 'D')) {
+                if (_str4cmp(m, 'H', 'E', 'A', 'D'))
+                {
                     return htp_method_HEAD;
                 }
             }
 
             break;
         case 5:
-            if (_str5cmp(m, 'M', 'K', 'C', 'O', 'L')) {
+            if (_str5cmp(m, 'M', 'K', 'C', 'O', 'L'))
+            {
                 return htp_method_MKCOL;
             }
 
-            if (_str5cmp(m, 'T', 'R', 'A', 'C', 'E')) {
+            if (_str5cmp(m, 'T', 'R', 'A', 'C', 'E'))
+            {
                 return htp_method_TRACE;
             }
 
-            if (_str5cmp(m, 'P', 'A', 'T', 'C', 'H')) {
+            if (_str5cmp(m, 'P', 'A', 'T', 'C', 'H'))
+            {
                 return htp_method_PATCH;
             }
 
             break;
         case 6:
-            if (_str6cmp(m, 'D', 'E', 'L', 'E', 'T', 'E')) {
+            if (_str6cmp(m, 'D', 'E', 'L', 'E', 'T', 'E'))
+            {
                 return htp_method_DELETE;
             }
 
-            if (_str6cmp(m, 'U', 'N', 'L', 'O', 'C', 'K')) {
+            if (_str6cmp(m, 'U', 'N', 'L', 'O', 'C', 'K'))
+            {
                 return htp_method_UNLOCK;
             }
 
             break;
         case 7:
-            if (_str7_cmp(m, 'O', 'P', 'T', 'I', 'O', 'N', 'S', '\0')) {
+            if (_str7_cmp(m, 'O', 'P', 'T', 'I', 'O', 'N', 'S', '\0'))
+            {
                 return htp_method_OPTIONS;
             }
 
-            if (_str7_cmp(m, 'C', 'O', 'N', 'N', 'E', 'C', 'T', '\0')) {
+            if (_str7_cmp(m, 'C', 'O', 'N', 'N', 'E', 'C', 'T', '\0'))
+            {
                 return htp_method_CONNECT;
             }
 
             break;
         case 8:
-            if (_str8cmp(m, 'P', 'R', 'O', 'P', 'F', 'I', 'N', 'D')) {
+            if (_str8cmp(m, 'P', 'R', 'O', 'P', 'F', 'I', 'N', 'D'))
+            {
                 return htp_method_PROPFIND;
             }
 
             break;
 
         case 9:
-            if (_str9cmp(m, 'P', 'R', 'O', 'P', 'P', 'A', 'T', 'C', 'H')) {
+            if (_str9cmp(m, 'P', 'R', 'O', 'P', 'P', 'A', 'T', 'C', 'H'))
+            {
                 return htp_method_PROPPATCH;
             }
 
@@ -646,7 +710,8 @@ get_method(const char * m, const size_t sz) {
 } /* get_method */
 
 size_t
-htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len) {
+htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
+{
     unsigned char ch;
     char          c;
     size_t        i;
@@ -657,7 +722,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
     p->error      = htparse_error_none;
     p->bytes_read = 0;
 
-    for (i = 0; i < len; i++) {
+    for (i = 0; i < len; i++)
+    {
         int res;
         int err;
 
@@ -665,7 +731,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
         log_debug("[%p] data[%zu] = %c (%x)", p, i, isprint(ch) ? ch : ' ', ch);
 
-        if (p->buf_idx >= PARSER_STACK_MAX) {
+        if (p->buf_idx >= PARSER_STACK_MAX)
+        {
             p->error = htparse_error_too_big;
             return i + 1;
         }
@@ -677,11 +744,13 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_start:
                 log_debug("[%p] s_start", p);
 
-                if (ch == CR || ch == LF) {
+                if (ch == CR || ch == LF)
+                {
                     break;
                 }
 
-                if ((ch < 'A' || ch > 'Z') && ch != '_') {
+                if ((ch < 'A' || ch > 'Z') && ch != '_')
+                {
                     p->error = htparse_error_inval_reqline;
 
                     log_debug("s_start invalid fist char '%c'", ch);
@@ -713,9 +782,11 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 p->buf[p->buf_idx++] = ch;
                 p->buf[p->buf_idx]   = '\0';
 
-                if (evhtp_likely(p->type == htp_type_request)) {
+                if (evhtp_likely(p->type == htp_type_request))
+                {
                     p->state = s_method;
-                } else if (p->type == htp_type_response && ch == 'H') {
+                } else if (p->type == htp_type_response && ch == 'H')
+                {
                     p->state = s_http_H;
                 } else {
                     log_debug("not type of request or response?");
@@ -725,7 +796,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     return i + 1;
                 }
 
-                if (res) {
+                if (res)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -736,21 +808,24 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 log_debug("[%p] s_method", p);
 
                 do {
-                    if (ch == ' ') {
+                    if (ch == ' ')
+                    {
                         p->method  = get_method(p->buf, p->buf_idx);
                         res        = hook_method_run(p, hooks, p->buf, p->buf_idx);
 
                         p->buf_idx = 0;
                         p->state   = s_spaces_before_uri;
 
-                        if (res) {
+                        if (res)
+                        {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
 
                         break;
                     } else {
-                        if ((ch < 'A' || ch > 'Z') && ch != '_') {
+                        if ((ch < 'A' || ch > 'Z') && ch != '_')
+                        {
                             p->error = htparse_error_inval_method;
                             return i + 1;
                         }
@@ -773,7 +848,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                  * number destination of the requested connection
                  * separated by a colon
                  */
-                if (p->method == htp_method_CONNECT) {
+                if (p->method == htp_method_CONNECT)
+                {
                     switch (ch) {
                         case ' ':
                             break;
@@ -786,7 +862,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                             p->state = s_host_ipv6;
                             break;
                         default:
-                            if (!is_host_char(ch)) {
+                            if (!is_host_char(ch))
+                            {
                                 p->error = htparse_error_inval_reqline;
                                 log_htparser__s_(p);
 
@@ -816,7 +893,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     default:
                         c        = (unsigned char)(ch | 0x20);
 
-                        if (c >= 'a' && c <= 'z') {
+                        if (c >= 'a' && c <= 'z')
+                        {
                             p->scheme_offset     = &p->buf[p->buf_idx];
                             p->buf[p->buf_idx++] = ch;
                             p->buf[p->buf_idx]   = '\0';
@@ -836,7 +914,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 c = (unsigned char)(ch | 0x20);
 
-                if (c >= 'a' && c <= 'z') {
+                if (c >= 'a' && c <= 'z')
+                {
                     p->buf[p->buf_idx++] = ch;
                     p->buf[p->buf_idx]   = '\0';
                     break;
@@ -848,39 +927,46 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                         switch (p->buf_idx) {
                             case 3:
-                                if (_str3_cmp(p->scheme_offset, 'f', 't', 'p', '\0')) {
+                                if (_str3_cmp(p->scheme_offset, 'f', 't', 'p', '\0'))
+                                {
                                     p->scheme = htp_scheme_ftp;
                                     break;
                                 }
 
-                                if (_str3_cmp(p->scheme_offset, 'n', 'f', 's', '\0')) {
+                                if (_str3_cmp(p->scheme_offset, 'n', 'f', 's', '\0'))
+                                {
                                     p->scheme = htp_scheme_nfs;
                                     break;
                                 }
 
                                 break;
                             case 4:
-                                if (_str4cmp(p->scheme_offset, 'h', 't', 't', 'p')) {
+                                if (_str4cmp(p->scheme_offset, 'h', 't', 't', 'p'))
+                                {
                                     p->scheme = htp_scheme_http;
                                     break;
                                 }
                                 break;
                             case 5:
-                                if (_str5cmp(p->scheme_offset, 'h', 't', 't', 'p', 's')) {
+                                if (_str5cmp(p->scheme_offset, 'h', 't', 't', 'p', 's'))
+                                {
                                     p->scheme = htp_scheme_https;
                                     break;
                                 }
                                 break;
                         } /* switch */
 
-                        res                  = hook_scheme_run(p, hooks, p->scheme_offset, (&p->buf[p->buf_idx] - p->scheme_offset));
+                        res = hook_scheme_run(p, hooks,
+                                              p->scheme_offset,
+                                              (&p->buf[p->buf_idx] - p->scheme_offset));
 
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
 
-                        p->state             = s_schema_slash;
+                        p->state = s_schema_slash;
 
-                        if (res) {
+                        if (res)
+                        {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
@@ -924,7 +1010,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 }
                 break;
             case s_host:
-                if (ch == '[') {
+                if (ch == '[')
+                {
                     /* Literal IPv6 address start. */
                     p->buf[p->buf_idx++] = ch;
                     p->buf[p->buf_idx]   = '\0';
@@ -934,15 +1021,19 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     break;
                 }
 
-                if (is_host_char(ch)) {
+                if (is_host_char(ch))
+                {
                     p->buf[p->buf_idx++] = ch;
                     p->buf[p->buf_idx]   = '\0';
                     break;
                 }
 
-                res = hook_host_run(p, hooks, p->host_offset, (&p->buf[p->buf_idx] - p->host_offset));
+                res = hook_host_run(p, hooks,
+                                    p->host_offset,
+                                    (&p->buf[p->buf_idx] - p->host_offset));
 
-                if (res) {
+                if (res)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -966,7 +1057,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         /* this technically should never happen, but we should
                          * check anyway
                          */
-                        if (i == 0) {
+                        if (i == 0)
+                        {
                             p->error = htparse_error_inval_state;
                             return i + 1;
                         }
@@ -989,7 +1081,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         return i + 1;
                 } /* switch */
 
-                if (res) {
+                if (res)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -999,7 +1092,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 c = (unsigned char)(ch | 0x20);
 
                 if ((c >= 'a' && c <= 'f') ||
-                    (ch >= '0' && ch <= '9') || ch == ':' || ch == '.') {
+                    (ch >= '0' && ch <= '9') || ch == ':' || ch == '.')
+                {
                     p->buf[p->buf_idx++] = ch;
                     p->buf[p->buf_idx]   = '\0';
                     break;
@@ -1009,7 +1103,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     case ']':
                         res = hook_host_run(p, hooks, p->host_offset,
                                             (&p->buf[p->buf_idx] - p->host_offset));
-                        if (res) {
+                        if (res)
+                        {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
@@ -1023,7 +1118,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 }
                 break;
             case s_port:
-                if (ch >= '0' && ch <= '9') {
+                if (ch >= '0' && ch <= '9')
+                {
                     p->buf[p->buf_idx++] = ch;
                     p->buf[p->buf_idx]   = '\0';
                     break;
@@ -1037,7 +1133,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         /* this technically should never happen, but we should
                          * check anyway
                          */
-                        if (i == 0) {
+                        if (i == 0)
+                        {
                             p->error = htparse_error_inval_state;
                             return i + 1;
                         }
@@ -1062,7 +1159,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         return i + 1;
                 } /* switch */
 
-                if (res) {
+                if (res)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -1073,8 +1171,10 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 res = 0;
 
-                if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
-                    if (evhtp_likely((p->buf_idx + 1) < PARSER_STACK_MAX)) {
+                if (usual[ch >> 5] & (1 << (ch & 0x1f)))
+                {
+                    if (evhtp_likely((p->buf_idx + 1) < PARSER_STACK_MAX))
+                    {
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
                         p->state = s_check_uri;
@@ -1092,7 +1192,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->state   = s_http_09;
                         p->buf_idx = 0;
 
-                        if (r1 || r2) {
+                        if (r1 || r2)
+                        {
                             res = 1;
                         }
                     }
@@ -1132,7 +1233,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         break;
                 } /* switch */
 
-                if (res) {
+                if (res)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -1145,7 +1247,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 do {
                     log_debug("[%p] s_check_uri", p);
-                    if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
+                    if (usual[ch >> 5] & (1 << (ch & 0x1f)))
+                    {
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
                     } else {
@@ -1161,7 +1264,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         int r1 = 0;
                         int r2 = 0;
 
-                        if (p->args_offset) {
+                        if (p->args_offset)
+                        {
                             r1 = hook_args_run(p, hooks, p->args_offset,
                                                (&p->buf[p->buf_idx] - p->args_offset));
                         } else {
@@ -1173,7 +1277,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->buf_idx = 0;
                         p->state   = s_http_09;
 
-                        if (r1 || r2) {
+                        if (r1 || r2)
+                        {
                             res = 1;
                         }
                     }
@@ -1195,7 +1300,9 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->state             = s_hdrline_start;
                         break;
                     case '?':
-                        res                  = hook_path_run(p, hooks, p->path_offset, (&p->buf[p->buf_idx] - p->path_offset));
+                        res                  = hook_path_run(p, hooks,
+                                                             p->path_offset,
+                                                             (&p->buf[p->buf_idx] - p->path_offset));
 
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
@@ -1211,7 +1318,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         break;
                 } /* switch */
 
-                if (res) {
+                if (res)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -1224,7 +1332,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 res = 0;
 
                 do {
-                    if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
+                    if (usual[ch >> 5] & (1 << (ch & 0x1f)))
+                    {
                         p->buf[p->buf_idx++] = ch;
                         p->buf[p->buf_idx]   = '\0';
                     } else {
@@ -1240,7 +1349,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         int r1 = 0;
                         int r2 = 0;
 
-                        if (p->args_offset) {
+                        if (p->args_offset)
+                        {
                             r1 = hook_args_run(p, hooks, p->args_offset,
                                                (&p->buf[p->buf_idx] - p->args_offset));
                         } else {
@@ -1251,7 +1361,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         p->buf_idx = 0;
                         p->state   = s_http_09;
 
-                        if (r1 || r2) {
+                        if (r1 || r2)
+                        {
                             res = 1;
                         }
                     }
@@ -1272,7 +1383,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                          * first question mark ("?") character and
                          * terminated by a number sign ("#") character
                          * or by the end of the URI. */
-                        if (!p->args_offset) {
+                        if (!p->args_offset)
+                        {
                             res = hook_path_run(p, hooks, p->path_offset,
                                                 (&p->buf[p->buf_idx] - p->path_offset));
 
@@ -1288,7 +1400,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         break;
                 } /* switch */
 
-                if (res) {
+                if (res)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -1364,7 +1477,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 }
                 break;
             case s_first_major_digit:
-                if (ch < '1' || ch > '9') {
+                if (ch < '1' || ch > '9')
+                {
                     p->error = htparse_error_inval_ver;
                     return i + 1;
                 }
@@ -1373,12 +1487,14 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 p->state = s_major_digit;
                 break;
             case s_major_digit:
-                if (ch == '.') {
+                if (ch == '.')
+                {
                     p->state = s_first_minor_digit;
                     break;
                 }
 
-                if (ch < '0' || ch > '9') {
+                if (ch < '0' || ch > '9')
+                {
                     p->error = htparse_error_inval_ver;
                     return i + 1;
                 }
@@ -1386,7 +1502,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 p->major = p->major * 10 + ch - '0';
                 break;
             case s_first_minor_digit:
-                if (ch < '0' || ch > '9') {
+                if (ch < '0' || ch > '9')
+                {
                     p->error = htparse_error_inval_ver;
                     return i + 1;
                 }
@@ -1397,9 +1514,11 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_minor_digit:
                 switch (ch) {
                     case ' ':
-                        if (evhtp_likely(p->type == htp_type_request)) {
+                        if (evhtp_likely(p->type == htp_type_request))
+                        {
                             p->state = s_spaces_after_digit;
-                        } else if (p->type == htp_type_response) {
+                        } else if (p->type == htp_type_response)
+                        {
                             p->state = s_status;
                         }
 
@@ -1415,7 +1534,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                         return i + 1;
                     default:
-                        if (ch < '0' || ch > '9') {
+                        if (ch < '0' || ch > '9')
+                        {
                             p->error = htparse_error_inval_ver;
                             return i + 1;
                         }
@@ -1426,21 +1546,25 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 break;
             case s_status:
                 /* http response status code */
-                if (ch == ' ') {
-                    if (p->status) {
+                if (ch == ' ')
+                {
+                    if (p->status)
+                    {
                         p->state = s_status_text;
                     }
                     break;
                 }
 
-                if (ch < '0' || ch > '9') {
+                if (ch < '0' || ch > '9')
+                {
                     p->error = htparse_error_status;
                     return i + 1;
                 }
 
                 p->status = p->status * 10 + ch - '0';
 
-                if (++p->status_count == 3) {
+                if (++p->status_count == 3)
+                {
                     p->state = s_space_after_status;
                 }
 
@@ -1492,10 +1616,12 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
             case s_almost_done:
                 switch (ch) {
                     case LF:
-                        if (p->type == htp_type_response && p->status >= 100 && p->status < 200) {
+                        if (p->type == htp_type_response && p->status >= 100 && p->status < 200)
+                        {
                             res = hook_on_hdrs_begin_run(p, hooks);
 
-                            if (res) {
+                            if (res)
+                            {
                                 p->error = htparse_error_user;
                                 return i + 1;
                             }
@@ -1508,7 +1634,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                         p->state = s_done;
                         res      = hook_on_hdrs_begin_run(p, hooks);
-                        if (res) {
+                        if (res)
+                        {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
@@ -1557,7 +1684,8 @@ hdrline_start:
                 log_debug("[%p] s_hdrline_hdr_key", p);
 
                 do {
-                    if (evhtp_unlikely(ch == ':')) {
+                    if (evhtp_unlikely(ch == ':'))
+                    {
                         res      = hook_hdr_key_run(p, hooks, p->buf, p->buf_idx);
 
                         /* figure out if the value of this header is valueable */
@@ -1565,32 +1693,38 @@ hdrline_start:
 
                         switch (p->buf_idx + 1) {
                             case 5:
-                                if (!strcasecmp(p->buf, "host")) {
+                                if (!strcasecmp(p->buf, "host"))
+                                {
                                     p->heval = eval_hdr_val_hostname;
                                 }
                                 break;
                             case 11:
-                                if (!strcasecmp(p->buf, "connection")) {
+                                if (!strcasecmp(p->buf, "connection"))
+                                {
                                     p->heval = eval_hdr_val_connection;
                                 }
                                 break;
                             case 13:
-                                if (!strcasecmp(p->buf, "content-type")) {
+                                if (!strcasecmp(p->buf, "content-type"))
+                                {
                                     p->heval = eval_hdr_val_content_type;
                                 }
                                 break;
                             case 15:
-                                if (!strcasecmp(p->buf, "content-length")) {
+                                if (!strcasecmp(p->buf, "content-length"))
+                                {
                                     p->heval = eval_hdr_val_content_length;
                                 }
                                 break;
                             case 17:
-                                if (!strcasecmp(p->buf, "proxy-connection")) {
+                                if (!strcasecmp(p->buf, "proxy-connection"))
+                                {
                                     p->heval = eval_hdr_val_proxy_connection;
                                 }
                                 break;
                             case 18:
-                                if (!strcasecmp(p->buf, "transfer-encoding")) {
+                                if (!strcasecmp(p->buf, "transfer-encoding"))
+                                {
                                     p->heval = eval_hdr_val_transfer_encoding;
                                 }
                                 break;
@@ -1599,7 +1733,8 @@ hdrline_start:
                         p->buf_idx = 0;
                         p->state   = s_hdrline_hdr_space_before_val;
 
-                        if (res) {
+                        if (res)
+                        {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
@@ -1620,7 +1755,8 @@ hdrline_start:
                             break;
                     }
 
-                    if (p->state != s_hdrline_hdr_key) {
+                    if (p->state != s_hdrline_hdr_key)
+                    {
                         break;
                     }
 
@@ -1669,12 +1805,14 @@ hdrline_start:
 
                 do {
                     log_debug("[%p] s_hdrline_hdr_val", p);
-                    if (ch == CR) {
+                    if (ch == CR)
+                    {
                         switch (p->heval) {
                             case eval_hdr_val_none:
                                 break;
                             case eval_hdr_val_hostname:
-                                if (hook_hostname_run(p, hooks, p->buf, p->buf_idx)) {
+                                if (hook_hostname_run(p, hooks, p->buf, p->buf_idx))
+                                {
                                     p->state = s_hdrline_hdr_almost_done;
                                     p->error = htparse_error_user;
                                     return i + 1;
@@ -1687,7 +1825,8 @@ hdrline_start:
 
                                 log_debug("[%p] s_hdrline_hdr_val content-lenth = %zu", p, p->content_len);
 
-                                if (err == 1) {
+                                if (err == 1)
+                                {
                                     p->error = htparse_error_too_big;
                                     return i + 1;
                                 }
@@ -1701,7 +1840,8 @@ hdrline_start:
 
                                     case 'K':
                                     case 'k':
-                                        if (p->buf_idx != 10) {
+                                        if (p->buf_idx != 10)
+                                        {
                                             break;
                                         }
 
@@ -1709,27 +1849,31 @@ hdrline_start:
                                         S_buf  = (const char *)(p->buf + 1);
 
                                         if (_str9cmp(S_buf,
-                                                     'e', 'e', 'p', '-', A_case, 'l', 'i', 'v', 'e')) {
+                                                     'e', 'e', 'p', '-', A_case, 'l', 'i', 'v', 'e'))
+                                        {
                                             p->flags |= parser_flag_connection_keep_alive;
                                         }
                                         break;
                                     case 'c':
                                     case 'C':
-                                        if (p->buf_idx != 5) {
+                                        if (p->buf_idx != 5)
+                                        {
                                             break;
                                         }
 
                                         C_case = (p->buf[0] == 'C') ? 'C' : 'c';
                                         S_buf  = (const char *)p->buf;
 
-                                        if (_str5cmp(S_buf, C_case, 'l', 'o', 's', 'e')) {
+                                        if (_str5cmp(S_buf, C_case, 'l', 'o', 's', 'e'))
+                                        {
                                             p->flags |= parser_flag_connection_close;
                                         }
                                         break;
                                 } /* switch */
                                 break;
                             case eval_hdr_val_transfer_encoding:
-                                if (p->buf_idx != 7) {
+                                if (p->buf_idx != 7)
+                                {
                                     break;
                                 }
 
@@ -1738,13 +1882,15 @@ hdrline_start:
 
                                     case 'c':
                                     case 'C':
-                                        if (p->buf_idx != 7) {
+                                        if (p->buf_idx != 7)
+                                        {
                                             break;
                                         }
 
                                         S_buf = (const char *)(p->buf + 1);
 
-                                        if (_str6cmp(S_buf, 'h', 'u', 'n', 'k', 'e', 'd')) {
+                                        if (_str6cmp(S_buf, 'h', 'u', 'n', 'k', 'e', 'd'))
+                                        {
                                             p->flags |= parser_flag_chunked;
                                         }
 
@@ -1753,7 +1899,8 @@ hdrline_start:
 
                                 break;
                             case eval_hdr_val_content_type:
-                                if (p->buf_idx != 9) {
+                                if (p->buf_idx != 9)
+                                {
                                     break;
                                 }
 
@@ -1764,7 +1911,8 @@ hdrline_start:
                                     case 'M':
                                         S_buf = (const char *)(p->buf + 1);
 
-                                        if (_str8cmp(S_buf, 'u', 'l', 't', 'i', 'p', 'a', 'r', 't')) {
+                                        if (_str8cmp(S_buf, 'u', 'l', 't', 'i', 'p', 'a', 'r', 't'))
+                                        {
                                             p->multipart = 1;
                                         }
 
@@ -1793,7 +1941,8 @@ hdrline_start:
                             break;
                     } /* switch */
 
-                    if (p->state != s_hdrline_hdr_val) {
+                    if (p->state != s_hdrline_hdr_val)
+                    {
                         break;
                     }
 
@@ -1807,7 +1956,8 @@ hdrline_start:
                 res = 0;
                 switch (ch) {
                     case LF:
-                        if (p->flags & parser_flag_trailing) {
+                        if (p->flags & parser_flag_trailing)
+                        {
                             res      = hook_on_msg_complete_run(p, hooks);
                             p->state = s_start;
                             break;
@@ -1820,7 +1970,8 @@ hdrline_start:
                         return i + 1;
                 }
 
-                if (res) {
+                if (res)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -1834,7 +1985,8 @@ hdrline_start:
                         res      = hook_hdr_val_run(p, hooks, p->buf, p->buf_idx);
                         p->state = s_hdrline_almost_done;
 
-                        if (res) {
+                        if (res)
+                        {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
@@ -1859,7 +2011,8 @@ hdrline_start:
 
                         p->state             = s_hdrline_hdr_key;
 
-                        if (res) {
+                        if (res)
+                        {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
@@ -1874,28 +2027,34 @@ hdrline_start:
                     case LF:
                         res = hook_on_hdrs_complete_run(p, hooks);
 
-                        if (res != 0) {
+                        if (res != 0)
+                        {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
 
                         p->buf_idx = 0;
 
-                        if (p->flags & parser_flag_trailing) {
+                        if (p->flags & parser_flag_trailing)
+                        {
                             res      = hook_on_msg_complete_run(p, hooks);
                             p->state = s_start;
-                        } else if (p->flags & parser_flag_chunked) {
+                        } else if (p->flags & parser_flag_chunked)
+                        {
                             p->state = s_chunk_size_start;
-                        } else if (p->content_len > 0) {
+                        } else if (p->content_len > 0)
+                        {
                             p->state = s_body_read;
-                        } else if (p->content_len == 0) {
+                        } else if (p->content_len == 0)
+                        {
                             res      = hook_on_msg_complete_run(p, hooks);
                             p->state = s_start;
                         } else {
                             p->state = s_hdrline_done;
                         }
 
-                        if (res != 0) {
+                        if (res != 0)
+                        {
                             p->error = htparse_error_user;
                             return i + 1;
                         }
@@ -1906,7 +2065,8 @@ hdrline_start:
                         return i + 1;
                 }         /* switch */
 
-                if (res != 0) {
+                if (res != 0)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -1917,21 +2077,26 @@ hdrline_start:
 
                 res = 0;
 
-                if (p->flags & parser_flag_trailing) {
+                if (p->flags & parser_flag_trailing)
+                {
                     res      = hook_on_msg_complete_run(p, hooks);
                     p->state = s_start;
-                } else if (p->flags & parser_flag_chunked) {
+                } else if (p->flags & parser_flag_chunked)
+                {
                     p->state = s_chunk_size_start;
                     i--;
-                } else if (p->content_len > 0) {
+                } else if (p->content_len > 0)
+                {
                     p->state = s_body_read;
                     i--;
-                } else if (p->content_len == 0) {
+                } else if (p->content_len == 0)
+                {
                     res      = hook_on_msg_complete_run(p, hooks);
                     p->state = s_start;
                 }
 
-                if (res) {
+                if (res)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -1940,7 +2105,8 @@ hdrline_start:
             case s_chunk_size_start:
                 c = unhex[(unsigned char)ch];
 
-                if (c == -1) {
+                if (c == -1)
+                {
                     p->error = htparse_error_inval_chunk_sz;
                     return i + 1;
                 }
@@ -1949,14 +2115,16 @@ hdrline_start:
                 p->state       = s_chunk_size;
                 break;
             case s_chunk_size:
-                if (ch == CR) {
+                if (ch == CR)
+                {
                     p->state = s_chunk_size_almost_done;
                     break;
                 }
 
                 c = unhex[(unsigned char)ch];
 
-                if (c == -1) {
+                if (c == -1)
+                {
                     p->error = htparse_error_inval_chunk_sz;
                     return i + 1;
                 }
@@ -1966,14 +2134,16 @@ hdrline_start:
                 break;
 
             case s_chunk_size_almost_done:
-                if (ch != LF) {
+                if (ch != LF)
+                {
                     p->error = htparse_error_inval_chunk_sz;
                     return i + 1;
                 }
 
                 p->orig_content_len = p->content_len;
 
-                if (p->content_len == 0) {
+                if (p->content_len == 0)
+                {
                     res       = hook_on_chunks_complete_run(p, hooks);
 
                     p->flags |= parser_flag_trailing;
@@ -1984,7 +2154,8 @@ hdrline_start:
                     p->state = s_chunk_data;
                 }
 
-                if (res) {
+                if (res)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -1998,20 +2169,23 @@ hdrline_start:
                     const char * pe      = (const char *)(data + len);
                     size_t       to_read = _MIN_READ(pe - pp, p->content_len);
 
-                    if (to_read > 0) {
+                    if (to_read > 0)
+                    {
                         res = hook_body_run(p, hooks, pp, to_read);
 
                         i  += to_read - 1;
                     }
 
-                    if (to_read == p->content_len) {
+                    if (to_read == p->content_len)
+                    {
                         p->state = s_chunk_data_almost_done;
                     }
 
                     p->content_len -= to_read;
                 }
 
-                if (res) {
+                if (res)
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -2019,7 +2193,8 @@ hdrline_start:
                 break;
 
             case s_chunk_data_almost_done:
-                if (ch != CR) {
+                if (ch != CR)
+                {
                     p->error = htparse_error_inval_chunk;
                     return i + 1;
                 }
@@ -2028,7 +2203,8 @@ hdrline_start:
                 break;
 
             case s_chunk_data_done:
-                if (ch != LF) {
+                if (ch != LF)
+                {
                     p->error = htparse_error_inval_chunk;
                     return i + 1;
                 }
@@ -2036,7 +2212,8 @@ hdrline_start:
                 p->orig_content_len = 0;
                 p->state = s_chunk_size_start;
 
-                if (hook_on_chunk_complete_run(p, hooks)) {
+                if (hook_on_chunk_complete_run(p, hooks))
+                {
                     p->error = htparse_error_user;
                     return i + 1;
                 }
@@ -2051,19 +2228,22 @@ hdrline_start:
                     const char * pe      = (const char *)(data + len);
                     size_t       to_read = _MIN_READ(pe - pp, p->content_len);
 
-                    if (to_read > 0) {
+                    if (to_read > 0)
+                    {
                         res = hook_body_run(p, hooks, pp, to_read);
 
                         i  += to_read - 1;
                         p->content_len -= to_read;
                     }
 
-                    if (p->content_len == 0) {
+                    if (p->content_len == 0)
+                    {
                         res      = hook_on_msg_complete_run(p, hooks);
                         p->state = s_start;
                     }
 
-                    if (res) {
+                    if (res)
+                    {
                         p->error = htparse_error_user;
                         return i + 1;
                     }
@@ -2080,11 +2260,11 @@ hdrline_start:
         /* If we successfully completed a request/response we return
          * to caller, and leave it up to him to call us again if
          * parsing should continue. */
-        if (p->state == s_start) {
+        if (p->state == s_start)
+        {
             return i + 1;
         }
     }     /* switch */
 
     return i;
 }         /* htparser_run */
-

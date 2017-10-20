@@ -377,9 +377,13 @@ endif()
 
 if (NOT EVHTP_DISABLE_REGEX)
     if (NOT EVHTP_USE_SYS_ONIG)
+         CONFIGURE_FILE(oniguruma/onigposix.h
+         ${PROJECT_BINARY_DIR}/include/evhtp/onigposix.h)
+
         install (
             FILES       oniguruma/onigposix.h
             DESTINATION ${INCLUDE_INSTALL_DIR}/evhtp)
+
     endif()
 endif()
 

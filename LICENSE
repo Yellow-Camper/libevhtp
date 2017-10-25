@@ -2,7 +2,7 @@ Libevhtp is available for use under the following license, commonly known
 as the 3-clause (or "modified") BSD license:
 
 ==============================
-Copyright (c) 2010-2016 Mark Ellzey & Marcus Sundberg
+Copyright (c) 2010-2017 Nathan French, Dan Henderson, Marcus Sundberg
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions
@@ -30,8 +30,8 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 Portions of Libevhtp are based on works by others, also made available by them
 under the three-clause BSD license above. The functions include:
 
-evhtp.c: _evhtp_glob_match():
+evhtp.c: htp__glob_match_():
    Copyright (c) 2006-2009, Salvatore Sanfilippo
 
-evhtp_json.c && evhtp_heap.c
-   Ripped from liblz (written by Mark Ellzey)
+refcount.h:
+   Copyright (c) 2016-2017, Mark Ellzey

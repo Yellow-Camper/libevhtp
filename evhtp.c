@@ -4798,7 +4798,7 @@ void
 evhtp_request_set_keepalive(evhtp_request_t * request, int val)
 {
     if (val)
-    {
+    {   
         HTP_FLAG_ON(request, EVHTP_REQ_FLAG_KEEPALIVE);
     }
 }
@@ -5170,7 +5170,7 @@ evhtp_connection_new_dns(struct event_base * evbase, struct evdns_base * dns_bas
     log_debug("Enter");
     evhtp_assert(evbase != NULL);
 
-    if (!(conn = htp__connection_new_(NULL, -1, evhtp_type_client)))
+    if (!(conn = htp__connection_new_(evbase, -1, evhtp_type_client)))
     {
         return NULL;
     }

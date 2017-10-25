@@ -318,16 +318,18 @@ static const char * method_strmap[] = {
         return 0;                                                               \
     }
 
-#define __HTPARSE_GENDHOOK(__n)                                                                           \
-    static inline int hook_ ## __n ## _run(htparser * p, htparse_hooks * hooks, const char * s, size_t l) \
-    {                                                                                                     \
-        log_debug("enter");                                                                               \
-        if (hooks && (hooks)->__n)                                                                        \
-        {                                                                                                 \
-            return (hooks)->__n(p, s, l);                                                                 \
-        }                                                                                                 \
-                                                                                                          \
-        return 0;                                                                                         \
+#define __HTPARSE_GENDHOOK(__n)                                      \
+    static inline int hook_ ## __n ## _run(htparser * p,             \
+                                           htparse_hooks * hooks,    \
+                                           const char * s, size_t l) \
+    {                                                                \
+        log_debug("enter");                                          \
+        if (hooks && (hooks)->__n)                                   \
+        {                                                            \
+            return (hooks)->__n(p, s, l);                            \
+        }                                                            \
+                                                                     \
+        return 0;                                                    \
     }
 
 __HTPARSE_GENHOOK(on_msg_begin)

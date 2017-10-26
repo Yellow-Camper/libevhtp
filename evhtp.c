@@ -2161,8 +2161,10 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
     evhtp_connection_t * c;
 
     c = arg;
-
-    evhtp_assert(c && c->htp && c->request && c->parser && bev);
+    if (c->type == evhtp_type_client) /* c->htp is NULL */
+        evhtp_assert(c && c->request && c->parser && bev);
+    else
+        evhtp_assert(c && c->htp && c->request && c->parser && bev);
 
     htp__hook_connection_write_(c);
 
@@ -2196,7 +2198,7 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
      * to make sure we are not over it. If we have gone over the max we set the
      * keepalive bit to 0, thus closing the connection.
      */
-    if (c->htp->max_keepalive_requests)
+    if ((c->type !=  evhtp_type_client) && (c->htp->max_keepalive_requests))
     {
         if (++c->num_requests >= c->htp->max_keepalive_requests)
         {
@@ -2680,6 +2682,8 @@ htp__ssl_add_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess)
     int                  slen;
 
     connection = (evhtp_connection_t *)SSL_get_app_data(ssl);
+    if (connection->htp == NULL)
+        return 0; /* We cannot get the ssl_cfg */
     cfg        = connection->htp->ssl_cfg;
 
     sid        = sess->session_id;
@@ -2703,6 +2707,8 @@ htp__ssl_get_scache_ent_(evhtp_ssl_t * ssl, unsigned char * sid, int sid_len, in
     evhtp_ssl_sess_t   * sess;
 
     connection = (evhtp_connection_t * )SSL_get_app_data(ssl);
+    if (connection->htp == NULL)
+        return NULL; /* We have no way of getting ssl_cfg */
     cfg        = connection->htp->ssl_cfg;
     sess       = NULL;
 

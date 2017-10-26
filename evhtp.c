@@ -2158,24 +2158,70 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
 static void
 htp__connection_writecb_(struct bufferevent * bev, void * arg)
 {
-    evhtp_connection_t * c;
+    evhtp_connection_t * conn;
+    uint64_t             keepalive_max;
+    const char         * errstr;
 
-    c = arg;
-    if (c->type == evhtp_type_client) /* c->htp is NULL */
-        evhtp_assert(c && c->request && c->parser && bev);
-    else
-        evhtp_assert(c && c->htp && c->request && c->parser && bev);
+    evhtp_assert(bev != NULL);
 
-    htp__hook_connection_write_(c);
+    if (evhtp_unlikely(arg == NULL))
+    {
+        log_error("No data associated with the bufferevent %p", bev);
 
-    if (evhtp_unlikely(c->flags & EVHTP_CONN_FLAG_PAUSED))
+        bufferevent_free(bev);
+        return;
+    }
+
+    errstr = NULL;
+    conn   = (evhtp_connection_t *)arg;
+
+    do {
+        if (evhtp_unlikely(conn->request == NULL))
+        {
+            errstr = "no request associated with connection";
+            break;
+        }
+
+        if (evhtp_unlikely(conn->parser == NULL))
+        {
+            errstr = "no parser registered with connection";
+            break;
+        }
+
+        if (evhtp_likely(conn->type == evhtp_type_server))
+        {
+            if (evhtp_unlikely(conn->htp == NULL))
+            {
+                errstr = "no context associated with the server-connection";
+                break;
+            }
+
+            keepalive_max = conn->htp->max_keepalive_requests;
+        } else {
+            keepalive_max = 0;
+        }
+    } while (0);
+
+    if (evhtp_unlikely(errstr != NULL))
+    {
+        log_error("shutting down connection: %s", errstr);
+
+        evhtp_safe_free(conn, evhtp_connection_free);
+        return;
+    }
+
+    /* run user-hook for on_write callback before further analysis */
+    htp__hook_connection_write_(conn);
+
+    /* connection is in a paused state, no further processing yet */
+    if ((conn->flags & EVHTP_CONN_FLAG_PAUSED))
     {
         return;
     }
 
-    if (c->flags & EVHTP_CONN_FLAG_WAITING)
+    if (conn->flags & EVHTP_CONN_FLAG_WAITING)
     {
-        HTP_FLAG_OFF(c, EVHTP_CONN_FLAG_WAITING);
+        HTP_FLAG_OFF(conn, EVHTP_CONN_FLAG_WAITING);
 
         bufferevent_enable(bev, EV_READ);
 
@@ -2187,7 +2233,12 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
         return;
     }
 
-    if (!(c->request->flags & EVHTP_REQ_FLAG_FINISHED)
+    /* if the connection is not finished, OR there is data ready to output
+     * (can only happen if a user-defined connection_write hook added data
+     * manually, since this is called only when all data has been flushed)
+     * just return and wait.
+     */
+    if (!(conn->request->flags & EVHTP_REQ_FLAG_FINISHED)
         || evbuffer_get_length(bufferevent_get_output(bev)))
     {
         return;
@@ -2198,38 +2249,47 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
      * to make sure we are not over it. If we have gone over the max we set the
      * keepalive bit to 0, thus closing the connection.
      */
-    if ((c->type !=  evhtp_type_client) && (c->htp->max_keepalive_requests))
+    if (keepalive_max > 0)
     {
-        if (++c->num_requests >= c->htp->max_keepalive_requests)
+        conn->num_requests += 1;
+
+        if (conn->num_requests >= keepalive_max)
         {
-            HTP_FLAG_OFF(c->request, EVHTP_REQ_FLAG_KEEPALIVE);
+            HTP_FLAG_OFF(conn->request, EVHTP_REQ_FLAG_KEEPALIVE);
         }
     }
 
-    if (c->request->flags & EVHTP_REQ_FLAG_KEEPALIVE)
+    if (conn->request->flags & EVHTP_REQ_FLAG_KEEPALIVE)
     {
         htp_type type;
 
-        htp__request_free_(c->request);
+        /* free up the current request, set it to NULL, making
+         * way for the next request.
+         */
+        evhtp_safe_free(conn->request, htp__request_free_);
 
-        HTP_FLAG_ON(c, EVHTP_CONN_FLAG_KEEPALIVE);
+        /* since the request is keep-alive, assure that the connection
+         * is aware of the same.
+         */
+        HTP_FLAG_ON(conn, EVHTP_CONN_FLAG_KEEPALIVE);
 
-        c->request         = NULL;
-        c->body_bytes_read = 0;
+        conn->body_bytes_read = 0;
 
-        if (c->htp->parent && c->flags & EVHTP_CONN_FLAG_VHOST_VIA_SNI)
+        if (conn->type == evhtp_type_server)
         {
-            /* this request was servied by a virtual host evhtp_t structure
-             * which was *NOT* found via SSL SNI lookup. In this case we want to
-             * reset our connections evhtp_t structure back to the original so
-             * that subsequent requests can have a different Host: header.
-             */
-            evhtp_t * orig_htp = c->htp->parent;
-
-            c->htp = orig_htp;
+            if (conn->htp->parent != NULL
+                && !(conn->flags & EVHTP_CONN_FLAG_VHOST_VIA_SNI))
+            {
+                /* this request was served by a virtual host evhtp_t structure
+                 * which was *NOT* found via SSL SNI lookup. In this case we want to
+                 * reset our connections evhtp_t structure back to the original so
+                 * that subsequent requests can have a different 'Host' header.
+                 */
+                conn->htp = conn->htp->parent;
+            }
         }
 
-        switch (c->type) {
+        switch (conn->type) {
             case evhtp_type_client:
                 type = htp_type_response;
                 break;
@@ -2237,16 +2297,18 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
                 type = htp_type_request;
                 break;
             default:
-                evhtp_connection_free(c);
+                log_error("Unknown connection type");
+
+                evhtp_safe_free(conn, evhtp_connection_free);
                 return;
         }
 
-        htparser_init(c->parser, type);
-        htparser_set_userdata(c->parser, c);
+        htparser_init(conn->parser, type);
+        htparser_set_userdata(conn->parser, conn);
 
         return;
     } else {
-        evhtp_connection_free(c);
+        evhtp_safe_free(conn, evhtp_connection_free);
 
         return;
     }
@@ -2683,7 +2745,9 @@ htp__ssl_add_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess)
 
     connection = (evhtp_connection_t *)SSL_get_app_data(ssl);
     if (connection->htp == NULL)
-        return 0; /* We cannot get the ssl_cfg */
+    {
+        return 0;     /* We cannot get the ssl_cfg */
+    }
     cfg        = connection->htp->ssl_cfg;
 
     sid        = sess->session_id;
@@ -2708,7 +2772,9 @@ htp__ssl_get_scache_ent_(evhtp_ssl_t * ssl, unsigned char * sid, int sid_len, in
 
     connection = (evhtp_connection_t * )SSL_get_app_data(ssl);
     if (connection->htp == NULL)
-        return NULL; /* We have no way of getting ssl_cfg */
+    {
+        return NULL;     /* We have no way of getting ssl_cfg */
+    }
     cfg        = connection->htp->ssl_cfg;
     sess       = NULL;
 
@@ -3890,11 +3956,11 @@ int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 {
 #ifndef NO_SYS_UN
-    struct sockaddr_un sockun   = { 0 };
+    struct sockaddr_un sockun = { 0 };
 #endif
     struct sockaddr   * sa;
-    struct sockaddr_in6 sin6 = { 0 };
-    struct sockaddr_in  sin  = { 0 };
+    struct sockaddr_in6 sin6  = { 0 };
+    struct sockaddr_in  sin   = { 0 };
     size_t              sin_len;
 
     if (!strncmp(baddr, "ipv6:", 5))
@@ -3916,7 +3982,7 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
             return -1;
         }
 
-        sin_len        = sizeof(struct sockaddr_un);
+        sin_len           = sizeof(struct sockaddr_un);
         sockun.sun_family = AF_UNIX;
 
         strncpy(sockun.sun_path, baddr, strlen(baddr));
@@ -4006,7 +4072,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
     }     /* switch */
 
     return hcb;
-} /* evhtp_callback_new */
+}         /* evhtp_callback_new */
 
 void
 evhtp_callback_free(evhtp_callback_t * callback)
@@ -4126,7 +4192,7 @@ htp__set_hook_(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void
     }     /* switch */
 
     return 0;
-} /* htp__set_hook_ */
+}         /* htp__set_hook_ */
 
 int
 evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg)
@@ -5285,7 +5351,7 @@ evhtp_connection_ssl_new(struct event_base * evbase,
     evhtp_assert(rc == 0);
 
     return conn;
-} /* evhtp_connection_ssl_new */
+}     /* evhtp_connection_ssl_new */
 
 #endif
 

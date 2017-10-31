@@ -778,7 +778,7 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
     {
         switch (callback->type) {
             case evhtp_callback_type_hash:
-                if (strncmp(callback->val.path, path, path_len) == 0)
+                if (strncmp(path, callback->val.path, callback->len) == 0)
                 {
                     *start_offset = 0;
                     *end_offset   = path_len;
@@ -3884,11 +3884,11 @@ int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 {
 #ifndef NO_SYS_UN
-    struct sockaddr_un sockun   = { 0 };
+    struct sockaddr_un sockun = { 0 };
 #endif
     struct sockaddr   * sa;
-    struct sockaddr_in6 sin6 = { 0 };
-    struct sockaddr_in  sin  = { 0 };
+    struct sockaddr_in6 sin6  = { 0 };
+    struct sockaddr_in  sin   = { 0 };
     size_t              sin_len;
 
     if (!strncmp(baddr, "ipv6:", 5))
@@ -3910,7 +3910,7 @@ evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
             return -1;
         }
 
-        sin_len        = sizeof(struct sockaddr_un);
+        sin_len           = sizeof(struct sockaddr_un);
         sockun.sun_family = AF_UNIX;
 
         strncpy(sockun.sun_path, baddr, strlen(baddr));
@@ -3969,6 +3969,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
     hcb->type  = type;
     hcb->cb    = cb;
     hcb->cbarg = arg;
+    hcb->len   = strlen(path);
 
     switch (type) {
         case evhtp_callback_type_hash:

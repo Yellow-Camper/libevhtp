@@ -5318,7 +5318,7 @@ evhtp_connection_ssl_new(struct event_base * evbase,
 {
     evhtp_connection_t * conn;
     struct sockaddr_in   sin;
-    int8_t               err;
+    const char         * errstr;
 
     if (evbase == NULL)
     {
@@ -5330,20 +5330,24 @@ evhtp_connection_ssl_new(struct event_base * evbase,
     }
 
     conn->evbase = evbase;
-    err          = -1;
+    errstr       = NULL;
 
     do {
         if ((conn->ssl = SSL_new(ctx)) == NULL) {
+            errstr = "unable to allocate SSL context";
+
             break;
         }
 
         if ((conn->bev = ssl_sk_new_(evbase, -1, conn->ssl,
                                      BUFFEREVENT_SSL_CONNECTING,
                                      BEV_OPT_CLOSE_ON_FREE)) == NULL) {
+            errstr = "unable to allocate bev context";
             break;
         }
 
         if (bufferevent_enable(conn->bev, EV_READ) == -1) {
+            errstr = "unable to enable reading";
             break;
         }
 
@@ -5359,14 +5363,15 @@ evhtp_connection_ssl_new(struct event_base * evbase,
         if (ssl_sk_connect_(conn->bev,
                             (struct sockaddr *)&sin,
                             sizeof(sin)) == -1) {
+            errstr = "sk_connect_ failure";
             break;
         }
-
-        err = 0;
     } while (0);
 
 
-    if (err == -1) {
+    if (errstr != NULL) {
+        log_error("%s", errstr);
+
         evhtp_safe_free(conn, evhtp_connection_free);
 
         return NULL;

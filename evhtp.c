@@ -107,6 +107,11 @@ TAILQ_HEAD(evhtp_callbacks_s, evhtp_callback_s);
 } while (0);
 
 #ifndef EVHTP_DISABLE_EVTHR
+/**
+ * @brief Helper macro to lock htp structure
+ *
+ * @param h htp structure
+ */
 #define htp__lock_(h)                                do { \
         if (h->lock)                                      \
         {                                                 \
@@ -114,6 +119,11 @@ TAILQ_HEAD(evhtp_callbacks_s, evhtp_callback_s);
         }                                                 \
 } while (0)
 
+/**
+ * @brief Helper macro to unlock htp lock
+ *
+ * @param h htp structure
+ */
 #define htp__unlock_(h)                              do { \
         if (h->lock)                                      \
         {                                                 \
@@ -155,24 +165,65 @@ static void * (*malloc_)(size_t sz) = malloc;
 static void * (* realloc_)(void * d, size_t sz) = realloc;
 static void   (* free_)(void * d) = free;
 
+/**
+ * @brief Wrapper for malloc so that a different malloc can be used
+ * if desired.
+ *
+ * @see evhtp_set_mem_functions
+ *
+ * @param size size_t of memory to be allocated
+ *
+ * @return void * to malloc'd memory or NULL if fail
+ */
 static void *
 htp__malloc_(size_t size)
 {
     return malloc_(size);
 }
 
+/**
+ * @brief Wrapper for realloc so that a different realloc can be used
+ * if desired.
+ *
+ * @see evhtp_set_mem_functions
+ *
+ * @param ptr current memory ptr
+ * @param size size_t of memory to be allocated
+ *
+ * @return void * to newly realloc'd memory or NULL if fail
+ */
 static void *
 htp__realloc_(void * ptr, size_t size)
 {
     return realloc_(ptr, size);
 }
 
+/**
+ * @brief Wrapper for free so that a different free can be used
+ * if desired.
+ *
+ * @see evhtp_set_mem_functions
+ *
+ * @param ptr pointer to memory to be freed.
+ *
+ */
 static void
 htp__free_(void * ptr)
 {
     return free_(ptr);
 }
 
+/**
+ * @brief Wrapper for calloc so that a different calloc can be used
+ * if desired.
+ *
+ * @see evhtp_set_mem_functions
+ *
+ * @param nmemb number of members (as a size_t)
+ * @param size size of member blocks (as a size_t)
+ *
+ * @return void * to new memory block
+ */
 static void *
 htp__calloc_(size_t nmemb, size_t size)
 {
@@ -194,6 +245,14 @@ htp__calloc_(size_t nmemb, size_t size)
     return calloc(nmemb, size);
 }
 
+/**
+ * @brief implementation of strdup function.
+ *
+ * @param str - null terminated string.
+ *
+ * @return duplicate of string or NULL if fail
+ *
+ */
 static char *
 htp__strdup_(const char * str)
 {
@@ -217,6 +276,15 @@ htp__strdup_(const char * str)
     return strdup(str);
 }
 
+/**
+ * @brief implementation of strndup function.
+ *
+ * @param str - null terminated string.
+ * @param len - size_t length off string
+ *
+ * @return duplicate of string or NULL if fail
+ *
+ */
 static char *
 htp__strndup_(const char * str, size_t len)
 {
@@ -251,11 +319,11 @@ htp__strndup_(const char * str, size_t len)
 /**
  * @brief sets memory functions (alloc, realloc, free) to be used.
  *
- * param mallocfn_ function pointer to malloc function
- * param reallocfn_ function pointer to realloc function
- * param freefn_ function pointer to free function
+ * @param mallocfn_ function pointer to malloc function
+ * @param reallocfn_ function pointer to realloc function
+ * @param freefn_ function pointer to free function
  *
- * return void
+ * @return void
  */
 void
 evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
@@ -274,9 +342,9 @@ evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
 /**
  * @brief returns string status code from enum code
  *
- * param code as evhtp_res enum
+ * @param code as evhtp_res enum
  *
- * return string corresponding to code, else UNKNOWN
+ * @return string corresponding to code, else UNKNOWN
  */
 static const char *
 status_code_to_str(evhtp_res code)
@@ -395,6 +463,15 @@ static int             ssl_locks_initialized = 0;
  */
 
 #ifdef NO_STRNLEN
+/**
+ * @brief Implementation of strnlen function if none exists.
+ *
+ * @param s - null terminated character string
+ * @param maxlen - maximum length of string
+ *
+ * @return length of string
+ *
+ */
 static size_t
 strnlen(const char * s, size_t maxlen)
 {
@@ -412,6 +489,15 @@ strnlen(const char * s, size_t maxlen)
 #endif
 
 #ifdef NO_STRNDUP
+/**
+ * @brief Implementation of strndup if none exists.
+ *
+ * @param s - const char * to null terminated string
+ * @param n - size_t maximum legnth of string
+ *
+ * @return length limited string duplicate or NULL if fail
+ *
+ */
 static char *
 strndup(const char * s, size_t n)
 {
@@ -1816,7 +1902,7 @@ htp__request_parse_chunks_fini_(htparser * p)
 
 /**
  * @brief determines if the request body contains the query arguments.
- *        if the query is NULL and the contenet length of the body has never
+ *        if the query is NULL and the content length of the body has never
  *        been drained, and the content-type is x-www-form-urlencoded, the
  *        function returns 1
  *
@@ -5019,6 +5105,13 @@ evhtp_set_bev_flags(evhtp_t * htp, int flags)
     htp->bev_flags = flags;
 }
 
+/**
+ * @brief set maximum body size
+ *
+ * @param htp - evhtp_t * to htp structure.
+ * @param len - uint64_t maximum body size.
+ *
+ */
 void
 evhtp_set_max_body_size(evhtp_t * htp, uint64_t len)
 {
@@ -5183,6 +5276,15 @@ evhtp__new_(evhtp_t ** out, struct event_base * evbase, void * arg)
     return 0;
 }
 
+/**
+ * @brief Allocates new evhtp_t structure
+ *
+ * @param evbase event_base structure
+ * @param arg anonymous arguments passed in
+ *
+ * @return Newly allocated htp structure or NULL if fail
+ *
+ */
 evhtp_t *
 evhtp_new(struct event_base * evbase, void * arg)
 {

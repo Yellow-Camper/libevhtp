@@ -5306,6 +5306,10 @@ evhtp_connection_new_dns(struct event_base * evbase, struct evdns_base * dns_bas
 }     /* evhtp_connection_new_dns */
 
 #ifndef EVHTP_DISABLE_SSL
+
+#define ssl_sk_new_     bufferevent_openssl_socket_new
+#define ssl_sk_connect_ bufferevent_socket_connect
+
 evhtp_connection_t *
 evhtp_connection_ssl_new(struct event_base * evbase,
                          const char        * addr,
@@ -5314,42 +5318,64 @@ evhtp_connection_ssl_new(struct event_base * evbase,
 {
     evhtp_connection_t * conn;
     struct sockaddr_in   sin;
-    int                  rc;
+    const char         * errstr;
 
     if (evbase == NULL)
     {
         return NULL;
     }
 
-    if (!(conn = htp__connection_new_(NULL, -1, evhtp_type_client)))
-    {
+    if (!(conn = htp__connection_new_(NULL, -1, evhtp_type_client))) {
         return NULL;
     }
 
-    sin.sin_family      = AF_INET;
-    sin.sin_addr.s_addr = inet_addr(addr);
-    sin.sin_port        = htons(port);
+    conn->evbase = evbase;
+    errstr       = NULL;
 
-    conn->ssl           = SSL_new(ctx);
-    evhtp_assert(conn->ssl != NULL);
+    do {
+        if ((conn->ssl = SSL_new(ctx)) == NULL) {
+            errstr = "unable to allocate SSL context";
 
-    conn->evbase        = evbase;
-    conn->bev           = bufferevent_openssl_socket_new(
-        evbase, -1,
-        conn->ssl,
-        BUFFEREVENT_SSL_CONNECTING,
-        BEV_OPT_CLOSE_ON_FREE);
+            break;
+        }
 
-    evhtp_assert(conn->bev != NULL);
+        if ((conn->bev = ssl_sk_new_(evbase, -1, conn->ssl,
+                                     BUFFEREVENT_SSL_CONNECTING,
+                                     BEV_OPT_CLOSE_ON_FREE)) == NULL) {
+            errstr = "unable to allocate bev context";
+            break;
+        }
 
-    bufferevent_enable(conn->bev, EV_READ);
-    bufferevent_setcb(conn->bev, NULL, NULL,
-                      htp__connection_eventcb_, conn);
+        if (bufferevent_enable(conn->bev, EV_READ) == -1) {
+            errstr = "unable to enable reading";
+            break;
+        }
 
-    rc = bufferevent_socket_connect(conn->bev,
-                                    (struct sockaddr *)&sin, sizeof(sin));
 
-    evhtp_assert(rc == 0);
+        bufferevent_setcb(conn->bev, NULL, NULL,
+                          htp__connection_eventcb_, conn);
+
+
+        sin.sin_family      = AF_INET;
+        sin.sin_addr.s_addr = inet_addr(addr);
+        sin.sin_port        = htons(port);
+
+        if (ssl_sk_connect_(conn->bev,
+                            (struct sockaddr *)&sin,
+                            sizeof(sin)) == -1) {
+            errstr = "sk_connect_ failure";
+            break;
+        }
+    } while (0);
+
+
+    if (errstr != NULL) {
+        log_error("%s", errstr);
+
+        evhtp_safe_free(conn, evhtp_connection_free);
+
+        return NULL;
+    }
 
     return conn;
 }     /* evhtp_connection_ssl_new */

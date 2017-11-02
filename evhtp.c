@@ -3901,6 +3901,17 @@ evhtp_unbind_socket(evhtp_t * htp)
     evhtp_safe_free(htp->server, evconnlistener_free);
 }
 
+/**
+ * @brief Opens a listener socket for the socket and htp structure passed in.
+ *
+ * @see libevent/include/event2/listener.h
+ * @see evhtp_bind_sockaddr
+ *
+ * @parameter htp - evhtp_t ptr
+ * @parameter evutil_socket_t - evhtp's socket structure
+ * @parameter backlog - flag
+ *
+ */
 int
 evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 {
@@ -3983,6 +3994,18 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
     return 0;
 }     /* evhtp_accept_socket */
 
+/**
+ * @brief Binds socket address.
+ *
+ * @see evhtp_bind_socket
+ *
+ * @param htp - ptr to evhtp_t structure
+ * @param sa - ptr to sockaddr structure
+ * @param sin_len - size of sockaddr structure
+ * @param backlog - backlog flag
+ *
+ * return 0 on success, -1 on fail
+ */
 int
 evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int backlog)
 {
@@ -4060,6 +4083,18 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     return 0;
 }     /* evhtp_bind_sockaddr */
 
+/**
+ * @brief Binds socket to address and port
+ *
+ * @see evhtp_bind_sockaddr
+ *
+ * @param htp - ptr to evhtp_t structure
+ * @param baddr - const char ptr to NULL terminated address string
+ * @param port - uint16_t port number
+ * @param backlog - int backlog flag
+ *
+ * return 0 on success, -1 on fail
+ */
 int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 {
@@ -4183,6 +4218,15 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
     return hcb;
 }         /* evhtp_callback_new */
 
+/**
+ * @brief safely frees callback structure memory and internals
+ *
+ * @see evhtp_safe_free
+ *
+ *
+ * @param callback - callback to be freed
+ *
+ */
 void
 evhtp_callback_free(evhtp_callback_t * callback)
 {
@@ -5156,6 +5200,15 @@ HTP_FLAG_FNGEN(, evhtp_t *);
 HTP_FLAG_FNGEN(_connection, evhtp_connection_t *);
 HTP_FLAG_FNGEN(_request, evhtp_request_t *);
 
+/**
+ * @brief Adds alias to list of aliases for the passed in evhtp_t structure.
+ *
+ * @param evhtp - ptr to evhtp_t structure
+ * @param name - NULL terminated character string with alias.
+ *
+ * @return 0 on success, -1 on failure
+ */
+
 int
 evhtp_add_alias(evhtp_t * evhtp, const char * name)
 {
@@ -5234,6 +5287,15 @@ evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost)
     return 0;
 }
 
+/**
+ * @brief Allocates new evhtp_t structure
+ *
+ * @param [OUT] out - double ptr to evhtp_t structure.
+ * @param [IN] evbase - event_base structure
+ * @param [IN] arg - anonymous argument
+ *
+ * @return 0 on success, -1 on failure
+ */
 static int
 evhtp__new_(evhtp_t ** out, struct event_base * evbase, void * arg)
 {
@@ -5298,6 +5360,13 @@ evhtp_new(struct event_base * evbase, void * arg)
     return htp;
 }
 
+/**
+ * @brief Frees evhtp_t structure; will stop and free threads associated
+ * with the structure, and free the ssl context as well (if applicable).
+ *
+ * @param evhtp - ptr to evhtp_t structure
+ *
+ */
 void
 evhtp_free(evhtp_t * evhtp)
 {
@@ -5351,6 +5420,16 @@ evhtp_free(evhtp_t * evhtp)
 * client request functions                                      *
 *****************************************************************/
 
+/**
+ * @brief Creates new evhtp_connection_t structure.
+ *
+ * @param evbase - ptr to event_base
+ * @param addr - const char * to IPV4 or IPV6 address string
+ * @param port - uint16_t port to attach to.
+ *
+ * @return Newly allocated evhtp_connection_t ptr or NULL on failure
+ *
+ */
 evhtp_connection_t *
 evhtp_connection_new(struct event_base * evbase, const char * addr, uint16_t port)
 {

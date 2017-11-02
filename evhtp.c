@@ -248,6 +248,15 @@ htp__strndup_(const char * str, size_t len)
 #define htp__free_(p)        free(p)
 #endif
 
+/**
+ * @brief sets memory functions (alloc, realloc, free) to be used.
+ *
+ * param mallocfn_ function pointer to malloc function
+ * param reallocfn_ function pointer to realloc function
+ * param freefn_ function pointer to free function
+ *
+ * return void
+ */
 void
 evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
                         void *(*reallocfn_)(void * p, size_t sz),
@@ -262,6 +271,13 @@ evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
 #endif
 }
 
+/**
+ * @brief returns string status code from enum code
+ *
+ * param code as evhtp_res enum
+ *
+ * return string corresponding to code, else UNKNOWN
+ */
 static const char *
 status_code_to_str(evhtp_res code)
 {

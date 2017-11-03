@@ -104,6 +104,7 @@ query_test(const char * raw_query, int exp_error, struct expected exp[], int fla
         return -1;
     }
 
+    evhtp_query_free(query);
     return num_errors;
 } /* query_test */
 
@@ -235,4 +236,3 @@ main(int argc, char ** argv) {
 
     return 0;
 }
-

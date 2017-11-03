@@ -774,8 +774,7 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
 
     path_len = strlen(path);
 
-    TAILQ_FOREACH(callback, cbs, next)
-    {
+    TAILQ_FOREACH(callback, cbs, next) {
         switch (callback->type) {
             case evhtp_callback_type_hash:
                 if (strncmp(path, callback->val.path, callback->len) == 0)
@@ -1345,8 +1344,7 @@ htp__request_find_vhost_(evhtp_t * evhtp, const char * name)
     evhtp_t       * evhtp_vhost;
     evhtp_alias_t * evhtp_alias;
 
-    TAILQ_FOREACH(evhtp_vhost, &evhtp->vhosts, next_vhost)
-    {
+    TAILQ_FOREACH(evhtp_vhost, &evhtp->vhosts, next_vhost) {
         if (evhtp_unlikely(evhtp_vhost->server_name == NULL))
         {
             continue;
@@ -1359,8 +1357,7 @@ htp__request_find_vhost_(evhtp_t * evhtp, const char * name)
             return evhtp_vhost;
         }
 
-        TAILQ_FOREACH(evhtp_alias, &evhtp_vhost->aliases, next)
-        {
+        TAILQ_FOREACH(evhtp_alias, &evhtp_vhost->aliases, next) {
             if (evhtp_alias->alias == NULL)
             {
                 continue;
@@ -3114,8 +3111,7 @@ evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, void * arg)
         return -1;
     }
 
-    TAILQ_FOREACH(kv, kvs, next)
-    {
+    TAILQ_FOREACH(kv, kvs, next) {
         int res;
 
         if ((res = cb(kv, arg)))
@@ -3137,8 +3133,7 @@ evhtp_kv_find(evhtp_kvs_t * kvs, const char * key)
         return NULL;
     }
 
-    TAILQ_FOREACH(kv, kvs, next)
-    {
+    TAILQ_FOREACH(kv, kvs, next) {
         if (strcasecmp(kv->key, key) == 0)
         {
             return kv->val;
@@ -3158,8 +3153,7 @@ evhtp_kvs_find_kv(evhtp_kvs_t * kvs, const char * key)
         return NULL;
     }
 
-    TAILQ_FOREACH(kv, kvs, next)
-    {
+    TAILQ_FOREACH(kv, kvs, next) {
         if (strcasecmp(kv->key, key) == 0)
         {
             return kv;
@@ -3190,8 +3184,7 @@ evhtp_kvs_add_kvs(evhtp_kvs_t * dst, evhtp_kvs_t * src)
 
     evhtp_kv_t * kv;
 
-    TAILQ_FOREACH(kv, src, next)
-    {
+    TAILQ_FOREACH(kv, src, next) {
         evhtp_kvs_add_kv(dst, evhtp_kv_new(kv->key,
                                            kv->val,
                                            kv->k_heaped,
@@ -4020,8 +4013,7 @@ evhtp_callbacks_free(evhtp_callbacks_t * callbacks)
         return;
     }
 
-    TAILQ_FOREACH_SAFE(callback, callbacks, next, tmp)
-    {
+    TAILQ_FOREACH_SAFE(callback, callbacks, next, tmp) {
         TAILQ_REMOVE(callbacks, callback, next);
 
         evhtp_safe_free(callback, evhtp_callback_free);
@@ -4387,8 +4379,7 @@ evhtp_get_cb(evhtp_t * htp, const char * path)
         return NULL;
     }
 
-    TAILQ_FOREACH(callback, htp->callbacks, next)
-    {
+    TAILQ_FOREACH(callback, htp->callbacks, next) {
         if (strcmp(callback->val.path, path) == 0)
         {
             return callback;
@@ -5015,26 +5006,23 @@ evhtp_set_parser_flags(evhtp_t * htp, int flags)
     htp->parser_flags = flags;
 }
 
-#define HTP_FLAG_FNGEN(NAME, TYPE) void                  \
-    evhtp ## NAME ## _enable_flag(TYPE v, int flag)      \
-    {                                                    \
-        HTP_FLAG_ON(v, flag);                            \
-    }                                                    \
-                                                         \
-    void                                                 \
-        evhtp ## NAME ## _disable_flag(TYPE v, int flag) \
-    {                                                    \
-        HTP_FLAG_OFF(v, flag);                           \
-    }                                                    \
-                                                         \
-    int                                                  \
-        evhtp ## NAME ## _get_flags(TYPE v)              \
-    {                                                    \
-        if (v)                                           \
-        {                                                \
-            return v->flags;                             \
-        }                                                \
-        return -1;                                       \
+#define HTP_FLAG_FNGEN(NAME, TYPE) void                    \
+    evhtp ## NAME ## _enable_flag(TYPE v, int flag) {      \
+        HTP_FLAG_ON(v, flag);                              \
+    }                                                      \
+                                                           \
+    void                                                   \
+        evhtp ## NAME ## _disable_flag(TYPE v, int flag) { \
+        HTP_FLAG_OFF(v, flag);                             \
+    }                                                      \
+                                                           \
+    int                                                    \
+        evhtp ## NAME ## _get_flags(TYPE v) {              \
+        if (v)                                             \
+        {                                                  \
+            return v->flags;                               \
+        }                                                  \
+        return -1;                                         \
     }
 
 HTP_FLAG_FNGEN(, evhtp_t *);
@@ -5209,8 +5197,7 @@ evhtp_free(evhtp_t * evhtp)
         evhtp_safe_free(evhtp->callbacks, evhtp_callbacks_free);
     }
 
-    TAILQ_FOREACH_SAFE(evhtp_alias, &evhtp->aliases, next, tmp)
-    {
+    TAILQ_FOREACH_SAFE(evhtp_alias, &evhtp->aliases, next, tmp) {
         if (evhtp_alias->alias != NULL)
         {
             evhtp_safe_free(evhtp_alias->alias, htp__free_);

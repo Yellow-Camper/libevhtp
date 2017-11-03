@@ -673,6 +673,13 @@ htp__hook_request_fini_(evhtp_request_t * request)
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined request hook
+ * 
+ * @param request
+ * @param len
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_chunk_new_(evhtp_request_t * request, uint64_t len)
 {
@@ -681,6 +688,12 @@ htp__hook_chunk_new_(evhtp_request_t * request, uint64_t len)
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined on_chunk_fini hook
+ * 
+ * @param request
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_chunk_fini_(evhtp_request_t * request)
 {
@@ -689,6 +702,12 @@ htp__hook_chunk_fini_(evhtp_request_t * request)
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined on chunk_finis hook
+ * 
+ * @param request
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_chunks_fini_(evhtp_request_t * request)
 {
@@ -697,6 +716,12 @@ htp__hook_chunks_fini_(evhtp_request_t * request)
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined on_headers_start hook
+ * 
+ * @param request
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_headers_start_(evhtp_request_t * request)
 {
@@ -766,6 +791,13 @@ htp__hook_connection_error_(evhtp_connection_t * connection, evhtp_error_flags e
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined hostname processing hook
+ * 
+ * @param r
+ * @param hostname
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_hostname_(evhtp_request_t * r, const char * hostname)
 {
@@ -774,6 +806,12 @@ htp__hook_hostname_(evhtp_request_t * r, const char * hostname)
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined on_write hook
+ * 
+ * @param connection
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_connection_write_(evhtp_connection_t * connection)
 {
@@ -862,6 +900,15 @@ htp__glob_match_(const char * pattern, size_t plen,
     return 0;
 } /* htp__glob_match_ */
 
+/**
+ * @brief Locates a given callback offsets performs a regex pattern match
+ * 
+ * @param [IN] cbs ptr to evhtp_callbacks_t structure
+ * @param [IN] path
+ * @param [OUT] start_offset
+ * @param [OUT] end_offset
+ * @return 
+ */
 static evhtp_callback_t *
 htp__callback_find_(evhtp_callbacks_t * cbs,
                     const char        * path,
@@ -1064,6 +1111,10 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
     return 0;
 }     /* htp__path_new_ */
 
+/**
+ * @brief Correctly frees the evhtp_path_t ptr that is passed in.
+ * @param path
+ */
 static void
 htp__path_free_(evhtp_path_t * path)
 {
@@ -1272,6 +1323,12 @@ htp__request_new_(evhtp_connection_t * c)
     return req;
 } /* htp__request_new_ */
 
+/**
+ * @brief Starts the parser for the connection associated with the parser struct
+ * 
+ * @param p
+ * @return  0 on success, -1 on fail
+ */
 static int
 htp__request_parse_start_(htparser * p)
 {
@@ -1305,6 +1362,16 @@ htp__request_parse_start_(htparser * p)
     return 0;
 }
 
+/**
+ * @brief parses http request arguments
+ * 
+ * @see htparser_get_userdata
+ * 
+ * @param p
+ * @param data
+ * @param len
+ * @return 0 on success, -1 on failure (sets connection cr_status as well)
+ */
 static int
 htp__request_parse_args_(htparser * p, const char * data, size_t len)
 {
@@ -4471,6 +4538,12 @@ evhtp_connection_get_hooks(evhtp_connection_t * c)
     return c->hooks;
 }
 
+/**
+ * @brief returns request hooks
+ * 
+ * @param r
+ * @return 
+ */
 evhtp_hooks_t *
 evhtp_request_get_hooks(evhtp_request_t * r)
 {
@@ -4482,12 +4555,27 @@ evhtp_request_get_hooks(evhtp_request_t * r)
     return r->hooks;
 }
 
+/**
+ * @brief returns callback hooks
+ * 
+ * @param cb
+ * @return 
+ */
 evhtp_hooks_t *
 evhtp_callback_get_hooks(evhtp_callback_t * cb)
 {
     return cb->hooks;
 }
 
+/**
+ * @brief sets callback hooks
+ * 
+ * @param htp
+ * @param path
+ * @param cb
+ * @param arg
+ * @return 
+ */
 evhtp_callback_t *
 evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
 {
@@ -4527,6 +4615,13 @@ evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
     return hcb;
 }
 
+/**
+ * @brief gets callback for given path.
+ * 
+ * @param htp
+ * @param path
+ * @return callback ptr on success, NULL on failure
+ */
 evhtp_callback_t *
 evhtp_get_cb(evhtp_t * htp, const char * path)
 {

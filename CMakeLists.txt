@@ -28,34 +28,14 @@ OPTION(EVHTP_USE_TCMALLOC      "Enable tcmalloc allocator" OFF)
 
 OPTION(EVHTP_DEBUG "Enable verbose debug logging" OFF)
 
-# fun color stuff
-if(NOT WIN32)
-    string(ASCII 27 Esc)
-    set(ColourReset "${Esc}[m")
-    set(ColourBold  "${Esc}[1m")
-    set(Red         "${Esc}[31m")
-    set(Green       "${Esc}[32m")
-    set(Yellow      "${Esc}[33m")
-    set(Blue        "${Esc}[34m")
-    set(Magenta     "${Esc}[35m")
-    set(Cyan        "${Esc}[36m")
-    set(White       "${Esc}[37m")
-    set(BoldRed     "${Esc}[1;31m")
-    set(BoldGreen   "${Esc}[1;32m")
-    set(BoldYellow  "${Esc}[1;33m")
-    set(BoldBlue    "${Esc}[1;34m")
-    set(BoldMagenta "${Esc}[1;35m")
-    set(BoldCyan    "${Esc}[1;36m")
-    set(BoldWhite   "${Esc}[1;37m")
-endif()
-
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
-INCLUDE (CheckFunctionExists)
-INCLUDE (CheckIncludeFiles)
-INCLUDE (CheckTypeSize)
-INCLUDE (CheckCCompilerFlag)
-INCLUDE (TestBigEndian)
+include (colors)
+include (CheckFunctionExists)
+include (CheckIncludeFiles)
+include (CheckTypeSize)
+include (CheckCCompilerFlag)
+include (TestBigEndian)
 
 CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
 CHECK_FUNCTION_EXISTS(strnlen HAVE_STRNLEN)
@@ -64,16 +44,16 @@ if (EVHTP_THR_SHARED_PIPE)
     add_definitions(-DEVTHR_SHARED_PIPE)
 endif()
 
-CHECK_INCLUDE_FILES(strings.h   HAVE_STRINGS_H)
-CHECK_INCLUDE_FILES(string.h    HAVE_STRING_H)
-CHECK_INCLUDE_FILES(stdlib.h    HAVE_STDLIB_H)
-CHECK_INCLUDE_FILES(sys/time.h  HAVE_SYS_TIME_H)
-CHECK_INCLUDE_FILES(sys/times.h HAVE_SYS_TIMES_H)
-CHECK_INCLUDE_FILES(unistd.h    HAVE_UNISTD_H)
-CHECK_INCLUDE_FILES(stdarg.h    HAVE_STDARG_PROTOTYPES)
-CHECK_INCLUDE_FILES(sys/tree.h  HAVE_SYS_TREE)
-CHECK_INCLUDE_FILES(sys/queue.h HAVE_SYS_QUEUE)
-CHECK_INCLUDE_FILES(sys/un.h    HAVE_SYS_UN)
+CHECK_include_FILES(strings.h   HAVE_STRINGS_H)
+CHECK_include_FILES(string.h    HAVE_STRING_H)
+CHECK_include_FILES(stdlib.h    HAVE_STDLIB_H)
+CHECK_include_FILES(sys/time.h  HAVE_SYS_TIME_H)
+CHECK_include_FILES(sys/times.h HAVE_SYS_TIMES_H)
+CHECK_include_FILES(unistd.h    HAVE_UNISTD_H)
+CHECK_include_FILES(stdarg.h    HAVE_STDARG_PROTOTYPES)
+CHECK_include_FILES(sys/tree.h  HAVE_SYS_TREE)
+CHECK_include_FILES(sys/queue.h HAVE_SYS_QUEUE)
+CHECK_include_FILES(sys/un.h    HAVE_SYS_UN)
 
 CHECK_TYPE_SIZE("int" SIZEOF_INT)
 CHECK_TYPE_SIZE("long" SIZEOF_LONG)
@@ -154,7 +134,7 @@ if (EVHTP_USE_DEFER_ACCEPT)
     add_definitions(-DUSE_DEFER_ACCEPT)
 endif(EVHTP_USE_DEFER_ACCEPT)
 
-SET(CMAKE_INCLUDE_CURRENT_DIR ON)
+SET(CMAKE_include_CURRENT_DIR ON)
 
 find_package(LibEvent REQUIRED)
 
@@ -166,7 +146,7 @@ if (NOT EVHTP_DISABLE_SSL)
     find_package(OpenSSL)
 endif()
 
-find_path(LIBEVENT_INCLUDE_DIR event2/event.h REQUIRED)
+find_path(LIBEVENT_include_DIR event2/event.h REQUIRED)
 
 if (NOT EVHTP_DISABLE_REGEX)
     find_library(EVHTP_USE_SYS_ONIG onig)
@@ -177,7 +157,7 @@ if (NOT OPENSSL_FOUND)
 
     set (EVHTP_DISABLE_SSL        ON)
     set (OPENSSL_CRYPTO_LIBRARY   "")
-    set (OPENSSL_INCLUDE_DIR      "")
+    set (OPENSSL_include_DIR      "")
     set (OPENSSL_LIBRARIES        "")
     set (LIBEVENT_OPENSSL_LIBRARY "")
 elseif(APPLE)
@@ -238,19 +218,19 @@ if (NOT EVHTP_DISABLE_REGEX)
             oniguruma/enc/koi8_r.c
             oniguruma/enc/cp1251.c)
 
-        set (ONIG_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/oniguruma;${CMAKE_CURRENT_SOURCE_DIR}/oniguruma)
+        set (ONIG_include_DIR ${CMAKE_CURRENT_BINARY_DIR}/oniguruma;${CMAKE_CURRENT_SOURCE_DIR}/oniguruma)
     else()
         message(STATUS "${YELLOW}Using the system-wide version of oniguruma${ColourReset}")
 
         set(EVHTP_USE_SYS_ONIG 1)
         set(ONIG_SOURCES "")
         set(ONIG_LIBS ${HAS_SYS_ONIG})
-        set(ONIG_INCLUDE_DIR "")
+        set(ONIG_include_DIR "")
     endif(NOT EVHTP_USE_SYS_ONIG)
 else()
     set(ONIG_SOURCES "")
     set(ONIG_LIBS "")
-    set(ONIG_INCLUDE_DIR "")
+    set(ONIG_include_DIR "")
 endif()
 
 include_directories(
@@ -258,9 +238,9 @@ include_directories(
     ${CMAKE_CURRENT_BINARY_DIR}/compat
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_BINARY_DIR}/include
-    ${ONIG_INCLUDE_DIR}
-    ${OPENSSL_INCLUDE_DIR}
-    ${LIBEVENT_INCLUDE_DIR}
+    ${ONIG_include_DIR}
+    ${OPENSSL_include_DIR}
+    ${LIBEVENT_include_DIR}
 )
 
 set(LIBEVHTP_EXTERNAL_LIBS
@@ -331,8 +311,8 @@ if (NOT LIB_INSTALL_DIR)
   set (LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 endif (NOT LIB_INSTALL_DIR)
 
-if(NOT INCLUDE_INSTALL_DIR)
-    set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
+if(NOT include_INSTALL_DIR)
+    set(include_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
 endif()
 
 install (TARGETS evhtp DESTINATION ${LIB_INSTALL_DIR})
@@ -343,26 +323,26 @@ install (
         ${PROJECT_SOURCE_DIR}/include/evhtp/parser.h
         ${PROJECT_SOURCE_DIR}/include/evhtp/thread.h
     DESTINATION
-        ${INCLUDE_INSTALL_DIR}/evhtp)
+        ${include_INSTALL_DIR}/evhtp)
 
 install (
     FILES
         ${PROJECT_SOURCE_DIR}/include/evhtp.h
     DESTINATION
-        ${INCLUDE_INSTALL_DIR})
+        ${include_INSTALL_DIR})
 
 install (
     FILES
         ${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h
     DESTINATION
-        ${INCLUDE_INSTALL_DIR}/evhtp)
+        ${include_INSTALL_DIR}/evhtp)
 
 if (NOT EVHTP_DISABLE_EVTHR)
     install (
         FILES
             ${PROJECT_SOURCE_DIR}/include/evhtp/thread.h
         DESTINATION
-            ${INCLUDE_INSTALL_DIR}/evhtp)
+            ${include_INSTALL_DIR}/evhtp)
 endif()
 
 if (NOT EVHTP_DISABLE_REGEX)
@@ -372,7 +352,7 @@ if (NOT EVHTP_DISABLE_REGEX)
 
         install (
             FILES       oniguruma/onigposix.h
-            DESTINATION ${INCLUDE_INSTALL_DIR}/evhtp)
+            DESTINATION ${include_INSTALL_DIR}/evhtp)
 
     endif()
 endif()
@@ -381,12 +361,12 @@ if (NOT HAVE_SYS_QUEUE)
 
     install(
         FILES       ${CMAKE_CURRENT_BINARY_DIR}/compat/sys/queue.h
-        DESTINATION ${INCLUDE_INSTALL_DIR}/evhtp/sys)
+        DESTINATION ${include_INSTALL_DIR}/evhtp/sys)
 endif()
 
 IF (WIN32)
-   install (FILES compat/sys/queue.h DESTINATION ${INCLUDE_INSTALL_DIR}/sys)
-   install (FILES oniguruma/onigposix.h DESTINATION ${INCLUDE_INSTALL_DIR})
+   install (FILES compat/sys/queue.h DESTINATION ${include_INSTALL_DIR}/sys)
+   install (FILES oniguruma/onigposix.h DESTINATION ${include_INSTALL_DIR})
 ENDIF (WIN32)
 
 configure_file(

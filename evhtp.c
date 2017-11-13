@@ -1911,8 +1911,7 @@ htp__create_headers_(evhtp_header_t * header, void * arg)
 }
 
 static struct evbuffer *
-htp__create_reply_(evhtp_request_t * request, evhtp_res code)
-{
+htp__create_reply_(evhtp_request_t * request, evhtp_res code) {
     struct evbuffer * buf;
     const char      * content_type;
     char              res_buf[2048];
@@ -4220,85 +4219,41 @@ evhtp_unset_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type)
 int
 evhtp_unset_all_hooks(evhtp_hooks_t ** hooks)
 {
-    int res = 0;
+    int i;
 
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_headers_start))
-    {
-        res -= 1;
-    }
+    struct {
+        enum evhtp_hook_type type;
+    } hooklist_[] = {
+        { evhtp_hook_on_header          },
+        { evhtp_hook_on_headers         },
+        { evhtp_hook_on_path            },
+        { evhtp_hook_on_read            },
+        { evhtp_hook_on_request_fini    },
+        { evhtp_hook_on_connection_fini },
+        { evhtp_hook_on_new_chunk       },
+        { evhtp_hook_on_chunk_complete  },
+        { evhtp_hook_on_chunks_complete },
+        { evhtp_hook_on_headers_start   },
+        { evhtp_hook_on_error           },
+        { evhtp_hook_on_hostname        },
+        { evhtp_hook_on_write           },
+        { evhtp_hook_on_event           },
+        { evhtp_hook_on_conn_error      },
+        { -1                            }
+    };
 
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_header))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_headers))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_path))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_read))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_request_fini))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_connection_fini))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_conn_error))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_error))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_new_chunk))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_chunk_complete))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_chunks_complete))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_hostname))
-    {
-        res -= 1;
-    }
-
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_write))
-    {
+    if (hooks == NULL) {
         return -1;
     }
 
-    if (evhtp_unset_hook(hooks, evhtp_hook_on_event))
-    {
-        return -1;
+    for (i = 0; hooklist_[i].type != -1; i++) {
+        if (evhtp_unset_hook(hooks, hooklist_[i].type) == -1) {
+            return -1;
+        }
     }
 
-    return res;
-}     /* evhtp_unset_all_hooks */
+    return 0;
+}
 
 evhtp_hooks_t *
 evhtp_connection_get_hooks(evhtp_connection_t * c)
@@ -4801,14 +4756,12 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
 #endif
 
 struct bufferevent *
-evhtp_connection_get_bev(evhtp_connection_t * connection)
-{
+evhtp_connection_get_bev(evhtp_connection_t * connection) {
     return connection->bev;
 }
 
 struct bufferevent *
-evhtp_connection_take_ownership(evhtp_connection_t * connection)
-{
+evhtp_connection_take_ownership(evhtp_connection_t * connection) {
     struct bufferevent * bev = evhtp_connection_get_bev(connection);
 
     if (connection->hooks)
@@ -4835,14 +4788,12 @@ evhtp_connection_take_ownership(evhtp_connection_t * connection)
 }
 
 struct bufferevent *
-evhtp_request_get_bev(evhtp_request_t * request)
-{
+evhtp_request_get_bev(evhtp_request_t * request) {
     return evhtp_connection_get_bev(request->conn);
 }
 
 struct bufferevent *
-evhtp_request_take_ownership(evhtp_request_t * request)
-{
+evhtp_request_take_ownership(evhtp_request_t * request) {
     return evhtp_connection_take_ownership(request->conn);
 }
 

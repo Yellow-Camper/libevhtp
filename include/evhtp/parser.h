@@ -2,6 +2,7 @@
 #define __HTPARSE_H__
 
 #include <evhtp/config.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {

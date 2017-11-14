@@ -14,16 +14,16 @@ extern "C" {
 #endif
 
 
-#if defined(_MSC_VER) && _MSC_VER >= 1500 // MSVC 2008
-#  define DEPRECATED(message) __declspec(deprecated(message))
+#if defined(_MSC_VER) && _MSC_VER >= 1500 /* MSVC 2008 */
+#  define DEPRECATED(message)   __declspec(deprecated(message))
 #elif defined(__clang__) && defined(__has_feature)
 #  if __has_feature(attribute_deprecated_with_message)
-#    define DEPRECATED(message)  __attribute__ ((deprecated(message)))
+#    define DEPRECATED(message) __attribute__ ((deprecated(message)))
 #  endif
-#  elif defined(__GNUC__) &&  (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))
-#    define DEPRECATED(message)  __attribute__ ((deprecated(message)))
-#  elif defined(__GNUC__) &&  (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
-#    define DEPRECATED(message)  __attribute__((__deprecated__))
+#  elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))
+#    define DEPRECATED(message) __attribute__ ((deprecated(message)))
+#  elif defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+#    define DEPRECATED(message) __attribute__((__deprecated__))
 #  else
 #   define DEPRECATED(message)
 #endif
@@ -32,14 +32,25 @@ extern "C" {
 #undef EVHTP_DISABLE_REGEX
 #undef EVHTP_DISABLE_SSL
 #undef EVHTP_DISABLE_EVTHR
+#undef EVHTP_DEBUG
 
 #cmakedefine EVHTP_DISABLE_EVTHR
 #cmakedefine EVHTP_DISABLE_REGEX
+#cmakedefine EVHTP_USE_SYS_ONIG
 #cmakedefine EVHTP_DISABLE_SSL
 #cmakedefine EVHTP_DISABLE_EVTHR
 #cmakedefine EVHTP_USE_TCMALLOC
 #cmakedefine EVHTP_USE_JEMALLOC
 #cmakedefine EVHTP_USE_TCMALLOC
+#cmakedefine EVHTP_DEBUG
+
+#ifndef EVHTP_DISABLE_REGEX
+#ifdef EVHTP_USE_SYS_ONIG
+#include <onigposix.h>
+#else
+#include <evhtp/onigposix.h>
+#endif
+#endif
 
 #ifdef EVHTP_USE_TCMALLOC
 #include <google/tcmalloc.h>

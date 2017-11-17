@@ -26,6 +26,7 @@ OPTION(EVHTP_BUILD_SHARED      "Build shared library too" OFF)
 OPTION(EVHTP_USE_JEMALLOC      "Enable jemalloc allocator" OFF)
 OPTION(EVHTP_USE_TCMALLOC      "Enable tcmalloc allocator" OFF)
 
+# -DEVHTP_DEBUG:STRING=ON
 OPTION(EVHTP_DEBUG "Enable verbose debug logging" OFF)
 
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)

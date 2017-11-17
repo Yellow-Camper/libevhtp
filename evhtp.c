@@ -2317,6 +2317,12 @@ htp__connection_eventcb_(struct bufferevent * bev, short events, void * arg)
 {
     evhtp_connection_t * c = arg;
 
+    log_debug("%p %p eventcb %s%s%s%s", arg, (void *)bev,
+              events & BEV_EVENT_CONNECTED ? "connected" : "",
+              events & BEV_EVENT_ERROR     ? "error"     : "",
+              events & BEV_EVENT_TIMEOUT   ? "timeout"   : "",
+              events & BEV_EVENT_EOF       ? "eof"       : "");
+
     if (c->hooks && c->hooks->on_event)
     {
         (c->hooks->on_event)(c, events, c->hooks->on_event_arg);
@@ -2324,6 +2330,8 @@ htp__connection_eventcb_(struct bufferevent * bev, short events, void * arg)
 
     if ((events & BEV_EVENT_CONNECTED))
     {
+        log_debug("CONNECTED");
+
         if (evhtp_likely(c->type == evhtp_type_client))
         {
             HTP_FLAG_ON(c, EVHTP_CONN_FLAG_CONNECTED);
@@ -2340,6 +2348,21 @@ htp__connection_eventcb_(struct bufferevent * bev, short events, void * arg)
 #ifndef EVHTP_DISABLE_SSL
     if (c->ssl && !(events & BEV_EVENT_EOF))
     {
+#ifdef EVHTP_DEBUG
+        unsigned long sslerr;
+
+        while ((sslerr = bufferevent_get_openssl_error(bev))) {
+            log_error("SSL ERROR %lu:%i:%s:%i:%s:%i:%s",
+                      sslerr,
+                      ERR_GET_REASON(sslerr),
+                      ERR_reason_error_string(sslerr),
+                      ERR_GET_LIB(sslerr),
+                      ERR_lib_error_string(sslerr),
+                      ERR_GET_FUNC(sslerr),
+                      ERR_func_error_string(sslerr));
+        }
+#endif
+
         /* XXX need to do better error handling for SSL specific errors */
         HTP_FLAG_ON(c, EVHTP_CONN_FLAG_ERROR);
 
@@ -4588,7 +4611,9 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
     }
 
     SSL_library_init();
+    ERR_load_crypto_strings();
     SSL_load_error_strings();
+    OpenSSL_add_all_algorithms();
     RAND_poll();
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
@@ -4652,8 +4677,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
     }
 #endif  /* OPENSSL_NO_DH */
 
-    if (cfg->ciphers != NULL)
-    {
+    if (cfg->ciphers != NULL) {
         SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers);
     }
 

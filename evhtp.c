@@ -2716,14 +2716,18 @@ htp__ssl_delete_scache_ent_(evhtp_ssl_ctx_t * ctx, evhtp_ssl_sess_t * sess)
 {
     evhtp_t         * htp;
     evhtp_ssl_cfg_t * cfg;
-    unsigned char   * sid;
-    unsigned int      slen;
+    unsigned char   * sid  = NULL;
+    unsigned int      slen = 0;
 
     htp  = (evhtp_t *)SSL_CTX_get_app_data(ctx);
     cfg  = htp->ssl_cfg;
 
-    sid  = sess->session_id;
-    slen = sess->session_id_length;
+#if OPENSSL_VERSION_NUMBER >= 0x0090800fL
+    sid        = (u_char *) SSL_SESSION_get_id(sess, &slen);
+#else
+    sid        = sess->session_id;
+    slen       = sess->session_id_length;
+#endif
 
     if (cfg->scache_del)
     {
@@ -2736,8 +2740,8 @@ htp__ssl_add_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess)
 {
     evhtp_connection_t * connection;
     evhtp_ssl_cfg_t    * cfg;
-    unsigned char      * sid;
-    int                  slen;
+    unsigned char      * sid  = NULL;
+    unsigned int         slen = 0;
 
     connection = (evhtp_connection_t *)SSL_get_app_data(ssl);
     if (connection->htp == NULL)
@@ -2746,8 +2750,12 @@ htp__ssl_add_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess)
     }
     cfg        = connection->htp->ssl_cfg;
 
+#if OPENSSL_VERSION_NUMBER >= 0x0090800fL
+    sid        = (u_char *) SSL_SESSION_get_id(sess, &slen);
+#else
     sid        = sess->session_id;
     slen       = sess->session_id_length;
+#endif
 
     SSL_set_timeout(sess, cfg->scache_timeout);
 
@@ -2760,7 +2768,11 @@ htp__ssl_add_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess)
 }
 
 static evhtp_ssl_sess_t *
-htp__ssl_get_scache_ent_(evhtp_ssl_t * ssl, unsigned char * sid, int sid_len, int * copy)
+htp__ssl_get_scache_ent_(evhtp_ssl_t * ssl,
+#if OPENSSL_VERSION_NUMBER >= 0x10100003L
+    const
+#endif
+    unsigned char * sid, int sid_len, int * copy)
 {
     evhtp_connection_t * connection;
     evhtp_ssl_cfg_t    * cfg;
@@ -2819,13 +2831,13 @@ htp__ssl_servername_(evhtp_ssl_t * ssl, int * unused, void * arg)
         HTP_FLAG_ON(connection, EVHTP_CONN_FLAG_VHOST_VIA_SNI);
 
         SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
-        SSL_set_options(ssl, SSL_CTX_get_options(ssl->ctx));
+        SSL_set_options(ssl, SSL_CTX_get_options(evhtp_vhost->ssl_ctx));
 
         if ((SSL_get_verify_mode(ssl) == SSL_VERIFY_NONE) ||
             (SSL_num_renegotiations(ssl) == 0))
         {
-            SSL_set_verify(ssl, SSL_CTX_get_verify_mode(ssl->ctx),
-                           SSL_CTX_get_verify_callback(ssl->ctx));
+            SSL_set_verify(ssl, SSL_CTX_get_verify_mode(evhtp_vhost->ssl_ctx),
+                           SSL_CTX_get_verify_callback(evhtp_vhost->ssl_ctx));
         }
 
         return SSL_TLSEXT_ERR_OK;
@@ -4580,7 +4592,8 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
     evhtp_ssl_scache_get  get_cb  = NULL;
     evhtp_ssl_scache_del  del_cb  = NULL;
 #endif
-    long cache_mode;
+    X509_STORE * store = NULL;
+    long         cache_mode;
 
     if (cfg == NULL || htp == NULL || cfg->pemfile == NULL)
     {
@@ -4658,12 +4671,17 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
     }
 
     SSL_CTX_load_verify_locations(htp->ssl_ctx, cfg->cafile, cfg->capath);
-    X509_STORE_set_flags(SSL_CTX_get_cert_store(htp->ssl_ctx), cfg->store_flags);
     SSL_CTX_set_verify(htp->ssl_ctx, cfg->verify_peer, cfg->x509_verify_cb);
 
     if (cfg->x509_chk_issued_cb != NULL)
     {
-        htp->ssl_ctx->cert_store->check_issued = cfg->x509_chk_issued_cb;
+#if OPENSSL_VERSION_NUMBER < 0x010100000L
+        store = ctx->cert_store;
+        store->check_issued = cfg->x509_chk_issued_cb;
+#else
+        store = SSL_CTX_get_cert_store(htp->ssl_ctx);
+        X509_STORE_set_check_issued(store, cfg->x509_chk_issued_cb);
+#endif
     }
 
     if (cfg->verify_depth)

@@ -182,7 +182,11 @@ typedef EVP_PKEY * (* evhtp_ssl_decrypt_cb)(char * privfile);
 
 typedef int (* evhtp_ssl_scache_add)(evhtp_connection_t * connection, unsigned char * sid, int sid_len, evhtp_ssl_sess_t * sess);
 typedef void (* evhtp_ssl_scache_del)(evhtp_t * htp, unsigned char * sid, int sid_len);
-typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connection, unsigned char * sid, int sid_len);
+typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connection,
+#if OPENSSL_VERSION_NUMBER >= 0x10100003L
+    const
+#endif
+    unsigned char * sid, int sid_len);
 typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #endif
 

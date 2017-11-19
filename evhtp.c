@@ -1,3 +1,9 @@
+/**
+ * @file evhtp.c
+ *
+ * @brief implementation file for libevhtp.
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -101,6 +107,11 @@ TAILQ_HEAD(evhtp_callbacks_s, evhtp_callback_s);
 } while (0);
 
 #ifndef EVHTP_DISABLE_EVTHR
+/**
+ * @brief Helper macro to lock htp structure
+ *
+ * @param h htp structure
+ */
 #define htp__lock_(h)                                do { \
         if (h->lock)                                      \
         {                                                 \
@@ -108,6 +119,11 @@ TAILQ_HEAD(evhtp_callbacks_s, evhtp_callback_s);
         }                                                 \
 } while (0)
 
+/**
+ * @brief Helper macro to unlock htp lock
+ *
+ * @param h htp structure
+ */
 #define htp__unlock_(h)                              do { \
         if (h->lock)                                      \
         {                                                 \
@@ -149,24 +165,65 @@ static void * (*malloc_)(size_t sz) = malloc;
 static void * (* realloc_)(void * d, size_t sz) = realloc;
 static void   (* free_)(void * d) = free;
 
+/**
+ * @brief Wrapper for malloc so that a different malloc can be used
+ * if desired.
+ *
+ * @see evhtp_set_mem_functions
+ *
+ * @param size size_t of memory to be allocated
+ *
+ * @return void * to malloc'd memory or NULL if fail
+ */
 static void *
 htp__malloc_(size_t size)
 {
     return malloc_(size);
 }
 
+/**
+ * @brief Wrapper for realloc so that a different realloc can be used
+ * if desired.
+ *
+ * @see evhtp_set_mem_functions
+ *
+ * @param ptr current memory ptr
+ * @param size size_t of memory to be allocated
+ *
+ * @return void * to newly realloc'd memory or NULL if fail
+ */
 static void *
 htp__realloc_(void * ptr, size_t size)
 {
     return realloc_(ptr, size);
 }
 
+/**
+ * @brief Wrapper for free so that a different free can be used
+ * if desired.
+ *
+ * @see evhtp_set_mem_functions
+ *
+ * @param ptr pointer to memory to be freed.
+ *
+ */
 static void
 htp__free_(void * ptr)
 {
     return free_(ptr);
 }
 
+/**
+ * @brief Wrapper for calloc so that a different calloc can be used
+ * if desired.
+ *
+ * @see evhtp_set_mem_functions
+ *
+ * @param nmemb number of members (as a size_t)
+ * @param size size of member blocks (as a size_t)
+ *
+ * @return void * to new memory block
+ */
 static void *
 htp__calloc_(size_t nmemb, size_t size)
 {
@@ -188,6 +245,14 @@ htp__calloc_(size_t nmemb, size_t size)
     return calloc(nmemb, size);
 }
 
+/**
+ * @brief implementation of strdup function.
+ *
+ * @param str - null terminated string.
+ *
+ * @return duplicate of string or NULL if fail
+ *
+ */
 static char *
 htp__strdup_(const char * str)
 {
@@ -211,6 +276,15 @@ htp__strdup_(const char * str)
     return strdup(str);
 }
 
+/**
+ * @brief implementation of strndup function.
+ *
+ * @param str - null terminated string.
+ * @param len - size_t length off string
+ *
+ * @return duplicate of string or NULL if fail
+ *
+ */
 static char *
 htp__strndup_(const char * str, size_t len)
 {
@@ -242,6 +316,15 @@ htp__strndup_(const char * str, size_t len)
 #define htp__free_(p)        free(p)
 #endif
 
+/**
+ * @brief sets memory functions (alloc, realloc, free) to be used.
+ *
+ * @param mallocfn_ function pointer to malloc function
+ * @param reallocfn_ function pointer to realloc function
+ * @param freefn_ function pointer to free function
+ *
+ * @return void
+ */
 void
 evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
                         void *(*reallocfn_)(void * p, size_t sz),
@@ -256,6 +339,13 @@ evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
 #endif
 }
 
+/**
+ * @brief returns string status code from enum code
+ *
+ * @param code as evhtp_res enum
+ *
+ * @return string corresponding to code, else UNKNOWN
+ */
 static const char *
 status_code_to_str(evhtp_res code)
 {
@@ -373,6 +463,15 @@ static int             ssl_locks_initialized = 0;
  */
 
 #ifdef NO_STRNLEN
+/**
+ * @brief Implementation of strnlen function if none exists.
+ *
+ * @param s - null terminated character string
+ * @param maxlen - maximum length of string
+ *
+ * @return length of string
+ *
+ */
 static size_t
 strnlen(const char * s, size_t maxlen)
 {
@@ -390,6 +489,15 @@ strnlen(const char * s, size_t maxlen)
 #endif
 
 #ifdef NO_STRNDUP
+/**
+ * @brief Implementation of strndup if none exists.
+ *
+ * @param s - const char * to null terminated string
+ * @param n - size_t maximum legnth of string
+ *
+ * @return length limited string duplicate or NULL if fail
+ *
+ */
 static char *
 strndup(const char * s, size_t n)
 {
@@ -565,6 +673,13 @@ htp__hook_request_fini_(evhtp_request_t * request)
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined request hook
+ * 
+ * @param request
+ * @param len
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_chunk_new_(evhtp_request_t * request, uint64_t len)
 {
@@ -573,6 +688,12 @@ htp__hook_chunk_new_(evhtp_request_t * request, uint64_t len)
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined on_chunk_fini hook
+ * 
+ * @param request
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_chunk_fini_(evhtp_request_t * request)
 {
@@ -581,6 +702,12 @@ htp__hook_chunk_fini_(evhtp_request_t * request)
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined on chunk_finis hook
+ * 
+ * @param request
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_chunks_fini_(evhtp_request_t * request)
 {
@@ -589,6 +716,12 @@ htp__hook_chunks_fini_(evhtp_request_t * request)
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined on_headers_start hook
+ * 
+ * @param request
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_headers_start_(evhtp_request_t * request)
 {
@@ -658,6 +791,13 @@ htp__hook_connection_error_(evhtp_connection_t * connection, evhtp_error_flags e
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined hostname processing hook
+ * 
+ * @param r
+ * @param hostname
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_hostname_(evhtp_request_t * r, const char * hostname)
 {
@@ -666,6 +806,12 @@ htp__hook_hostname_(evhtp_request_t * r, const char * hostname)
     return EVHTP_RES_OK;
 }
 
+/**
+ * @brief Runs the user defined on_write hook
+ * 
+ * @param connection
+ * @return 
+ */
 static inline evhtp_res
 htp__hook_connection_write_(evhtp_connection_t * connection)
 {
@@ -754,6 +900,15 @@ htp__glob_match_(const char * pattern, size_t plen,
     return 0;
 } /* htp__glob_match_ */
 
+/**
+ * @brief Locates a given callback offsets performs a regex pattern match
+ * 
+ * @param [IN] cbs ptr to evhtp_callbacks_t structure
+ * @param [IN] path
+ * @param [OUT] start_offset
+ * @param [OUT] end_offset
+ * @return 
+ */
 static evhtp_callback_t *
 htp__callback_find_(evhtp_callbacks_t * cbs,
                     const char        * path,
@@ -955,6 +1110,10 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
     return 0;
 }     /* htp__path_new_ */
 
+/**
+ * @brief Correctly frees the evhtp_path_t ptr that is passed in.
+ * @param path
+ */
 static void
 htp__path_free_(evhtp_path_t * path)
 {
@@ -1163,6 +1322,12 @@ htp__request_new_(evhtp_connection_t * c)
     return req;
 } /* htp__request_new_ */
 
+/**
+ * @brief Starts the parser for the connection associated with the parser struct
+ * 
+ * @param p
+ * @return  0 on success, -1 on fail
+ */
 static int
 htp__request_parse_start_(htparser * p)
 {
@@ -1196,6 +1361,16 @@ htp__request_parse_start_(htparser * p)
     return 0;
 }
 
+/**
+ * @brief parses http request arguments
+ * 
+ * @see htparser_get_userdata
+ * 
+ * @param p
+ * @param data
+ * @param len
+ * @return 0 on success, -1 on failure (sets connection cr_status as well)
+ */
 static int
 htp__request_parse_args_(htparser * p, const char * data, size_t len)
 {
@@ -1791,7 +1966,7 @@ htp__request_parse_chunks_fini_(htparser * p)
 
 /**
  * @brief determines if the request body contains the query arguments.
- *        if the query is NULL and the contenet length of the body has never
+ *        if the query is NULL and the content length of the body has never
  *        been drained, and the content-type is x-www-form-urlencoded, the
  *        function returns 1
  *
@@ -3808,6 +3983,17 @@ evhtp_unbind_socket(evhtp_t * htp)
     evhtp_safe_free(htp->server, evconnlistener_free);
 }
 
+/**
+ * @brief Opens a listener socket for the socket and htp structure passed in.
+ *
+ * @see libevent/include/event2/listener.h
+ * @see evhtp_bind_sockaddr
+ *
+ * @parameter htp - evhtp_t ptr
+ * @parameter evutil_socket_t - evhtp's socket structure
+ * @parameter backlog - flag
+ *
+ */
 int
 evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
 {
@@ -3890,6 +4076,18 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
     return 0;
 }     /* evhtp_accept_socket */
 
+/**
+ * @brief Binds socket address.
+ *
+ * @see evhtp_bind_socket
+ *
+ * @param htp - ptr to evhtp_t structure
+ * @param sa - ptr to sockaddr structure
+ * @param sin_len - size of sockaddr structure
+ * @param backlog - backlog flag
+ *
+ * return 0 on success, -1 on fail
+ */
 int
 evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int backlog)
 {
@@ -3967,6 +4165,18 @@ evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr * sa, size_t sin_len, int bac
     return 0;
 }     /* evhtp_bind_sockaddr */
 
+/**
+ * @brief Binds socket to address and port
+ *
+ * @see evhtp_bind_sockaddr
+ *
+ * @param htp - ptr to evhtp_t structure
+ * @param baddr - const char ptr to NULL terminated address string
+ * @param port - uint16_t port number
+ * @param backlog - int backlog flag
+ *
+ * return 0 on success, -1 on fail
+ */
 int
 evhtp_bind_socket(evhtp_t * htp, const char * baddr, uint16_t port, int backlog)
 {
@@ -4089,6 +4299,15 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
     return hcb;
 }         /* evhtp_callback_new */
 
+/**
+ * @brief safely frees callback structure memory and internals
+ *
+ * @see evhtp_safe_free
+ *
+ *
+ * @param callback - callback to be freed
+ *
+ */
 void
 evhtp_callback_free(evhtp_callback_t * callback)
 {
@@ -4289,6 +4508,12 @@ evhtp_connection_get_hooks(evhtp_connection_t * c)
     return c->hooks;
 }
 
+/**
+ * @brief returns request hooks
+ * 
+ * @param r
+ * @return 
+ */
 evhtp_hooks_t *
 evhtp_request_get_hooks(evhtp_request_t * r)
 {
@@ -4300,12 +4525,27 @@ evhtp_request_get_hooks(evhtp_request_t * r)
     return r->hooks;
 }
 
+/**
+ * @brief returns callback hooks
+ * 
+ * @param cb
+ * @return 
+ */
 evhtp_hooks_t *
 evhtp_callback_get_hooks(evhtp_callback_t * cb)
 {
     return cb->hooks;
 }
 
+/**
+ * @brief sets callback hooks
+ * 
+ * @param htp
+ * @param path
+ * @param cb
+ * @param arg
+ * @return 
+ */
 evhtp_callback_t *
 evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
 {
@@ -4345,6 +4585,13 @@ evhtp_set_cb(evhtp_t * htp, const char * path, evhtp_callback_cb cb, void * arg)
     return hcb;
 }
 
+/**
+ * @brief gets callback for given path.
+ * 
+ * @param htp
+ * @param path
+ * @return callback ptr on success, NULL on failure
+ */
 evhtp_callback_t *
 evhtp_get_cb(evhtp_t * htp, const char * path)
 {
@@ -4963,6 +5210,13 @@ evhtp_set_bev_flags(evhtp_t * htp, int flags)
     htp->bev_flags = flags;
 }
 
+/**
+ * @brief set maximum body size
+ *
+ * @param htp - evhtp_t * to htp structure.
+ * @param len - uint64_t maximum body size.
+ *
+ */
 void
 evhtp_set_max_body_size(evhtp_t * htp, uint64_t len)
 {
@@ -5003,6 +5257,15 @@ evhtp_set_parser_flags(evhtp_t * htp, int flags)
 HTP_FLAG_FNGEN(, evhtp_t *);
 HTP_FLAG_FNGEN(_connection, evhtp_connection_t *);
 HTP_FLAG_FNGEN(_request, evhtp_request_t *);
+
+/**
+ * @brief Adds alias to list of aliases for the passed in evhtp_t structure.
+ *
+ * @param evhtp - ptr to evhtp_t structure
+ * @param name - NULL terminated character string with alias.
+ *
+ * @return 0 on success, -1 on failure
+ */
 
 int
 evhtp_add_alias(evhtp_t * evhtp, const char * name)
@@ -5082,6 +5345,15 @@ evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost)
     return 0;
 }
 
+/**
+ * @brief Allocates new evhtp_t structure
+ *
+ * @param [OUT] out - double ptr to evhtp_t structure.
+ * @param [IN] evbase - event_base structure
+ * @param [IN] arg - anonymous argument
+ *
+ * @return 0 on success, -1 on failure
+ */
 static int
 evhtp__new_(evhtp_t ** out, struct event_base * evbase, void * arg)
 {
@@ -5124,6 +5396,15 @@ evhtp__new_(evhtp_t ** out, struct event_base * evbase, void * arg)
     return 0;
 }
 
+/**
+ * @brief Allocates new evhtp_t structure
+ *
+ * @param evbase event_base structure
+ * @param arg anonymous arguments passed in
+ *
+ * @return Newly allocated htp structure or NULL if fail
+ *
+ */
 evhtp_t *
 evhtp_new(struct event_base * evbase, void * arg)
 {
@@ -5137,6 +5418,13 @@ evhtp_new(struct event_base * evbase, void * arg)
     return htp;
 }
 
+/**
+ * @brief Frees evhtp_t structure; will stop and free threads associated
+ * with the structure, and free the ssl context as well (if applicable).
+ *
+ * @param evhtp - ptr to evhtp_t structure
+ *
+ */
 void
 evhtp_free(evhtp_t * evhtp)
 {
@@ -5189,6 +5477,16 @@ evhtp_free(evhtp_t * evhtp)
 * client request functions                                      *
 *****************************************************************/
 
+/**
+ * @brief Creates new evhtp_connection_t structure.
+ *
+ * @param evbase - ptr to event_base
+ * @param addr - const char * to IPV4 or IPV6 address string
+ * @param port - uint16_t port to attach to.
+ *
+ * @return Newly allocated evhtp_connection_t ptr or NULL on failure
+ *
+ */
 evhtp_connection_t *
 evhtp_connection_new(struct event_base * evbase, const char * addr, uint16_t port)
 {

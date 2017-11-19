@@ -1,3 +1,7 @@
+/**
+ * @file evhtp.h
+ */
+
 #include <evhtp/config.h>
 
 #ifndef __EVHTP__H__

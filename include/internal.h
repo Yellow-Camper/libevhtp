@@ -1,3 +1,7 @@
+/**
+ * @file internal.h
+ */
+
 #ifndef __EVHTP_INTERNAL_H__
 #define __EVHTP_INTERNAL_H__
 

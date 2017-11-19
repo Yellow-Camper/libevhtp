@@ -1,3 +1,7 @@
+/**
+ * @file parser.h
+ */
+
 #ifndef __HTPARSE_H__
 #define __HTPARSE_H__
 

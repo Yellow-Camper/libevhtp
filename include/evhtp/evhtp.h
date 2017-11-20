@@ -1,3 +1,7 @@
+/**
+ * @file evhtp.h
+ */
+
 #include <evhtp/config.h>
 
 #ifndef __EVHTP__H__
@@ -11,11 +15,7 @@
 #include <evhtp/parser.h>
 
 #ifndef EVHTP_DISABLE_REGEX
-#ifdef EVHTP_USE_SYS_ONIG
 #include <onigposix.h>
-#else
-#include <evhtp/onigposix.h>
-#endif
 #endif
 
 #include <sys/queue.h>
@@ -186,10 +186,10 @@ typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connect
 typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #endif
 
-#define EVHTP_VERSION           "1.2.13"
+#define EVHTP_VERSION           "1.2.14"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
-#define EVHTP_VERSION_PATCH     13
+#define EVHTP_VERSION_PATCH     14
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 
@@ -548,11 +548,11 @@ EVHTP_EXPORT void evhtp_connection_disable_flag(evhtp_connection_t *, int);
 EVHTP_EXPORT void evhtp_request_disable_flag(evhtp_request_t *, int);
 
 /**
- * @brief free a evhtp_t context
+ * @brief Frees evhtp_t structure; will stop and free threads associated
+ * with the structure, and free the ssl context as well (if applicable).
  *
- * @param evhtp
+ * @param evhtp - ptr to evhtp_t structure
  *
- * @return
  */
 EVHTP_EXPORT void evhtp_free(evhtp_t * evhtp);
 
@@ -835,13 +835,14 @@ EVHTP_EXPORT int evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int ba
 
 /**
  * @brief bind to an already allocated sockaddr.
+ * @see evhtp_bind_socket
  *
- * @param htp
- * @parami s
- * @param sin_len
- * @param backlog
+ * @param htp - ptr to evhtp_t structure
+ * @param sa - ptr to sockaddr structure
+ * @param sin_len - size of sockaddr structure
+ * @param backlog - backlog flag
  *
- * @return
+ * @return 0 on success, -1 on fail
  */
 EVHTP_EXPORT int evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *,
     size_t sin_len, int backlog);
@@ -945,11 +946,14 @@ EVHTP_EXPORT void evhtp_send_reply_chunk_end(evhtp_request_t * request);
 EVHTP_EXPORT evhtp_callback_t *
 evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_cb cb, void * arg);
 
-
 /**
- * @brief frees information associated with a ainflwx callback.
+ * @brief safely frees callback structure memory and internals
  *
- * @param callback
+ * @see evhtp_safe_free
+ *
+ *
+ * @param callback - callback to be freed
+ *
  */
 EVHTP_EXPORT void evhtp_callback_free(evhtp_callback_t * callback);
 
@@ -1220,9 +1224,37 @@ EVHTP_EXPORT htp_method  evhtp_request_get_method(evhtp_request_t * r);
 EVHTP_EXPORT evhtp_proto evhtp_request_get_proto(evhtp_request_t * r);
 
 /* the following functions all do the same thing, pause and the processing */
+
+/**
+ * @brief pauses a connection (disables reading)
+ *
+ * @param c a evhtp_connection_t * structure
+ */
 EVHTP_EXPORT void evhtp_connection_pause(evhtp_connection_t * connection);
+
+/**
+ * @brief resumes a connection (enables reading) and activates resume event.
+ *
+ * @param c
+ */
 EVHTP_EXPORT void evhtp_connection_resume(evhtp_connection_t * connection);
+
+/**
+ * @brief Wrapper around evhtp_connection_pause
+ *
+ * @see evhtp_connection_pause
+ *
+ * @param request
+ */
 EVHTP_EXPORT void evhtp_request_pause(evhtp_request_t * request);
+
+/**
+ * @brief Wrapper around evhtp_connection_resume
+ *
+ * @see evhtp_connection_resume
+ *
+ * @param request
+ */
 EVHTP_EXPORT void evhtp_request_resume(evhtp_request_t * request);
 
 

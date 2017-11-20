@@ -1,41 +1,21 @@
 cmake_minimum_required(VERSION 2.8)
 project(libevhtp)
 
-set(PROJECT_MAJOR_VERSION 1)
-set(PROJECT_MINOR_VERSION 2)
-set(PROJECT_PATCH_VERSION 13)
-set(PROJECT_VERSION      ${PROJECT_MAJOR_VERSION}.${PROJECT_MINOR_VERSION}.${PROJECT_PATCH_VERSION})
-
-set(CMAKE_C_FLAGS         "${CMAKE_C_FLAGS} -DPROJECT_VERSION=${PROJECT_VERSION} -Wall")
-set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG} -O0 -ggdb3")
-
-SET(CMAKE_BUILD_TYPE Release CACHE STRING "default to Release")
-
-# -DEVHTP_DISABLE_SSL:STRING=ON
-OPTION(EVHTP_DISABLE_SSL       "Disable ssl support"      OFF)
-
-# -DEVHTP_DISABLE_EVTHR:STRING=ON
-OPTION(EVHTP_DISABLE_EVTHR     "Disable evthread support" OFF)
-
-# -DEVHTP_DISABLE_REGEX:STRING=ON
-OPTION(EVHTP_DISABLE_REGEX     "Disable regex support"    OFF)
-
-# -DEVHTP_BUILD_SHARED:STRING=ON
-OPTION(EVHTP_BUILD_SHARED      "Build shared library too" OFF)
-
-OPTION(EVHTP_USE_JEMALLOC      "Enable jemalloc allocator" OFF)
-OPTION(EVHTP_USE_TCMALLOC      "Enable tcmalloc allocator" OFF)
-
-OPTION(EVHTP_DEBUG "Enable verbose debug logging" OFF)
-
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+include (version)
 include (colors)
+include (options)
 include (CheckFunctionExists)
 include (CheckIncludeFiles)
 include (CheckTypeSize)
 include (CheckCCompilerFlag)
 include (TestBigEndian)
+
+add_definitions ("-DPROJECT_VERSION=${PROJECT_VERSION} -Wall")
+
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -ggdb3")
+SET(CMAKE_BUILD_TYPE Release CACHE STRING "default to Release")
 
 CHECK_FUNCTION_EXISTS(strndup HAVE_STRNDUP)
 CHECK_FUNCTION_EXISTS(strnlen HAVE_STRNLEN)
@@ -91,19 +71,20 @@ if (EVHTP_HAS_VISIBILITY_HIDDEN)
 endif()
 
 if (NOT HAVE_SYS_TREE)
-    CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/tree.h.in
+    configure_file (
+        ${PROJECT_SOURCE_DIR}/compat/sys/tree.h.in
         ${PROJECT_BINARY_DIR}/compat/sys/tree.h)
 
-        include_directories(${PROJECT_BINARY_DIR}/compat)
-
-endif(NOT HAVE_SYS_TREE)
+    include_directories(${PROJECT_BINARY_DIR}/compat)
+endif()
 
 if (NOT HAVE_SYS_QUEUE)
-        CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/compat/sys/queue.h.in
-            ${PROJECT_BINARY_DIR}/compat/sys/queue.h)
+    configure_file (
+        ${PROJECT_SOURCE_DIR}/compat/sys/queue.h.in
+        ${PROJECT_BINARY_DIR}/compat/sys/queue.h)
 
-        include_directories(${PROJECT_BINARY_DIR}/compat)
-endif(NOT HAVE_SYS_QUEUE)
+    include_directories(${PROJECT_BINARY_DIR}/compat)
+endif()
 
 if (NOT HAVE_STRNDUP)
     add_definitions(-DNO_STRNDUP)
@@ -134,135 +115,31 @@ if (EVHTP_USE_DEFER_ACCEPT)
     add_definitions(-DUSE_DEFER_ACCEPT)
 endif(EVHTP_USE_DEFER_ACCEPT)
 
-SET(CMAKE_include_CURRENT_DIR ON)
+set (CMAKE_INCLUDE_CURRENT_DIR ON)
 
 find_package(LibEvent REQUIRED)
 
-if (NOT LIBEVENT_OPENSSL_LIBRARY)
-    set (EVHTP_DISABLE_SSL ON)
+if (NOT EVHTP_DISABLE_REGEX)
+    find_package(Oniguruma)
+
+    if (NOT ONIGURUMA_FOUND)
+        message(STATUS "${BoldRed}${CMAKE_BUILD_TYPE}ONIGURUMA NOT FOUND, DISABLING REGEX SUPPORT${ColourReset}")
+        set(EVHTP_DISABLE_REGEX ON)
+    endif()
 endif()
 
 if (NOT EVHTP_DISABLE_SSL)
     find_package(OpenSSL)
 endif()
 
-find_path(LIBEVENT_include_DIR event2/event.h REQUIRED)
-
-if (NOT EVHTP_DISABLE_REGEX)
-    find_library(EVHTP_USE_SYS_ONIG onig)
+if (OPENSSL_FOUND)
+    if (APPLE)
+        # darwin based hosts have deprecated normal openssl functions, which is
+        # annoying to see warnings, for now, just ignore them.
+        add_definitions(-Wno-deprecated-declarations)
+    endif()
 endif()
 
-if (NOT OPENSSL_FOUND)
-    message(STATUS "${Yellow}Unable to find libssl.. Disabling SSL support ${ColourReset}")
-
-    set (EVHTP_DISABLE_SSL        ON)
-    set (OPENSSL_CRYPTO_LIBRARY   "")
-    set (OPENSSL_include_DIR      "")
-    set (OPENSSL_LIBRARIES        "")
-    set (LIBEVENT_OPENSSL_LIBRARY "")
-elseif(APPLE)
-    # darwin based hosts have deprecated normal openssl functions, which is
-    # annoying to see warnings, for now, just ignore them.
-    add_definitions(-Wno-deprecated-declarations)
-endif()
-
-if (NOT EVHTP_DISABLE_REGEX)
-    if (NOT EVHTP_USE_SYS_ONIG)
-        message(STATUS "${Blue}Using the built-in onigurma source.${ColourReset}")
-
-        CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/oniguruma/config.h.in
-            ${CMAKE_CURRENT_BINARY_DIR}/oniguruma/config.h)
-
-        set(ONIG_SOURCES
-            oniguruma/regerror.c
-            oniguruma/regparse.c
-            oniguruma/regext.c
-            oniguruma/regcomp.c
-            oniguruma/regexec.c
-            oniguruma/reggnu.c
-            oniguruma/regenc.c
-            oniguruma/regsyntax.c
-            oniguruma/regtrav.c
-            oniguruma/regversion.c
-            oniguruma/st.c
-            oniguruma/regposix.c
-            oniguruma/regposerr.c
-            oniguruma/enc/unicode.c
-            oniguruma/enc/ascii.c
-            oniguruma/enc/utf8.c
-            oniguruma/enc/utf16_be.c
-            oniguruma/enc/utf16_le.c
-            oniguruma/enc/utf32_be.c
-            oniguruma/enc/utf32_le.c
-            oniguruma/enc/euc_jp.c
-            oniguruma/enc/sjis.c
-            oniguruma/enc/iso8859_1.c
-            oniguruma/enc/iso8859_2.c
-            oniguruma/enc/iso8859_3.c
-            oniguruma/enc/iso8859_4.c
-            oniguruma/enc/iso8859_5.c
-            oniguruma/enc/iso8859_6.c
-            oniguruma/enc/iso8859_7.c
-            oniguruma/enc/iso8859_8.c
-            oniguruma/enc/iso8859_9.c
-            oniguruma/enc/iso8859_10.c
-            oniguruma/enc/iso8859_11.c
-            oniguruma/enc/iso8859_13.c
-            oniguruma/enc/iso8859_14.c
-            oniguruma/enc/iso8859_15.c
-            oniguruma/enc/iso8859_16.c
-            oniguruma/enc/euc_tw.c
-            oniguruma/enc/euc_kr.c
-            oniguruma/enc/big5.c
-            oniguruma/enc/gb18030.c
-            oniguruma/enc/koi8_r.c
-            oniguruma/enc/cp1251.c)
-
-        set (ONIG_include_DIR ${CMAKE_CURRENT_BINARY_DIR}/oniguruma;${CMAKE_CURRENT_SOURCE_DIR}/oniguruma)
-    else()
-        message(STATUS "${YELLOW}Using the system-wide version of oniguruma${ColourReset}")
-
-        set(EVHTP_USE_SYS_ONIG 1)
-        set(ONIG_SOURCES "")
-        set(ONIG_LIBS ${HAS_SYS_ONIG})
-        set(ONIG_include_DIR "")
-    endif(NOT EVHTP_USE_SYS_ONIG)
-else()
-    set(ONIG_SOURCES "")
-    set(ONIG_LIBS "")
-    set(ONIG_include_DIR "")
-endif()
-
-include_directories(
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/compat
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_BINARY_DIR}/include
-    ${ONIG_include_DIR}
-    ${OPENSSL_include_DIR}
-    ${LIBEVENT_include_DIR}
-)
-
-set(LIBEVHTP_EXTERNAL_LIBS
-        ${LIBEVENT_LIBRARY}
-        ${LIBEVENT_PTHREADS_LIBRARY}
-        ${LIBEVENT_OPENSSL_LIBRARY}
-        ${OPENSSL_LIBRARIES}
-        ${ONIG_LIBS}
-)
-
-if (NOT ${LIBEVENT_PTHREADS_FOUND})
-    set(EVHTP_DISABLE_EVTHR ON)
-endif(NOT ${LIBEVENT_PTHREADS_FOUND})
-
-if (NOT ${LIBEVENT_OPENSSL_FOUND})
-    set (EVHTP_DISABLE_SSL ON)
-endif(NOT ${LIBEVENT_OPENSSL_FOUND})
-
-set (LIBEVHTP_SOURCES
-    evhtp.c
-    numtoa.c
-    parser.c)
 
 if (EVHTP_USE_JEMALLOC)
         set(LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} jemalloc)
@@ -270,12 +147,6 @@ endif()
 
 if (EVHTP_USE_TCMALLOC)
         set(LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} tcmalloc)
-endif()
-
-
-if (NOT EVHTP_DISABLE_EVTHR)
-    set (LIBEVHTP_EXTERNAL_LIBS ${LIBEVHTP_EXTERNAL_LIBS} pthread)
-    set (LIBEVHTP_SOURCES       ${LIBEVHTP_SOURCES}       thread.c)
 endif()
 
 if (WIN32)
@@ -294,12 +165,32 @@ configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/evhtp/config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h)
 
-add_library(evhtp ${EVHTP_LIBTYPE}
-    ${LIBEVHTP_SOURCES}
-    ${ONIG_SOURCES})
+include_directories(
+    ${PROJECT_BINARY_DIR}/include
+    ${PROJECT_SOURCE_DIR}/include
+    ${OPENSSL_INCLUDE_DIRS}
+    ${ONIGURUMA_INCLUDE_DIRS}
+    ${LIBEVENT_INCLUDE_DIRS}
 
-target_link_libraries(evhtp
-    ${LIBEVHTP_EXTERNAL_LIBS})
+)
+set(LIBEVHTP_EXTERNAL_LIBS
+    ${LIBEVENT_LIBRARIES}
+    ${ONIGURUMA_LIBRARIES}
+    ${OPENSSL_LIBRARIES}
+)
+
+set (LIBEVHTP_SOURCE_FILES
+    evhtp.c
+    numtoa.c
+    parser.c)
+
+if (NOT EVHTP_DISABLE_EVTHR)
+    list (APPEND LIBEVHTP_SOURCE_FILES  thread.c)
+    list (APPEND LIBEVHTP_EXTERNAL_LIBS pthread)
+endif()
+
+add_library(evhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCE_FILES})
+target_link_libraries(evhtp ${LIBEVHTP_EXTERNAL_LIBS})
 
 if (EVHTP_BUILD_SHARED)
         set_target_properties(evhtp PROPERTIES SOVERSION "${PROJECT_VERSION}")
@@ -311,8 +202,8 @@ if (NOT LIB_INSTALL_DIR)
   set (LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 endif (NOT LIB_INSTALL_DIR)
 
-if(NOT include_INSTALL_DIR)
-    set(include_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
+if(NOT INCLUDE_INSTALL_DIR)
+    set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include)
 endif()
 
 install (TARGETS evhtp DESTINATION ${LIB_INSTALL_DIR})
@@ -321,52 +212,37 @@ install (
     FILES
         ${PROJECT_SOURCE_DIR}/include/evhtp/evhtp.h
         ${PROJECT_SOURCE_DIR}/include/evhtp/parser.h
-        ${PROJECT_SOURCE_DIR}/include/evhtp/thread.h
     DESTINATION
-        ${include_INSTALL_DIR}/evhtp)
+        ${INCLUDE_INSTALL_DIR}/evhtp)
 
 install (
     FILES
         ${PROJECT_SOURCE_DIR}/include/evhtp.h
     DESTINATION
-        ${include_INSTALL_DIR})
+        ${INCLUDE_INSTALL_DIR})
 
 install (
     FILES
         ${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h
     DESTINATION
-        ${include_INSTALL_DIR}/evhtp)
+        ${INCLUDE_INSTALL_DIR}/evhtp)
 
 if (NOT EVHTP_DISABLE_EVTHR)
     install (
         FILES
             ${PROJECT_SOURCE_DIR}/include/evhtp/thread.h
         DESTINATION
-            ${include_INSTALL_DIR}/evhtp)
-endif()
-
-if (NOT EVHTP_DISABLE_REGEX)
-    if (NOT EVHTP_USE_SYS_ONIG)
-         CONFIGURE_FILE(oniguruma/onigposix.h
-         ${PROJECT_BINARY_DIR}/include/evhtp/onigposix.h)
-
-        install (
-            FILES       oniguruma/onigposix.h
-            DESTINATION ${include_INSTALL_DIR}/evhtp)
-
-    endif()
+            ${INCLUDE_INSTALL_DIR}/evhtp)
 endif()
 
 if (NOT HAVE_SYS_QUEUE)
-
     install(
         FILES       ${CMAKE_CURRENT_BINARY_DIR}/compat/sys/queue.h
-        DESTINATION ${include_INSTALL_DIR}/evhtp/sys)
+        DESTINATION ${INCLUDE_INSTALL_DIR}/evhtp/sys)
 endif()
 
 IF (WIN32)
-   install (FILES compat/sys/queue.h DESTINATION ${include_INSTALL_DIR}/sys)
-   install (FILES oniguruma/onigposix.h DESTINATION ${include_INSTALL_DIR})
+   install (FILES compat/sys/queue.h DESTINATION ${INCLUDE_INSTALL_DIR}/sys)
 ENDIF (WIN32)
 
 configure_file(
@@ -382,7 +258,7 @@ install(FILES       "${CMAKE_CURRENT_BINARY_DIR}/evhtp.pc"
 # so we fetch the property into the variable CDEFS, iterate over each entry,
 # append it to a list, and finally replace ";" separators to -D to mimic a CFLAG
 
-get_property(CDEFS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY COMPILE_DEFINITIONS)
+get_property(CDEFS DIRECTORY ${PROJECT_SOURCE_DIR} PROPERTY COMPILE_DEFINITIONS)
 
 foreach(CDEF ${CDEFS})
     list(APPEND CFLAG_LIST ${CDEF})

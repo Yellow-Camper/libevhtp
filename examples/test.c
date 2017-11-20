@@ -142,7 +142,7 @@ test_ownership(evhtp_request_t * request, void * arg) {
 static void
 test_regex(evhtp_request_t * req, void * arg) {
     evbuffer_add_printf(req->buffer_out,
-                        "start = '%s', end = '%s\n",
+                        "rest_regex start = '%s', end = '%s\n",
                         req->uri->path->match_start,
                         req->uri->path->match_end);
 
@@ -431,6 +431,12 @@ const char * help   =
     "  -s <pem> : Enable SSL and PEM       (default: NULL)\n"
     "  -c <ca>  : CA cert file             (default: NULL)\n"
     "  -C <path>: CA Path                  (default: NULL)\n"
+    "  (to test: \n"
+    "            openssl genrsa -out pkey 2048\n"
+    "            openssl req -new -key pkey -out cert.req\n"
+    "            openssl x509 -req -days 365 -in cert.req -signkey pkey -out cert\n"
+    "            cat pkey cert > test_cert\n"
+    "             then use -s test_cert\n"
 #endif
     "  -l <int> : Max bandwidth (in bytes) (default: NULL)\n"
     "  -r <str> : Document root            (default: .)\n"

@@ -445,4 +445,3 @@ evthr_pool_start(evthr_pool_t * pool) {
 
     return 0;
 }
-

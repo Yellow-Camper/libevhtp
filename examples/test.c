@@ -142,7 +142,7 @@ test_ownership(evhtp_request_t * request, void * arg) {
 static void
 test_regex(evhtp_request_t * req, void * arg) {
     evbuffer_add_printf(req->buffer_out,
-                        "start = '%s', end = '%s\n",
+                        "rest_regex start = '%s', end = '%s\n",
                         req->uri->path->match_start,
                         req->uri->path->match_end);
 

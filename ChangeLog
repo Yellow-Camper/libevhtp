@@ -1,3 +1,22 @@
+v1.2.14 - !!!! SECURITY UPDATE !!!!
+ o Added doxygen tags. Updated Doxyfile to include more sources and headers. (50ab41d Dan Henderson)
+ o SSL logging on handshake errors (0fff6bc Nathan French)
+ o Remove built-in Oniguruma, now rely on system only (a31601c Nathan French)
+ o FindLibevent now displays all deps (02a9e6c Nathan French)
+
+ * THIS IS PRIMARILY A SECURITY UPDATE:
+    Oniguruma (the regex library used by libevhtp) was packaged with the source;
+    this was dumb. There were several CVE's recently published that made evhtp
+    insecure.
+
+    NOTE TO USERS:
+
+    Libevhtp will no longer ship Oniguruma with the source. Instead, the build
+    process will attempt and find a system-installed version instead. There is
+    a big red warning if it is not found.
+
+    A big thanks must go to @flokli (github) for pointing this out to me.
+
 v1.2.13
  o Rename test->test_general (test is reservet target name in cmake) (d18c6d0 Vladimir Romanov)
  o Fix CMake files (a2fcb3d Vladimir Romanov)

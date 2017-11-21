@@ -4770,7 +4770,16 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
     ERR_load_crypto_strings();
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
-    RAND_poll();
+
+    if (RAND_poll() != 1) {
+        log_error("RAND_poll");
+        return -1;
+    }
+
+    if (RAND_bytes(&c, 1) != 1) {
+        log_error("RAND_bytes");
+        return -1;
+    }
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
     STACK_OF(SSL_COMP) * comp_methods = SSL_COMP_get_compression_methods();

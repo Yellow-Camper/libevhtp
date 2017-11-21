@@ -17,6 +17,7 @@ probably not very awesome, it's best to look at test.c to see advanced usage.
 ## Optional Dependencies
 * [OpenSSL](http://openssl.org)
 * pthreads
+* [onig (regex)](https://github.com/kkos/oniguruma)
 
 ## Building
 * cd build

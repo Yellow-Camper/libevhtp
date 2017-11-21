@@ -1,7 +1,7 @@
 | ![LOGO](http://i.imgur.com/uBd4iIz.png) | <h1>Libevhtp</h1> |
 | :------------- | -------------: |
 
-[![Build Status](https://travis-ci.org/criticalstack/libevhtp.svg?branch=develop)](https://travis-ci.org/ellzey/libevhtp)
+[![Build Status](https://travis-ci.org/criticalstack/libevhtp.svg?branch=develop)](https://travis-ci.org/criticalstack/libevhtp)
 <a href="https://scan.coverity.com/projects/ellzey-libevhtp">
   <img alt="Coverity Scan Build Status"
        src="https://scan.coverity.com/projects/5084/badge.svg"/>

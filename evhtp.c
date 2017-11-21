@@ -4841,14 +4841,12 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
     X509_STORE_set_flags(SSL_CTX_get_cert_store(htp->ssl_ctx), cfg->store_flags);
     SSL_CTX_set_verify(htp->ssl_ctx, cfg->verify_peer, cfg->x509_verify_cb);
 
-    if (cfg->x509_chk_issued_cb != NULL)
-    {
+    if (cfg->x509_chk_issued_cb != NULL) {
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
         htp->ssl_ctx->cert_store->check_issued = cfg->x509_chk_issued_cb;
 #else
         X509_STORE_set_check_issued(SSL_CTX_get_cert_store(htp->ssl_ctx), cfg->x509_chk_issued_cb);
 #endif
-        /*SSL_CTX_set_cert_store(htp->ssl_ctx, cfg->x509_chk_issued_cb); */
     }
 
     if (cfg->verify_depth)

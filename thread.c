@@ -1,15 +1,9 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdint.h>
-#include <inttypes.h>
 #include <limits.h>
-#include <errno.h>
-#include <fcntl.h>
 #ifndef WIN32
-#include <sys/syscall.h>
-#include <sys/ioctl.h>
 #include <sys/queue.h>
 #endif
 

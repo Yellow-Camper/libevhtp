@@ -162,7 +162,7 @@ typedef evhtp_res (* evhtp_post_accept_cb)(evhtp_connection_t * conn, void * arg
 typedef evhtp_res (* evhtp_hook_header_cb)(evhtp_request_t * req, evhtp_header_t * hdr, void * arg);
 typedef evhtp_res (* evhtp_hook_headers_cb)(evhtp_request_t * req, evhtp_headers_t * hdr, void * arg);
 typedef evhtp_res (* evhtp_hook_path_cb)(evhtp_request_t * req, evhtp_path_t * path, void * arg);
-typedef evhtp_res (* evhtp_hook_read_cb)(evhtp_request_t * req, evbuf_t * buf, void * arg);
+typedef evhtp_res (* evhtp_hook_read_cb)(evhtp_request_t * req, struct evbuffer * buf, void * arg);
 typedef evhtp_res (* evhtp_hook_request_fini_cb)(evhtp_request_t * req, void * arg);
 typedef evhtp_res (* evhtp_hook_connection_fini_cb)(evhtp_connection_t * connection, void * arg);
 typedef evhtp_res (* evhtp_hook_chunk_new_cb)(evhtp_request_t * r, uint64_t len, void * arg);
@@ -395,8 +395,8 @@ struct evhtp_request_s {
     evhtp_connection_t * conn;          /**< the associated connection */
     evhtp_hooks_t      * hooks;         /**< request specific hooks */
     evhtp_uri_t        * uri;           /**< request URI information */
-    evbuf_t            * buffer_in;     /**< buffer containing data from client */
-    evbuf_t            * buffer_out;    /**< buffer containing data to client */
+    struct evbuffer    * buffer_in;     /**< buffer containing data from client */
+    struct evbuffer    * buffer_out;    /**< buffer containing data to client */
     evhtp_headers_t    * headers_in;    /**< headers from client */
     evhtp_headers_t    * headers_out;   /**< headers to client */
     evhtp_proto          proto;         /**< HTTP protocol used */
@@ -765,23 +765,9 @@ EVHTP_EXPORT evhtp_callback_t * evhtp_get_cb(evhtp_t * htp, const char * needle)
  *
  * @return 0 on success, -1 on error (if hooks is NULL, it is allocated)
  */
-EVHTP_EXPORT int evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg)
-DEPRECATED("use evhtp_[connection|request|callback]_set_hook() instead of set_hook directly");
-
 EVHTP_EXPORT int evhtp_connection_set_hook(evhtp_connection_t * c, evhtp_hook_type type, evhtp_hook cb, void * arg);
 EVHTP_EXPORT int evhtp_request_set_hook(evhtp_request_t * r, evhtp_hook_type type, evhtp_hook cb, void * arg);
 EVHTP_EXPORT int evhtp_callback_set_hook(evhtp_callback_t * cb, evhtp_hook_type type, evhtp_hook hookcb, void * arg);
-
-/**
- * @brief remove a specific hook from being called.
- *
- * @param hooks
- * @param type
- *
- * @return
- */
-EVHTP_EXPORT int evhtp_unset_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type);
-
 
 /**
  * @brief removes all hooks.
@@ -887,7 +873,7 @@ EVHTP_EXPORT void evhtp_send_reply(evhtp_request_t * request, evhtp_res code);
  * but for the weak of heart.
  */
 EVHTP_EXPORT void evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code);
-EVHTP_EXPORT void evhtp_send_reply_body(evhtp_request_t * request, evbuf_t * buf);
+EVHTP_EXPORT void evhtp_send_reply_body(evhtp_request_t * request, struct evbuffer * buf);
 EVHTP_EXPORT void evhtp_send_reply_end(evhtp_request_t * request);
 
 /**
@@ -914,7 +900,7 @@ EVHTP_EXPORT void evhtp_send_reply_chunk_start(evhtp_request_t * request, evhtp_
  * @param request
  * @param buf
  */
-EVHTP_EXPORT void evhtp_send_reply_chunk(evhtp_request_t * request, evbuf_t * buf);
+EVHTP_EXPORT void evhtp_send_reply_chunk(evhtp_request_t * request, struct evbuffer * buf);
 
 /**
  * @brief call when all chunks have been sent and you wish to send the last

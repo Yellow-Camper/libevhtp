@@ -1,12 +1,6 @@
-#include <stdio.h>
-#include <time.h>
 #include <stdlib.h>
 #include <stddef.h>
-#include <string.h>
-#include <stdint.h>
-#include <errno.h>
 #include <ctype.h>
-#include <unistd.h>
 
 #include "internal.h"
 #include "evhtp/parser.h"

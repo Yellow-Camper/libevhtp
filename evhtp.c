@@ -4352,10 +4352,27 @@ htp__set_hook_(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void
     return 0;
 }         /* htp__set_hook_ */
 
+static int
+htp__unset_hook_(evhtp_hooks_t ** hooks, evhtp_hook_type type) {
+    return htp__set_hook_(hooks, type, NULL, NULL);
+}
+
 int
-evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg)
+evhtp_callback_unset_hook(evhtp_callback_t * callback, evhtp_hook_type type)
 {
-    return htp__set_hook_(hooks, type, cb, arg);
+    return htp__unset_hook_(&callback->hooks, type);
+}
+
+int
+evhtp_request_unset_hook(evhtp_request_t * req, evhtp_hook_type type)
+{
+    return htp__unset_hook_(&req->hooks, type);
+}
+
+int
+evhtp_connection_unset_hook(evhtp_connection_t * conn, evhtp_hook_type type)
+{
+    return htp__unset_hook_(&conn->hooks, type);
 }
 
 int
@@ -4374,12 +4391,6 @@ int
 evhtp_connection_set_hook(evhtp_connection_t * conn, evhtp_hook_type type, evhtp_hook cb, void * arg)
 {
     return htp__set_hook_(&conn->hooks, type, cb, arg);
-}
-
-int
-evhtp_unset_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type)
-{
-    return evhtp_set_hook(hooks, type, NULL, NULL);
 }
 
 int
@@ -4413,7 +4424,7 @@ evhtp_unset_all_hooks(evhtp_hooks_t ** hooks)
     }
 
     for (i = 0; hooklist_[i].type != -1; i++) {
-        if (evhtp_unset_hook(hooks, hooklist_[i].type) == -1) {
+        if (htp__unset_hook_(hooks, hooklist_[i].type) == -1) {
             return -1;
         }
     }

@@ -988,6 +988,20 @@ EVHTP_EXPORT int evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * v
  */
 EVHTP_EXPORT int evhtp_add_alias(evhtp_t * evhtp, const char * name);
 
+
+/**
+ * @brief set a variable number of aliases in one call
+ * @reference evhtp_add_alias
+ * @note last argument must be NULL terminated
+ *
+ * @param evhtp
+ * @param name
+ * @param ...
+ *
+ * @return 0 on success, -1 on error
+ */
+EVHTP_EXPORT int evhtp_add_aliases(evhtp_t * evhtp, const char * name, ...);
+
 /**
  * @brief Allocates a new key/value structure.
  *

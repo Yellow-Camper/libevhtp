@@ -2950,12 +2950,13 @@ htp__ssl_get_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_data_t * sid, int sid_len,
     evhtp_ssl_sess_t   * sess;
 
     connection = (evhtp_connection_t * )SSL_get_app_data(ssl);
+
     if (connection->htp == NULL)
     {
         return NULL;     /* We have no way of getting ssl_cfg */
     }
-    cfg        = connection->htp->ssl_cfg;
-    sess       = NULL;
+    cfg  = connection->htp->ssl_cfg;
+    sess = NULL;
 
     if (cfg->scache_get)
     {
@@ -4799,21 +4800,22 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
     SSL_CTX_set_options(htp->ssl_ctx, cfg->ssl_opts);
 
 #ifndef OPENSSL_NO_ECDH
-    if (cfg->named_curve != NULL)
-    {
+    if (cfg->named_curve != NULL) {
         EC_KEY * ecdh = NULL;
         int      nid  = 0;
 
-        nid  = OBJ_sn2nid(cfg->named_curve);
-        if (nid == 0)
-        {
-            fprintf(stderr, "ECDH initialization failed: unknown curve %s\n", cfg->named_curve);
+        nid = OBJ_sn2nid(cfg->named_curve);
+
+        if (nid == 0) {
+            log_error("ECDH initialization failed: unknown curve %s", cfg->named_curve);
         }
+
         ecdh = EC_KEY_new_by_curve_name(nid);
-        if (ecdh == NULL)
-        {
-            fprintf(stderr, "ECDH initialization failed for curve %s\n", cfg->named_curve);
+
+        if (ecdh == NULL) {
+            log_error("ECDH initialization failed for curve %s", cfg->named_curve);
         }
+
         SSL_CTX_set_tmp_ecdh(htp->ssl_ctx, ecdh);
         EC_KEY_free(ecdh);
     }
@@ -4825,6 +4827,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
         DH   * dh;
 
         fh = fopen(cfg->dhparams, "r");
+
         if (fh != NULL)
         {
             dh = PEM_read_DHparams(fh, NULL, NULL, NULL);
@@ -4833,17 +4836,21 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
                 SSL_CTX_set_tmp_dh(htp->ssl_ctx, dh);
                 DH_free(dh);
             } else {
-                fprintf(stderr, "DH initialization failed: unable to parse file %s\n", cfg->dhparams);
+                log_error("DH initialization failed: unable to parse file %s", cfg->dhparams);
             }
+
             fclose(fh);
         } else {
-            fprintf(stderr, "DH initialization failed: unable to open file %s\n", cfg->dhparams);
+            log_error("DH initialization failed: unable to open file %s", cfg->dhparams);
         }
     }
 #endif  /* OPENSSL_NO_DH */
 
     if (cfg->ciphers != NULL) {
-        SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers);
+        if (SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers) == 0) {
+            log_error("set_cipher_list");
+            return -1;
+        }
     }
 
     SSL_CTX_load_verify_locations(htp->ssl_ctx, cfg->cafile, cfg->capath);
@@ -4858,8 +4865,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
 #endif
     }
 
-    if (cfg->verify_depth)
-    {
+    if (cfg->verify_depth) {
         SSL_CTX_set_verify_depth(htp->ssl_ctx, cfg->verify_depth);
     }
 
@@ -5158,10 +5164,37 @@ evhtp_add_alias(evhtp_t * evhtp, const char * name)
         return -1;
     }
 
+    log_debug("Adding %s to aliases", name);
+
     alias->alias = htp__strdup_(name);
     evhtp_alloc_assert(alias->alias);
 
     TAILQ_INSERT_TAIL(&evhtp->aliases, alias, next);
+
+    return 0;
+}
+
+int
+evhtp_add_aliases(evhtp_t * htp, const char * name, ...) {
+    va_list      argp;
+    size_t       len;
+
+    if (evhtp_add_alias(htp, name) == -1) {
+        return -1;
+    }
+
+    va_start(argp, name);
+    {
+        const char * p;
+
+        while ((p = va_arg(argp, const char *)) != NULL) {
+            if (evhtp_add_alias(htp, p) == -1) {
+                log_error("Unable to add %s alias", p);
+                return -1;
+            }
+        }
+    }
+    va_end(argp);
 
     return 0;
 }

@@ -185,7 +185,8 @@ set(LIBEVHTP_EXTERNAL_LIBS
 set (LIBEVHTP_SOURCE_FILES
     evhtp.c
     numtoa.c
-    parser.c)
+    parser.c
+    sslutils.c)
 
 if (NOT EVHTP_DISABLE_EVTHR)
     list (APPEND LIBEVHTP_SOURCE_FILES  thread.c)

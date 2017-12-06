@@ -12,6 +12,7 @@
 #include "internal.h"
 #include "evhtp/evhtp.h"
 
+#ifndef EVHTP_DISABLE_SSL
 static void
 http__callback_(evhtp_request_t * req, void * arg) {
     return evhtp_send_reply(req, EVHTP_RES_OK);
@@ -219,9 +220,11 @@ parse__ssl_opts_(int argc, char ** argv) {
 
     return ssl_config;
 } /* parse__ssl_opts_ */
+#endif
 
 int
 main(int argc, char ** argv) {
+#ifndef EVHTP_DISABLE_SSL
     evhtp_t           * htp;
     struct event_base * evbase;
 
@@ -250,7 +253,9 @@ main(int argc, char ** argv) {
     }
 
     event_base_loop(evbase, 0);
-
-
     return 0;
+#else
+    log_error("Not compiled with SSL support, go away");
+    return EXIT_FAILURE;
+#endif
 }

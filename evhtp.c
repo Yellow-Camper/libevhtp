@@ -4878,7 +4878,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
             break;
     }     /* switch */
 
-    SSL_CTX_use_certificate_file(htp->ssl_ctx, cfg->pemfile, SSL_FILETYPE_PEM);
+    SSL_CTX_use_certificate_chain_file(htp->ssl_ctx, cfg->pemfile);
 
     char * const key = cfg->privfile ?  cfg->privfile : cfg->pemfile;
 

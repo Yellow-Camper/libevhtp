@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+CONFIG_DIR="@PROJECT_BINARY_DIR@/examples/https"
+
+# Create new CA
+openssl req -new -x509 -days 9999    \
+    -config "$CONFIG_DIR/etc/ca.cnf" \
+    -keyout "$CONFIG_DIR/ca-key.pem" \
+    -out    "$CONFIG_DIR/ca-crt.pem"
+
+# Generate private key for server
+openssl genrsa -out "$CONFIG_DIR/server-key.pem" 4096
+
+# Generate cert signing request
+openssl req -new \
+    -config "$CONFIG_DIR/etc/server.cnf" \
+    -key    "$CONFIG_DIR/server-key.pem" \
+    -out    "$CONFIG_DIR/server-csr.pem"
+
+# Sign the request
+openssl x509 -req                         \
+    -extfile "$CONFIG_DIR/etc/server.cnf" \
+    -days 999                             \
+    -passin "pass:password"               \
+    -in "$CONFIG_DIR/server-csr.pem"      \
+    -CA "$CONFIG_DIR/ca-crt.pem"          \
+    -CAkey "$CONFIG_DIR/ca-key.pem"       \
+    -CAcreateserial                       \
+    -out "$CONFIG_DIR/server-crt.pem"
+
+# Generate a few client certs
+openssl genrsa -out "$CONFIG_DIR/client1-key.pem" 4096
+openssl genrsa -out "$CONFIG_DIR/client2-key.pem" 4096
+
+# create two cert sign requests
+openssl req -new -config "$CONFIG_DIR/etc/client1.cnf" -key $CONFIG_DIR/client1-key.pem -out $CONFIG_DIR/client1-csr.pem
+openssl req -new -config $CONFIG_DIR/etc/client2.cnf -key $CONFIG_DIR/client2-key.pem -out $CONFIG_DIR/client2-csr.pem
+
+# sign the above client certs
+openssl x509 -req            \
+    -extfile $CONFIG_DIR/etc/client1.cnf \
+    -days 999                \
+    -passin "pass:password"  \
+    -in $CONFIG_DIR/client1-csr.pem      \
+    -CA $CONFIG_DIR/ca-crt.pem           \
+    -CAkey $CONFIG_DIR/ca-key.pem        \
+    -CAcreateserial          \
+    -out $CONFIG_DIR/client1-crt.pem
+
+openssl x509 -req            \
+    -extfile $CONFIG_DIR/etc/client2.cnf \
+    -days 999                \
+    -passin "pass:password"  \
+    -in $CONFIG_DIR/client2-csr.pem      \
+    -CA $CONFIG_DIR/ca-crt.pem           \
+    -CAkey $CONFIG_DIR/ca-key.pem        \
+    -CAcreateserial          \
+    -out $CONFIG_DIR/client2-crt.pem

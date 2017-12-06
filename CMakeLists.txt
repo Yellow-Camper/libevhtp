@@ -24,16 +24,19 @@ if (EVHTP_THR_SHARED_PIPE)
     add_definitions(-DEVTHR_SHARED_PIPE)
 endif()
 
-CHECK_include_FILES(strings.h   HAVE_STRINGS_H)
-CHECK_include_FILES(string.h    HAVE_STRING_H)
-CHECK_include_FILES(stdlib.h    HAVE_STDLIB_H)
-CHECK_include_FILES(sys/time.h  HAVE_SYS_TIME_H)
-CHECK_include_FILES(sys/times.h HAVE_SYS_TIMES_H)
-CHECK_include_FILES(unistd.h    HAVE_UNISTD_H)
-CHECK_include_FILES(stdarg.h    HAVE_STDARG_PROTOTYPES)
-CHECK_include_FILES(sys/tree.h  HAVE_SYS_TREE)
-CHECK_include_FILES(sys/queue.h HAVE_SYS_QUEUE)
-CHECK_include_FILES(sys/un.h    HAVE_SYS_UN)
+check_include_files (stdlib.h    HAVE_STDLIB_H)
+check_include_files (string.h    HAVE_STRING_H)
+check_include_files (stdint.h    HAVE_STDINT_H)
+check_include_files (errno.h     HAVE_ERRNO_H)
+check_include_files (strings.h   HAVE_STRINGS_H)
+check_include_files (inttypes.h  HAVE_INTTYPES_H)
+check_include_files (limits.h    HAVE_LIMITS_H)
+
+check_include_files (unistd.h    HAVE_UNISTD_H)
+check_include_files (stdarg.h    HAVE_STDARG_PROTOTYPES)
+check_include_files (sys/tree.h  HAVE_SYS_TREE)
+check_include_files (sys/queue.h HAVE_SYS_QUEUE)
+check_include_files (sys/un.h    HAVE_SYS_UN)
 
 CHECK_TYPE_SIZE("int" SIZEOF_INT)
 CHECK_TYPE_SIZE("long" SIZEOF_LONG)
@@ -189,11 +192,11 @@ if (NOT EVHTP_DISABLE_EVTHR)
     list (APPEND LIBEVHTP_EXTERNAL_LIBS pthread)
 endif()
 
-add_library(evhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCE_FILES})
-target_link_libraries(evhtp ${LIBEVHTP_EXTERNAL_LIBS})
+add_library           (evhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCE_FILES})
+target_link_libraries (evhtp ${LIBEVHTP_EXTERNAL_LIBS})
 
 if (EVHTP_BUILD_SHARED)
-        set_target_properties(evhtp PROPERTIES SOVERSION "${PROJECT_VERSION}")
+        set_target_properties(evhtp PROPERTIES VERSION "${PROJECT_VERSION}" 0 OUTPUT_NAME "evhtp")
 endif()
 
 add_subdirectory(examples)
@@ -212,6 +215,7 @@ install (
     FILES
         ${PROJECT_SOURCE_DIR}/include/evhtp/evhtp.h
         ${PROJECT_SOURCE_DIR}/include/evhtp/parser.h
+        ${PROJECT_BINARY_DIR}/include/evhtp/config.h
     DESTINATION
         ${INCLUDE_INSTALL_DIR}/evhtp)
 
@@ -220,12 +224,6 @@ install (
         ${PROJECT_SOURCE_DIR}/include/evhtp.h
     DESTINATION
         ${INCLUDE_INSTALL_DIR})
-
-install (
-    FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h
-    DESTINATION
-        ${INCLUDE_INSTALL_DIR}/evhtp)
 
 if (NOT EVHTP_DISABLE_EVTHR)
     install (

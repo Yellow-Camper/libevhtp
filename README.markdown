@@ -1,7 +1,7 @@
 | ![LOGO](http://i.imgur.com/uBd4iIz.png) | <h1>Libevhtp</h1> |
 | :------------- | -------------: |
 
-[![Build Status](https://travis-ci.org/ellzey/libevhtp.svg?branch=develop)](https://travis-ci.org/ellzey/libevhtp)
+[![Build Status](https://travis-ci.org/criticalstack/libevhtp.svg?branch=develop)](https://travis-ci.org/criticalstack/libevhtp)
 <a href="https://scan.coverity.com/projects/ellzey-libevhtp">
   <img alt="Coverity Scan Build Status"
        src="https://scan.coverity.com/projects/5084/badge.svg"/>
@@ -17,6 +17,7 @@ probably not very awesome, it's best to look at test.c to see advanced usage.
 ## Optional Dependencies
 * [OpenSSL](http://openssl.org)
 * pthreads
+* [onig (regex)](https://github.com/kkos/oniguruma)
 
 ## Building
 * cd build
@@ -51,7 +52,7 @@ Libevhtp attempts to address these problems along with a wide variety of cool me
 1.	Create a parent evhtp_t structure.
 2.	Assign callbacks to the parent for specific URIs or posix-regex based URI's
 3.	Optionally assign per-connection hooks (see hooks) to the callbacks.
-4.	Optionally assign pre-accept and post-accept callbacks for incoming connections.	
+4.	Optionally assign pre-accept and post-accept callbacks for incoming connections.
 5.	Optionally enable built-in threadpool for connection handling (lock-free, and non-blocking).
 6.	Optionally morph your server to HTTPS.
 7.	Start the evhtp listener.
@@ -78,7 +79,7 @@ Libevhtp attempts to address these problems along with a wide variety of cool me
 	main(int argc, char ** argv) {
 	    evbase_t * evbase = event_base_new();
 	    evhtp_t  * htp    = evhtp_new(evbase, NULL);
-	
+
 	    evhtp_set_cb(htp, "/test", testcb, NULL);
 	    evhtp_bind_socket(htp, "0.0.0.0", 8080, 1024);
 	    event_base_loop(evbase, 0);
@@ -89,12 +90,12 @@ Libevhtp attempts to address these problems along with a wide variety of cool me
 ## Is evhtp thread-safe?
 
 For simple usage with evhtp_use_threads(), yes. But for more extreme cases:
-sorta, you are bound to the thread mechanisms of libevent itself. 
+sorta, you are bound to the thread mechanisms of libevent itself.
 
 But with proper design around libevhtp, thread issues can be out-of-sight,
-out-of-mind. 
+out-of-mind.
 
-What do you mean by this "proper design" statement? 
+What do you mean by this "proper design" statement?
 
 Refer to the code in ./examples/thread_design.c. The comments go into great detail
 of the hows and whys for proper design using libevhtp's threading model.
@@ -113,7 +114,7 @@ with redis.
 
 ## Performance stuff
 
-While we never documented any benchmark publically, 
+While we never documented any benchmark publically,
 the popular open source project [ZIMG](http://zimg.buaa.us) did a bit of that
 for us.The ZIMG team decided to move away from NGINX to libevhtp for their
 software, and the results were pretty outstanding. Here is a graph showing their

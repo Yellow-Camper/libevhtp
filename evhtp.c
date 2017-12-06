@@ -2754,10 +2754,6 @@ htp__connection_new_(evhtp_t * htp, evutil_socket_t sock, evhtp_type type)
     htparser_init(connection->parser, ptype);
     htparser_set_userdata(connection->parser, connection);
 
-#ifdef EVHTP_FUTURE_USE
-    TAILQ_INIT(&connection->pending);
-#endif
-
     return connection;
 }     /* htp__connection_new_ */
 
@@ -2904,16 +2900,14 @@ htp__ssl_thread_lock_(int mode, int type, const char * file, int line)
 static void
 htp__ssl_delete_scache_ent_(evhtp_ssl_ctx_t * ctx, evhtp_ssl_sess_t * sess)
 {
-    evhtp_t         * htp;
-    evhtp_ssl_cfg_t * cfg;
-    unsigned char   * sid;
-    unsigned int      slen;
+    evhtp_t          * htp;
+    evhtp_ssl_cfg_t  * cfg;
+    evhtp_ssl_data_t * sid;
+    unsigned int       slen;
 
-    htp  = (evhtp_t *)SSL_CTX_get_app_data(ctx);
-    cfg  = htp->ssl_cfg;
-
-    sid  = sess->session_id;
-    slen = sess->session_id_length;
+    htp = (evhtp_t *)SSL_CTX_get_app_data(ctx);
+    cfg = htp->ssl_cfg;
+    sid = (evhtp_ssl_data_t *)SSL_SESSION_get_id(sess, &slen);
 
     if (cfg->scache_del)
     {
@@ -2926,7 +2920,7 @@ htp__ssl_add_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess)
 {
     evhtp_connection_t * connection;
     evhtp_ssl_cfg_t    * cfg;
-    unsigned char      * sid;
+    evhtp_ssl_data_t   * sid;
     int                  slen;
 
     connection = (evhtp_connection_t *)SSL_get_app_data(ssl);
@@ -2934,10 +2928,9 @@ htp__ssl_add_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess)
     {
         return 0;     /* We cannot get the ssl_cfg */
     }
-    cfg        = connection->htp->ssl_cfg;
 
-    sid        = sess->session_id;
-    slen       = sess->session_id_length;
+    cfg = connection->htp->ssl_cfg;
+    sid = (evhtp_ssl_data_t *)SSL_SESSION_get_id(sess, &slen);
 
     SSL_set_timeout(sess, cfg->scache_timeout);
 
@@ -2950,19 +2943,20 @@ htp__ssl_add_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess)
 }
 
 static evhtp_ssl_sess_t *
-htp__ssl_get_scache_ent_(evhtp_ssl_t * ssl, unsigned char * sid, int sid_len, int * copy)
+htp__ssl_get_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_data_t * sid, int sid_len, int * copy)
 {
     evhtp_connection_t * connection;
     evhtp_ssl_cfg_t    * cfg;
     evhtp_ssl_sess_t   * sess;
 
     connection = (evhtp_connection_t * )SSL_get_app_data(ssl);
+
     if (connection->htp == NULL)
     {
         return NULL;     /* We have no way of getting ssl_cfg */
     }
-    cfg        = connection->htp->ssl_cfg;
-    sess       = NULL;
+    cfg  = connection->htp->ssl_cfg;
+    sess = NULL;
 
     if (cfg->scache_get)
     {
@@ -3004,18 +2998,20 @@ htp__ssl_servername_(evhtp_ssl_t * ssl, int * unused, void * arg)
 
     if ((evhtp_vhost = htp__request_find_vhost_(evhtp, sname)))
     {
+        SSL_CTX * ctx = SSL_get_SSL_CTX(ssl);
+
         connection->htp = evhtp_vhost;
 
         HTP_FLAG_ON(connection, EVHTP_CONN_FLAG_VHOST_VIA_SNI);
 
         SSL_set_SSL_CTX(ssl, evhtp_vhost->ssl_ctx);
-        SSL_set_options(ssl, SSL_CTX_get_options(ssl->ctx));
+        SSL_set_options(ssl, SSL_CTX_get_options(ctx));
 
         if ((SSL_get_verify_mode(ssl) == SSL_VERIFY_NONE) ||
             (SSL_num_renegotiations(ssl) == 0))
         {
-            SSL_set_verify(ssl, SSL_CTX_get_verify_mode(ssl->ctx),
-                           SSL_CTX_get_verify_callback(ssl->ctx));
+            SSL_set_verify(ssl, SSL_CTX_get_verify_mode(ctx),
+                           SSL_CTX_get_verify_callback(ctx));
         }
 
         return SSL_TLSEXT_ERR_OK;
@@ -4352,10 +4348,27 @@ htp__set_hook_(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void
     return 0;
 }         /* htp__set_hook_ */
 
+static int
+htp__unset_hook_(evhtp_hooks_t ** hooks, evhtp_hook_type type) {
+    return htp__set_hook_(hooks, type, NULL, NULL);
+}
+
 int
-evhtp_set_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg)
+evhtp_callback_unset_hook(evhtp_callback_t * callback, evhtp_hook_type type)
 {
-    return htp__set_hook_(hooks, type, cb, arg);
+    return htp__unset_hook_(&callback->hooks, type);
+}
+
+int
+evhtp_request_unset_hook(evhtp_request_t * req, evhtp_hook_type type)
+{
+    return htp__unset_hook_(&req->hooks, type);
+}
+
+int
+evhtp_connection_unset_hook(evhtp_connection_t * conn, evhtp_hook_type type)
+{
+    return htp__unset_hook_(&conn->hooks, type);
 }
 
 int
@@ -4374,12 +4387,6 @@ int
 evhtp_connection_set_hook(evhtp_connection_t * conn, evhtp_hook_type type, evhtp_hook cb, void * arg)
 {
     return htp__set_hook_(&conn->hooks, type, cb, arg);
-}
-
-int
-evhtp_unset_hook(evhtp_hooks_t ** hooks, evhtp_hook_type type)
-{
-    return evhtp_set_hook(hooks, type, NULL, NULL);
 }
 
 int
@@ -4413,7 +4420,7 @@ evhtp_unset_all_hooks(evhtp_hooks_t ** hooks)
     }
 
     for (i = 0; hooklist_[i].type != -1; i++) {
-        if (evhtp_unset_hook(hooks, hooklist_[i].type) == -1) {
+        if (htp__unset_hook_(hooks, hooklist_[i].type) == -1) {
             return -1;
         }
     }
@@ -4752,13 +4759,8 @@ evhtp_ssl_use_threads(void)
 int
 evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
 {
-#ifdef EVHTP_ENABLE_FUTURE_STUFF
-    evhtp_ssl_scache_init init_cb = NULL;
-    evhtp_ssl_scache_add  add_cb  = NULL;
-    evhtp_ssl_scache_get  get_cb  = NULL;
-    evhtp_ssl_scache_del  del_cb  = NULL;
-#endif
-    long cache_mode;
+    long          cache_mode;
+    unsigned char c;
 
     if (cfg == NULL || htp == NULL || cfg->pemfile == NULL)
     {
@@ -4769,7 +4771,16 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
     ERR_load_crypto_strings();
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
-    RAND_poll();
+
+    if (RAND_poll() != 1) {
+        log_error("RAND_poll");
+        return -1;
+    }
+
+    if (RAND_bytes(&c, 1) != 1) {
+        log_error("RAND_bytes");
+        return -1;
+    }
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
     STACK_OF(SSL_COMP) * comp_methods = SSL_COMP_get_compression_methods();
@@ -4789,21 +4800,22 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
     SSL_CTX_set_options(htp->ssl_ctx, cfg->ssl_opts);
 
 #ifndef OPENSSL_NO_ECDH
-    if (cfg->named_curve != NULL)
-    {
+    if (cfg->named_curve != NULL) {
         EC_KEY * ecdh = NULL;
         int      nid  = 0;
 
-        nid  = OBJ_sn2nid(cfg->named_curve);
-        if (nid == 0)
-        {
-            fprintf(stderr, "ECDH initialization failed: unknown curve %s\n", cfg->named_curve);
+        nid = OBJ_sn2nid(cfg->named_curve);
+
+        if (nid == 0) {
+            log_error("ECDH initialization failed: unknown curve %s", cfg->named_curve);
         }
+
         ecdh = EC_KEY_new_by_curve_name(nid);
-        if (ecdh == NULL)
-        {
-            fprintf(stderr, "ECDH initialization failed for curve %s\n", cfg->named_curve);
+
+        if (ecdh == NULL) {
+            log_error("ECDH initialization failed for curve %s", cfg->named_curve);
         }
+
         SSL_CTX_set_tmp_ecdh(htp->ssl_ctx, ecdh);
         EC_KEY_free(ecdh);
     }
@@ -4815,6 +4827,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
         DH   * dh;
 
         fh = fopen(cfg->dhparams, "r");
+
         if (fh != NULL)
         {
             dh = PEM_read_DHparams(fh, NULL, NULL, NULL);
@@ -4823,30 +4836,36 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
                 SSL_CTX_set_tmp_dh(htp->ssl_ctx, dh);
                 DH_free(dh);
             } else {
-                fprintf(stderr, "DH initialization failed: unable to parse file %s\n", cfg->dhparams);
+                log_error("DH initialization failed: unable to parse file %s", cfg->dhparams);
             }
+
             fclose(fh);
         } else {
-            fprintf(stderr, "DH initialization failed: unable to open file %s\n", cfg->dhparams);
+            log_error("DH initialization failed: unable to open file %s", cfg->dhparams);
         }
     }
 #endif  /* OPENSSL_NO_DH */
 
     if (cfg->ciphers != NULL) {
-        SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers);
+        if (SSL_CTX_set_cipher_list(htp->ssl_ctx, cfg->ciphers) == 0) {
+            log_error("set_cipher_list");
+            return -1;
+        }
     }
 
     SSL_CTX_load_verify_locations(htp->ssl_ctx, cfg->cafile, cfg->capath);
     X509_STORE_set_flags(SSL_CTX_get_cert_store(htp->ssl_ctx), cfg->store_flags);
     SSL_CTX_set_verify(htp->ssl_ctx, cfg->verify_peer, cfg->x509_verify_cb);
 
-    if (cfg->x509_chk_issued_cb != NULL)
-    {
+    if (cfg->x509_chk_issued_cb != NULL) {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
         htp->ssl_ctx->cert_store->check_issued = cfg->x509_chk_issued_cb;
+#else
+        X509_STORE_set_check_issued(SSL_CTX_get_cert_store(htp->ssl_ctx), cfg->x509_chk_issued_cb);
+#endif
     }
 
-    if (cfg->verify_depth)
-    {
+    if (cfg->verify_depth) {
         SSL_CTX_set_verify_depth(htp->ssl_ctx, cfg->verify_depth);
     }
 
@@ -4854,35 +4873,12 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
         case evhtp_ssl_scache_type_disabled:
             cache_mode = SSL_SESS_CACHE_OFF;
             break;
-#ifdef EVHTP_ENABLE_FUTURE_STUFF
-        case evhtp_ssl_scache_type_user:
-            cache_mode = SSL_SESS_CACHE_SERVER |
-                         SSL_SESS_CACHE_NO_INTERNAL |
-                         SSL_SESS_CACHE_NO_INTERNAL_LOOKUP;
-
-            init_cb    = cfg->scache_init;
-            add_cb     = cfg->scache_add;
-            get_cb     = cfg->scache_get;
-            del_cb     = cfg->scache_del;
-            break;
-        case evhtp_ssl_scache_type_builtin:
-            cache_mode = SSL_SESS_CACHE_SERVER |
-                         SSL_SESS_CACHE_NO_INTERNAL |
-                         SSL_SESS_CACHE_NO_INTERNAL_LOOKUP;
-
-            init_cb    = htp__ssl_builtin_init_;
-            add_cb     = htp__ssl_builtin_add_;
-            get_cb     = htp__ssl_builtin_get_;
-            del_cb     = htp__ssl_builtin_del_;
-            break;
-#endif
-        case evhtp_ssl_scache_type_internal:
         default:
             cache_mode = SSL_SESS_CACHE_SERVER;
             break;
     }     /* switch */
 
-    SSL_CTX_use_certificate_file(htp->ssl_ctx, cfg->pemfile, SSL_FILETYPE_PEM);
+    SSL_CTX_use_certificate_chain_file(htp->ssl_ctx, cfg->pemfile);
 
     char * const key = cfg->privfile ?  cfg->privfile : cfg->pemfile;
 
@@ -5168,10 +5164,37 @@ evhtp_add_alias(evhtp_t * evhtp, const char * name)
         return -1;
     }
 
+    log_debug("Adding %s to aliases", name);
+
     alias->alias = htp__strdup_(name);
     evhtp_alloc_assert(alias->alias);
 
     TAILQ_INSERT_TAIL(&evhtp->aliases, alias, next);
+
+    return 0;
+}
+
+int
+evhtp_add_aliases(evhtp_t * htp, const char * name, ...) {
+    va_list      argp;
+    size_t       len;
+
+    if (evhtp_add_alias(htp, name) == -1) {
+        return -1;
+    }
+
+    va_start(argp, name);
+    {
+        const char * p;
+
+        while ((p = va_arg(argp, const char *)) != NULL) {
+            if (evhtp_add_alias(htp, p) == -1) {
+                log_error("Unable to add %s alias", p);
+                return -1;
+            }
+        }
+    }
+    va_end(argp);
 
     return 0;
 }

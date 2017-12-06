@@ -1,3 +1,16 @@
+v1.2.15
+ o deprecated unset_hook and set_hook / cleanup (f1d2bd1 Nathan French)
+ o updated travis configuration (45003e1 Nathan French)
+ o Latest revision to support multiple SSL versions (4e353ba Tony Lambiris)
+ o remove silly comment (d3da401 Nathan French)
+ o check for errors in SSL RAND_(poll|bytes) calls (018dec8 Nathan French)
+ o Added new virtualhost examples and functions (3467382 Nathan French)
+ o added example request pausing app (282a1c9 Nathan French)
+ o Added a more extensive SSL sandbox. (1e0c241 Nathan French)
+ o Add examples/https/README (6ecf7e7 Nathan French)
+ o exit failure in example_https when SSL is disabled (0848e08 Nathan French)
+ o [#26] Use SSL_CTX_use_certificate_chain_file (4c4eb3a Nathan French)
+
 v1.2.14 - !!!! SECURITY UPDATE !!!!
  o Added doxygen tags. Updated Doxyfile to include more sources and headers. (50ab41d Dan Henderson)
  o SSL logging on handshake errors (0fff6bc Nathan French)

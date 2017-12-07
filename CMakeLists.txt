@@ -196,7 +196,7 @@ add_library           (evhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCE_FILES})
 target_link_libraries (evhtp ${LIBEVHTP_EXTERNAL_LIBS})
 
 if (EVHTP_BUILD_SHARED)
-        set_target_properties(evhtp PROPERTIES VERSION "${PROJECT_VERSION}" 0 OUTPUT_NAME "evhtp")
+        set_target_properties(evhtp PROPERTIES VERSION "${PROJECT_VERSION}" SOVERSION 0 OUTPUT_NAME "evhtp")
 endif()
 
 add_subdirectory(examples)

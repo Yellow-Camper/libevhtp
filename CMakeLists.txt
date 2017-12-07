@@ -185,8 +185,11 @@ set(LIBEVHTP_EXTERNAL_LIBS
 set (LIBEVHTP_SOURCE_FILES
     evhtp.c
     numtoa.c
-    parser.c
-    sslutils.c)
+    parser.c)
+
+if (NOT EVHTP_DISABLE_SSL)
+    list (APPEND LIBEVHTP_SOURCE_FILES sslutils.c)
+endif()
 
 if (NOT EVHTP_DISABLE_EVTHR)
     list (APPEND LIBEVHTP_SOURCE_FILES  thread.c)
@@ -225,6 +228,14 @@ install (
         ${PROJECT_SOURCE_DIR}/include/evhtp.h
     DESTINATION
         ${INCLUDE_INSTALL_DIR})
+
+if (NOT EVHTP_DISABLE_SSL)
+    install (
+        FILES
+            ${PROJECT_SOURCE_DIR}/include/evhtp/sslutils.h
+        DESTINATION
+            ${INCLUDE_INSTALL_DIR}/evhtp)
+endif()
 
 if (NOT EVHTP_DISABLE_EVTHR)
     install (

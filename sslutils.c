@@ -7,11 +7,11 @@
 
 #include "evhtp/config.h"
 #include "evhtp/evhtp.h"
+#include "evhtp/sslutils.h"
 #include "internal.h"
 
 unsigned char *
 htp_sslutil_subject_tostr(evhtp_ssl_t * ssl) {
-#ifndef EVHTP_DISABLE_SSL
     unsigned char * subj_str;
     char          * p;
     X509          * cert;
@@ -41,14 +41,10 @@ htp_sslutil_subject_tostr(evhtp_ssl_t * ssl) {
     X509_free(cert);
 
     return subj_str;
-#else
-    return NULL;
-#endif
 }
 
 unsigned char *
 htp_sslutil_issuer_tostr(evhtp_ssl_t * ssl) {
-#ifndef EVHTP_DISABLE_SSL
     X509          * cert;
     X509_NAME     * name;
     char          * p;
@@ -78,14 +74,10 @@ htp_sslutil_issuer_tostr(evhtp_ssl_t * ssl) {
     X509_free(cert);
 
     return issr_str;
-#else
-    return NULL;
-#endif
 }
 
 unsigned char *
 htp_sslutil_notbefore_tostr(evhtp_ssl_t * ssl) {
-#ifndef EVHTP_DISABLE_SSL
     BIO           * bio;
     X509          * cert;
     ASN1_TIME     * time;
@@ -132,14 +124,10 @@ htp_sslutil_notbefore_tostr(evhtp_ssl_t * ssl) {
     X509_free(cert);
 
     return time_str;
-#else
-    return NULL;
-#endif
 } /* htp_sslutil_notbefore_tostr */
 
 unsigned char *
 htp_sslutil_notafter_tostr(evhtp_ssl_t * ssl) {
-#ifndef EVHTP_DISABLE_SSL
     BIO           * bio;
     X509          * cert;
     ASN1_TIME     * time;
@@ -186,14 +174,10 @@ htp_sslutil_notafter_tostr(evhtp_ssl_t * ssl) {
     X509_free(cert);
 
     return time_str;
-#else
-    return NULL;
-#endif
 } /* htp_sslutil_notafter_tostr */
 
 unsigned char *
 htp_sslutil_sha1_tostr(evhtp_ssl_t * ssl) {
-#ifndef EVHTP_DISABLE_SSL
     const EVP_MD  * md_alg;
     X509          * cert;
     unsigned int    n;
@@ -242,14 +226,10 @@ htp_sslutil_sha1_tostr(evhtp_ssl_t * ssl) {
     X509_free(cert);
 
     return buf;
-#else
-    return NULL;
-#endif
 } /* htp_sslutil_sha1_tostr */
 
 unsigned char *
 htp_sslutil_serial_tostr(evhtp_ssl_t * ssl) {
-#ifndef EVHTP_DISABLE_SSL
     BIO           * bio;
     X509          * cert;
     size_t          len;
@@ -286,14 +266,10 @@ htp_sslutil_serial_tostr(evhtp_ssl_t * ssl) {
     BIO_free(bio);
 
     return ser_str;
-#else
-    return NULL;
-#endif
 } /* htp_sslutil_serial_tostr */
 
 unsigned char *
 htp_sslutil_cipher_tostr(evhtp_ssl_t * ssl) {
-#ifndef EVHTP_DISABLE_SSL
     const SSL_CIPHER * cipher;
     const char       * p;
     unsigned char    * cipher_str;
@@ -313,14 +289,10 @@ htp_sslutil_cipher_tostr(evhtp_ssl_t * ssl) {
     cipher_str = strdup(p);
 
     return cipher_str;
-#else
-    return NULL;
-#endif
 }
 
 unsigned char *
 htp_sslutil_cert_tostr(evhtp_ssl_t * ssl) {
-#ifndef EVHTP_DISABLE_SSL
     X509          * cert;
     BIO           * bio;
     unsigned char * raw_cert_str;
@@ -391,14 +363,10 @@ htp_sslutil_cert_tostr(evhtp_ssl_t * ssl) {
     free(raw_cert_str);
 
     return cert_str;
-#else
-    return NULL;
-#endif
 } /* htp_sslutil_cert_tostr */
 
 unsigned char *
 htp_sslutil_x509_ext_tostr(evhtp_ssl_t * ssl, const char * oid) {
-#ifndef EVHTP_DISABLE_SSL
     unsigned char       * ext_str;
     X509                * cert;
     ASN1_OBJECT         * oid_obj;
@@ -457,7 +425,4 @@ htp_sslutil_x509_ext_tostr(evhtp_ssl_t * ssl, const char * oid) {
     X509_free(cert);
 
     return ext_str;
-#else
-    return NULL;
-#endif
 } /* htp_sslutil_x509_ext_tostr */

@@ -42,6 +42,7 @@ extern "C" {
 #cmakedefine EVHTP_USE_JEMALLOC
 #cmakedefine EVHTP_USE_TCMALLOC
 #cmakedefine EVHTP_DEBUG
+#cmakedefine EVHTP_DISABLE_MEMFUNCTIONS
 
 #ifndef EVHTP_DISABLE_REGEX
 #include <onigposix.h>

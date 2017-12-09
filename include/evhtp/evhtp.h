@@ -775,6 +775,10 @@ EVHTP_EXPORT int evhtp_connection_set_hook(evhtp_connection_t * c, evhtp_hook_ty
 EVHTP_EXPORT int evhtp_request_set_hook(evhtp_request_t * r, evhtp_hook_type type, evhtp_hook cb, void * arg);
 EVHTP_EXPORT int evhtp_callback_set_hook(evhtp_callback_t * cb, evhtp_hook_type type, evhtp_hook hookcb, void * arg);
 
+EVHTP_EXPORT evhtp_hooks_t * evhtp_connection_get_hooks(evhtp_connection_t * c);
+EVHTP_EXPORT evhtp_hooks_t * evhtp_request_get_hooks(evhtp_request_t * r);
+EVHTP_EXPORT evhtp_hooks_t * evhtp_callback_get_hooks(evhtp_callback_t * cb);
+
 /**
  * @brief removes all hooks.
  *
@@ -783,6 +787,11 @@ EVHTP_EXPORT int evhtp_callback_set_hook(evhtp_callback_t * cb, evhtp_hook_type 
  * @return
  */
 EVHTP_EXPORT int evhtp_unset_all_hooks(evhtp_hooks_t ** hooks);
+
+EVHTP_EXPORT int evhtp_request_unset_hook(evhtp_request_t * req, evhtp_hook_type type);
+EVHTP_EXPORT int evhtp_connection_unset_hook(evhtp_connection_t * conn, evhtp_hook_type type);
+EVHTP_EXPORT int evhtp_callback_unset_hook(evhtp_callback_t * callback, evhtp_hook_type type);
+
 
 /**
  * @brief bind to a socket, optionally with specific protocol support

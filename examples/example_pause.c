@@ -14,6 +14,7 @@
 #include "../log.h"
 #include "internal.h"
 #include "evhtp/evhtp.h"
+#include "./eutils.h"
 
 struct paused_request_ {
     struct event    * _timeoutev;
@@ -103,23 +104,8 @@ main(int argc, char ** argv) {
      */
     evhtp_set_gencb(htp, http_pause__callback_, &timeo);
 
-    evhtp_bind_socket(htp, "127.0.0.1", 0, 128);
-    {
-        struct sockaddr_in sin;
-        socklen_t          len = sizeof(struct sockaddr);
-        uint16_t           port;
+    log_info("response delayed for 10s: "
+             "curl http://127.0.0.1:%d/", bind__sock_port0_(htp));
 
-        getsockname(
-            evconnlistener_get_fd(htp->server),
-            (struct sockaddr *)&sin, &len);
-
-        port = ntohs(sin.sin_port);
-
-        log_info("request will be delayed for 10 seconds with: curl http://127.0.0.1:%d/", port);
-    }
-
-    event_base_loop(evbase, 0);
-
-
-    return 0;
+    return event_base_loop(evbase, 0);
 }

@@ -7,6 +7,7 @@
 #include "internal.h"
 #include "../log.h"
 #include "evhtp/evhtp.h"
+#include "./eutils.h"
 
 #define make_response(cb) do {                                          \
         evbuffer_add_printf(req->buffer_out,                            \
@@ -94,19 +95,8 @@ main(int argc, char ** argv) {
     /* we can also append a single alias to vhost_2 like this */
     evhtp_add_alias(htp_vhost_2, "gmail.google.com");
 
-    /* now bind and listen on our server */
-    evhtp_bind_socket(htp, "127.0.0.1", 0, 128);
-
     {
-        struct sockaddr_in sin;
-        socklen_t          len = sizeof(struct sockaddr);
-        uint16_t           port;
-
-        getsockname(
-            evconnlistener_get_fd(htp->server),
-            (struct sockaddr *)&sin, &len);
-
-        port = ntohs(sin.sin_port);
+        uint16_t port = bind__sock_port0_(htp);
 
         log_info("[[ try the following commands and you should see 'evhtp.io domains' ]]");
         log_info("=====================================================================");
@@ -123,5 +113,5 @@ main(int argc, char ** argv) {
         log_info("curl -H'Host: gmail.google.com' http://127.0.0.1:%d/vhost", port);
     }
 
-    event_base_loop(evbase, 0);
+    return event_base_loop(evbase, 0);
 } /* main */

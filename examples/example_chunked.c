@@ -140,20 +140,7 @@ main(int argc, char ** argv) {
      */
     evhtp_set_gencb(htp, http__callback_, strdup(argv[1]));
 
-    evhtp_bind_socket(htp, "127.0.0.1", 0, 128);
-    {
-        struct sockaddr_in sin;
-        socklen_t          len = sizeof(struct sockaddr);
-        uint16_t           port;
-
-        getsockname(
-            evconnlistener_get_fd(htp->server),
-            (struct sockaddr *)&sin, &len);
-
-        port = ntohs(sin.sin_port);
-
-        log_info("curl http://127.0.0.1:%d/", port);
-    }
+    log_info("curl http://127.0.0.1:%d/", bind__sock_port0_(htp));
 
     event_base_loop(evbase, 0);
 

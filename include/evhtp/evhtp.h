@@ -298,6 +298,11 @@ struct evhtp_s {
     #define EVHTP_FLAG_ENABLE_NODELAY      (1 << 3)
     #define EVHTP_FLAG_ENABLE_DEFER_ACCEPT (1 << 4)
     #define EVHTP_FLAG_DEFAULTS            EVHTP_FLAG_ENABLE_100_CONT
+    #define EVHTP_FLAG_ENABLE_ALL          EVHTP_FLAG_ENABLE_100_CONT \
+        | EVHTP_FLAG_ENABLE_REUSEPORT                                 \
+        | EVHTP_FLAG_ENABLE_NODELAY                                   \
+        | EVHTP_FLAG_ENABLE_DEFER_ACCEPT
+
     uint16_t flags;             /**< the base flags set for this context, see: EVHTP_FLAG_* */
     uint16_t parser_flags;      /**< default query flags to alter 'strictness' (see EVHTP_PARSE_QUERY_FLAG_*) */
 

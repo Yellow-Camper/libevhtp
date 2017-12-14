@@ -3964,7 +3964,11 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
         {
             if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (void *)&on, sizeof(on)) == -1)
             {
-                break;
+                if (errno != EOPNOTSUPP) {
+                    break;
+                }
+
+                log_warn("SO_REUSEPORT not supported for this socket.. Skipping");
             }
         }
 #endif
@@ -3974,7 +3978,11 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
         {
             if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == -1)
             {
-                break;
+                if (errno != EOPNOTSUPP) {
+                    break;
+                }
+
+                log_warn("TCP_NODELAY not supported for this socket.. Skipping");
             }
         }
 #endif
@@ -3984,7 +3992,11 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
         {
             if (setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, (void *)&on, sizeof(on)) == -1)
             {
-                break;
+                if (errno != EOPNOTSUPP) {
+                    break;
+                }
+
+                log_warn("TCP_DEFER_ACCEPT not supported for this socket.. Skipping");
             }
         }
 #endif
@@ -5176,8 +5188,8 @@ evhtp_add_alias(evhtp_t * evhtp, const char * name)
 
 int
 evhtp_add_aliases(evhtp_t * htp, const char * name, ...) {
-    va_list      argp;
-    size_t       len;
+    va_list argp;
+    size_t  len;
 
     if (evhtp_add_alias(htp, name) == -1) {
         return -1;

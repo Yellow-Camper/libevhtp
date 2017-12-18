@@ -7,7 +7,7 @@ After running `make examples`, if SSL is enabled, you can quickly test HTTPS, wi
 # Test without client auth
 
 # Run the server
-./examples/example_https              \
+./examples/example_https_server       \
   -cert examples/https/server-crt.pem \
   -key  examples/https/server-key.pem
 
@@ -16,7 +16,7 @@ curl -vk https://localhost:4443/
 
 # Test WITH client auth
 
-./examples/example_https              \
+./examples/example_https_server       \
   -cert examples/https/server-crt.pem \
   -key  examples/https/server-key.pem \
   -ca   examples/https/ca-crt.pem     \

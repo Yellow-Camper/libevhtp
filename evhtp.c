@@ -4779,11 +4779,28 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
         return -1;
     }
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_library_init();
     ERR_load_crypto_strings();
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
-
+#else
+    /* unnecessary in OpenSSL 1.1.0 */
+    /*
+     * if (OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL) == 0) {
+     *  log_error("OPENSSL_init_ssl");
+     *  return -1;
+     * }
+     *
+     * if (OPENSSL_init_crypto(
+     *      OPENSSL_INIT_ADD_ALL_CIPHERS |
+     *      OPENSSL_INIT_ADD_ALL_DIGESTS |
+     *      OPENSSL_INIT_LOAD_CONFIG, NULL) == 0) {
+     *  log_error("OPENSSL_init_crypto");
+     *  return -1;
+     * }
+     */
+#endif
     if (RAND_poll() != 1) {
         log_error("RAND_poll");
         return -1;
@@ -4800,7 +4817,11 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
 #endif
 
     htp->ssl_cfg = cfg;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     htp->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
+#else
+    htp->ssl_ctx = SSL_CTX_new(TLS_server_method());
+#endif
 
     evhtp_alloc_assert(htp->ssl_ctx);
 

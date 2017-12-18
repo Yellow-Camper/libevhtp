@@ -38,10 +38,10 @@ if (NOT EVHTP_DISABLE_SSL)
 
     configure_file(https/bin/generate.sh.in https/bin/generate.sh @ONLY)
 
-    add_executable(example_https EXCLUDE_FROM_ALL https/example_https.c)
-    target_link_libraries(example_https evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+    add_executable(example_https_server EXCLUDE_FROM_ALL https/example_https_server.c)
+    target_link_libraries(example_https_server evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
-    add_dependencies(examples example_https)
+    add_dependencies(examples example_https_server)
 endif()
 
 add_dependencies(examples example_chunked example_pause example_vhost test_extensive test_basic test_vhost test_client test_query test_perf)

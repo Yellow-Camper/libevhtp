@@ -16,75 +16,6 @@
 #include "evhtp/sslutils.h"
 
 static void
-ssl__add_x_headers_(evhtp_headers_t * headers, evhtp_ssl_t * ssl) {
-    unsigned char * subj_str = NULL;
-    unsigned char * issr_str = NULL;
-    unsigned char * nbf_str  = NULL;
-    unsigned char * naf_str  = NULL;
-    unsigned char * ser_str  = NULL;
-    unsigned char * cip_str  = NULL;
-    unsigned char * sha1_str = NULL;
-    unsigned char * cert_str = NULL;
-
-    if ((subj_str = htp_sslutil_subject_tostr(ssl))) {
-        evhtp_headers_add_header(
-            headers,
-            evhtp_header_new("X-SSL-Subject", subj_str, 0, 1));
-    }
-
-    if ((issr_str = htp_sslutil_issuer_tostr(ssl))) {
-        evhtp_headers_add_header(
-            headers,
-            evhtp_header_new("X-SSL-Issuer", issr_str, 0, 1));
-    }
-
-    if ((nbf_str = htp_sslutil_notbefore_tostr(ssl))) {
-        evhtp_headers_add_header(
-            headers,
-            evhtp_header_new("X-SSL-Notbefore", nbf_str, 0, 1));
-    }
-
-    if ((naf_str = htp_sslutil_notafter_tostr(ssl))) {
-        evhtp_headers_add_header(
-            headers,
-            evhtp_header_new("X-SSL-Notafter", naf_str, 0, 1));
-    }
-
-    if ((ser_str = htp_sslutil_serial_tostr(ssl))) {
-        evhtp_headers_add_header(
-            headers,
-            evhtp_header_new("X-SSL-Serial", ser_str, 0, 1));
-    }
-
-    if ((cip_str = htp_sslutil_cipher_tostr(ssl))) {
-        evhtp_headers_add_header(
-            headers,
-            evhtp_header_new("X-SSL-Cipher", cip_str, 0, 1));
-    }
-
-    if ((sha1_str = htp_sslutil_sha1_tostr(ssl))) {
-        evhtp_headers_add_header(
-            headers,
-            evhtp_header_new("X-SSL-Sha1", sha1_str, 0, 1));
-    }
-
-    if ((cert_str = htp_sslutil_cert_tostr(ssl))) {
-        evhtp_headers_add_header(
-            headers,
-            evhtp_header_new("X-SSL-Certificate", cert_str, 0, 1));
-    }
-
-    free(subj_str);
-    free(issr_str);
-    free(nbf_str);
-    free(naf_str);
-    free(ser_str);
-    free(cip_str);
-    free(sha1_str);
-    free(cert_str);
-} /* ssl__add_x_headers_ */
-
-static void
 http__callback_(evhtp_request_t * req, void * arg) {
     evhtp_connection_t * conn;
 
@@ -93,7 +24,10 @@ http__callback_(evhtp_request_t * req, void * arg) {
     conn = evhtp_request_get_connection(req);
     evhtp_assert(conn != NULL);
 
-    ssl__add_x_headers_(req->headers_out, conn->ssl);
+    htp_sslutil_add_xheaders(
+        req->headers_out,
+        conn->ssl,
+        HTP_SSLUTILS_XHDR_ALL);
 
     return evhtp_send_reply(req, EVHTP_RES_OK);
 }

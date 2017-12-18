@@ -426,3 +426,79 @@ htp_sslutil_x509_ext_tostr(evhtp_ssl_t * ssl, const char * oid) {
 
     return ext_str;
 } /* htp_sslutil_x509_ext_tostr */
+
+int
+htp_sslutil_verify2opts(const char * opts_str) {
+    if (!opts_str || !strcasecmp(opts_str, "off")) {
+        return SSL_VERIFY_NONE;
+    }
+
+    if (!strcasecmp(opts_str, "optional")) {
+        return SSL_VERIFY_PEER;
+    }
+
+    if (!strcasecmp(opts_str, "on")) {
+        return SSL_VERIFY_PEER
+               | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+    }
+
+    return -1;
+}
+
+int
+htp_sslutil_add_xheaders(evhtp_headers_t * hdrs, evhtp_ssl_t * ssl, short flags) {
+    int i;
+
+    if (!hdrs || !ssl) {
+        return -1;
+    }
+
+    struct {
+        const char    * hdr_str;
+        short           flag;
+        unsigned char * (* convfn)(evhtp_ssl_t *);
+    } ssl_x_hdrs_[] = {
+        { "X-SSL-Subject",     HTP_SSLUTILS_XHDR_SUBJ, htp_sslutil_subject_tostr   },
+        { "X-SSL-Issuer",      HTP_SSLUTILS_XHDR_ISSR, htp_sslutil_issuer_tostr    },
+        { "X-SSL-Notbefore",   HTP_SSLUTILS_XHDR_NBFR, htp_sslutil_notbefore_tostr },
+        { "X-SSL-Notafter",    HTP_SSLUTILS_XHDR_NAFR, htp_sslutil_notafter_tostr  },
+        { "X-SSL-Serial",      HTP_SSLUTILS_XHDR_SERL, htp_sslutil_serial_tostr    },
+        { "X-SSL-Cipher",      HTP_SSLUTILS_XHDR_CIPH, htp_sslutil_cipher_tostr    },
+        { "X-SSL-Certificate", HTP_SSLUTILS_XHDR_CERT, htp_sslutil_cert_tostr      },
+        { "X-SSL-SHA1",        HTP_SSLUTILS_XHDR_SHA1, htp_sslutil_sha1_tostr      },
+        { NULL,                0,                      NULL                        }
+    };
+
+    /* remove all of the current x- headers if present */
+    evhtp_kv_rm_and_free(hdrs, evhtp_kvs_find_kv(hdrs, "X-SSL-Subject"));
+    evhtp_kv_rm_and_free(hdrs, evhtp_kvs_find_kv(hdrs, "X-SSL-Issuer"));
+    evhtp_kv_rm_and_free(hdrs, evhtp_kvs_find_kv(hdrs, "X-SSL-Notbefore"));
+    evhtp_kv_rm_and_free(hdrs, evhtp_kvs_find_kv(hdrs, "X-SSL-Notafter"));
+    evhtp_kv_rm_and_free(hdrs, evhtp_kvs_find_kv(hdrs, "X-SSL-Serial"));
+    evhtp_kv_rm_and_free(hdrs, evhtp_kvs_find_kv(hdrs, "X-SSL-Cipher"));
+    evhtp_kv_rm_and_free(hdrs, evhtp_kvs_find_kv(hdrs, "X-SSL-Certificate"));
+
+    if (flags == 0) {
+        return 0;
+    }
+
+    /* iterate over our ssl_x_hdrs_ struct array, compare the flags,
+     * and if a xhdr flag is set, run the proper *_tostr function and
+     * append it to the `hdrs` passed to this function.
+     */
+    for (i = 0; ssl_x_hdrs_[i].hdr_str; i++) {
+        char * o_str = NULL;
+
+        if (flags & ssl_x_hdrs_[i].flag) {
+            if ((o_str = (ssl_x_hdrs_[i].convfn)(ssl))) {
+                evhtp_headers_add_header(
+                    hdrs,
+                    evhtp_header_new(ssl_x_hdrs_[i].hdr_str, o_str, 0, 1));
+
+                evhtp_safe_free(o_str, free);
+            }
+        }
+    }
+
+    return 0;
+} /* htp_sslutil_add_xheaders */

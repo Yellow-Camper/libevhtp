@@ -9,7 +9,8 @@ After running `make examples`, if SSL is enabled, you can quickly test HTTPS, wi
 # Run the server
 ./examples/example_https_server       \
   -cert examples/https/server-crt.pem \
-  -key  examples/https/server-key.pem
+  -key  examples/https/server-key.pem \
+  -verify-client off
 
 # Make a request
 curl -vk https://localhost:4443/
@@ -20,16 +21,14 @@ curl -vk https://localhost:4443/
   -cert examples/https/server-crt.pem \
   -key  examples/https/server-key.pem \
   -ca   examples/https/ca-crt.pem     \
-  -verify-peer                        \
-  -verify-depth 2                     \
-  -enforce-peer-cert
+  -verify-client on                   \
+  -verify-depth  2
 
 # Make a request with the client key
 curl -kv \
   --key  examples/https/client1-key.pem \
   --cert examples/https/client1-crt.pem \
   https://localhost:4443/
-
 ```
 
 The output (with client-certs) should look like:

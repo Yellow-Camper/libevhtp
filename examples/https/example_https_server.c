@@ -74,7 +74,6 @@ enum {
     OPTARG_CAPATH,
     OPTARG_CIPHERS,
     OPTARG_VERIFY_PEER,
-    OPTARG_ENFORCE_PEER_CERT,
     OPTARG_VERIFY_DEPTH,
     OPTARG_ENABLE_CACHE,
     OPTARG_CACHE_TIMEOUT,
@@ -91,8 +90,11 @@ static const char * help =
     "  -ca            <file> : File of PEM-encoded Server CA Certificates\n"
     "  -capath        <path> : Directory of PEM-encoded CA Certificates for Client Auth\n"
     "  -ciphers        <str> : Accepted SSL Ciphers\n"
-    "  -verify-peer          : Enable SSL client verification\n"
-    "  -enforce-peer-cert    : Reject clients without a cert\n"
+    "  -verify-client (on | off | optional)\n"
+    "      Enables verification of client certificates.        \n"
+    "        on       : the client has to present a valid cert \n"
+    "        off      : no client cert is required at all      \n"
+    "        optional : the client may present a valid cert    \n"
     "  -verify-depth     <n> : Maximum depth of CA Certificates in Client Certificate verification\n"
     "  -enable-protocol  <p> : Enable one of the following protocols: SSLv2, SSLv3, TLSv1, or ALL\n"
     "  -disable-protocol <p> : Disable one of the following protocols: SSLv2, SSLv3, TLSv1, or ALL\n"
@@ -110,22 +112,21 @@ parse__ssl_opts_(int argc, char ** argv) {
     ssl_config->ssl_opts = SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3 | SSL_OP_NO_TLSv1;
 
     static struct option long_options[] = {
-        { "cert",              required_argument, 0, OPTARG_CERT              },
-        { "key",               required_argument, 0, OPTARG_KEY               },
-        { "ca",                required_argument, 0, OPTARG_CA                },
-        { "capath",            required_argument, 0, OPTARG_CAPATH            },
-        { "ciphers",           required_argument, 0, OPTARG_CIPHERS           },
-        { "verify-peer",       no_argument,       0, OPTARG_VERIFY_PEER       },
-        { "enforce-peer-cert", no_argument,       0, OPTARG_ENFORCE_PEER_CERT },
-        { "verify-depth",      required_argument, 0, OPTARG_VERIFY_DEPTH      },
-        { "enable-cache",      no_argument,       0, OPTARG_ENABLE_CACHE      },
-        { "cache-timeout",     required_argument, 0, OPTARG_CACHE_TIMEOUT     },
-        { "cache-size",        required_argument, 0, OPTARG_CACHE_SIZE        },
-        { "enable-protocol",   required_argument, 0, OPTARG_ENABLE_PROTOCOL   },
-        { "disable-protocol",  required_argument, 0, OPTARG_DISABLE_PROTOCOL  },
-        { "ctx-timeout",       required_argument, 0, OPTARG_CTX_TIMEOUT       },
-        { "help",              no_argument,       0, 'h'                      },
-        { NULL,                0,                 0, 0                        }
+        { "cert",             required_argument, 0, OPTARG_CERT             },
+        { "key",              required_argument, 0, OPTARG_KEY              },
+        { "ca",               required_argument, 0, OPTARG_CA               },
+        { "capath",           required_argument, 0, OPTARG_CAPATH           },
+        { "ciphers",          required_argument, 0, OPTARG_CIPHERS          },
+        { "verify-client",    required_argument, 0, OPTARG_VERIFY_PEER      },
+        { "verify-depth",     required_argument, 0, OPTARG_VERIFY_DEPTH     },
+        { "enable-cache",     no_argument,       0, OPTARG_ENABLE_CACHE     },
+        { "cache-timeout",    required_argument, 0, OPTARG_CACHE_TIMEOUT    },
+        { "cache-size",       required_argument, 0, OPTARG_CACHE_SIZE       },
+        { "enable-protocol",  required_argument, 0, OPTARG_ENABLE_PROTOCOL  },
+        { "disable-protocol", required_argument, 0, OPTARG_DISABLE_PROTOCOL },
+        { "ctx-timeout",      required_argument, 0, OPTARG_CTX_TIMEOUT      },
+        { "help",             no_argument,       0, 'h'                     },
+        { NULL,               0,                 0, 0                       }
     };
 
     while ((opt = getopt_long_only(argc, argv, "", long_options, &long_index)) != -1) {
@@ -152,10 +153,7 @@ parse__ssl_opts_(int argc, char ** argv) {
                 ssl_config->verify_depth    = atoi(optarg);
                 break;
             case OPTARG_VERIFY_PEER:
-                ssl_verify_mode            |= SSL_VERIFY_PEER;
-                break;
-            case OPTARG_ENFORCE_PEER_CERT:
-                ssl_verify_mode            |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+                ssl_verify_mode             = htp_sslutil_verify2opts(optarg);
                 break;
             case OPTARG_ENABLE_CACHE:
                 ssl_config->scache_type     = evhtp_ssl_scache_type_internal;

@@ -41,7 +41,10 @@ if (NOT EVHTP_DISABLE_SSL)
     add_executable(example_https_server EXCLUDE_FROM_ALL https/example_https_server.c)
     target_link_libraries(example_https_server evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
-    add_dependencies(examples example_https_server)
+    add_executable(example_https_client EXCLUDE_FROM_ALL https/example_https_client.c)
+    target_link_libraries(example_https_client evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+    add_dependencies(examples example_https_server example_https_client)
 endif()
 
 add_dependencies(examples example_chunked example_pause example_vhost test_extensive test_basic test_vhost test_client test_query test_perf)

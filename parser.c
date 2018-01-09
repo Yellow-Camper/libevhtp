@@ -428,7 +428,7 @@ htparser_get_strerror(htparser * p)
 {
     htpparse_error e = htparser_get_error(p);
 
-    if (e > (htparse_error_generic + 1))
+    if (e > htparse_error_generic)
     {
         return "htparse_no_such_error";
     }

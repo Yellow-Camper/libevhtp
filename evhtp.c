@@ -320,7 +320,7 @@ htp__strndup_(const char * str, size_t len)
 void
 evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
                         void *(*reallocfn_)(void * p, size_t sz),
-                        void (* freefn_)(void * p))
+                        void (*freefn_)(void * p))
 {
 #ifndef EVHTP_DISABLE_MEMFUNCTIONS
     malloc_  = mallocfn_;
@@ -2378,7 +2378,7 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
     {
         return;
     }
-    
+
     /* run user-hook for on_write callback before further analysis */
     htp__hook_connection_write_(conn);
 
@@ -2929,8 +2929,8 @@ htp__ssl_add_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess)
         return 0;     /* We cannot get the ssl_cfg */
     }
 
-    cfg = connection->htp->ssl_cfg;
-    sid = (evhtp_ssl_data_t *)SSL_SESSION_get_id(sess, &slen);
+    cfg        = connection->htp->ssl_cfg;
+    sid        = (evhtp_ssl_data_t *)SSL_SESSION_get_id(sess, &slen);
 
     SSL_set_timeout(sess, cfg->scache_timeout);
 
@@ -2955,8 +2955,8 @@ htp__ssl_get_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_data_t * sid, int sid_len,
     {
         return NULL;     /* We have no way of getting ssl_cfg */
     }
-    cfg  = connection->htp->ssl_cfg;
-    sess = NULL;
+    cfg        = connection->htp->ssl_cfg;
+    sess       = NULL;
 
     if (cfg->scache_get)
     {
@@ -4837,7 +4837,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
         EC_KEY * ecdh = NULL;
         int      nid  = 0;
 
-        nid = OBJ_sn2nid(cfg->named_curve);
+        nid  = OBJ_sn2nid(cfg->named_curve);
 
         if (nid == 0) {
             log_error("ECDH initialization failed: unknown curve %s", cfg->named_curve);

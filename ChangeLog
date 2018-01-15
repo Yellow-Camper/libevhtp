@@ -1,3 +1,19 @@
+v1.2.16
+ o Added various SSL utility functions (ab190e1 Nathan French)
+ o Fix compilation with shared libraries (6075565 Vincent Bernat)
+ o Extensive example of streaming data without hogging memory (8f50b83 Nathan French)
+ o Added EVHTP_FLAG_ENABLE_ALL to enable all socket flags (756a7e2 Nathan French)
+ o only warn if setsockopt fails on EOPNOTSUPP (e5a3bdf Nathan French)
+ o sslutil API updates [documentation / parsers / x-hdr helpers] (22207ad Nathan French)
+ o OpenSSL 1.1.0 updates (load_*/_init/_add*) (3819073 Nathan French)
+ o example_https_server now uses htp_sslutil_verify2opts (086afd1 Nathan French)
+ o added example_https_client.c (933febf Nathan French)
+ o [#69] Fix potential out of bound write to p->buf (8b68657 Nathan French)
+ o [#72] Fix for oob read from htparser_get_strerror (75574ba Nathan French)
+ o [#70] Do not disable EV_WRITE when pausing requests; The assumption
+   that libevent would automatically start transferring pending data was
+   wrong. (4cb782db77 Ultima1252)
+
 v1.2.15
  o deprecated unset_hook and set_hook / cleanup (f1d2bd1 Nathan French)
  o updated travis configuration (45003e1 Nathan French)

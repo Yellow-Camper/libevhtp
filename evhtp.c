@@ -320,7 +320,7 @@ htp__strndup_(const char * str, size_t len)
 void
 evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
                         void *(*reallocfn_)(void * p, size_t sz),
-                        void (* freefn_)(void * p))
+                        void (*freefn_)(void * p))
 {
 #ifndef EVHTP_DISABLE_MEMFUNCTIONS
     malloc_  = mallocfn_;
@@ -2373,14 +2373,14 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
         return;
     }
 
-    /* run user-hook for on_write callback before further analysis */
-    htp__hook_connection_write_(conn);
-
     /* connection is in a paused state, no further processing yet */
     if ((conn->flags & EVHTP_CONN_FLAG_PAUSED))
     {
         return;
     }
+
+    /* run user-hook for on_write callback before further analysis */
+    htp__hook_connection_write_(conn);
 
     if (conn->flags & EVHTP_CONN_FLAG_WAITING)
     {
@@ -2929,8 +2929,8 @@ htp__ssl_add_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess)
         return 0;     /* We cannot get the ssl_cfg */
     }
 
-    cfg = connection->htp->ssl_cfg;
-    sid = (evhtp_ssl_data_t *)SSL_SESSION_get_id(sess, &slen);
+    cfg        = connection->htp->ssl_cfg;
+    sid        = (evhtp_ssl_data_t *)SSL_SESSION_get_id(sess, &slen);
 
     SSL_set_timeout(sess, cfg->scache_timeout);
 
@@ -2955,8 +2955,8 @@ htp__ssl_get_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_data_t * sid, int sid_len,
     {
         return NULL;     /* We have no way of getting ssl_cfg */
     }
-    cfg  = connection->htp->ssl_cfg;
-    sess = NULL;
+    cfg        = connection->htp->ssl_cfg;
+    sess       = NULL;
 
     if (cfg->scache_get)
     {
@@ -3043,7 +3043,7 @@ evhtp_connection_pause(evhtp_connection_t * c)
 
     HTP_FLAG_ON(c, EVHTP_CONN_FLAG_PAUSED);
 
-    bufferevent_disable(c->bev, EV_READ | EV_WRITE);
+    bufferevent_disable(c->bev, EV_READ);
 
     return;
 }
@@ -3964,7 +3964,11 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
         {
             if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, (void *)&on, sizeof(on)) == -1)
             {
-                break;
+                if (errno != EOPNOTSUPP) {
+                    break;
+                }
+
+                log_warn("SO_REUSEPORT not supported for this socket.. Skipping");
             }
         }
 #endif
@@ -3974,7 +3978,11 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
         {
             if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&on, sizeof(on)) == -1)
             {
-                break;
+                if (errno != EOPNOTSUPP) {
+                    break;
+                }
+
+                log_warn("TCP_NODELAY not supported for this socket.. Skipping");
             }
         }
 #endif
@@ -3984,7 +3992,11 @@ evhtp_accept_socket(evhtp_t * htp, evutil_socket_t sock, int backlog)
         {
             if (setsockopt(sock, IPPROTO_TCP, TCP_DEFER_ACCEPT, (void *)&on, sizeof(on)) == -1)
             {
-                break;
+                if (errno != EOPNOTSUPP) {
+                    break;
+                }
+
+                log_warn("TCP_DEFER_ACCEPT not supported for this socket.. Skipping");
             }
         }
 #endif
@@ -4767,11 +4779,28 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
         return -1;
     }
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     SSL_library_init();
     ERR_load_crypto_strings();
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
-
+#else
+    /* unnecessary in OpenSSL 1.1.0 */
+    /*
+     * if (OPENSSL_init_ssl(OPENSSL_INIT_SSL_DEFAULT, NULL) == 0) {
+     *  log_error("OPENSSL_init_ssl");
+     *  return -1;
+     * }
+     *
+     * if (OPENSSL_init_crypto(
+     *      OPENSSL_INIT_ADD_ALL_CIPHERS |
+     *      OPENSSL_INIT_ADD_ALL_DIGESTS |
+     *      OPENSSL_INIT_LOAD_CONFIG, NULL) == 0) {
+     *  log_error("OPENSSL_init_crypto");
+     *  return -1;
+     * }
+     */
+#endif
     if (RAND_poll() != 1) {
         log_error("RAND_poll");
         return -1;
@@ -4788,7 +4817,11 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
 #endif
 
     htp->ssl_cfg = cfg;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     htp->ssl_ctx = SSL_CTX_new(SSLv23_server_method());
+#else
+    htp->ssl_ctx = SSL_CTX_new(TLS_server_method());
+#endif
 
     evhtp_alloc_assert(htp->ssl_ctx);
 
@@ -4804,7 +4837,7 @@ evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * cfg)
         EC_KEY * ecdh = NULL;
         int      nid  = 0;
 
-        nid = OBJ_sn2nid(cfg->named_curve);
+        nid  = OBJ_sn2nid(cfg->named_curve);
 
         if (nid == 0) {
             log_error("ECDH initialization failed: unknown curve %s", cfg->named_curve);
@@ -5176,8 +5209,8 @@ evhtp_add_alias(evhtp_t * evhtp, const char * name)
 
 int
 evhtp_add_aliases(evhtp_t * htp, const char * name, ...) {
-    va_list      argp;
-    size_t       len;
+    va_list argp;
+    size_t  len;
 
     if (evhtp_add_alias(htp, name) == -1) {
         return -1;

@@ -192,7 +192,7 @@ typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connect
 typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #endif
 
-#define EVHTP_VERSION           "1.2.15"
+#define EVHTP_VERSION           "1.2.16"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
 #define EVHTP_VERSION_PATCH     15
@@ -298,6 +298,11 @@ struct evhtp_s {
     #define EVHTP_FLAG_ENABLE_NODELAY      (1 << 3)
     #define EVHTP_FLAG_ENABLE_DEFER_ACCEPT (1 << 4)
     #define EVHTP_FLAG_DEFAULTS            EVHTP_FLAG_ENABLE_100_CONT
+    #define EVHTP_FLAG_ENABLE_ALL          EVHTP_FLAG_ENABLE_100_CONT \
+        | EVHTP_FLAG_ENABLE_REUSEPORT                                 \
+        | EVHTP_FLAG_ENABLE_NODELAY                                   \
+        | EVHTP_FLAG_ENABLE_DEFER_ACCEPT
+
     uint16_t flags;             /**< the base flags set for this context, see: EVHTP_FLAG_* */
     uint16_t parser_flags;      /**< default query flags to alter 'strictness' (see EVHTP_PARSE_QUERY_FLAG_*) */
 
@@ -775,6 +780,10 @@ EVHTP_EXPORT int evhtp_connection_set_hook(evhtp_connection_t * c, evhtp_hook_ty
 EVHTP_EXPORT int evhtp_request_set_hook(evhtp_request_t * r, evhtp_hook_type type, evhtp_hook cb, void * arg);
 EVHTP_EXPORT int evhtp_callback_set_hook(evhtp_callback_t * cb, evhtp_hook_type type, evhtp_hook hookcb, void * arg);
 
+EVHTP_EXPORT evhtp_hooks_t * evhtp_connection_get_hooks(evhtp_connection_t * c);
+EVHTP_EXPORT evhtp_hooks_t * evhtp_request_get_hooks(evhtp_request_t * r);
+EVHTP_EXPORT evhtp_hooks_t * evhtp_callback_get_hooks(evhtp_callback_t * cb);
+
 /**
  * @brief removes all hooks.
  *
@@ -783,6 +792,11 @@ EVHTP_EXPORT int evhtp_callback_set_hook(evhtp_callback_t * cb, evhtp_hook_type 
  * @return
  */
 EVHTP_EXPORT int evhtp_unset_all_hooks(evhtp_hooks_t ** hooks);
+
+EVHTP_EXPORT int evhtp_request_unset_hook(evhtp_request_t * req, evhtp_hook_type type);
+EVHTP_EXPORT int evhtp_connection_unset_hook(evhtp_connection_t * conn, evhtp_hook_type type);
+EVHTP_EXPORT int evhtp_callback_unset_hook(evhtp_callback_t * callback, evhtp_hook_type type);
+
 
 /**
  * @brief bind to a socket, optionally with specific protocol support

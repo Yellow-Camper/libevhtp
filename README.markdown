@@ -10,6 +10,9 @@
 This document describes details on using the evhtp API. This document is
 probably not very awesome, it's best to look at test.c to see advanced usage.
 
+# Prebuilt Packages
+[![Package Versions](https://repology.org/badge/vertical-allrepos/libevhtp.svg)](https://repology.org/metapackage/libevhtp)
+
 ## Required Dependencies
 * [gcc](http://gcc.gnu.org/)
 * [Libevent2](http://libevent.org)

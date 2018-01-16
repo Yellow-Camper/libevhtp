@@ -193,8 +193,7 @@ htp__malloc_(size_t size)
  * @return void * to newly realloc'd memory or NULL if fail
  */
 static void *
-htp__realloc_(void * ptr, size_t size)
-{
+htp__realloc_(void * ptr, size_t size) {
     return realloc_(ptr, size);
 }
 
@@ -208,9 +207,12 @@ htp__realloc_(void * ptr, size_t size)
  *
  */
 static void
-htp__free_(void * ptr)
-{
-    return free_(ptr);
+htp__free_(void * ptr) {
+    if (ptr == NULL) {
+        return;
+    }
+
+    evhtp_safe_free(ptr, free_);
 }
 
 /**
@@ -1222,10 +1224,8 @@ htp__uri_new_(evhtp_uri_t ** out)
  * @param request the request structure
  */
 static void
-htp__request_free_(evhtp_request_t * request)
-{
-    if (evhtp_unlikely(request == NULL))
-    {
+htp__request_free_(evhtp_request_t * request) {
+    if (request == NULL) {
         return;
     }
 
@@ -1235,8 +1235,7 @@ htp__request_free_(evhtp_request_t * request)
     evhtp_safe_free(request->headers_in, evhtp_kvs_free);
     evhtp_safe_free(request->headers_out, evhtp_kvs_free);
 
-    if (request->conn && request->conn->request == request)
-    {
+    if (request->conn && request->conn->request == request) {
         request->conn->request = NULL;
     }
 
@@ -1245,13 +1244,13 @@ htp__request_free_(evhtp_request_t * request)
         evhtp_safe_free(request->buffer_in, evbuffer_free);
     }
 
-    if (request->buffer_out != NULL)
-    {
+    if (request->buffer_out != NULL) {
         evhtp_safe_free(request->buffer_out, evbuffer_free);
     }
 
     evhtp_safe_free(request->hooks, htp__free_);
     evhtp_safe_free(request, htp__free_);
+
 }
 
 /**
@@ -1323,7 +1322,17 @@ htp__request_new_(evhtp_connection_t * c)
 static int
 htp__request_parse_start_(htparser * p)
 {
-    evhtp_connection_t * c = htparser_get_userdata(p);
+    evhtp_connection_t * c;
+
+    if (p == NULL) {
+        return 0;
+    }
+
+    c = htparser_get_userdata(p);
+
+    if (c == NULL) {
+        return 0;
+    }
 
     if (evhtp_unlikely(c->type == evhtp_type_client))
     {
@@ -1335,11 +1344,9 @@ htp__request_parse_start_(htparser * p)
         return -1;
     }
 
-    if (c->request)
-    {
-        if (c->request->flags & EVHTP_REQ_FLAG_FINISHED)
-        {
-            htp__request_free_(c->request);
+    if (c->request) {
+        if (c->request->flags & EVHTP_REQ_FLAG_FINISHED) {
+            evhtp_safe_free(c->request, htp__request_free_);
         } else {
             return -1;
         }
@@ -2268,8 +2275,7 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
 
     log_debug("nread = %zu", nread);
 
-    if (!(c->flags & EVHTP_CONN_FLAG_OWNER))
-    {
+    if (!(c->flags & EVHTP_CONN_FLAG_OWNER)) {
         /*
          * someone has taken the ownership of this connection, we still need to
          * drain the input buffer that had been read up to this point.
@@ -2278,18 +2284,17 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
         log_debug("EVHTP_CONN_FLAG_OWNER set, removing contexts");
 
         evbuffer_drain(bufferevent_get_input(bev), nread);
-        evhtp_connection_free(c);
+        evhtp_safe_free(c, evhtp_connection_free);
 
         return;
     }
 
-    if (c->request)
-    {
+    if (c->request) {
         switch (c->cr_status) {
             case EVHTP_RES_DATA_TOO_LONG:
                 htp__hook_connection_error_(c, -1);
-                evhtp_connection_free(c);
 
+                evhtp_safe_free(c, evhtp_connection_free);
                 return;
             default:
                 break;
@@ -2298,17 +2303,15 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
 
     evbuffer_drain(bufferevent_get_input(bev), nread);
 
-    if (c->request && c->cr_status == EVHTP_RES_PAUSE)
-    {
+    if (c->request && c->cr_status == EVHTP_RES_PAUSE) {
         log_debug("Pausing connection");
 
         evhtp_request_pause(c->request);
-    } else if (htparser_get_error(c->parser) != htparse_error_none)
-    {
+    } else if (htparser_get_error(c->parser) != htparse_error_none) {
         log_debug("error %d, freeing connection",
                   htparser_get_error(c->parser));
 
-        evhtp_connection_free(c);
+        evhtp_safe_free(c, evhtp_connection_free);
     } else if (nread < avail)
     {
         /* we still have more data to read (piped request probably) */
@@ -2327,11 +2330,10 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
 
     evhtp_assert(bev != NULL);
 
-    if (evhtp_unlikely(arg == NULL))
-    {
+    if (evhtp_unlikely(arg == NULL)) {
         log_error("No data associated with the bufferevent %p", bev);
 
-        bufferevent_free(bev);
+        evhtp_safe_free(bev, bufferevent_free);
         return;
     }
 
@@ -2574,7 +2576,7 @@ htp__connection_eventcb_(struct bufferevent * bev, short events, void * arg)
          */
         HTP_FLAG_ON(c, EVHTP_CONN_FLAG_FREE_CONN);
     } else {
-        evhtp_connection_free((evhtp_connection_t *)arg);
+        evhtp_safe_free(c, evhtp_connection_free);
     }
 }     /* htp__connection_eventcb_ */
 
@@ -2591,9 +2593,8 @@ htp__connection_resumecb_(int fd, short events, void * arg)
         c->cr_status = EVHTP_RES_OK;
     }
 
-    if (c->flags & EVHTP_CONN_FLAG_FREE_CONN)
-    {
-        evhtp_connection_free(c);
+    if (c->flags & EVHTP_CONN_FLAG_FREE_CONN) {
+        evhtp_safe_free(c, evhtp_connection_free);
 
         return;
     }
@@ -2799,16 +2800,14 @@ htp__run_in_thread_(evthr_t * thr, void * arg, void * shared)
     connection->evbase = evthr_get_base(thr);
     connection->thread = thr;
 
-    if (htp__connection_accept_(connection->evbase, connection) < 0)
-    {
-        evhtp_connection_free(connection);
+    if (htp__connection_accept_(connection->evbase, connection) < 0) {
+        evhtp_safe_free(connection, evhtp_connection_free);
 
         return;
     }
 
-    if (htp__run_post_accept_(htp, connection) < 0)
-    {
-        evhtp_connection_free(connection);
+    if (htp__run_post_accept_(htp, connection) < 0) {
+        evhtp_safe_free(connection, evhtp_connection_free);
 
         return;
     }
@@ -2845,7 +2844,7 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
                              htp__run_in_thread_, connection) != EVTHR_RES_OK)
         {
             evutil_closesocket(connection->sock);
-            evhtp_connection_free(connection);
+            evhtp_safe_free(connection, evhtp_connection_free);
 
             return;
         }
@@ -2855,15 +2854,13 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
 #endif
     connection->evbase = htp->evbase;
 
-    if (htp__connection_accept_(htp->evbase, connection) == -1)
-    {
-        evhtp_connection_free(connection);
+    if (htp__connection_accept_(htp->evbase, connection) == -1) {
+        evhtp_safe_free(connection, evhtp_connection_free);
         return;
     }
 
-    if (htp__run_post_accept_(htp, connection) == -1)
-    {
-        evhtp_connection_free(connection);
+    if (htp__run_post_accept_(htp, connection) == -1) {
+        evhtp_safe_free(connection, evhtp_connection_free);
         return;
     }
 }     /* htp__accept_cb_ */
@@ -3233,7 +3230,7 @@ evhtp_kv_rm_and_free(evhtp_kvs_t * kvs, evhtp_kv_t * kv)
 
     TAILQ_REMOVE(kvs, kv, next);
 
-    evhtp_kv_free(kv);
+    evhtp_safe_free(kv, evhtp_kv_free);
 }
 
 void
@@ -3739,7 +3736,7 @@ error:
     evhtp_safe_free(val_buf, htp__free_);
 #endif
 
-    evhtp_query_free(query_args);
+    evhtp_safe_free(query_args, evhtp_query_free);
 
     return NULL;
 }     /* evhtp_parse_query */
@@ -3761,8 +3758,7 @@ evhtp_send_reply_start(evhtp_request_t * request, evhtp_res code)
 
     if (!(reply_buf = htp__create_reply_(request, code)))
     {
-        evhtp_connection_free(c);
-
+        evhtp_safe_free(c, evhtp_connection_free);
         return;
     }
 
@@ -3797,9 +3793,8 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code)
 
     HTP_FLAG_ON(request, EVHTP_REQ_FLAG_FINISHED);
 
-    if (!(reply_buf = htp__create_reply_(request, code)))
-    {
-        evhtp_connection_free(request->conn);
+    if (!(reply_buf = htp__create_reply_(request, code))) {
+        evhtp_safe_free(request->conn, evhtp_connection_free);
 
         return;
     }
@@ -4257,7 +4252,6 @@ evhtp_callback_free(evhtp_callback_t * callback)
             break;
 #ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
-            regfree(callback->val.regex);
             evhtp_safe_free(callback->val.regex, htp__free_);
             break;
 #endif
@@ -4443,8 +4437,7 @@ evhtp_unset_all_hooks(evhtp_hooks_t ** hooks)
 evhtp_hooks_t *
 evhtp_connection_get_hooks(evhtp_connection_t * c)
 {
-    if (evhtp_unlikely(c == NULL))
-    {
+    if (evhtp_unlikely(c == NULL)) {
         return NULL;
     }
 
@@ -5070,10 +5063,8 @@ evhtp_request_set_max_body_size(evhtp_request_t * req, uint64_t len)
 }
 
 void
-evhtp_connection_free(evhtp_connection_t * connection)
-{
-    if (evhtp_unlikely(connection == NULL))
-    {
+evhtp_connection_free(evhtp_connection_t * connection) {
+    if (evhtp_unlikely(connection == NULL)) {
         return;
     }
 
@@ -5102,7 +5093,7 @@ evhtp_connection_free(evhtp_connection_t * connection)
             SSL_shutdown(connection->ssl);
         }
 #endif
-        bufferevent_free(connection->bev);
+        evhtp_safe_free(connection->bev, bufferevent_free);
 #endif
     }
 
@@ -5110,9 +5101,12 @@ evhtp_connection_free(evhtp_connection_t * connection)
 }     /* evhtp_connection_free */
 
 void
-evhtp_request_free(evhtp_request_t * request)
-{
-    htp__request_free_(request);
+evhtp_request_free(evhtp_request_t * request) {
+    if (request == NULL) {
+        return;
+    }
+
+    evhtp_safe_free(request, htp__request_free_);
 }
 
 void
@@ -5413,7 +5407,7 @@ evhtp_connection_new_dns(struct event_base * evbase, struct evdns_base * dns_bas
 
     if (conn->bev == NULL)
     {
-        evhtp_connection_free(conn);
+        evhtp_safe_free(conn, evhtp_connection_free);
 
         return NULL;
     }
@@ -5446,7 +5440,7 @@ evhtp_connection_new_dns(struct event_base * evbase, struct evdns_base * dns_bas
             salen = sizeof(sin6);
         } else {
             /* Not a valid IP. */
-            evhtp_connection_free(conn);
+            evhtp_safe_free(conn, evhtp_connection_free);
 
             return NULL;
         }

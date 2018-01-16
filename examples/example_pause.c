@@ -37,8 +37,8 @@ http_resume__callback_(int sock, short events, void * arg) {
     req  = preq->_request;
     evhtp_assert(req != NULL);
 
-    event_free(preq->_timeoutev);
-    free(preq);
+    evhtp_safe_free(preq->_timeoutev, event_free);
+    evhtp_safe_free(preq, free);
 
     /* add the current time to our output buffer to the client */
     evbuffer_add_printf(req->buffer_out, "time end %ld\n", time(NULL));

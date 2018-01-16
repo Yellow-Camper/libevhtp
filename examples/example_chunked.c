@@ -61,8 +61,9 @@ http__send_chunk_(evhtp_connection_t * conn, void * arg) {
         /* we can now free up our little reply_ structure */
         {
             fclose(reply->file_desc);
-            evbuffer_free(reply->buffer);
-            free(reply);
+
+            evhtp_safe_free(reply->buffer, evbuffer_free);
+            evhtp_safe_free(reply, free);
         }
     }
 

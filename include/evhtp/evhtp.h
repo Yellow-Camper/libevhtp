@@ -1434,6 +1434,12 @@ EVHTP_EXPORT int evhtp_make_request(evhtp_connection_t * c,
 
 EVHTP_EXPORT unsigned int evhtp_request_status(evhtp_request_t *);
 
+#define evhtp_safe_free(_var, _freefn) do { \
+        _freefn((_var));                    \
+        (_var) = NULL;                      \
+}  while (0)
+
+
 #ifdef __cplusplus
 }
 #endif

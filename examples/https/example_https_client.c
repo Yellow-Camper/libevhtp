@@ -153,8 +153,8 @@ main(int argc, char ** argv) {
     /* free up all the resources */
     {
         SSL_CTX_free(ctx);
-        evhtp_connection_free(conn);
-        evhtp_request_free(req);
+        evhtp_safe_free(req, evhtp_request_free);
+        evhtp_safe_free(conn, evhtp_connection_free);
         event_base_free(evbase);
 
         free(crt);

@@ -25,12 +25,6 @@ extern "C" {
          (var) = (tvar))
 #endif
 
-#define evhtp_safe_free(_var, _freefn) do { \
-        _freefn((_var));                    \
-        (_var) = NULL;                      \
-}  while (0)
-
-
 #define evhtp_assert(x)                                               \
     do {                                                              \
         if (evhtp_unlikely(!(x))) {                                   \

@@ -1250,7 +1250,6 @@ htp__request_free_(evhtp_request_t * request) {
 
     evhtp_safe_free(request->hooks, htp__free_);
     evhtp_safe_free(request, htp__free_);
-
 }
 
 /**
@@ -5020,15 +5019,23 @@ evhtp_request_set_keepalive(evhtp_request_t * request, int val)
 }
 
 evhtp_connection_t *
-evhtp_request_get_connection(evhtp_request_t * request)
-{
+evhtp_request_get_connection(evhtp_request_t * request) {
     return request->conn;
 }
 
 evhtp_proto
-evhtp_request_get_proto(evhtp_request_t * request)
-{
+evhtp_request_get_proto(evhtp_request_t * request) {
     return request->proto;
+}
+
+evhtp_res
+evhtp_request_get_status_code(evhtp_request_t * request) {
+    return request->status;
+}
+
+const char *
+evhtp_request_get_status_code_str(evhtp_request_t * request) {
+    return status_code_to_str(request->status);
 }
 
 inline void

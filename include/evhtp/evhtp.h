@@ -1243,6 +1243,27 @@ EVHTP_EXPORT const char * evhtp_header_find(evhtp_headers_t * headers, const cha
 EVHTP_EXPORT htp_method  evhtp_request_get_method(evhtp_request_t * r);
 EVHTP_EXPORT evhtp_proto evhtp_request_get_proto(evhtp_request_t * r);
 
+
+/**
+ * @brief Returns the last status code set for a request (request/response)
+ *
+ * @param r
+ *
+ * @return the HTTP status code or related error.
+ */
+EVHTP_EXPORT evhtp_res evhtp_request_get_status_code(evhtp_request_t * r);
+
+
+/**
+ * @brief wrapper around get_status_code that returns the string version
+ *        of the last status code set for a request.
+ *
+ * @param r
+ *
+ * @return NULL on error
+ */
+EVHTP_EXPORT const char * evhtp_request_get_status_code_str(evhtp_request_t * r);
+
 /* the following functions all do the same thing, pause and the processing */
 
 /**

@@ -78,7 +78,10 @@ static evhtp_res
 pause_request_fini(evhtp_request_t * request, void * arg) {
     struct pauser * pause = (struct pauser *)arg;
 
-    printf("pause_request_fini() req=%p, c=%p\n", request, request->conn);
+    printf("pause_request_fini() req=%p, c=%p status_code=%d::%s\n", request,
+            evhtp_request_get_connection(request),
+            evhtp_request_get_status_code(request),
+            evhtp_request_get_status_code_str(request));
 
     evhtp_safe_free(pause->timer_ev, event_free);
     evhtp_safe_free(pause->tv, free);

@@ -9,6 +9,7 @@ add_executable(test_perf EXCLUDE_FROM_ALL test_perf.c)
 add_executable(example_vhost EXCLUDE_FROM_ALL example_vhost.c)
 add_executable(example_pause EXCLUDE_FROM_ALL example_pause.c)
 add_executable(example_chunked EXCLUDE_FROM_ALL example_chunked.c)
+add_executable(example_request_fini EXCLUDE_FROM_ALL example_request_fini.c)
 
 
 if (NOT EVHTP_DISABLE_EVTHR)
@@ -26,7 +27,7 @@ target_link_libraries(test_perf    evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 target_link_libraries(example_vhost evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 target_link_libraries(example_pause evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 target_link_libraries(example_chunked evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
-
+target_link_libraries(example_request_fini evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
 if (NOT EVHTP_DISABLE_SSL)
     file (COPY
@@ -47,4 +48,4 @@ if (NOT EVHTP_DISABLE_SSL)
     add_dependencies(examples example_https_server example_https_client)
 endif()
 
-add_dependencies(examples example_chunked example_pause example_vhost test_extensive test_basic test_vhost test_client test_query test_perf)
+add_dependencies(examples example_request_fini example_chunked example_pause example_vhost test_extensive test_basic test_vhost test_client test_query test_perf)

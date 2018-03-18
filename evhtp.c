@@ -2100,8 +2100,9 @@ htp__create_reply_(evhtp_request_t * request, evhtp_res code) {
                  && request->conn
                  && request->rc_parser);
 
-    content_type = evhtp_header_find(request->headers_out, "Content-Type");
-    out_len      = evbuffer_get_length(request->buffer_out);
+    request->status = code;
+    content_type    = evhtp_header_find(request->headers_out, "Content-Type");
+    out_len         = evbuffer_get_length(request->buffer_out);
 
     if ((buf = request->rc_scratch) == NULL)
     {

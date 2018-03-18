@@ -46,8 +46,8 @@ set(LIBEVHTP_SOURCE_FILES
     numtoa.c
     parser.c)
 
-find_package(libevent REQUIRED)
-list(APPEND LIBEVHTP_EXTERNAL_LIBS libevent::event_core libevent::event_extra)
+find_package(LibEvent REQUIRED)
+list(APPEND LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARIES})
 list(APPEND package_deps libevent)
 set(public_headers
   "include/evhtp.h"
@@ -58,7 +58,7 @@ if(NOT EVHTP_DISABLE_SSL)
     find_package(OpenSSL)
     if(OPENSSL_FOUND)
         list(APPEND LIBEVHTP_SOURCE_FILES sslutils.c)
-        list(APPEND LIBEVHTP_EXTERNAL_LIBS openssl::ssl)
+        list(APPEND LIBEVHTP_EXTERNAL_LIBS OpenSSL::SSL OpenSSL::Crypto)
         list(APPEND package_deps OpenSSL)
         list(APPEND public_headers "include/evhtp/sslutils.h")
     endif()
@@ -130,7 +130,8 @@ if(NOT HAVE_SYS_QUEUE)
 endif()
 
 if(NOT HAVE_SYS_TREE OR NOT HAVE_SYS_QUEUE)
-    target_include_directories(${CMAKE_CURRENT_BINARY_DIR}/compat)
+    target_include_directories(evhtp PUBLIC
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/compat>)
 endif()
 
 if(NOT HAVE_STRNDUP)
@@ -162,7 +163,7 @@ if(EVHTP_USE_DEFER_ACCEPT)
     target_compile_definitions(evhtp PUBLIC -DUSE_DEFER_ACCEPT)
 endif()
 
-if(OPENSSL_FOUND and APPLE)
+if(OPENSSL_FOUND AND APPLE)
     # Darwin based hosts have deprecated normal openssl functions, which is
     # annoying to see warnings, for now, just ignore them.
     target_compile_options(evhtp PUBLIC -Wno-deprecated-declarations)

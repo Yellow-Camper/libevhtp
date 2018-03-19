@@ -108,11 +108,11 @@ if(has_stack_protector)
 endif()
 
 if(EVHTP_THR_SHARED_PIPE)
-    target_compile_definitions(evhtp PUBLIC -DEVTHR_SHARED_PIPE)
+    target_compile_definitions(evhtp PUBLIC EVTHR_SHARED_PIPE)
 endif()
 
 if(has_c99)
-    target_compile_definitions(evhtp PUBLIC -DEVHTP_HAS_C99)
+    target_compile_definitions(evhtp PUBLIC EVHTP_HAS_C99)
 endif()
 
 if(NOT HAVE_SYS_TREE)
@@ -135,42 +135,42 @@ if(NOT HAVE_SYS_TREE OR NOT HAVE_SYS_QUEUE)
 endif()
 
 if(NOT HAVE_STRNDUP)
-    target_compile_definitions(evhtp PUBLIC -DNO_STRNDUP)
+    target_compile_definitions(evhtp PUBLIC NO_STRNDUP)
 endif()
 
 if(NOT HAVE_STRNLEN)
-    target_compile_definitions(evhtp PUBLIC -DNO_STRNLEN)
+    target_compile_definitions(evhtp PUBLIC NO_STRNLEN)
 endif()
 
 if(NOT HAVE_SYS_UN)
-    target_compile_definitions(evhtp PUBLIC -DNO_SYS_UN)
+    target_compile_definitions(evhtp PUBLIC NO_SYS_UN)
 endif()
 
 if(HOST_BIG_ENDIAN)
-    target_compile_definitions(evhtp PUBLIC -DHOST_BIG_ENDIAN)
+    target_compile_definitions(evhtp PUBLIC HOST_BIG_ENDIAN)
 endif()
 
 # Test 32/64 bits
 if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-    target_compile_definitions(evhtp PUBLIC -DEVHTP_SYS_ARCH=64)
+    target_compile_definitions(evhtp PUBLIC EVHTP_SYS_ARCH=64)
 elseif("${CMAKE_SIZEOF_VOID_P}" EQUAL "4")
-    target_compile_definitions(evhtp PUBLIC -DEVHTP_SYS_ARCH=32)
+    target_compile_definitions(evhtp PUBLIC EVHTP_SYS_ARCH=32)
 else()
     message(ERROR "Unable to determine architecture")
 endif()
 
 if(EVHTP_USE_DEFER_ACCEPT)
-    target_compile_definitions(evhtp PUBLIC -DUSE_DEFER_ACCEPT)
+    target_compile_definitions(evhtp PUBLIC USE_DEFER_ACCEPT)
 endif()
 
 if(OPENSSL_FOUND AND APPLE)
     # Darwin based hosts have deprecated normal openssl functions, which is
     # annoying to see warnings, for now, just ignore them.
-    target_compile_options(evhtp PUBLIC -Wno-deprecated-declarations)
+    target_compile_options(evhtp PRIVATE -Wno-deprecated-declarations)
 endif()
 
 if(WIN32)
-    target_compile_definitions(evhtp PUBLIC -DWIN32)
+    target_compile_definitions(evhtp PUBLIC WIN32)
     target_compile_options(evhtp PUBLIC -march=i486)
     find_library(LIB_WS32 ws2_32)
     list(APPEND SYS_LIBS ${LIB_WS32})
@@ -311,7 +311,7 @@ message(STATUS "${Blue}CMAKE_SYSTEM_VERSION${ColourReset}     : " ${CMAKE_SYSTEM
 message(STATUS "${Blue}CMAKE_C_COMPILER${ColourReset}         : " ${CMAKE_C_COMPILER})
 message(STATUS "${Blue}CMAKE_AR${ColourReset}                 : " ${CMAKE_AR})
 message(STATUS "${Blue}CMAKE_RANLIB${ColourReset}             : " ${CMAKE_RANLIB})
-message(STATUS "${Blue}CFLAGS${ColourReset}                   : -D${CFLAG_DEFS} ${CMAKE_C_FLAGS}")
+message(STATUS "${Blue}CFLAGS${ColourReset}                   :   ${CMAKE_C_FLAGS}")
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
         message("                              ${CMAKE_C_FLAGS_DEBUG}")

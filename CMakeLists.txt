@@ -56,8 +56,7 @@ hunter_add_package(Libevent)
 find_package(Libevent CONFIG REQUIRED)
 list(APPEND LIBEVHTP_EXTERNAL_LIBS Libevent::event_core Libevent::event_extra)
 list(APPEND package_deps Libevent)
-set(public_headers
-  "include/evhtp.h"
+set(evhtp_dir_headers
   "include/evhtp/evhtp.h"
   "include/evhtp/parser.h")
 
@@ -67,7 +66,7 @@ if(NOT EVHTP_DISABLE_SSL)
     list(APPEND LIBEVHTP_SOURCE_FILES sslutils.c)
     list(APPEND LIBEVHTP_EXTERNAL_LIBS OpenSSL::SSL OpenSSL::Crypto)
     list(APPEND package_deps OpenSSL)
-    list(APPEND public_headers "include/evhtp/sslutils.h")
+    list(APPEND evhtp_dir_headers "include/evhtp/sslutils.h")
 endif()
 
 if(NOT EVHTP_DISABLE_EVTHR)
@@ -76,7 +75,7 @@ if(NOT EVHTP_DISABLE_EVTHR)
         list(APPEND LIBEVHTP_SOURCE_FILES  thread.c)
         list(APPEND LIBEVHTP_EXTERNAL_LIBS Threads::Threads)
         list(APPEND package_deps Threads)
-        list(APPEND public_headers "include/evhtp/thread.h")
+        list(APPEND evhtp_dir_headers "include/evhtp/thread.h")
     endif()
 endif()
 
@@ -179,7 +178,7 @@ endif()
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/evhtp/config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h)
-list(APPEND public_headers "${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h")
+list(APPEND evhtp_dir_headers "${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h")
 
 target_include_directories(evhtp PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
@@ -250,13 +249,13 @@ install(
 #   * include/evhtp.h -> <prefix>/include/evhtp.h
 install(
     FILES "include/evhtp.h"
-    DESTINATION "${include_install_dir}/evhtp"
+    DESTINATION "${include_install_dir}"
 )
 
 # Headers:
 #   * include/evhtp/parser.h -> <prefix>/include/evhtp/parser.h
 install(
-    FILES ${public_headers}
+    FILES ${evhtp_dir_headers}
     DESTINATION "${include_install_dir}/evhtp"
 )
 

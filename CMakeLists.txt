@@ -48,9 +48,8 @@ set(LIBEVHTP_SOURCE_FILES
 
 find_package(LibEvent REQUIRED)
 list(APPEND LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARIES})
-list(APPEND package_deps libevent)
-set(public_headers
-  "include/evhtp.h"
+list(APPEND package_deps LibEvent)
+set(evhtp_dir_headers
   "include/evhtp/evhtp.h"
   "include/evhtp/parser.h")
 
@@ -70,7 +69,7 @@ if(NOT EVHTP_DISABLE_EVTHR)
         list(APPEND LIBEVHTP_SOURCE_FILES  thread.c)
         list(APPEND LIBEVHTP_EXTERNAL_LIBS Threads::Threads)
         list(APPEND package_deps Threads)
-        list(APPEND public_headers "include/evhtp/thread.h")
+        list(APPEND evhtp_dir_headers "include/evhtp/thread.h")
     endif()
 endif()
 
@@ -179,7 +178,7 @@ endif()
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/evhtp/config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h)
-list(APPEND public_headers "${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h")
+list(APPEND evhtp_dir_headers "${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h")
 
 target_include_directories(evhtp PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
@@ -250,13 +249,13 @@ install(
 #   * include/evhtp.h -> <prefix>/include/evhtp.h
 install(
     FILES "include/evhtp.h"
-    DESTINATION "${include_install_dir}/evhtp"
+    DESTINATION "${include_install_dir}"
 )
 
 # Headers:
 #   * include/evhtp/parser.h -> <prefix>/include/evhtp/parser.h
 install(
-    FILES ${public_headers}
+    FILES ${evhtp_dir_headers}
     DESTINATION "${include_install_dir}/evhtp"
 )
 

@@ -1,0 +1,39 @@
+= evhtp_set_regex_cb(3)
+include::version.adoc[]
+
+== NAME
+
+evhtp_set_regex_cb - set a callback using a regular expression
+
+== SYNOPSIS
+
+[source, c]
+----
+#include <evhtp.h>
+
+typedef void (*evhtp_callback_cb)(evhtp_request_t * req, void * arg);
+
+evhtp_callback_t * evhtp_set_regex_cb(evhtp_t * htp, const char * pattern,
+    evhtp_callback_cb cb, void * arg);
+----
+
+== DESCRIPTION
+
+The **evhtp_set_cb** function will register the callback **cb** which will
+be executed whenever `path` is requested. The `arg` is a user-managed variable
+which is passed to `cb` at the time of execution.
+
+The `path` is **NOT** a static URI; `/a/b/` matches anything after the ((/a/b/))
+path, so `/a/b/c`, `/a/b/c/d` **will** match, while `/a/X/` will **not**.
+
+On the other hand, if the `path` is `/a/b/c` then **ONLY** `/a/b/c` will match
+since *c* is not a URI-path, it's considered a `file`.
+
+== RETURN VALUES
+
+Returns an initialized `evhtp_callback_t` on success, otherwise NULL.
+
+== SEE ALSO
+
+<<evhtp_uri.5#,evhtp_uri(5)>>
+<<evhtp_callback.5#,evhtp_callback(5)>>

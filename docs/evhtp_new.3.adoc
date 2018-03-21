@@ -1,0 +1,34 @@
+= evhtp_new(3)
+include::version.adoc[]
+
+== NAME
+
+evhtp_new - create an evhtp base context
+
+== SYNOPSIS
+
+[source, c]
+----
+#include <evhtp.h>
+
+evhtp_t * evhtp_new(struct event_base *evbase, void *arg);
+----
+
+== DESCRIPTION
+
+Create a new evhtp base context and attach it to an initialized 'evbase'.
+
+The 'arg' argument is a user-supplied pointer which is a local argument
+to the evhtp_t context itself.
+
+== RETURN VALUE
+
+This function returns a non-NULL initialized `evhtp_t *` structure on success,
+and NULL otherwise.
+
+== ERRORS
+
+`ENOMEM`:: Insufficient free memory.
+`EINVAL`:: Invalid or uninitialized `evbase`
+
+== SEE ALSO

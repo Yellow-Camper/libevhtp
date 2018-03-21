@@ -1,0 +1,23 @@
+= function(3)
+include::version.adoc[]
+
+== NAME
+
+function - description
+
+== SYNOPSIS
+
+[source, c]
+----
+#include <evhtp.h>
+
+void function();
+----
+
+== DESCRIPTION
+
+== RETURN VALUE
+
+== ERRORS
+
+== SEE ALSO

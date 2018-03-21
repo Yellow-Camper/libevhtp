@@ -1,0 +1,25 @@
+= libevhtp(3)
+include::version.adoc[]
+
+== NAME
+
+libevhtp - API to create extremely-fast and secure embedded HTTP(S) servers
+
+== SYNOPSIS
+
+*cc* [_flags_] _files_ *-levhtp* [_libraries_]
+
+== DESCRIPTION
+
+The evhtp library is a replacement for the http://libevent.org/[*Libevent*] HTTP
+API. Written for performance, flexibility, and security. `Libevhtp` is simple to
+use, yet allows for a developer to have complete control over each step of the
+HTTP request processing cycle.
+
+=== Core Functions
+
+The following core functions exist in _libevhtp_
+
+|===
+|<<evhtp_new.3#,evhtp_new(3)>>|create an evhtp base context
+|===

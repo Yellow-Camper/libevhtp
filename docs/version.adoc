@@ -1,0 +1,7 @@
+:version: 1.2.16
+Mark Ellzey, Nathan French
+:manversion: {version}
+:doctype: manpage
+:manmanual: Libevhtp Manual
+:mansource: Libevhtp {version}
+:manname: evhtp

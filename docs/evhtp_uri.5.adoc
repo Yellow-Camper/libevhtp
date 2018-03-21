@@ -1,0 +1,80 @@
+= evhtp_uri(5)
+include::version.adoc[]
+
+== NAME
+
+evhtp_uri - generic structure which represents a URI
+
+== SYNOPSIS
+
+[source, c]
+----
+#include <evhtp.h>
+
+typedef struct {
+    evhtp_authority_t * authority;
+    evhtp_path_t      * path;
+    unsigned char     * fragment;
+    unsigned char     * query_raw;
+    evhtp_query_t     * query;
+    htp_scheme          scheme;
+} evhtp_uri_t;
+
+typedef struct {
+    char   * username;
+    char   * password;
+    char   * hostname;
+    uint16_t port;
+} evhtp_authority_t;
+
+typedef struct {
+    char       * full;
+    char       * path;
+    char       * file;
+    char       * match_start;
+    char       * match_end;
+    unsigned int matched_soff;
+    unsigned int matched_eoff;
+} evhtp_path_t;
+----
+
+== DESCRIPTION
+
+An `evhtp_uri_t` structure represents the URI of a request _or response_ of a
+request.
+
+The following figure displays two example URIs and their component parts.
+----
+                    hierarchical part
+        ┌───────────────────┴─────────────────────┐
+                    authority               path
+        ┌───────────────┴───────────────┐┌───┴────┐
+  abc://username:password@example.com:123/path/data?key=value#fragid1
+  └┬┘   └───────┬───────┘ └────┬────┘ └┬┘           └───┬───┘ └──┬──┘
+scheme  user information     host     port            query   fragment
+----
+
+The following structure members are present:
+
+`authority`::
+    This is a pointer to the `authority` section in the URI.
+    (see <<evhtp_authority.5#,`evhtp_authority_t`>>)
+
+`path`::
+    This is a pointer to the `path` section of the URI.
+    (see <<evhtp_path.5#,`evhtp_path_t`>>)
+
+`fragment`::
+    This is a pointer to the `fragment` section in the URI
+
+`query_raw`::
+    The unparsed URI (in raw format)
+
+`query`::
+    The `query` section of the URI.
+    (see <<evhtp_query.5#,`evhtp_query_t`>>)
+
+`scheme`::
+    The `scheme` section of the URI (if found).
+    (see <<htp_scheme.5#,`evhtp_scheme`>>)
+

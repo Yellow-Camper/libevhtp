@@ -5288,8 +5288,8 @@ evhtp__new_(evhtp_t ** out, struct event_base * evbase, void * arg)
     evhtp_t * htp;
 
 
-    if (evhtp_unlikely(evbase == NULL))
-    {
+    if (evhtp_unlikely(evbase == NULL)) {
+        errno = EINVAL;
         return -1;
     }
 

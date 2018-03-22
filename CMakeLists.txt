@@ -65,7 +65,7 @@ endif()
 
 if(NOT EVHTP_DISABLE_EVTHR)
     find_package(Threads)
-    if(CMAKE_THREAD_LIBS_INIT)
+    if(TARGET Threads::Threads)
         list(APPEND LIBEVHTP_SOURCE_FILES  thread.c)
         list(APPEND LIBEVHTP_EXTERNAL_LIBS Threads::Threads)
         list(APPEND package_deps Threads)

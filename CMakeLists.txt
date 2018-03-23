@@ -4,8 +4,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(HunterGate)
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.20.23.tar.gz"
-    SHA1 "e1d36aca5049a11e0dc2460965cecb302120e365"
+    URL "https://github.com/ruslo/hunter/archive/v0.20.27.tar.gz"
+    SHA1 "aafefc6377dc9a25d84703702e22434cd6f71d5c"
 )
 
 project(libevhtp VERSION 1.2.16)

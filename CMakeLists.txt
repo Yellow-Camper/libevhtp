@@ -14,6 +14,7 @@ include (TestBigEndian)
 
 add_definitions ("-DPROJECT_VERSION=${PROJECT_VERSION} -Wall")
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -ggdb3")
 SET(CMAKE_BUILD_TYPE Release CACHE STRING "default to Release")
 

@@ -66,7 +66,6 @@ evhtp_modp_sizetoa(size_t value, char * str) {
 #elif EVHTP_SYS_ARCH == 32
     return evhtp_modp_u32toa(value, str);
 #else
-#warn "UNKNOWN ARCH"
+#warning "UNKNOWN ARCH"
 #endif
 }
-

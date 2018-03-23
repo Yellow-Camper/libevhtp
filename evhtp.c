@@ -11,6 +11,7 @@
 #include <signal.h>
 #include <strings.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #ifndef WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -48,7 +49,7 @@
  * hooks using the same rules.
  *
  */
-struct evhtp_callback_s {
+struct evhtp_callback {
     evhtp_callback_type type;           /**< the type of callback (regex|path) */
     evhtp_callback_cb   cb;             /**< the actual callback function */
     void              * cbarg;          /**< user-defind arguments passed to the cb */
@@ -63,10 +64,10 @@ struct evhtp_callback_s {
 #endif
     } val;
 
-    TAILQ_ENTRY(evhtp_callback_s) next;
+    TAILQ_ENTRY(evhtp_callback) next;
 };
 
-TAILQ_HEAD(evhtp_callbacks_s, evhtp_callback_s);
+TAILQ_HEAD(evhtp_callbacks, evhtp_callback);
 
 #define SET_BIT(VAR, FLAG)                           VAR |= FLAG
 #define UNSET_BIT(VAR, FLAG)                         VAR &= ~FLAG
@@ -2738,7 +2739,7 @@ htp__connection_new_(evhtp_t * htp, evutil_socket_t sock, evhtp_type type)
             return NULL;
     }
 
-    connection = htp__calloc_(sizeof(evhtp_connection_t), 1);
+    connection = htp__calloc_(sizeof(*connection), 1);
     evhtp_alloc_assert(connection);
 
     connection->scratch_buf = evbuffer_new();
@@ -2918,7 +2919,7 @@ htp__ssl_add_scache_ent_(evhtp_ssl_t * ssl, evhtp_ssl_sess_t * sess)
     evhtp_connection_t * connection;
     evhtp_ssl_cfg_t    * cfg;
     evhtp_ssl_data_t   * sid;
-    int                  slen;
+    unsigned int         slen;
 
     connection = (evhtp_connection_t *)SSL_get_app_data(ssl);
     if (connection->htp == NULL)
@@ -3099,7 +3100,7 @@ evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char val_alloc
         return NULL;
     }
 
-    if (!(header = TAILQ_LAST(headers, evhtp_headers_s)))
+    if (!(header = TAILQ_LAST(headers, evhtp_kvs)))
     {
         return NULL;
     }
@@ -3132,7 +3133,7 @@ evhtp_kvs_new(void)
 {
     evhtp_kvs_t * kvs;
 
-    kvs = htp__malloc_(sizeof(evhtp_kvs_t));
+    kvs = htp__malloc_(sizeof(*kvs));
     evhtp_alloc_assert(kvs);
 
     TAILQ_INIT(kvs);
@@ -3146,7 +3147,7 @@ evhtp_kv_new(const char * key, const char * val,
 {
     evhtp_kv_t * kv;
 
-    kv           = htp__malloc_(sizeof(evhtp_kv_t));
+    kv           = htp__malloc_(sizeof(*kv));
     evhtp_alloc_assert(kv);
 
     kv->k_heaped = key_alloc;
@@ -4195,7 +4196,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
 {
     evhtp_callback_t * hcb;
 
-    hcb        = htp__calloc_(sizeof(evhtp_callback_t), 1);
+    hcb        = htp__calloc_(sizeof(*hcb), 1);
     evhtp_alloc_assert(hcb);
 
     hcb->type  = type;
@@ -4418,14 +4419,14 @@ evhtp_unset_all_hooks(evhtp_hooks_t ** hooks)
         { evhtp_hook_on_write           },
         { evhtp_hook_on_event           },
         { evhtp_hook_on_conn_error      },
-        { -1                            }
+        { evhtp_hook__max               }
     };
 
     if (hooks == NULL) {
         return -1;
     }
 
-    for (i = 0; hooklist_[i].type != -1; i++) {
+    for (i = 0; hooklist_[i].type != evhtp_hook__max; i++) {
         if (htp__unset_hook_(hooks, hooklist_[i].type) == -1) {
             return -1;
         }
@@ -5212,7 +5213,6 @@ evhtp_add_alias(evhtp_t * evhtp, const char * name)
 int
 evhtp_add_aliases(evhtp_t * htp, const char * name, ...) {
     va_list argp;
-    size_t  len;
 
     if (evhtp_add_alias(htp, name) == -1) {
         return -1;

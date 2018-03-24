@@ -2745,11 +2745,15 @@ htp__connection_new_(evhtp_t * htp, evutil_socket_t sock, evhtp_type type)
     connection->scratch_buf = evbuffer_new();
     evhtp_alloc_assert(connection->scratch_buf);
 
-    connection->flags       = EVHTP_CONN_FLAG_OWNER;
-    connection->sock        = sock;
-    connection->htp         = htp;
-    connection->type        = type;
-    connection->parser      = htparser_new();
+    if (htp != NULL) {
+        connection->max_body_size = htp->max_body_size;
+    }
+
+    connection->flags  = EVHTP_CONN_FLAG_OWNER;
+    connection->sock   = sock;
+    connection->htp    = htp;
+    connection->type   = type;
+    connection->parser = htparser_new();
 
     evhtp_alloc_assert(connection->parser);
 

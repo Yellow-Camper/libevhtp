@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.1)
 
 project(libevhtp VERSION 1.2.16)
 
+# For us YCM users.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(colors)
@@ -12,8 +15,6 @@ include(CheckTypeSize)
 include(CheckCCompilerFlag)
 include(TestBigEndian)
 
-# For us YCM users.
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 check_function_exists(strndup HAVE_STRNDUP)
 check_function_exists(strnlen HAVE_STRNLEN)

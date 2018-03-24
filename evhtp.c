@@ -1815,6 +1815,18 @@ htp__request_parse_path_(htparser * p, const char * data, size_t len) {
 }     /* htp__request_parse_path_ */
 
 static int
+htp__fail_if_header_size_limit_exceeded(evhtp_connection_t * c) {
+    if (c->max_headers_size > 0) {
+        if (c->body_bytes_read == 0 && c->bytes_read > c->max_headers_size) {
+            HTP_FLAG_ON(c, EVHTP_CONN_FLAG_ERROR);
+            c->cr_status = EVHTP_RES_DATA_TOO_LONG;
+            return -1;
+        }
+    }
+    return 0;
+}
+
+static int
 htp__request_parse_headers_(htparser * p)
 {
     evhtp_connection_t * c;
@@ -1823,6 +1835,9 @@ htp__request_parse_headers_(htparser * p)
         return -1;
     }
 
+    if (htp__fail_if_header_size_limit_exceeded(c)) {
+        return -1;
+    }
     /* XXX proto should be set with htparsers on_hdrs_begin hook */
 
     if (htparser_should_keep_alive(p) == 1) {
@@ -2246,6 +2261,7 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
     evhtp_assert(c->parser != NULL);
 
     nread = htparser_run(c->parser, &request_psets, (const char *)buf, avail);
+    c->bytes_read += nread;
 
     log_debug("nread = %zu", nread);
 
@@ -2264,6 +2280,8 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
     }
 
     if (c->request) {
+        htp__fail_if_header_size_limit_exceeded(c);
+        
         switch (c->cr_status) {
             case EVHTP_RES_DATA_TOO_LONG:
                 htp__hook_connection_error_(c, -1);
@@ -2411,6 +2429,7 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
          */
         HTP_FLAG_ON(conn, EVHTP_CONN_FLAG_KEEPALIVE);
 
+        conn->bytes_read = 0;
         conn->body_bytes_read = 0;
 
         if (conn->type == evhtp_type_server)
@@ -2717,6 +2736,7 @@ htp__connection_new_(evhtp_t * htp, evutil_socket_t sock, evhtp_type type)
     evhtp_alloc_assert(connection->scratch_buf);
 
     if (htp != NULL) {
+        connection->max_headers_size = htp->max_headers_size;
         connection->max_body_size = htp->max_body_size;
     }
 
@@ -5023,6 +5043,17 @@ evhtp_connection_set_timeouts(evhtp_connection_t   * c,
 }
 
 void
+evhtp_connection_set_max_headers_size(evhtp_connection_t * c, uint64_t len)
+{
+    if (len == 0)
+    {
+        c->max_headers_size = c->htp->max_headers_size;
+    } else {
+        c->max_headers_size = len;
+    }
+}
+
+void
 evhtp_connection_set_max_body_size(evhtp_connection_t * c, uint64_t len)
 {
     if (len == 0)
@@ -5031,6 +5062,12 @@ evhtp_connection_set_max_body_size(evhtp_connection_t * c, uint64_t len)
     } else {
         c->max_body_size = len;
     }
+}
+
+void
+evhtp_request_set_max_headers_size(evhtp_request_t * req, uint64_t len)
+{
+    evhtp_connection_set_max_headers_size(req->conn, len);
 }
 
 void
@@ -5110,6 +5147,12 @@ void
 evhtp_set_bev_flags(evhtp_t * htp, int flags)
 {
     htp->bev_flags = flags;
+}
+
+void
+evhtp_set_max_headers_size(evhtp_t * htp, uint64_t len)
+{
+    htp->max_headers_size = len;
 }
 
 void
@@ -5233,6 +5276,7 @@ evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost)
 
     /* inherit various flags from the parent evhtp structure */
     vhost->bev_flags              = evhtp->bev_flags;
+    vhost->max_headers_size       = evhtp->max_headers_size;
     vhost->max_body_size          = evhtp->max_body_size;
     vhost->max_keepalive_requests = evhtp->max_keepalive_requests;
     vhost->recv_timeo             = evhtp->recv_timeo;

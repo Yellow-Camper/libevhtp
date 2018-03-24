@@ -286,6 +286,7 @@ struct evhtp {
     char                  * server_name; /**< the name included in Host: responses */
     void                  * arg;         /**< user-defined evhtp_t specific arguments */
     int                     bev_flags;   /**< bufferevent flags to use on bufferevent_*_socket_new() */
+    uint64_t                max_headers_size;
     uint64_t                max_body_size;
     uint64_t                max_keepalive_requests;
 
@@ -441,7 +442,9 @@ struct evhtp_connection {
     struct timeval    send_timeo;                  /**< conn write timeouts (overrides global) */
     evutil_socket_t   sock;
     evhtp_request_t * request;                     /**< the request currently being processed */
+    uint64_t          max_headers_size;
     uint64_t          max_body_size;
+    uint64_t          bytes_read;                  /**< the size that current request has read */
     uint64_t          body_bytes_read;
     uint64_t          num_requests;
     evhtp_type        type;                        /**< server or client */
@@ -1371,6 +1374,16 @@ EVHTP_EXPORT void evhtp_connection_free(evhtp_connection_t * connection);
 EVHTP_EXPORT void evhtp_request_free(evhtp_request_t * request);
 
 /**
+ * @brief set a max headers size to accept for an incoming request, this will
+ *        default to unlimited.
+ *        note: the headers size includes request line.
+ *
+ * @param htp
+ * @param len
+ */
+EVHTP_EXPORT void evhtp_set_max_headers_size(evhtp_t * htp, uint64_t len);
+
+/**
  * @brief set a max body size to accept for an incoming request, this will
  *        default to unlimited.
  *
@@ -1380,6 +1393,16 @@ EVHTP_EXPORT void evhtp_request_free(evhtp_request_t * request);
 EVHTP_EXPORT void evhtp_set_max_body_size(evhtp_t * htp, uint64_t len);
 
 /**
+ * @brief set a max headers size for a specific connection, this will default to
+ *        the size set by evhtp_set_max_headers_size
+ *        note: the headers size includes request line.
+ *
+ * @param conn
+ * @param len
+ */
+EVHTP_EXPORT void evhtp_connection_set_max_headers_size(evhtp_connection_t * conn, uint64_t len);
+
+/**
  * @brief set a max body size for a specific connection, this will default to
  *        the size set by evhtp_set_max_body_size
  *
@@ -1387,6 +1410,14 @@ EVHTP_EXPORT void evhtp_set_max_body_size(evhtp_t * htp, uint64_t len);
  * @param len
  */
 EVHTP_EXPORT void evhtp_connection_set_max_body_size(evhtp_connection_t * conn, uint64_t len);
+
+/**
+ * @brief just calls evhtp_connection_set_max_headers_size for the request.
+ *
+ * @param request
+ * @param len
+ */
+EVHTP_EXPORT void evhtp_request_set_max_headers_size(evhtp_request_t * request, uint64_t len);
 
 /**
  * @brief just calls evhtp_connection_set_max_body_size for the request.

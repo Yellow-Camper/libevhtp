@@ -63,7 +63,7 @@ if(NOT EVHTP_DISABLE_SSL)
         list(APPEND LIBEVHTP_SOURCE_FILES sslutils.c)
         list(APPEND LIBEVHTP_EXTERNAL_LIBS OpenSSL::SSL OpenSSL::Crypto)
         list(APPEND package_deps OpenSSL)
-        list(APPEND public_headers "include/evhtp/sslutils.h")
+        list(APPEND evhtp_dir_headers "include/evhtp/sslutils.h")
     endif()
 endif()
 

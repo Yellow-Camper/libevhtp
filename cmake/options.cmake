@@ -11,6 +11,9 @@ option (EVHTP_DISABLE_REGEX "Disable regex support"        OFF)
 # -DEVHTP_DEBUG=ON
 option (EVHTP_DEBUG         "Enable verbose debug logging"     OFF)
 
+# -DEVHTP_BUILD_SHARED:STRING=ON
+option (EVHTP_BUILD_SHARED  "Build shared library instead of static library"     OFF)		
+
 # can be overwritten by new set_alloc functions
 set(EVHTP_ALLOCATOR CACHE STRING "Allocator library")
 set_property(CACHE EVHTP_ALLOCATOR PROPERTY STRINGS "jemalloc;tcmalloc")

@@ -102,8 +102,18 @@ elseif(EVHTP_ALLOCATOR STREQUAL "tcmalloc")
     endif()
 endif()
 
-add_library(evhtp ${LIBEVHTP_SOURCE_FILES})
+if(EVHTP_BUILD_SHARED)
+	set (EVHTP_LIBTYPE SHARED)
+else()
+	set (EVHTP_LIBTYPE STATIC)
+endif()
+
+add_library(evhtp ${EVHTP_LIBTYPE} ${LIBEVHTP_SOURCE_FILES})
 target_link_libraries(evhtp PUBLIC ${LIBEVHTP_EXTERNAL_LIBS})
+
+if(EVHTP_BUILD_SHARED)
+	set_target_properties(evhtp PROPERTIES VERSION "${PROJECT_VERSION}" SOVERSION 0 OUTPUT_NAME "evhtp")
+endif()
 
 target_compile_definitions(evhtp PUBLIC "-DPROJECT_VERSION=${PROJECT_VERSION}")
 if(has_stack_protector)
@@ -188,14 +198,6 @@ target_include_directories(evhtp PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-
-if(BUILD_SHARED_LIBS)
-    set_target_properties(evhtp PROPERTIES
-        VERSION "${PROJECT_VERSION}"
-        SOVERSION 0
-        OUTPUT_NAME "evhtp"
-        C_VISIBILITY_PRESET hidden)
-endif()
 
 add_subdirectory(examples)
 

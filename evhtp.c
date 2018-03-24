@@ -2719,7 +2719,7 @@ htp__connection_new_(evhtp_t * htp, evutil_socket_t sock, evhtp_type type)
     if (htp != NULL) {
         connection->max_body_size = htp->max_body_size;
     }
-
+  
     connection->flags  = EVHTP_CONN_FLAG_OWNER;
     connection->sock   = sock;
     connection->htp    = htp;

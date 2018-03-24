@@ -51,6 +51,7 @@ main(int argc, char ** argv)
                 break;
             case 'b':
                 backlog      = atoll(optarg);
+                break;
             case 'n':
                 nodelay      = 1;
                 break;

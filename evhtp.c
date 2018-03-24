@@ -5229,6 +5229,8 @@ evhtp_add_aliases(evhtp_t * htp, const char * name, ...) {
         while ((p = va_arg(argp, const char *)) != NULL) {
             if (evhtp_add_alias(htp, p) == -1) {
                 log_error("Unable to add %s alias", p);
+                va_end(argp);
+
                 return -1;
             }
         }

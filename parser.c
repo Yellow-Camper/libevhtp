@@ -213,6 +213,7 @@ static const char * errstr_map[] = {
     "htparse_error_invalid_chunk",
     "htparse_error_invalid_state",
     "htparse_error_user",
+    "htparse_error_status",
     "htparse_error_unknown"
 };
 

@@ -15,7 +15,7 @@ static void * mm__dup_(const void * src, size_t size) {
 
 #define bind__sock_port0_(HTP) ({                      \
         struct sockaddr_in sin;                        \
-        socklen_t len = len = sizeof(struct sockaddr); \
+        socklen_t len = sizeof(struct sockaddr);       \
         uint16_t port = 0;                             \
                                                        \
         evhtp_bind_socket(HTP, "127.0.0.1", 0, 128);   \

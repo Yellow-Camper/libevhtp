@@ -4,8 +4,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(HunterGate)
 HunterGate(
-    URL "https://github.com/ruslo/hunter/archive/v0.20.27.tar.gz"
-    SHA1 "aafefc6377dc9a25d84703702e22434cd6f71d5c"
+    URL "https://github.com/ruslo/hunter/archive/v0.20.31.tar.gz"
+    SHA1 "65c8f2292566aedb2fe10e08e09c74dda8e5d07a"
 )
 
 project(libevhtp VERSION 1.2.16)
@@ -79,12 +79,12 @@ if(NOT EVHTP_DISABLE_EVTHR)
     endif()
 endif()
 
-# TODO: Add Oniguruma to Hunter
-# if(NOT EVHTP_DISABLE_REGEX)
-#     find_package(Oniguruma CONFIG REQUIRED)
-#     list(APPEND LIBEVHTP_EXTERNAL_LIBS ${ONIGURUMA_LIBRARIES})
-#     list(APPEND package_deps Oniguruma)
-# endif()
+if(NOT EVHTP_DISABLE_REGEX)
+    hunter_add_package(oniguruma)
+    find_package(oniguruma CONFIG REQUIRED)
+    list(APPEND LIBEVHTP_EXTERNAL_LIBS oniguruma::onig)
+    list(APPEND package_deps oniguruma)
+endif()
 
 # TODO: Add jemalloc and tcmalloc to Hunter
 # if(EVHTP_ALLOCATOR STREQUAL "jemalloc")

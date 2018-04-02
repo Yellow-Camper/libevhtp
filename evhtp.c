@@ -2597,11 +2597,11 @@ htp__connection_resumecb_(int fd, short events, void * arg)
          */
         bufferevent_trigger_event(c->bev, EV_WRITE, 0);
 #else
+#include <event.h>
         /* when we don't have trigger_event, we have to do things a bit
          * hacky. Basically we emulate what trigger_event could do in early
          * versions of libevent.
          */
-#include <event2/bufferevent_struct.h>
         bufferevent_lock(c->bev);
         {
             if (evutil_timerisset(&c->bev->timeout_write)) {

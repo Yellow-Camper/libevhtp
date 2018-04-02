@@ -96,7 +96,6 @@ endif()
 #     list(APPEND LIBEVHTP_EXTERNAL_LIBS tcmalloc)
 #     list(APPEND package_deps tcmalloc)
 # endif()
-set(EVHTP_DISABLE_REGEX ON)
 
 add_library(evhtp ${LIBEVHTP_SOURCE_FILES})
 target_link_libraries(evhtp PUBLIC ${LIBEVHTP_EXTERNAL_LIBS})

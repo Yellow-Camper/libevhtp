@@ -2517,6 +2517,8 @@ htp__connection_eventcb_(struct bufferevent * bev, short events, void * arg)
 
     if (events == (BEV_EVENT_EOF | BEV_EVENT_READING))
     {
+        log_debug("EOF | READING");
+
         if (errno == EAGAIN)
         {
             /* libevent will sometimes recv again when it's not actually ready,
@@ -2527,6 +2529,7 @@ htp__connection_eventcb_(struct bufferevent * bev, short events, void * arg)
              * but libevent will disable the read side of the bufferevent
              * anyway, so we must re-enable it.
              */
+            log_debug("errno EAGAIN");
             bufferevent_enable(bev, EV_READ);
             errno = 0;
 
@@ -2558,15 +2561,18 @@ htp__connection_resumecb_(int fd, short events, void * arg)
 {
     evhtp_connection_t * c = arg;
 
+    log_debug("resumecb");
+
     /* unset the pause flag */
     HTP_FLAG_OFF(c, EVHTP_CONN_FLAG_PAUSED);
 
-    if (c->request)
-    {
+    if (c->request) {
+        log_debug("cr status = OK");
         c->cr_status = EVHTP_RES_OK;
     }
 
     if (c->flags & EVHTP_CONN_FLAG_FREE_CONN) {
+        log_debug("flags == FREE_CONN");
         evhtp_safe_free(c, evhtp_connection_free);
 
         return;
@@ -2579,16 +2585,38 @@ htp__connection_resumecb_(int fd, short events, void * arg)
      * changed to a state-type flag.
      */
 
-    if (evbuffer_get_length(bufferevent_get_output(c->bev)))
-    {
+    if (evbuffer_get_length(bufferevent_get_output(c->bev))) {
         HTP_FLAG_ON(c, EVHTP_CONN_FLAG_WAITING);
+        log_debug("SET WAITING");
 
         bufferevent_enable(c->bev, EV_WRITE);
+
+#if LIBEVENT_VERSION_NUMBER >= 0x02010500
+        /* this is the proper way to deal with the resumption of sending data,
+         * it's been around since libevent 2.1.5-alpha.
+         */
+        bufferevent_trigger_event(c->bev, EV_WRITE, 0);
+#else
+        /* when we don't have trigger_event, we have to do things a bit
+         * hacky. Basically we emulate what trigger_event could do in early
+         * versions of libevent.
+         */
+#include <event2/bufferevent_struct.h>
+        bufferevent_lock(c->bev);
+        {
+            if (evutil_timerisset(&c->bev->timeout_write)) {
+                event_add(&c->bev->ev_write, &c->bev->timeout_write);
+            } else {
+                event_add(&c->bev->ev_write, NULL);
+            }
+        }
+        bufferevent_unlock(c->bev);
+#endif
     } else {
         bufferevent_enable(c->bev, EV_READ | EV_WRITE);
         htp__connection_readcb_(c->bev, c);
     }
-}
+} /* htp__connection_resumecb_ */
 
 static int
 htp__run_pre_accept_(evhtp_t * htp, evhtp_connection_t * conn)
@@ -2648,12 +2676,10 @@ htp__connection_accept_(struct event_base * evbase, evhtp_connection_t * connect
 end:
 #endif
 
-    if (connection->recv_timeo.tv_sec || connection->recv_timeo.tv_usec)
-    {
+    if (connection->recv_timeo.tv_sec || connection->recv_timeo.tv_usec) {
         c_recv_timeo = &connection->recv_timeo;
     } else if (connection->htp->recv_timeo.tv_sec ||
-               connection->htp->recv_timeo.tv_usec)
-    {
+               connection->htp->recv_timeo.tv_usec) {
         c_recv_timeo = &connection->htp->recv_timeo;
     } else {
         c_recv_timeo = NULL;
@@ -2676,11 +2702,12 @@ end:
                                       htp__connection_resumecb_, connection);
     event_add(connection->resume_ev, NULL);
 
-    bufferevent_enable(connection->bev, EV_READ);
     bufferevent_setcb(connection->bev,
                       htp__connection_readcb_,
                       htp__connection_writecb_,
                       htp__connection_eventcb_, connection);
+
+    bufferevent_enable(connection->bev, EV_READ);
 
     return 0;
 }     /* htp__connection_accept_ */
@@ -3024,6 +3051,8 @@ evhtp_connection_resume(evhtp_connection_t * c)
     evhtp_assert(c != NULL);
 
     HTP_FLAG_OFF(c, EVHTP_CONN_FLAG_PAUSED);
+
+    log_debug("resume");
 
     event_active(c->resume_ev, EV_WRITE, 1);
 

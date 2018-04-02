@@ -90,7 +90,7 @@ int
 main(int argc, char ** argv) {
     evhtp_t           * htp;
     struct event_base * evbase;
-    struct timeval      timeo = { 10, 0 };
+    struct timeval      timeo = { 2, 0 };
 
     evbase = event_base_new();
     evhtp_alloc_assert(evbase);

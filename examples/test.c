@@ -46,10 +46,10 @@ resume_request_timer(evutil_socket_t sock, short which, void * arg) {
 static evhtp_res
 pause_cb(evhtp_request_t * request, evhtp_header_t * header, void * arg) {
     struct pauser * pause = (struct pauser *)arg;
-    int             s     = rand() % 1000000;
+    int             s     = rand() % 5000000;
 
-    printf("pause_cb(%p) pause == %p, timer_ev = %p\n",
-           request->conn, pause, pause->timer_ev);
+    printf("pause_cb(%p) pause == %p, timer_ev = %p (%d)\n",
+           request->conn, pause, pause->timer_ev, s);
     printf("pause_cb(%p) k=%s, v=%s timer_ev = %p\n", request->conn,
            header->key, header->val, pause->timer_ev);
     printf("pause_cb(%p) setting to %ld usec sleep timer_ev = %p\n",

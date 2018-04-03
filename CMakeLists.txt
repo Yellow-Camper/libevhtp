@@ -110,9 +110,9 @@ if(has_stack_protector)
     target_compile_options(evhtp PUBLIC -fstack-protector-strong)
 endif()
 
-if(EVHTP_THR_SHARED_PIPE)
+#if(EVHTP_THR_SHARED_PIPE)
     target_compile_definitions(evhtp PUBLIC EVTHR_SHARED_PIPE)
-endif()
+    #endif()
 
 if(has_c99)
     target_compile_definitions(evhtp PUBLIC EVHTP_HAS_C99)

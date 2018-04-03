@@ -27,6 +27,7 @@
 #endif
 
 #include <limits.h>
+#include <event.h>
 #include <event2/dns.h>
 
 #include "internal.h"
@@ -74,6 +75,12 @@ TAILQ_HEAD(evhtp_callbacks, evhtp_callback);
 
 #define HTP_FLAG_ON(PRE, FLAG)                       SET_BIT(PRE->flags, FLAG)
 #define HTP_FLAG_OFF(PRE, FLAG)                      UNSET_BIT(PRE->flags, FLAG)
+
+#define HTP_IS_READING(b) ((bufferevent_get_enabled(b) & EV_READ) ? true : false)
+#define HTP_IS_WRITING(b) ((bufferevent_get_enabled(b) & EV_WRITE) ? true : false)
+
+#define HTP_LEN_OUTPUT(b) (evbuffer_get_length(bufferevent_get_output(b)))
+#define HTP_LEN_INPUT(b) (evbuffer_get_length(bufferevent_get_input(b)))
 
 #define HOOK_AVAIL(var, hook_name)                   (var->hooks && var->hooks->hook_name)
 #define HOOK_FUNC(var, hook_name)                    (var->hooks->hook_name)
@@ -155,6 +162,7 @@ TAILQ_HEAD(evhtp_callbacks, evhtp_callback);
 
 /* cr_ == conn->request */
 #define cr_status   request->status
+#define cr_flags    request->flags
 
 /* rh_ == request->hooks->on_ */
 #define rh_err      hooks->on_error
@@ -2095,8 +2103,7 @@ htp__create_reply_(evhtp_request_t * request, evhtp_res code) {
         goto check_proto;
     }
 
-    if (out_len && !(request->flags & EVHTP_REQ_FLAG_CHUNKED))
-    {
+    if (out_len && !(request->flags & EVHTP_REQ_FLAG_CHUNKED)) {
         /* add extra headers (like content-length/type) if not already present */
 
         if (!evhtp_header_find(request->headers_out, "Content-Length"))
@@ -2226,18 +2233,19 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
         return;
     }
 
-    avail = evbuffer_get_length(bufferevent_get_input(bev));
+    avail = HTP_LEN_INPUT(bev);
 
     if (evhtp_unlikely(avail == 0)) {
         return;
     }
 
-    if (c->request) {
-        c->cr_status = EVHTP_RES_OK;
+    if (c->flags & EVHTP_CONN_FLAG_PAUSED) {
+        log_debug("connection is paused, returning");
+        return;
     }
 
-    if (c->flags & EVHTP_CONN_FLAG_PAUSED) {
-        return;
+    if (c->request) {
+        c->cr_status = EVHTP_RES_OK;
     }
 
     buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
@@ -2303,6 +2311,8 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
 
     evhtp_assert(bev != NULL);
 
+    log_debug("writecb");
+
     if (evhtp_unlikely(arg == NULL)) {
         log_error("No data associated with the bufferevent %p", bev);
 
@@ -2349,8 +2359,9 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
     }
 
     /* connection is in a paused state, no further processing yet */
-    if ((conn->flags & EVHTP_CONN_FLAG_PAUSED))
+    if (conn->flags & EVHTP_CONN_FLAG_PAUSED)
     {
+        log_debug("is paused");
         return;
     }
 
@@ -2359,16 +2370,22 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
 
     if (conn->flags & EVHTP_CONN_FLAG_WAITING)
     {
+        log_debug("Disabling WAIT flag");
+
         HTP_FLAG_OFF(conn, EVHTP_CONN_FLAG_WAITING);
 
-        bufferevent_enable(bev, EV_READ);
+        if (HTP_IS_READING(bev) == false) {
+            log_debug("enabling EV_READ");
 
-        if (evbuffer_get_length(bufferevent_get_input(bev)))
-        {
-            htp__connection_readcb_(bev, arg);
+            bufferevent_enable(bev, EV_READ);
         }
 
-        return;
+        if (HTP_LEN_INPUT(bev)) {
+            log_debug("have input data, will travel");
+
+            htp__connection_readcb_(bev, arg);
+            return;
+        }
     }
 
     /* if the connection is not finished, OR there is data ready to output
@@ -2376,9 +2393,8 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
      * manually, since this is called only when all data has been flushed)
      * just return and wait.
      */
-    if (!(conn->request->flags & EVHTP_REQ_FLAG_FINISHED)
-        || evbuffer_get_length(bufferevent_get_output(bev)))
-    {
+    if (!(conn->cr_flags & EVHTP_REQ_FLAG_FINISHED) || HTP_LEN_OUTPUT(bev)) {
+        log_debug("not finished");
         return;
     }
 
@@ -2397,10 +2413,11 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
         }
     }
 
-    if (conn->request->flags & EVHTP_REQ_FLAG_KEEPALIVE)
+    if (conn->cr_flags & EVHTP_REQ_FLAG_KEEPALIVE)
     {
         htp_type type;
 
+        log_debug("keep-alive on");
         /* free up the current request, set it to NULL, making
          * way for the next request.
          */
@@ -2446,6 +2463,7 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
 
         return;
     } else {
+        log_debug("goodbye connection");
         evhtp_safe_free(conn, evhtp_connection_free);
 
         return;
@@ -2530,7 +2548,11 @@ htp__connection_eventcb_(struct bufferevent * bev, short events, void * arg)
              * anyway, so we must re-enable it.
              */
             log_debug("errno EAGAIN");
-            bufferevent_enable(bev, EV_READ);
+
+            if (HTP_IS_READING(bev) == false) {
+                bufferevent_enable(bev, EV_READ);
+            }
+
             errno = 0;
 
             return;
@@ -2567,7 +2589,7 @@ htp__connection_resumecb_(int fd, short events, void * arg)
     HTP_FLAG_OFF(c, EVHTP_CONN_FLAG_PAUSED);
 
     if (c->request) {
-        log_debug("cr status = OK");
+        log_debug("cr status = OK %d", c->cr_status);
         c->cr_status = EVHTP_RES_OK;
     }
 
@@ -2585,36 +2607,29 @@ htp__connection_resumecb_(int fd, short events, void * arg)
      * changed to a state-type flag.
      */
 
-    if (evbuffer_get_length(bufferevent_get_output(c->bev))) {
-        HTP_FLAG_ON(c, EVHTP_CONN_FLAG_WAITING);
+    if (HTP_LEN_OUTPUT(c->bev)) {
         log_debug("SET WAITING");
 
-        bufferevent_enable(c->bev, EV_WRITE);
+        HTP_FLAG_ON(c, EVHTP_CONN_FLAG_WAITING);
 
-#if LIBEVENT_VERSION_NUMBER >= 0x02010500
-        /* this is the proper way to deal with the resumption of sending data,
-         * it's been around since libevent 2.1.5-alpha.
-         */
-        bufferevent_trigger_event(c->bev, EV_WRITE, 0);
-#else
-#include <event.h>
-        /* when we don't have trigger_event, we have to do things a bit
-         * hacky. Basically we emulate what trigger_event could do in early
-         * versions of libevent.
-         */
-        bufferevent_lock(c->bev);
-        {
-            if (evutil_timerisset(&c->bev->timeout_write)) {
-                event_add(&c->bev->ev_write, &c->bev->timeout_write);
-            } else {
-                event_add(&c->bev->ev_write, NULL);
-            }
+        if (HTP_IS_WRITING(c->bev) == false) {
+            log_debug("ENABLING EV_WRITE");
+
+            bufferevent_enable(c->bev, EV_WRITE);
         }
-        bufferevent_unlock(c->bev);
-#endif
     } else {
-        bufferevent_enable(c->bev, EV_READ | EV_WRITE);
-        htp__connection_readcb_(c->bev, c);
+        log_debug("SET READING");
+
+        if (HTP_IS_READING(c->bev) == false) {
+            log_debug("ENABLING EV_READ");
+
+            bufferevent_enable(c->bev, EV_READ | EV_WRITE);
+        }
+
+        if (HTP_LEN_INPUT(c->bev)) {
+            log_debug("calling readcb directly");
+            htp__connection_readcb_(c->bev, c);
+        }
     }
 } /* htp__connection_resumecb_ */
 
@@ -3038,9 +3053,19 @@ evhtp_connection_pause(evhtp_connection_t * c)
 {
     evhtp_assert(c != NULL);
 
+    if (c->flags & EVHTP_CONN_FLAG_PAUSED) {
+        log_debug("connection is already paused");
+        return;
+    }
+
+    log_debug("setting PAUSED flag");
+
     HTP_FLAG_ON(c, EVHTP_CONN_FLAG_PAUSED);
 
-    bufferevent_disable(c->bev, EV_READ);
+    if (HTP_IS_READING(c->bev) == true) {
+        log_debug("disabling EV_READ");
+        bufferevent_disable(c->bev, EV_READ);
+    }
 
     return;
 }
@@ -3049,6 +3074,11 @@ void
 evhtp_connection_resume(evhtp_connection_t * c)
 {
     evhtp_assert(c != NULL);
+
+    if (!(c->flags & EVHTP_CONN_FLAG_PAUSED)) {
+        log_error("ODDITY, resuming when not paused?!?");
+        return;
+    }
 
     HTP_FLAG_OFF(c, EVHTP_CONN_FLAG_PAUSED);
 
@@ -3790,6 +3820,7 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code)
     c = request->conn;
 
     HTP_FLAG_ON(request, EVHTP_REQ_FLAG_FINISHED);
+    log_debug("set finished flag");
 
     if (!(reply_buf = htp__create_reply_(request, code))) {
         evhtp_safe_free(request->conn, evhtp_connection_free);
@@ -3799,11 +3830,8 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code)
 
     bev = c->bev;
 
-    bufferevent_lock(bev);
-    {
-        bufferevent_write_buffer(bev, reply_buf);
-    }
-    bufferevent_unlock(bev);
+    log_debug("writing to bev %p", bev);
+    bufferevent_write_buffer(bev, reply_buf);
 
     evbuffer_drain(reply_buf, -1);
 }
@@ -3920,8 +3948,7 @@ evhtp_send_reply_chunk(evhtp_request_t * request, struct evbuffer * buf)
 void
 evhtp_send_reply_chunk_end(evhtp_request_t * request)
 {
-    if (request->flags & EVHTP_REQ_FLAG_CHUNKED)
-    {
+    if (request->flags & EVHTP_REQ_FLAG_CHUNKED) {
         evbuffer_add(bufferevent_get_output(evhtp_request_get_bev(request)),
                      "0\r\n\r\n", 5);
     }
@@ -5303,7 +5330,7 @@ evhtp__new_(evhtp_t ** out, struct event_base * evbase, void * arg)
     htp->arg          = arg;
     htp->evbase       = evbase;
     htp->flags        = EVHTP_FLAG_DEFAULTS;
-    htp->bev_flags    = BEV_OPT_CLOSE_ON_FREE;
+    htp->bev_flags    = BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS;
 
     /* default to lenient argument parsing */
     htp->parser_flags = EVHTP_PARSE_QUERY_FLAG_DEFAULT;

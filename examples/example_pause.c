@@ -40,11 +40,11 @@ http_resume__callback_(int sock, short events, void * arg) {
     evhtp_safe_free(preq->_timeoutev, event_free);
     evhtp_safe_free(preq, free);
 
-    /* add the current time to our output buffer to the client */
-    evbuffer_add_printf(req->buffer_out, "time end %ld\n", time(NULL));
-
     /* inform the evhtp API to resume this connection request */
     evhtp_request_resume(req);
+
+    /* add the current time to our output buffer to the client */
+    evbuffer_add_printf(req->buffer_out, "time end %ld\n", time(NULL));
 
     /* finally send the response to the client, YAY! */
     evhtp_send_reply(req, EVHTP_RES_OK);
@@ -92,11 +92,14 @@ main(int argc, char ** argv) {
     struct event_base * evbase;
     struct timeval      timeo = { 2, 0 };
 
+    //event_enable_debug_logging(EVENT_DBG_ALL);
     evbase = event_base_new();
     evhtp_alloc_assert(evbase);
 
     htp    = evhtp_new(evbase, NULL);
     evhtp_alloc_assert(htp);
+
+    //evhtp_set_bev_flags(htp, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
 
     /* we just set the default callback for any requests to
      * the function that pauses the session, sets a timer,

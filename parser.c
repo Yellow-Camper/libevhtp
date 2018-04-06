@@ -7,9 +7,6 @@
 #include "evhtp/config.h"
 #include "log.h"
 
-#undef log_debug
-#define log_debug(M, ...)
-
 #if '\n' != '\x0a' || 'A' != 65
 #error "You have somehow found a non-ASCII host. We can't build here."
 #endif

@@ -27,7 +27,6 @@
 #endif
 
 #include <limits.h>
-#include <event.h>
 #include <event2/dns.h>
 
 #include "internal.h"
@@ -76,11 +75,11 @@ TAILQ_HEAD(evhtp_callbacks, evhtp_callback);
 #define HTP_FLAG_ON(PRE, FLAG)                       SET_BIT(PRE->flags, FLAG)
 #define HTP_FLAG_OFF(PRE, FLAG)                      UNSET_BIT(PRE->flags, FLAG)
 
-#define HTP_IS_READING(b) ((bufferevent_get_enabled(b) & EV_READ) ? true : false)
-#define HTP_IS_WRITING(b) ((bufferevent_get_enabled(b) & EV_WRITE) ? true : false)
+#define HTP_IS_READING(b)                            ((bufferevent_get_enabled(b) & EV_READ) ? true : false)
+#define HTP_IS_WRITING(b)                            ((bufferevent_get_enabled(b) & EV_WRITE) ? true : false)
 
-#define HTP_LEN_OUTPUT(b) (evbuffer_get_length(bufferevent_get_output(b)))
-#define HTP_LEN_INPUT(b) (evbuffer_get_length(bufferevent_get_input(b)))
+#define HTP_LEN_OUTPUT(b)                            (evbuffer_get_length(bufferevent_get_output(b)))
+#define HTP_LEN_INPUT(b)                             (evbuffer_get_length(bufferevent_get_input(b)))
 
 #define HOOK_AVAIL(var, hook_name)                   (var->hooks && var->hooks->hook_name)
 #define HOOK_FUNC(var, hook_name)                    (var->hooks->hook_name)
@@ -481,8 +480,7 @@ strnlen(const char * s, size_t maxlen)
     const char * e;
     size_t       n;
 
-    for (e = s, n = 0; *e && n < maxlen; e++, n++)
-    {
+    for (e = s, n = 0; *e && n < maxlen; e++, n++) {
         ;
     }
 
@@ -841,12 +839,10 @@ static int
 htp__glob_match_(const char * pattern, size_t plen,
                  const char * string, size_t str_len)
 {
-    while (plen)
-    {
+    while (plen) {
         switch (pattern[0]) {
             case '*':
-                while (pattern[1] == '*')
-                {
+                while (pattern[1] == '*') {
                     pattern++;
                     plen--;
                 }
@@ -856,8 +852,7 @@ htp__glob_match_(const char * pattern, size_t plen,
                     return 1;     /* match */
                 }
 
-                while (str_len)
-                {
+                while (str_len) {
                     if (htp__glob_match_(pattern + 1, plen - 1,
                                          string, str_len))
                     {
@@ -885,8 +880,7 @@ htp__glob_match_(const char * pattern, size_t plen,
 
         if (str_len == 0)
         {
-            while (*pattern == '*')
-            {
+            while (*pattern == '*') {
                 pattern++;
                 plen--;
             }
@@ -1037,8 +1031,7 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
              */
             size_t i;
 
-            for (i = (len - 1); i != 0; i--)
-            {
+            for (i = (len - 1); i != 0; i--) {
                 if (data[i] == '/')
                 {
                     /*
@@ -3276,8 +3269,7 @@ evhtp_kvs_free(evhtp_kvs_t * kvs)
     kv   = NULL;
     save = NULL;
 
-    for (kv = TAILQ_FIRST(kvs); kv != NULL; kv = save)
-    {
+    for (kv = TAILQ_FIRST(kvs); kv != NULL; kv = save) {
         save = TAILQ_NEXT(kv, next);
 
         TAILQ_REMOVE(kvs, kv, next);
@@ -3441,8 +3433,7 @@ evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len)
     d     = 0;
     *out  = NULL;
 
-    for (i = 0; i < str_len; i++)
-    {
+    for (i = 0; i < str_len; i++) {
         ch = *sptr++;
 
         switch (state) {
@@ -3538,8 +3529,7 @@ evhtp_parse_query_wflags(const char * query, const size_t len, const int flags)
     evhtp_alloc_assert(val_buf);
 #endif
 
-    for (i = 0; i < len; i++)
-    {
+    for (i = 0; i < len; i++) {
         ch = query[i];
 
         if (key_idx >= len || val_idx >= len)
@@ -4773,8 +4763,7 @@ evhtp_ssl_use_threads(void)
         return -1;
     }
 
-    for (i = 0; i < ssl_num_locks; i++)
-    {
+    for (i = 0; i < ssl_num_locks; i++) {
         pthread_mutex_init(&(ssl_locks[i]), NULL);
     }
 

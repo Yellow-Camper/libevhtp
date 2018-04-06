@@ -90,16 +90,13 @@ int
 main(int argc, char ** argv) {
     evhtp_t           * htp;
     struct event_base * evbase;
-    struct timeval      timeo = { 2, 0 };
+    struct timeval      timeo = { 10, 0 };
 
-    //event_enable_debug_logging(EVENT_DBG_ALL);
     evbase = event_base_new();
     evhtp_alloc_assert(evbase);
 
     htp    = evhtp_new(evbase, NULL);
     evhtp_alloc_assert(htp);
-
-    //evhtp_set_bev_flags(htp, BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS);
 
     /* we just set the default callback for any requests to
      * the function that pauses the session, sets a timer,

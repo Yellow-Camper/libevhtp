@@ -75,6 +75,12 @@ TAILQ_HEAD(evhtp_callbacks, evhtp_callback);
 #define HTP_FLAG_ON(PRE, FLAG)                       SET_BIT(PRE->flags, FLAG)
 #define HTP_FLAG_OFF(PRE, FLAG)                      UNSET_BIT(PRE->flags, FLAG)
 
+#define HTP_IS_READING(b)                            ((bufferevent_get_enabled(b) & EV_READ) ? true : false)
+#define HTP_IS_WRITING(b)                            ((bufferevent_get_enabled(b) & EV_WRITE) ? true : false)
+
+#define HTP_LEN_OUTPUT(b)                            (evbuffer_get_length(bufferevent_get_output(b)))
+#define HTP_LEN_INPUT(b)                             (evbuffer_get_length(bufferevent_get_input(b)))
+
 #define HOOK_AVAIL(var, hook_name)                   (var->hooks && var->hooks->hook_name)
 #define HOOK_FUNC(var, hook_name)                    (var->hooks->hook_name)
 #define HOOK_ARGS(var, hook_name)                    var->hooks->hook_name ## _arg
@@ -155,6 +161,7 @@ TAILQ_HEAD(evhtp_callbacks, evhtp_callback);
 
 /* cr_ == conn->request */
 #define cr_status   request->status
+#define cr_flags    request->flags
 
 /* rh_ == request->hooks->on_ */
 #define rh_err      hooks->on_error
@@ -473,8 +480,7 @@ strnlen(const char * s, size_t maxlen)
     const char * e;
     size_t       n;
 
-    for (e = s, n = 0; *e && n < maxlen; e++, n++)
-    {
+    for (e = s, n = 0; *e && n < maxlen; e++, n++) {
         ;
     }
 
@@ -833,12 +839,10 @@ static int
 htp__glob_match_(const char * pattern, size_t plen,
                  const char * string, size_t str_len)
 {
-    while (plen)
-    {
+    while (plen) {
         switch (pattern[0]) {
             case '*':
-                while (pattern[1] == '*')
-                {
+                while (pattern[1] == '*') {
                     pattern++;
                     plen--;
                 }
@@ -848,8 +852,7 @@ htp__glob_match_(const char * pattern, size_t plen,
                     return 1;     /* match */
                 }
 
-                while (str_len)
-                {
+                while (str_len) {
                     if (htp__glob_match_(pattern + 1, plen - 1,
                                          string, str_len))
                     {
@@ -877,8 +880,7 @@ htp__glob_match_(const char * pattern, size_t plen,
 
         if (str_len == 0)
         {
-            while (*pattern == '*')
-            {
+            while (*pattern == '*') {
                 pattern++;
                 plen--;
             }
@@ -1029,8 +1031,7 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
              */
             size_t i;
 
-            for (i = (len - 1); i != 0; i--)
-            {
+            for (i = (len - 1); i != 0; i--) {
                 if (data[i] == '/')
                 {
                     /*
@@ -2095,8 +2096,7 @@ htp__create_reply_(evhtp_request_t * request, evhtp_res code) {
         goto check_proto;
     }
 
-    if (out_len && !(request->flags & EVHTP_REQ_FLAG_CHUNKED))
-    {
+    if (out_len && !(request->flags & EVHTP_REQ_FLAG_CHUNKED)) {
         /* add extra headers (like content-length/type) if not already present */
 
         if (!evhtp_header_find(request->headers_out, "Content-Length"))
@@ -2226,18 +2226,19 @@ htp__connection_readcb_(struct bufferevent * bev, void * arg)
         return;
     }
 
-    avail = evbuffer_get_length(bufferevent_get_input(bev));
+    avail = HTP_LEN_INPUT(bev);
 
     if (evhtp_unlikely(avail == 0)) {
         return;
     }
 
-    if (c->request) {
-        c->cr_status = EVHTP_RES_OK;
+    if (c->flags & EVHTP_CONN_FLAG_PAUSED) {
+        log_debug("connection is paused, returning");
+        return;
     }
 
-    if (c->flags & EVHTP_CONN_FLAG_PAUSED) {
-        return;
+    if (c->request) {
+        c->cr_status = EVHTP_RES_OK;
     }
 
     buf   = evbuffer_pullup(bufferevent_get_input(bev), avail);
@@ -2303,6 +2304,8 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
 
     evhtp_assert(bev != NULL);
 
+    log_debug("writecb");
+
     if (evhtp_unlikely(arg == NULL)) {
         log_error("No data associated with the bufferevent %p", bev);
 
@@ -2349,8 +2352,9 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
     }
 
     /* connection is in a paused state, no further processing yet */
-    if ((conn->flags & EVHTP_CONN_FLAG_PAUSED))
+    if (conn->flags & EVHTP_CONN_FLAG_PAUSED)
     {
+        log_debug("is paused");
         return;
     }
 
@@ -2359,16 +2363,22 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
 
     if (conn->flags & EVHTP_CONN_FLAG_WAITING)
     {
+        log_debug("Disabling WAIT flag");
+
         HTP_FLAG_OFF(conn, EVHTP_CONN_FLAG_WAITING);
 
-        bufferevent_enable(bev, EV_READ);
+        if (HTP_IS_READING(bev) == false) {
+            log_debug("enabling EV_READ");
 
-        if (evbuffer_get_length(bufferevent_get_input(bev)))
-        {
-            htp__connection_readcb_(bev, arg);
+            bufferevent_enable(bev, EV_READ);
         }
 
-        return;
+        if (HTP_LEN_INPUT(bev)) {
+            log_debug("have input data, will travel");
+
+            htp__connection_readcb_(bev, arg);
+            return;
+        }
     }
 
     /* if the connection is not finished, OR there is data ready to output
@@ -2376,9 +2386,8 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
      * manually, since this is called only when all data has been flushed)
      * just return and wait.
      */
-    if (!(conn->request->flags & EVHTP_REQ_FLAG_FINISHED)
-        || evbuffer_get_length(bufferevent_get_output(bev)))
-    {
+    if (!(conn->cr_flags & EVHTP_REQ_FLAG_FINISHED) || HTP_LEN_OUTPUT(bev)) {
+        log_debug("not finished");
         return;
     }
 
@@ -2397,10 +2406,11 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
         }
     }
 
-    if (conn->request->flags & EVHTP_REQ_FLAG_KEEPALIVE)
+    if (conn->cr_flags & EVHTP_REQ_FLAG_KEEPALIVE)
     {
         htp_type type;
 
+        log_debug("keep-alive on");
         /* free up the current request, set it to NULL, making
          * way for the next request.
          */
@@ -2446,6 +2456,7 @@ htp__connection_writecb_(struct bufferevent * bev, void * arg)
 
         return;
     } else {
+        log_debug("goodbye connection");
         evhtp_safe_free(conn, evhtp_connection_free);
 
         return;
@@ -2517,6 +2528,8 @@ htp__connection_eventcb_(struct bufferevent * bev, short events, void * arg)
 
     if (events == (BEV_EVENT_EOF | BEV_EVENT_READING))
     {
+        log_debug("EOF | READING");
+
         if (errno == EAGAIN)
         {
             /* libevent will sometimes recv again when it's not actually ready,
@@ -2527,7 +2540,12 @@ htp__connection_eventcb_(struct bufferevent * bev, short events, void * arg)
              * but libevent will disable the read side of the bufferevent
              * anyway, so we must re-enable it.
              */
-            bufferevent_enable(bev, EV_READ);
+            log_debug("errno EAGAIN");
+
+            if (HTP_IS_READING(bev) == false) {
+                bufferevent_enable(bev, EV_READ);
+            }
+
             errno = 0;
 
             return;
@@ -2558,15 +2576,18 @@ htp__connection_resumecb_(int fd, short events, void * arg)
 {
     evhtp_connection_t * c = arg;
 
+    log_debug("resumecb");
+
     /* unset the pause flag */
     HTP_FLAG_OFF(c, EVHTP_CONN_FLAG_PAUSED);
 
-    if (c->request)
-    {
+    if (c->request) {
+        log_debug("cr status = OK %d", c->cr_status);
         c->cr_status = EVHTP_RES_OK;
     }
 
     if (c->flags & EVHTP_CONN_FLAG_FREE_CONN) {
+        log_debug("flags == FREE_CONN");
         evhtp_safe_free(c, evhtp_connection_free);
 
         return;
@@ -2579,16 +2600,31 @@ htp__connection_resumecb_(int fd, short events, void * arg)
      * changed to a state-type flag.
      */
 
-    if (evbuffer_get_length(bufferevent_get_output(c->bev)))
-    {
+    if (HTP_LEN_OUTPUT(c->bev)) {
+        log_debug("SET WAITING");
+
         HTP_FLAG_ON(c, EVHTP_CONN_FLAG_WAITING);
 
-        bufferevent_enable(c->bev, EV_WRITE);
+        if (HTP_IS_WRITING(c->bev) == false) {
+            log_debug("ENABLING EV_WRITE");
+
+            bufferevent_enable(c->bev, EV_WRITE);
+        }
     } else {
-        bufferevent_enable(c->bev, EV_READ | EV_WRITE);
-        htp__connection_readcb_(c->bev, c);
+        log_debug("SET READING");
+
+        if (HTP_IS_READING(c->bev) == false) {
+            log_debug("ENABLING EV_READ");
+
+            bufferevent_enable(c->bev, EV_READ | EV_WRITE);
+        }
+
+        if (HTP_LEN_INPUT(c->bev)) {
+            log_debug("calling readcb directly");
+            htp__connection_readcb_(c->bev, c);
+        }
     }
-}
+} /* htp__connection_resumecb_ */
 
 static int
 htp__run_pre_accept_(evhtp_t * htp, evhtp_connection_t * conn)
@@ -2648,12 +2684,10 @@ htp__connection_accept_(struct event_base * evbase, evhtp_connection_t * connect
 end:
 #endif
 
-    if (connection->recv_timeo.tv_sec || connection->recv_timeo.tv_usec)
-    {
+    if (connection->recv_timeo.tv_sec || connection->recv_timeo.tv_usec) {
         c_recv_timeo = &connection->recv_timeo;
     } else if (connection->htp->recv_timeo.tv_sec ||
-               connection->htp->recv_timeo.tv_usec)
-    {
+               connection->htp->recv_timeo.tv_usec) {
         c_recv_timeo = &connection->htp->recv_timeo;
     } else {
         c_recv_timeo = NULL;
@@ -2676,11 +2710,12 @@ end:
                                       htp__connection_resumecb_, connection);
     event_add(connection->resume_ev, NULL);
 
-    bufferevent_enable(connection->bev, EV_READ);
     bufferevent_setcb(connection->bev,
                       htp__connection_readcb_,
                       htp__connection_writecb_,
                       htp__connection_eventcb_, connection);
+
+    bufferevent_enable(connection->bev, EV_READ);
 
     return 0;
 }     /* htp__connection_accept_ */
@@ -3011,9 +3046,19 @@ evhtp_connection_pause(evhtp_connection_t * c)
 {
     evhtp_assert(c != NULL);
 
+    if (c->flags & EVHTP_CONN_FLAG_PAUSED) {
+        log_debug("connection is already paused");
+        return;
+    }
+
+    log_debug("setting PAUSED flag");
+
     HTP_FLAG_ON(c, EVHTP_CONN_FLAG_PAUSED);
 
-    bufferevent_disable(c->bev, EV_READ);
+    if (HTP_IS_READING(c->bev) == true) {
+        log_debug("disabling EV_READ");
+        bufferevent_disable(c->bev, EV_READ);
+    }
 
     return;
 }
@@ -3023,7 +3068,14 @@ evhtp_connection_resume(evhtp_connection_t * c)
 {
     evhtp_assert(c != NULL);
 
+    if (!(c->flags & EVHTP_CONN_FLAG_PAUSED)) {
+        log_error("ODDITY, resuming when not paused?!?");
+        return;
+    }
+
     HTP_FLAG_OFF(c, EVHTP_CONN_FLAG_PAUSED);
+
+    log_debug("resume");
 
     event_active(c->resume_ev, EV_WRITE, 1);
 
@@ -3217,8 +3269,7 @@ evhtp_kvs_free(evhtp_kvs_t * kvs)
     kv   = NULL;
     save = NULL;
 
-    for (kv = TAILQ_FIRST(kvs); kv != NULL; kv = save)
-    {
+    for (kv = TAILQ_FIRST(kvs); kv != NULL; kv = save) {
         save = TAILQ_NEXT(kv, next);
 
         TAILQ_REMOVE(kvs, kv, next);
@@ -3382,8 +3433,7 @@ evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len)
     d     = 0;
     *out  = NULL;
 
-    for (i = 0; i < str_len; i++)
-    {
+    for (i = 0; i < str_len; i++) {
         ch = *sptr++;
 
         switch (state) {
@@ -3479,8 +3529,7 @@ evhtp_parse_query_wflags(const char * query, const size_t len, const int flags)
     evhtp_alloc_assert(val_buf);
 #endif
 
-    for (i = 0; i < len; i++)
-    {
+    for (i = 0; i < len; i++) {
         ch = query[i];
 
         if (key_idx >= len || val_idx >= len)
@@ -3761,6 +3810,7 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code)
     c = request->conn;
 
     HTP_FLAG_ON(request, EVHTP_REQ_FLAG_FINISHED);
+    log_debug("set finished flag");
 
     if (!(reply_buf = htp__create_reply_(request, code))) {
         evhtp_safe_free(request->conn, evhtp_connection_free);
@@ -3770,11 +3820,8 @@ evhtp_send_reply(evhtp_request_t * request, evhtp_res code)
 
     bev = c->bev;
 
-    bufferevent_lock(bev);
-    {
-        bufferevent_write_buffer(bev, reply_buf);
-    }
-    bufferevent_unlock(bev);
+    log_debug("writing to bev %p", bev);
+    bufferevent_write_buffer(bev, reply_buf);
 
     evbuffer_drain(reply_buf, -1);
 }
@@ -3891,8 +3938,7 @@ evhtp_send_reply_chunk(evhtp_request_t * request, struct evbuffer * buf)
 void
 evhtp_send_reply_chunk_end(evhtp_request_t * request)
 {
-    if (request->flags & EVHTP_REQ_FLAG_CHUNKED)
-    {
+    if (request->flags & EVHTP_REQ_FLAG_CHUNKED) {
         evbuffer_add(bufferevent_get_output(evhtp_request_get_bev(request)),
                      "0\r\n\r\n", 5);
     }
@@ -4717,8 +4763,7 @@ evhtp_ssl_use_threads(void)
         return -1;
     }
 
-    for (i = 0; i < ssl_num_locks; i++)
-    {
+    for (i = 0; i < ssl_num_locks; i++) {
         pthread_mutex_init(&(ssl_locks[i]), NULL);
     }
 
@@ -5274,7 +5319,7 @@ evhtp__new_(evhtp_t ** out, struct event_base * evbase, void * arg)
     htp->arg          = arg;
     htp->evbase       = evbase;
     htp->flags        = EVHTP_FLAG_DEFAULTS;
-    htp->bev_flags    = BEV_OPT_CLOSE_ON_FREE;
+    htp->bev_flags    = BEV_OPT_CLOSE_ON_FREE | BEV_OPT_DEFER_CALLBACKS;
 
     /* default to lenient argument parsing */
     htp->parser_flags = EVHTP_PARSE_QUERY_FLAG_DEFAULT;

@@ -11,6 +11,8 @@ This document describes details on using the evhtp API. This document is
 probably not very awesome, it's best to look at test.c to see advanced usage.
 
 # Prebuilt Packages
+
+[![Join the chat at https://gitter.im/criticalstack/libevhtp](https://badges.gitter.im/criticalstack/libevhtp.svg)](https://gitter.im/criticalstack/libevhtp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Package Versions](https://repology.org/badge/vertical-allrepos/libevhtp.svg)](https://repology.org/metapackage/libevhtp)
 
 ## Required Dependencies

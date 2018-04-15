@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void * mm__dup_(const void * src, size_t size) {
+static void *
+mm__dup_(const void * src, size_t size)
+{
     void * mem = malloc(size);
 
     return mem ? memcpy(mem, src, size) : NULL;

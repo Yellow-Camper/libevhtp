@@ -1155,8 +1155,8 @@ EVHTP_EXPORT int evhtp_unescape_string(unsigned char ** out, unsigned char * str
  *
  * @param key a null terminated string
  * @param val a null terminated string
- * @param kalloc if 1, key will be copied, otherwise no copy performed
- * @param valloc if 1, val will be copied, otehrwise no copy performed
+ * @param kalloc if 1, key will be copied, if 0 no copy performed
+ * @param valloc if 1, val will be copied, if 0 no copy performed
  *
  * @return evhtp_header_t * or NULL on error
  */

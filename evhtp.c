@@ -3228,11 +3228,11 @@ evhtp_kv_free(evhtp_kv_t * kv)
         return;
     }
 
-    if (kv->k_heaped) {
+    if (kv->k_heaped == 1) {
         evhtp_safe_free(kv->key, htp__free_);
     }
 
-    if (kv->v_heaped) {
+    if (kv->v_heaped == 1) {
         evhtp_safe_free(kv->val, htp__free_);
     }
 

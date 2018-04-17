@@ -13,13 +13,13 @@ add_executable(example_request_fini EXCLUDE_FROM_ALL example_request_fini.c)
 add_executable(example_basic EXCLUDE_FROM_ALL example_basic.c)
 
 if(NOT EVHTP_DISABLE_EVTHR)
-    add_executable(example_locality EXCLUDE_FROM_ALL example_locality.c)
-	target_link_libraries(example_locality evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+    #add_executable(example_locality EXCLUDE_FROM_ALL example_locality.c)
+    #target_link_libraries(example_locality evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
    
 	add_executable(test_proxy EXCLUDE_FROM_ALL test_proxy.c)
 	target_link_libraries(test_proxy evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
 
-	add_dependencies(examples test_proxy example_locality)
+	add_dependencies(examples test_proxy)
 endif()
 
 target_link_libraries(test_extensive evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})

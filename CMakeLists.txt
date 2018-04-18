@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.1)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 project(libevhtp VERSION 1.2.16)
 
 # For us YCM users.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(colors)
 include(options)
@@ -14,7 +14,6 @@ include(CheckIncludeFiles)
 include(CheckTypeSize)
 include(CheckCCompilerFlag)
 include(TestBigEndian)
-
 
 check_function_exists(strndup HAVE_STRNDUP)
 check_function_exists(strnlen HAVE_STRNLEN)
@@ -105,7 +104,7 @@ endif()
 add_library(evhtp ${LIBEVHTP_SOURCE_FILES})
 target_link_libraries(evhtp PUBLIC ${LIBEVHTP_EXTERNAL_LIBS})
 
-target_compile_definitions(evhtp PUBLIC "-DPROJECT_VERSION=${PROJECT_VERSION}")
+target_compile_definitions(evhtp PUBLIC "PROJECT_VERSION=${PROJECT_VERSION}")
 if(has_stack_protector)
     target_compile_options(evhtp PUBLIC -fstack-protector-strong)
 endif()

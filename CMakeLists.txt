@@ -51,6 +51,8 @@ set(LIBEVHTP_SOURCE_FILES
 
 find_package(LibEvent REQUIRED)
 list(APPEND LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARIES})
+list(APPEND LIBEVHTP_EXTERNAL_INCLUDES ${LIBEVENT_INCLUDE_DIRS})
+
 list(APPEND package_deps LibEvent)
 set(evhtp_dir_headers
   "include/evhtp/evhtp.h"
@@ -80,6 +82,7 @@ if(NOT EVHTP_DISABLE_REGEX)
     find_package(Oniguruma)
     if(ONIGURUMA_FOUND)
         list(APPEND LIBEVHTP_EXTERNAL_LIBS ${ONIGURUMA_LIBRARIES})
+        list(APPEND LIBEVHTP_EXTERNAL_INCLUDES ${ONIGURUMA_INCLUDE_DIRS})
         list(APPEND package_deps Oniguruma)
     else()
         message(STATUS "${BoldRed}${CMAKE_BUILD_TYPE}ONIGURUMA NOT FOUND, DISABLING REGEX SUPPORT${ColourReset}")
@@ -103,6 +106,7 @@ endif()
 
 add_library(evhtp ${LIBEVHTP_SOURCE_FILES})
 target_link_libraries(evhtp PUBLIC ${LIBEVHTP_EXTERNAL_LIBS})
+target_include_directories(evhtp PUBLIC ${LIBEVHTP_EXTERNAL_INCLUDES})
 
 target_compile_definitions(evhtp PUBLIC "PROJECT_VERSION=${PROJECT_VERSION}")
 if(has_stack_protector)

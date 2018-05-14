@@ -38,7 +38,7 @@ main(int argc, char ** argv)
     evhtp_use_threads_wexit(htp, NULL, NULL, 4, NULL);
 #endif
 
-    log_info("Basic server, run: curl https://127.0.0.1:%d/",
+    log_info("Basic server, run: curl http://127.0.0.1:%d/",
             bind__sock_port0_(htp));
     event_base_loop(evbase, 0);
     return 0;

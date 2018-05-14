@@ -2188,16 +2188,19 @@ hdrline_start:
                     const char * pe      = (const char *)(data + len);
                     size_t       to_read = _MIN_READ(pe - pp, p->content_len);
 
-                    if (to_read > 0)
-                    {
+                    if (to_read > 0) {
                         res = hook_body_run(p, hooks, pp, to_read);
 
                         i  += to_read - 1;
                         p->content_len -= to_read;
                     }
 
-                    if (p->content_len == 0)
-                    {
+                    if (res) {
+                        p->error = htparse_error_user;
+                        return i + 1;
+                    }
+
+                    if (p->content_len == 0) {
                         res      = hook_on_msg_complete_run(p, hooks);
                         p->state = s_start;
                     }

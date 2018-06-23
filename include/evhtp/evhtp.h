@@ -201,6 +201,7 @@ typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #define EVHTP_RES_FATAL         2
 #define EVHTP_RES_USER          3
 #define EVHTP_RES_DATA_TOO_LONG 4
+#define EVHTP_RES_PARSER_ERROR  5
 #define EVHTP_RES_OK            200
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS

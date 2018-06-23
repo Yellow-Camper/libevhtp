@@ -3,6 +3,7 @@
  */
 
 #include <evhtp/config.h>
+#include <evhtp/assert.h>
 
 #ifndef __EVHTP__H__
 #define __EVHTP__H__

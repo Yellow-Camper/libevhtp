@@ -54,7 +54,8 @@ list(APPEND LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARIES})
 list(APPEND package_deps LibEvent)
 set(evhtp_dir_headers
   "include/evhtp/evhtp.h"
-  "include/evhtp/parser.h")
+  "include/evhtp/parser.h"
+  "include/evhtp/assert.h")
 
 if(NOT EVHTP_DISABLE_SSL)
     find_package(OpenSSL)
@@ -181,7 +182,9 @@ endif()
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/evhtp/config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h)
-list(APPEND evhtp_dir_headers "${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h")
+
+list(APPEND evhtp_dir_headers
+    "${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h")
 
 target_include_directories(evhtp PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>

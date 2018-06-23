@@ -249,21 +249,9 @@ main(int argc, char ** argv) {
 
     evhtp_ssl_init(htp, parse__ssl_opts_(argc, argv));
     evhtp_set_gencb(htp, http__callback_, NULL);
-
     evhtp_bind_socket(htp, "127.0.0.1", 4443, 128);
-    {
-        struct sockaddr_in sin;
-        socklen_t          len = sizeof(struct sockaddr);
-        uint16_t           port;
 
-        getsockname(
-            evconnlistener_get_fd(htp->server),
-            (struct sockaddr *)&sin, &len);
-
-        port = ntohs(sin.sin_port);
-
-        log_info("curl https://127.0.0.1:%d/", port);
-    }
+    log_info("curl https://127.0.0.1:4443/");
 
     event_base_loop(evbase, 0);
     return 0;

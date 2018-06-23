@@ -37,14 +37,14 @@ http_resume__callback_(int sock, short events, void * arg) {
     req  = preq->_request;
     evhtp_assert(req != NULL);
 
-    event_free(preq->_timeoutev);
-    free(preq);
-
-    /* add the current time to our output buffer to the client */
-    evbuffer_add_printf(req->buffer_out, "time end %ld\n", time(NULL));
+    evhtp_safe_free(preq->_timeoutev, event_free);
+    evhtp_safe_free(preq, free);
 
     /* inform the evhtp API to resume this connection request */
     evhtp_request_resume(req);
+
+    /* add the current time to our output buffer to the client */
+    evbuffer_add_printf(req->buffer_out, "time end %ld\n", time(NULL));
 
     /* finally send the response to the client, YAY! */
     evhtp_send_reply(req, EVHTP_RES_OK);

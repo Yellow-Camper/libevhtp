@@ -35,7 +35,7 @@ htp_sslutil_subject_tostr(evhtp_ssl_t * ssl) {
         return NULL;
     }
 
-    subj_str = strdup(p);
+    subj_str = (unsigned char *)strdup(p);
 
     OPENSSL_free(p);
     X509_free(cert);
@@ -68,7 +68,7 @@ htp_sslutil_issuer_tostr(evhtp_ssl_t * ssl) {
         return NULL;
     }
 
-    issr_str = strdup(p);
+    issr_str = (unsigned char *)strdup(p);
 
     OPENSSL_free(p);
     X509_free(cert);
@@ -286,7 +286,7 @@ htp_sslutil_cipher_tostr(evhtp_ssl_t * ssl) {
         return NULL;
     }
 
-    cipher_str = strdup(p);
+    cipher_str = (unsigned char *)strdup(p);
 
     return cipher_str;
 }
@@ -418,7 +418,7 @@ htp_sslutil_x509_ext_tostr(evhtp_ssl_t * ssl, const char * oid) {
      * for encoded binary data */
 
     if (xlen > 0 && xtag == 0x0C && octet->type == V_ASN1_OCTET_STRING) {
-        ext_str = strndup(octet_data, xlen);
+        ext_str = (unsigned char *)strndup((const char *)octet_data, xlen);
     }
 
     ASN1_OBJECT_free(oid_obj);

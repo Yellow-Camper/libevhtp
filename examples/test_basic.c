@@ -31,7 +31,7 @@ issue161cb(evhtp_request_t * req, void * a) {
 
     evhtp_send_reply_end(req);
 
-    evbuffer_free(b);
+    evhtp_safe_free(b, evbuffer_free);
 }
 
 int
@@ -51,9 +51,8 @@ main(int argc, char ** argv) {
     event_base_loop(evbase, 0);
 
     evhtp_unbind_socket(htp);
-    evhtp_free(htp);
-    event_base_free(evbase);
+    evhtp_safe_free(htp, evhtp_free);
+    evhtp_safe_free(evbase, event_base_free);
 
     return 0;
 }
-

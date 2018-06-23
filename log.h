@@ -26,10 +26,10 @@
 #else
 #define log_debug(M, ...)                          \
     fprintf(stderr, __log_debug_color("DEBUG") " " \
-            __log_func_color("%s:%-9d")            \
+            __log_func_color("%s/%s:%-9d")         \
             __log_args_color(M)                    \
             "\n",                                  \
-            __FILENAME__, __LINE__, ## __VA_ARGS__)
+            __FILENAME__, __FUNCTION__, __LINE__, ## __VA_ARGS__)
 #endif
 
 #define log_error(M, ...)                          \

@@ -104,7 +104,8 @@ query_test(const char * raw_query, int exp_error, struct expected exp[], int fla
         return -1;
     }
 
-    evhtp_query_free(query);
+    evhtp_safe_free(query, evhtp_query_free);
+
     return num_errors;
 } /* query_test */
 

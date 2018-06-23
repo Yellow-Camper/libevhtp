@@ -45,7 +45,7 @@ struct evthr {
     pthread_mutex_t lock;
     pthread_t     * thr;
     evthr_init_cb   init_cb;
-    evthr_init_cb   exit_cb;
+    evthr_exit_cb   exit_cb;
     void          * arg;
     void          * aux;
 
@@ -189,7 +189,7 @@ evthr_set_initcb(evthr_t * thr, evthr_init_cb cb) {
 
     thr->init_cb = cb;
 
-    return 01;
+    return 0;
 }
 
 int
@@ -219,13 +219,13 @@ _evthr_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args) {
         return NULL;
     }
 
-    thread->thr = malloc(sizeof(pthread_t));
-    thread->arg = args;
-    thread->rdr = fds[0];
-    thread->wdr = fds[1];
+    thread->thr     = malloc(sizeof(pthread_t));
+    thread->arg     = args;
+    thread->rdr     = fds[0];
+    thread->wdr     = fds[1];
 
-    evthr_set_initcb(thread, init_cb);
-    evthr_set_exitcb(thread, exit_cb);
+    thread->init_cb = init_cb;
+    thread->exit_cb = exit_cb;
 
     if (pthread_mutex_init(&thread->lock, NULL)) {
         evthr_free(thread);

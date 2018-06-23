@@ -70,7 +70,8 @@ main(int argc, char ** argv)
     evhtp_make_request(conn, request, htp_method_GET, "/");
 
     event_base_loop(evbase, 0);
-    event_base_free(evbase);
+
+    evhtp_safe_free(evbase, event_base_free);
 
     return 0;
 }

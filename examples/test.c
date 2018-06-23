@@ -78,11 +78,14 @@ static evhtp_res
 pause_request_fini(evhtp_request_t * request, void * arg) {
     struct pauser * pause = (struct pauser *)arg;
 
-    printf("pause_request_fini() req=%p, c=%p\n", request, request->conn);
-    event_free(pause->timer_ev);
+    printf("pause_request_fini() req=%p, c=%p status_code=%d::%s\n", request,
+            evhtp_request_get_connection(request),
+            evhtp_request_get_status_code(request),
+            evhtp_request_get_status_code_str(request));
 
-    free(pause->tv);
-    free(pause);
+    evhtp_safe_free(pause->timer_ev, event_free);
+    evhtp_safe_free(pause->tv, free);
+    evhtp_safe_free(pause, free);
 
     return EVHTP_RES_OK;
 }
@@ -124,7 +127,7 @@ _owned_readcb(evbev_t * bev, void * arg) {
 
 static void
 _owned_eventcb(evbev_t * bev, short events, void * arg) {
-    bufferevent_free(bev);
+    evhtp_safe_free(bev, bufferevent_free);
 }
 
 static void
@@ -231,7 +234,7 @@ test_chunking(evhtp_request_t * req, void * arg) {
     }
 
     evhtp_send_reply_chunk_end(req);
-    evbuffer_free(buf);
+    evhtp_safe_free(buf, evbuffer_free);
 }
 
 static void
@@ -668,11 +671,11 @@ main(int argc, char ** argv) {
 
     event_base_loop(evbase, 0);
 
-    event_free(ev_sigint);
+    evhtp_safe_free(ev_sigint, event_free);
     evhtp_unbind_socket(htp);
 
-    evhtp_free(htp);
-    event_base_free(evbase);
+    evhtp_safe_free(htp, evhtp_free);
+    evhtp_safe_free(evbase, event_base_free);
 
     return 0;
 } /* main */

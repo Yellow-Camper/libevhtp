@@ -1,8 +1,11 @@
 #pragma once
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
 #include <pthread.h>
 
-static void (* REF_free)(void *) = free;
+static void (*REF_free)(void *) = free;
 static void * (* REF_realloc)(void *, size_t) = realloc;
 static void * (* REF_malloc)(size_t) = malloc;
 
@@ -25,8 +28,9 @@ static inline void
 ref_init_functions(void *(*mallocf)(size_t),
                    void * (*callocf)(size_t, size_t),
                    void *(*reallocf)(void *, size_t),
-                   void (* freef)(void *))
+                   void (*freef)(void *))
 {
+    (void)callocf;
     REF_malloc  = mallocf;
     REF_realloc = reallocf;
     REF_free    = freef;
@@ -79,6 +83,7 @@ ref_free(void * buf)
         if (--refc->count == 0)
         {
             pthread_mutex_unlock(&refc->mux);
+            pthread_mutex_destroy(&refc->mux);
             return REF_free(refc);
         }
     });

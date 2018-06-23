@@ -44,11 +44,11 @@ main(int argc, char ** argv) {
     event_base_loop(evbase, 0);
 
     evhtp_unbind_socket(evhtp);
-    evhtp_free(v2);
-    evhtp_free(v1);
-    evhtp_free(evhtp);
-    event_base_free(evbase);
+
+    evhtp_safe_free(v2, evhtp_free);
+    evhtp_safe_free(v1, evhtp_free);
+    evhtp_safe_free(evhtp, evhtp_free);
+    evhtp_safe_free(evbase, event_base_free);
 
     return 0;
 }
-

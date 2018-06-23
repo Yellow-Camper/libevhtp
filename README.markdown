@@ -2,9 +2,10 @@
 | :------------- | -------------: |
 
 [![Build Status](https://travis-ci.org/criticalstack/libevhtp.svg?branch=develop)](https://travis-ci.org/criticalstack/libevhtp)
-<a href="https://scan.coverity.com/projects/ellzey-libevhtp">
+[![Gitter](https://badges.gitter.im/criticalstack/libevhtp.svg)](https://gitter.im/criticalstack/libevhtp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+<a href="https://scan.coverity.com/projects/libevhtp">
   <img alt="Coverity Scan Build Status"
-       src="https://scan.coverity.com/projects/5084/badge.svg"/>
+       src="https://scan.coverity.com/projects/15294/badge.svg"/>
 </a>
 
 This document describes details on using the evhtp API. This document is
@@ -132,8 +133,3 @@ You can read the whole article here: [Architecture Design of an Image Server](ht
 
 Slightly outdated (Now faster!)
 ![HI NGINX](http://i.imgur.com/kiSkSLH.png)
-
-<a href="https://scan.coverity.com/projects/5084">
-  <img alt="Coverity Scan Build Status"
-       src="https://scan.coverity.com/projects/5084/badge.svg"/>
-</a>

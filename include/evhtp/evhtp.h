@@ -189,10 +189,10 @@ typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connect
 typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #endif
 
-#define EVHTP_VERSION           "1.2.16"
+#define EVHTP_VERSION           "1.2.17-alpha"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
-#define EVHTP_VERSION_PATCH     15
+#define EVHTP_VERSION_PATCH     17
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 

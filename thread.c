@@ -60,7 +60,8 @@ struct evthr {
     (recv(sock, cmd, sizeof(evthr_cmd_t), 0) == sizeof(evthr_cmd_t)) ? 1 : 0
 
 static void
-_evthr_read_cmd(evutil_socket_t sock, short which, void * args) {
+_evthr_read_cmd(evutil_socket_t sock, short which, void * args)
+{
     evthr_t   * thread;
     evthr_cmd_t cmd;
     int         stopped;
@@ -87,7 +88,8 @@ _evthr_read_cmd(evutil_socket_t sock, short which, void * args) {
 } /* _evthr_read_cmd */
 
 static void *
-_evthr_loop(void * args) {
+_evthr_loop(void * args)
+{
     evthr_t * thread;
 
     if (!(thread = (evthr_t *)args)) {
@@ -134,7 +136,8 @@ _evthr_loop(void * args) {
 } /* _evthr_loop */
 
 evthr_res
-evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
+evthr_defer(evthr_t * thread, evthr_cb cb, void * arg)
+{
     evthr_cmd_t cmd = {
         .cb   = cb,
         .args = arg,
@@ -149,7 +152,8 @@ evthr_defer(evthr_t * thread, evthr_cb cb, void * arg) {
 }
 
 evthr_res
-evthr_stop(evthr_t * thread) {
+evthr_stop(evthr_t * thread)
+{
     evthr_cmd_t cmd = {
         .cb   = NULL,
         .args = NULL,
@@ -165,24 +169,28 @@ evthr_stop(evthr_t * thread) {
 }
 
 evbase_t *
-evthr_get_base(evthr_t * thr) {
+evthr_get_base(evthr_t * thr)
+{
     return thr ? thr->evbase : NULL;
 }
 
 void
-evthr_set_aux(evthr_t * thr, void * aux) {
+evthr_set_aux(evthr_t * thr, void * aux)
+{
     if (thr) {
         thr->aux = aux;
     }
 }
 
 void *
-evthr_get_aux(evthr_t * thr) {
+evthr_get_aux(evthr_t * thr)
+{
     return thr ? thr->aux : NULL;
 }
 
 int
-evthr_set_initcb(evthr_t * thr, evthr_init_cb cb) {
+evthr_set_initcb(evthr_t * thr, evthr_init_cb cb)
+{
     if (thr == NULL) {
         return -1;
     }
@@ -193,7 +201,8 @@ evthr_set_initcb(evthr_t * thr, evthr_init_cb cb) {
 }
 
 int
-evthr_set_exitcb(evthr_t * thr, evthr_exit_cb cb) {
+evthr_set_exitcb(evthr_t * thr, evthr_exit_cb cb)
+{
     if (thr == NULL) {
         return -1;
     }
@@ -204,7 +213,8 @@ evthr_set_exitcb(evthr_t * thr, evthr_exit_cb cb) {
 }
 
 static evthr_t *
-_evthr_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args) {
+_evthr_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args)
+{
     evthr_t * thread;
     int       fds[2];
 
@@ -236,17 +246,20 @@ _evthr_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args) {
 } /* evthr_new */
 
 evthr_t *
-evthr_new(evthr_init_cb init_cb, void * args) {
+evthr_new(evthr_init_cb init_cb, void * args)
+{
     return _evthr_new(init_cb, NULL, args);
 }
 
 evthr_t *
-evthr_wexit_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args) {
+evthr_wexit_new(evthr_init_cb init_cb, evthr_exit_cb exit_cb, void * args)
+{
     return _evthr_new(init_cb, exit_cb, args);
 }
 
 int
-evthr_start(evthr_t * thread) {
+evthr_start(evthr_t * thread)
+{
     if (thread == NULL || thread->thr == NULL) {
         return -1;
     }
@@ -259,7 +272,8 @@ evthr_start(evthr_t * thread) {
 }
 
 void
-evthr_free(evthr_t * thread) {
+evthr_free(evthr_t * thread)
+{
     if (thread == NULL) {
         return;
     }
@@ -294,7 +308,8 @@ evthr_free(evthr_t * thread) {
 } /* evthr_free */
 
 void
-evthr_pool_free(evthr_pool_t * pool) {
+evthr_pool_free(evthr_pool_t * pool)
+{
     evthr_t * thread;
     evthr_t * save;
 
@@ -312,7 +327,8 @@ evthr_pool_free(evthr_pool_t * pool) {
 }
 
 evthr_res
-evthr_pool_stop(evthr_pool_t * pool) {
+evthr_pool_stop(evthr_pool_t * pool)
+{
     evthr_t * thr;
     evthr_t * save;
 
@@ -328,7 +344,8 @@ evthr_pool_stop(evthr_pool_t * pool) {
 }
 
 evthr_res
-evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg) {
+evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg)
+{
 #ifdef EVTHR_SHARED_PIPE
     evthr_cmd_t cmd = {
         .cb   = cb,
@@ -366,12 +383,13 @@ static evthr_pool_t *
 _evthr_pool_new(int           nthreads,
                 evthr_init_cb init_cb,
                 evthr_exit_cb exit_cb,
-                void        * shared) {
+                void        * shared)
+{
     evthr_pool_t * pool;
     int            i;
 
 #ifdef EVTHR_SHARED_PIPE
-    int fds[2];
+    int            fds[2];
 #endif
 
     if (nthreads == 0) {
@@ -416,19 +434,22 @@ _evthr_pool_new(int           nthreads,
 } /* _evthr_pool_new */
 
 evthr_pool_t *
-evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared) {
+evthr_pool_new(int nthreads, evthr_init_cb init_cb, void * shared)
+{
     return _evthr_pool_new(nthreads, init_cb, NULL, shared);
 }
 
 evthr_pool_t *
 evthr_pool_wexit_new(int nthreads,
                      evthr_init_cb init_cb,
-                     evthr_exit_cb exit_cb, void * shared) {
+                     evthr_exit_cb exit_cb, void * shared)
+{
     return _evthr_pool_new(nthreads, init_cb, exit_cb, shared);
 }
 
 int
-evthr_pool_start(evthr_pool_t * pool) {
+evthr_pool_start(evthr_pool_t * pool)
+{
     evthr_t * evthr = NULL;
 
     if (pool == NULL) {

@@ -40,6 +40,9 @@ process_request_(evhtp_request_t * req, void * arg)
 {
     (void)arg;
 
+    evbuffer_add_reference(req->buffer_out,
+        "test_default_cb\n", 16, NULL, NULL);
+
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
@@ -47,8 +50,8 @@ static void
 attach_cbpf_(int fd)
 {
     struct sock_filter code[] = {
-        { BPF_LD | BPF_W | BPF_ABS, 0,          0, SKF_AD_OFF + SKF_AD_CPU }, /* A = raw_smp_processor_id() */
-        { BPF_RET | BPF_A,          0,          0, 0                       }, /* return A */
+        { BPF_LD | BPF_W | BPF_ABS, 0, 0, SKF_AD_OFF + SKF_AD_CPU },          /* A = raw_smp_processor_id() */
+        { BPF_RET | BPF_A,          0, 0, 0                       },          /* return A */
     };
 
     struct sock_fprog  p = {

@@ -280,6 +280,12 @@ evthr_free(evthr_t * thread) {
         event_free(thread->event);
     }
 
+#ifdef EVTHR_SHARED_PIPE
+    if (thread->shared_pool_ev) {
+        event_free(thread->shared_pool_ev);
+    }
+#endif
+
     if (thread->evbase) {
         event_base_free(thread->evbase);
     }

@@ -7,6 +7,7 @@
 #include <sys/queue.h>
 #endif
 
+#include <sys/ioctl.h>
 #include <unistd.h>
 #include <pthread.h>
 
@@ -112,12 +113,14 @@ _evthr_loop(void * args)
                                            EV_READ | EV_PERSIST, _evthr_read_cmd, args);
         event_add(thread->shared_pool_ev, NULL);
     }
+
 #endif
 
     pthread_mutex_lock(&thread->lock);
     if (thread->init_cb != NULL) {
         (thread->init_cb)(thread, thread->arg);
     }
+
     pthread_mutex_unlock(&thread->lock);
 
     event_base_loop(thread->evbase, 0);
@@ -126,6 +129,7 @@ _evthr_loop(void * args)
     if (thread->exit_cb != NULL) {
         (thread->exit_cb)(thread, thread->arg);
     }
+
     pthread_mutex_unlock(&thread->lock);
 
     if (thread->err == 1) {
@@ -298,6 +302,7 @@ evthr_free(evthr_t * thread)
     if (thread->shared_pool_ev) {
         event_free(thread->shared_pool_ev);
     }
+
 #endif
 
     if (thread->evbase) {
@@ -343,6 +348,16 @@ evthr_pool_stop(evthr_pool_t * pool)
     return EVTHR_RES_OK;
 }
 
+static inline int
+get_backlog_(evthr_t * thread)
+{
+    int backlog = 0;
+
+    ioctl(thread->rdr, FIONREAD, &backlog);
+
+    return (int)(backlog / sizeof(evthr_cmd_t));
+}
+
 evthr_res
 evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg)
 {
@@ -358,8 +373,10 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg)
     }
 
     return EVTHR_RES_OK;
-#else
-    evthr_t * thr = NULL;
+#endif
+    evthr_t * thread      = NULL;
+    evthr_t * min_thread  = NULL;
+    int       min_backlog = 0;
 
     if (pool == NULL) {
         return EVTHR_RES_FATAL;
@@ -369,14 +386,22 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg)
         return EVTHR_RES_NOCB;
     }
 
-    thr = TAILQ_FIRST(&pool->threads);
 
-    TAILQ_REMOVE(&pool->threads, thr, next);
-    TAILQ_INSERT_TAIL(&pool->threads, thr, next);
+    TAILQ_FOREACH(thread, &pool->threads, next) {
+        int backlog = get_backlog_(thread);
 
+        if (backlog == 0) {
+            min_thread = thread;
+            break;
+        }
 
-    return evthr_defer(thr, cb, arg);
-#endif
+        if (min_thread == NULL || backlog < min_backlog) {
+            min_thread  = thread;
+            min_backlog = backlog;
+        }
+    }
+
+    return evthr_defer(min_thread, cb, arg);
 } /* evthr_pool_defer */
 
 static evthr_pool_t *

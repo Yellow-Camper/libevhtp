@@ -390,13 +390,12 @@ evthr_pool_defer(evthr_pool_t * pool, evthr_cb cb, void * arg)
     TAILQ_FOREACH(thread, &pool->threads, next) {
         int backlog = get_backlog_(thread);
 
-        if (min_thread == NULL) {
-            min_thread  = thread;
-            min_backlog = backlog;
-        } else if (backlog == 0) {
-            min_thread  = thread;
+        if (backlog == 0) {
+            min_thread = thread;
             break;
-        } else if (backlog < min_backlog) {
+        }
+
+        if (min_thread == NULL || backlog < min_backlog) {
             min_thread  = thread;
             min_backlog = backlog;
         }

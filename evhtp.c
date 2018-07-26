@@ -5358,6 +5358,7 @@ evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r,
 
     obuf       = bufferevent_get_output(c->bev);
     r->conn    = c;
+    r->method  = meth;
     c->request = r;
 
     switch (r->proto) {
@@ -5373,15 +5374,27 @@ evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r,
     evbuffer_add_printf(obuf, "%s %s HTTP/%s\r\n",
         htparser_get_methodstr_m(meth), uri, proto);
 
-    evhtp_headers_for_each(r->headers_out, htp__create_headers_, obuf);
-    evbuffer_add_reference(obuf, "\r\n", 2, NULL, NULL);
-
     if (evbuffer_get_length(r->buffer_out)) {
+        if (evhtp_header_find(r->headers_out, "content-length") == NULL) {
+            char   out_buf[64] = { 0 };
+            size_t out_len     = evbuffer_get_length(r->buffer_out);
+
+            evhtp_modp_sizetoa(out_len, out_buf);
+
+            evhtp_headers_add_header(r->headers_out,
+                    evhtp_header_new("Content-Length", out_buf, 0, 1));
+        }
+
+
         evbuffer_add_buffer(obuf, r->buffer_out);
     }
 
+    evhtp_headers_for_each(r->headers_out, htp__create_headers_, obuf);
+    evbuffer_add_reference(obuf, "\r\n", 2, NULL, NULL);
+
+
     return 0;
-}
+} /* evhtp_make_request */
 
 unsigned int
 evhtp_request_status(evhtp_request_t * r)

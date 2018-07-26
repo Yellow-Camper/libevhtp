@@ -5386,12 +5386,15 @@ evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r,
         }
 
 
-        evbuffer_add_buffer(obuf, r->buffer_out);
     }
 
     evhtp_headers_for_each(r->headers_out, htp__create_headers_, obuf);
     evbuffer_add_reference(obuf, "\r\n", 2, NULL, NULL);
 
+        
+    if (evbuffer_get_length(r->buffer_out)) {
+        evbuffer_add_buffer(obuf, r->buffer_out);
+    }
 
     return 0;
 } /* evhtp_make_request */

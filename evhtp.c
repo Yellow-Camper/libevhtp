@@ -3280,7 +3280,6 @@ evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len)
     optr  = *out;
     sptr  = str;
     d     = 0;
-    *out  = NULL;
 
     for (i = 0; i < str_len; i++) {
         ch = *sptr++;

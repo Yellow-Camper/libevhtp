@@ -283,19 +283,80 @@ htp_log_request(void * stack_p, FILE * fp, evhtp_request_t * request)
                 fprintf(fp, "%s", hdr);
                 break;
             case vartype__PATH:
-                fprintf(fp, "%s", request->uri->path->full);
+                if (request->uri && request->uri->path && request->uri->path->full) {
+                    fprintf(fp, "%s", request->uri->path->full);
+                } else {
+                    fprintf(fp, "-");
+                }
+
                 break;
-        }
+            case vartype__METHOD:
+                fprintf(fp, "%s", htparser_get_methodstr(request->conn->parser));
+                break;
+            case vartype__TIMESTAMP:
+            {
+                struct timeval tv;
+                struct tm    * tm;
+                char           fmt[64];
+
+                event_base_gettimeofday_cached(request->conn->evbase, &tv);
+                tm = localtime(&tv.tv_sec);
+
+                strftime(fmt, sizeof(fmt), "%d/%b/%Y:%X %z", tm);
+
+                fprintf(fp, "%s", fmt);
+            }
+
+            break;
+            case vartype__REFERRER:
+                hdr = evhtp_header_find(request->headers_in, "referer");
+
+                if (hdr == NULL) {
+                    hdr = "-";
+                }
+
+
+                fprintf(fp, "%s", hdr);
+                break;
+            case vartype__RHOST:
+            {
+                char                 tmp[64];
+
+                struct sockaddr_in * sin = (struct sockaddr_in *)request->conn->saddr;
+
+                evutil_inet_ntop(AF_INET, &sin->sin_addr, tmp, sizeof(tmp));
+
+                fprintf(fp, "%s", tmp);
+            }
+            break;
+            case vartype__STATUS:
+                fprintf(fp, "%d", evhtp_request_status(request));
+                break;
+            case vartype__HOST:
+                fprintf(fp, "$host");
+                break;
+            case vartype__HEADER:
+                fprintf(fp, "$hdr::");
+                break;
+            case vartype__PROTO:
+                fprintf(fp, "%s",
+                        evhtp_request_get_proto(request) == EVHTP_PROTO_11 ? "1.1" : "1.0");
+                break;
+            case vartype__PRINTABLE:
+                fprintf(fp, "%s", ent->tag);
+                break;
+        } /* switch */
     }
-}
+
+    fprintf(fp, "\n");
+} /* htp_log_request */
 
 #ifdef TEST_EVHTPLOG
 int
 main(int argc, char ** argv)
 {
-    char             * clf_fmt = "$rhost [$ts] \"$meth $path HTTP/$proto\" $status";
-
-    struct log_stack * stack   = log_stack__compile_(clf_fmt);
+    char * clf_fmt = "$rhost [$ts] \"$meth $path HTTP/$proto\" $status";
+    void * stack   = htp_logutil_new(clf_fmt);
 
     log_stack__dump_(stack);
 

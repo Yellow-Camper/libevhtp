@@ -32,7 +32,7 @@ main(int argc, char ** argv)
 
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
-    log    = htp_logutil_new("$rhost [$ts] \"$meth $path HTTP/$proto\" $status");
+    log    = htp_logutil_new("$rhost $host \"$ua\" [$ts] \"$meth $path HTTP/$proto\" $status");
 
     evhtp_set_cb(htp, "/", process_request_, log);
     evhtp_enable_flag(htp, EVHTP_FLAG_ENABLE_ALL);

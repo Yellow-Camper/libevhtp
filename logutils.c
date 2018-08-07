@@ -333,7 +333,18 @@ htp_log_request(void * stack_p, FILE * fp, evhtp_request_t * request)
                 fprintf(fp, "%d", evhtp_request_status(request));
                 break;
             case vartype__HOST:
-                fprintf(fp, "$host");
+                if (request->htp->server_name) {
+                    hdr = request->htp->server_name;
+                } else {
+                    hdr = evhtp_header_find(request->headers_in, "host");
+
+                    if (hdr == NULL) {
+                        hdr = "-";
+                    }
+                }
+
+                fprintf(fp, "%s", hdr);
+
                 break;
             case vartype__HEADER:
                 fprintf(fp, "$hdr::");
@@ -350,17 +361,3 @@ htp_log_request(void * stack_p, FILE * fp, evhtp_request_t * request)
 
     fprintf(fp, "\n");
 } /* htp_log_request */
-
-#ifdef TEST_EVHTPLOG
-int
-main(int argc, char ** argv)
-{
-    char * clf_fmt = "$rhost [$ts] \"$meth $path HTTP/$proto\" $status";
-    void * stack   = htp_logutil_new(clf_fmt);
-
-    log_stack__dump_(stack);
-
-    return 0;
-}
-
-#endif

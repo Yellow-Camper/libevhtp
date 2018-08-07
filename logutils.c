@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <sys/queue.h>
 
+#include "evhtp/evhtp.h"
 
 typedef enum {
     vartype__USERAGENT = 1,
@@ -19,15 +20,13 @@ typedef enum {
     vartype__HOST,
     vartype__HEADER,
     vartype__PRINTABLE
-} log_entry_vartype_;
+} log_entry_type;
 
 
-struct log__var {
-    char             * fmt_;
-    log_entry_vartype_ type_;
-};
-
-static struct log__var var_type_map_[] = {
+struct {
+    char         * fmt_;
+    log_entry_type type_;
+} var_type_map_[] = {
     { "$ua",     vartype__USERAGENT },
     { "$path",   vartype__PATH      },
     { "$rhost",  vartype__RHOST     },
@@ -46,13 +45,15 @@ static struct log__var var_type_map_[] = {
  * @brief an entry representing a single format type.
  */
 struct log_stack_entry {
-    log_entry_vartype_ type;
-    size_t             len;
-    char               tag[1024];
+    log_entry_type type;
+    size_t         len;
+    char           tag[1024];
 
     TAILQ_ENTRY(log_stack_entry) next;
 };
 
+
+struct log_stack;
 
 /**
  * @brief the stack containing one or more log_stack_entry's
@@ -68,14 +69,14 @@ TAILQ_HEAD(log_stack, log_stack_entry);
  *
  * @return
  */
-log_entry_vartype_
-fmt__to_vartype_(const char * fmt, int * arglen)
+log_entry_type
+str_to_entry_type_(const char * fmt, int * arglen)
 {
     int i;
 
     for (i = 0; var_type_map_[i].fmt_; i++) {
-        const char       * fmt_  = var_type_map_[i].fmt_;
-        log_entry_vartype_ type_ = var_type_map_[i].type_;
+        const char   * fmt_  = var_type_map_[i].fmt_;
+        log_entry_type type_ = var_type_map_[i].type_;
 
         if (!strncasecmp(fmt_, fmt, strlen(fmt_))) {
             *arglen = strlen(fmt_);
@@ -86,10 +87,6 @@ fmt__to_vartype_(const char * fmt, int * arglen)
 
     return 0;
 }
-
-#define IS_FMTVAR(X) (*X == '$' && *(X + 1) != '$')
-
-
 
 static struct log_stack *
 log_stack__new_(void)
@@ -105,7 +102,7 @@ log_stack__new_(void)
 }
 
 static struct log_stack_entry *
-log_stack_entry__new_(log_entry_vartype_ type)
+log_stack_entry__new_(log_entry_type type)
 {
     struct log_stack_entry * e;
 
@@ -206,6 +203,8 @@ log_stack__addchar_(struct log_stack * stack, const char c)
     stack_ent->tag[stack_ent->len]   = '\0';
 }
 
+#define IS_FMTVAR(X) (*X == '$' && *(X + 1) != '$')
+
 /**
  * @brief using an input string, create a stack of information that will be
  *        logged.
@@ -231,10 +230,10 @@ log_stack__compile_(const char * fmt)
          * to the last stack entry
          */
         if (IS_FMTVAR(strp)) {
-            int                arglen;
-            log_entry_vartype_ type;
+            int            arglen;
+            log_entry_type type;
 
-            type      = fmt__to_vartype_(strp, &arglen);
+            type      = str_to_entry_type_(strp, &arglen);
             assert(type != 0);
 
             stack_ent = log_stack_entry__new_(type);
@@ -251,6 +250,46 @@ log_stack__compile_(const char * fmt)
     return stack;
 }
 
+void *
+htp_logutil_new(const char * fmt)
+{
+    struct log_stack * stack;
+
+    stack = log_stack__compile_(fmt);
+    assert(stack != NULL);
+
+    return (void *)stack;
+}
+
+void
+htp_log_request(void * stack_p, FILE * fp, evhtp_request_t * request)
+{
+    struct log_stack       * stack = stack_p;
+    struct log_stack_entry * ent;
+    const char             * hdr;
+
+    assert(stack != NULL);
+    assert(request != NULL);
+
+    TAILQ_FOREACH(ent, stack, next) {
+        switch (ent->type) {
+            case vartype__USERAGENT:
+                hdr = evhtp_header_find(request->headers_in, "user-agent");
+
+                if (hdr == NULL) {
+                    hdr = "-";
+                }
+
+                fprintf(fp, "%s", hdr);
+                break;
+            case vartype__PATH:
+                fprintf(fp, "%s", request->uri->path->full);
+                break;
+        }
+    }
+}
+
+#ifdef TEST_EVHTPLOG
 int
 main(int argc, char ** argv)
 {
@@ -262,3 +301,5 @@ main(int argc, char ** argv)
 
     return 0;
 }
+
+#endif

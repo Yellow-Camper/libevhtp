@@ -47,7 +47,8 @@ check_c_compiler_flag(-fstack-protector-strong has_stack_protector)
 set(LIBEVHTP_SOURCE_FILES
     evhtp.c
     numtoa.c
-    parser.c)
+    parser.c
+    logutils.c)
 
 find_package(LibEvent REQUIRED)
 list(APPEND LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARIES})

@@ -1209,15 +1209,12 @@ EVHTP_EXPORT void evhtp_headers_add_header(evhtp_headers_t * headers, evhtp_head
  */
 EVHTP_EXPORT const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
 
-#define evhtp_header_find         evhtp_kv_find
 #define evhtp_headers_find_header evhtp_kvs_find_kv
 #define evhtp_headers_for_each    evhtp_kvs_for_each
-#define evhtp_header_new          evhtp_kv_new
 #define evhtp_header_free         evhtp_kv_free
 #define evhtp_headers_new         evhtp_kvs_new
 #define evhtp_headers_free        evhtp_kvs_free
 #define evhtp_header_rm_and_free  evhtp_kv_rm_and_free
-#define evhtp_headers_add_header  evhtp_kvs_add_kv
 #define evhtp_headers_add_headers evhtp_kvs_add_kvs
 #define evhtp_query_new           evhtp_kvs_new
 #define evhtp_query_free          evhtp_kvs_free

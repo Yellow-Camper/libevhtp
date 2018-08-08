@@ -3181,6 +3181,24 @@ evhtp_kv_find(evhtp_kvs_t * kvs, const char * key)
     return NULL;
 }
 
+const char *
+evhtp_header_find(evhtp_headers_t * headers, const char * key)
+{
+    return evhtp_kv_find(headers, key);
+}
+
+void
+evhtp_headers_add_header(evhtp_headers_t * headers, evhtp_header_t * header)
+{
+    return evhtp_kvs_add_kv(headers, header);
+}
+
+evhtp_header_t *
+evhtp_header_new(const char * key, const char * val, char kalloc, char valloc)
+{
+    return evhtp_kv_new(key, val, kalloc, valloc);
+}
+
 evhtp_kv_t *
 evhtp_kvs_find_kv(evhtp_kvs_t * kvs, const char * key)
 {
@@ -5383,14 +5401,12 @@ evhtp_make_request(evhtp_connection_t * c, evhtp_request_t * r,
             evhtp_headers_add_header(r->headers_out,
                     evhtp_header_new("Content-Length", out_buf, 0, 1));
         }
-
-
     }
 
     evhtp_headers_for_each(r->headers_out, htp__create_headers_, obuf);
     evbuffer_add_reference(obuf, "\r\n", 2, NULL, NULL);
 
-        
+
     if (evbuffer_get_length(r->buffer_out)) {
         evbuffer_add_buffer(obuf, r->buffer_out);
     }

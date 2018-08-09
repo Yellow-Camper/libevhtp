@@ -6,18 +6,17 @@
 #include <evhtp.h>
 #include <unistd.h>
 
-#include "../log.h"
 #include "./eutils.h"
 #include "internal.h"
 #include "evhtp/evhtp.h"
-#include "evhtp/logutils.h"
+#include "evhtp/log.h"
 
 static void
 process_request_(evhtp_request_t * req, void * arg)
 {
     (void)arg;
 
-    htp_log_request(arg, stderr, req);
+    evhtp_log_request_f(arg, req, stderr);
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
@@ -32,7 +31,7 @@ main(int argc, char ** argv)
 
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
-    log    = htp_logutil_new("$rhost $host \"$ua\" [$ts] \"$meth $path HTTP/$proto\" $status");
+    log    = evhtp_log_new("$rhost $host '$ua' [$ts] '$meth $path HTTP/$proto' $status");
 
     evhtp_set_cb(htp, "/", process_request_, log);
     evhtp_enable_flag(htp, EVHTP_FLAG_ENABLE_ALL);

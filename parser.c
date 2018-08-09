@@ -1,11 +1,11 @@
 #include <stdlib.h>
 #include <stddef.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "internal.h"
 #include "evhtp/parser.h"
 #include "evhtp/config.h"
-#include "log.h"
 
 #if '\n' != '\x0a' || 'A' != 65
 #error "You have somehow found a non-ASCII host. We can't build here."

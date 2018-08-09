@@ -33,8 +33,6 @@
 #include "numtoa.h"
 #include "evhtp/evhtp.h"
 
-#include "log.h"
-
 /**
  * @brief structure containing a single callback and configuration
  *

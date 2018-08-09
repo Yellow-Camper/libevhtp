@@ -22,10 +22,13 @@ check_include_files(stdlib.h    HAVE_STDLIB_H)
 check_include_files(string.h    HAVE_STRING_H)
 check_include_files(stdint.h    HAVE_STDINT_H)
 check_include_files(errno.h     HAVE_ERRNO_H)
+check_include_files(signal.h    HAVE_SIGNAL_H)
 check_include_files(strings.h   HAVE_STRINGS_H)
 check_include_files(inttypes.h  HAVE_INTTYPES_H)
+check_include_files(stdbool.h   HAVE_STDBOOL_H)
 check_include_files(limits.h    HAVE_LIMITS_H)
-
+check_include_files(stddef.h    HAVE_STDDEF_H)
+check_include_files(ctype.h     HAVE_CTYPE_H)
 check_include_files(unistd.h    HAVE_UNISTD_H)
 check_include_files(stdarg.h    HAVE_STDARG_PROTOTYPES)
 check_include_files(sys/tree.h  HAVE_SYS_TREE)
@@ -48,17 +51,17 @@ set(LIBEVHTP_SOURCE_FILES
     evhtp.c
     numtoa.c
     parser.c
-    logutils.c)
+    log.c)
 
 find_package(LibEvent REQUIRED)
 list(APPEND LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARIES})
 list(APPEND LIBEVHTP_EXTERNAL_INCLUDES ${LIBEVENT_INCLUDE_DIRS})
-
 list(APPEND package_deps LibEvent)
+
 set(evhtp_dir_headers
   "include/evhtp/evhtp.h"
   "include/evhtp/parser.h"
-  "include/evhtp/assert.h")
+  "include/evhtp/log.h")
 
 if(NOT EVHTP_DISABLE_SSL)
     find_package(OpenSSL)

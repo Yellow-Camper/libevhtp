@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <getopt.h>
 
-#include "../log.h"
 #include "internal.h"
 #include "evhtp/evhtp.h"
 

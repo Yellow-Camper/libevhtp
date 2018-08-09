@@ -5,7 +5,6 @@
 #include <errno.h>
 
 #include "internal.h"
-#include "../log.h"
 #include "evhtp/evhtp.h"
 #include "./eutils.h"
 

@@ -22,7 +22,8 @@ struct testobj {
 
 
 static int
-_msg_begin(htparser * p) {
+_msg_begin(htparser * p)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     strcat(buf, "START\n");
@@ -31,7 +32,8 @@ _msg_begin(htparser * p) {
 }
 
 static int
-_method(htparser * p, const char * b, size_t s) {
+_method(htparser * p, const char * b, size_t s)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     if (htparser_get_method(p) == htp_method_UNKNOWN) {
@@ -45,7 +47,8 @@ _method(htparser * p, const char * b, size_t s) {
 }
 
 static int
-_scheme(htparser * p, const char * b, size_t s) {
+_scheme(htparser * p, const char * b, size_t s)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     ADD_DATA_BUF(buf, "SCHEME", b, s);
@@ -54,7 +57,8 @@ _scheme(htparser * p, const char * b, size_t s) {
 }
 
 static int
-_host(htparser * p, const char * b, size_t s) {
+_host(htparser * p, const char * b, size_t s)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     ADD_DATA_BUF(buf, "HOST", b, s);
@@ -63,7 +67,8 @@ _host(htparser * p, const char * b, size_t s) {
 }
 
 static int
-_port(htparser * p, const char * b, size_t s) {
+_port(htparser * p, const char * b, size_t s)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     ADD_DATA_BUF(buf, "PORT", b, s);
@@ -72,7 +77,8 @@ _port(htparser * p, const char * b, size_t s) {
 }
 
 static int
-_path(htparser * p, const char * b, size_t s) {
+_path(htparser * p, const char * b, size_t s)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     ADD_DATA_BUF(buf, "PATH", b, s);
@@ -81,7 +87,8 @@ _path(htparser * p, const char * b, size_t s) {
 }
 
 static int
-_args(htparser * p, const char * b, size_t s) {
+_args(htparser * p, const char * b, size_t s)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     ADD_DATA_BUF(buf, "ARGS", b, s);
@@ -90,7 +97,8 @@ _args(htparser * p, const char * b, size_t s) {
 }
 
 static int
-_uri(htparser * p, const char * b, size_t s) {
+_uri(htparser * p, const char * b, size_t s)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     ADD_DATA_BUF(buf, "URI", b, s);
@@ -99,7 +107,8 @@ _uri(htparser * p, const char * b, size_t s) {
 }
 
 static int
-_hdrs_begin(htparser * p) {
+_hdrs_begin(htparser * p)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     strcat(buf, "HDRS_BEGIN\n");
@@ -108,7 +117,8 @@ _hdrs_begin(htparser * p) {
 }
 
 static int
-_hdr_key(htparser * p, const char * b, size_t s) {
+_hdr_key(htparser * p, const char * b, size_t s)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     ADD_DATA_BUF(buf, "HDR_KEY", b, s);
@@ -117,7 +127,8 @@ _hdr_key(htparser * p, const char * b, size_t s) {
 }
 
 static int
-_hdr_val(htparser * p, const char * b, size_t s) {
+_hdr_val(htparser * p, const char * b, size_t s)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     ADD_DATA_BUF(buf, "HDR_VAL", b, s);
@@ -126,7 +137,8 @@ _hdr_val(htparser * p, const char * b, size_t s) {
 }
 
 static int
-_hostname(htparser * p, const char * b, size_t s) {
+_hostname(htparser * p, const char * b, size_t s)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     ADD_DATA_BUF(buf, "HOSTNAME", b, s);
@@ -135,7 +147,8 @@ _hostname(htparser * p, const char * b, size_t s) {
 }
 
 static int
-_hdrs_complete(htparser * p) {
+_hdrs_complete(htparser * p)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     strcat(buf, "HDRS_COMPLETE\n");
@@ -144,7 +157,8 @@ _hdrs_complete(htparser * p) {
 }
 
 static int
-_new_chunk(htparser * p) {
+_new_chunk(htparser * p)
+{
     char * buf        = (char *)htparser_get_userdata(p);
     char   tbuf[1024] = { 0 };
 
@@ -155,7 +169,8 @@ _new_chunk(htparser * p) {
 }
 
 static int
-_chunk_complete(htparser * p) {
+_chunk_complete(htparser * p)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     strcat(buf, "END_CHUNK\n");
@@ -164,7 +179,8 @@ _chunk_complete(htparser * p) {
 }
 
 static int
-_chunks_complete(htparser * p) {
+_chunks_complete(htparser * p)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     strcat(buf, "END_CHUNKS\n");
@@ -173,7 +189,8 @@ _chunks_complete(htparser * p) {
 }
 
 static int
-_body(htparser * p, const char * b, size_t s) {
+_body(htparser * p, const char * b, size_t s)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     ADD_DATA_BUF(buf, "BODY", b, s);
@@ -182,7 +199,8 @@ _body(htparser * p, const char * b, size_t s) {
 }
 
 static int
-_msg_complete(htparser * p) {
+_msg_complete(htparser * p)
+{
     char * buf = (char *)htparser_get_userdata(p);
 
     strcat(buf, "MSG_COMPLETE\n");
@@ -190,7 +208,7 @@ _msg_complete(htparser * p) {
     return 0;
 }
 
-htparse_hooks hooks = {
+htparse_hooks  hooks = {
     .on_msg_begin       = _msg_begin,
     .method             = _method,
     .scheme             = _scheme,
@@ -246,7 +264,7 @@ struct testobj t5 = {
     .name = "POST request with multiple chunks",
     .type = htp_type_request,
     .data = "POST /test/ HTTP/1.1\r\n"
-	    "Connection: Keep-Alive\r\n"
+            "Connection: Keep-Alive\r\n"
             "Transfer-Encoding: chunked\r\n\r\n"
             "23\r\n"
             "This is the data in the first chunk"
@@ -345,7 +363,8 @@ struct testobj t15 = {
 };
 
 struct testobj t16 = {
-    .name = "GET request which should run all callbacks minus scheme stuff, this includes multiple requests",
+    .name =
+        "GET request which should run all callbacks minus scheme stuff, this includes multiple requests",
     .type = htp_type_request,
     .data = "GET /test1?a=b&c=d&e=f HTTP/1.1\r\n"
             "Content-Length: 6\r\n\r\n"
@@ -443,7 +462,8 @@ struct testobj t22 = {
 
 
 static int
-_run_test(htparser * p, struct testobj * obj) {
+_run_test(htparser * p, struct testobj * obj)
+{
     size_t data_sz;
     size_t parsed_sz;
     char   result_buf[5000] = { 0 };
@@ -467,7 +487,8 @@ _run_test(htparser * p, struct testobj * obj) {
 }
 
 int
-main(int argc, char **argv) {
+main(int argc, char ** argv)
+{
     htparser * parser;
 
     parser = htparser_new();
@@ -498,4 +519,3 @@ main(int argc, char **argv) {
 
     return 0;
 }
-

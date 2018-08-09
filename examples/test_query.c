@@ -14,7 +14,8 @@ struct test {
 };
 
 static int
-test_cmp(evhtp_query_t * query, evhtp_kv_t * kvobj, const char * valstr, struct expected * exp) {
+test_cmp(evhtp_query_t * query, evhtp_kv_t * kvobj, const char * valstr, struct expected * exp)
+{
     if (!query || !kvobj) {
         return -1;
     }
@@ -43,7 +44,8 @@ test_cmp(evhtp_query_t * query, evhtp_kv_t * kvobj, const char * valstr, struct 
 
 /* evhtp_kvs_iterator */
 int
-kvs_print(evhtp_kv_t * kvobj, void * arg) {
+kvs_print(evhtp_kv_t * kvobj, void * arg)
+{
     int * key_idx = arg;
 
     if (*key_idx) {
@@ -61,7 +63,8 @@ kvs_print(evhtp_kv_t * kvobj, void * arg) {
 }
 
 static int
-query_test(const char * raw_query, int exp_error, struct expected exp[], int flags) {
+query_test(const char * raw_query, int exp_error, struct expected exp[], int flags)
+{
     evhtp_query_t   * query;
     struct expected * check;
     int               key_idx    = 0;
@@ -210,7 +213,8 @@ struct test lenient_tests[] = {
 };
 
 static void
-test(const char * raw_query, int exp_error, struct expected exp[], int flags) {
+test(const char * raw_query, int exp_error, struct expected exp[], int flags)
+{
     printf("         %-30s  ", raw_query);
     printf("\r  %s\n", query_test(raw_query, exp_error, exp, flags) ? "ERROR" : "OK");
 }
@@ -218,7 +222,8 @@ test(const char * raw_query, int exp_error, struct expected exp[], int flags) {
 #define ARRAY_SIZE(arr)                    (sizeof(arr) / sizeof((arr)[0]))
 
 int
-main(int argc, char ** argv) {
+main(int argc, char ** argv)
+{
     int i;
 
     #define PARSE_QUERY_TEST(tests, flags) do {                                          \
@@ -234,6 +239,13 @@ main(int argc, char ** argv) {
     PARSE_QUERY_TEST(allow_null_tests, EVHTP_PARSE_QUERY_FLAG_ALLOW_NULL_VALS);
     PARSE_QUERY_TEST(treat_semicolon_as_sep_tests, EVHTP_PARSE_QUERY_FLAG_TREAT_SEMICOLON_AS_SEP);
     PARSE_QUERY_TEST(lenient_tests, EVHTP_PARSE_QUERY_FLAG_LENIENT);
+
+    unsigned char unescaped_string[1024] = { 0 };
+    unsigned char * escaped_string = "foo?bar=foo%23bar&baz=ONE%20TWO%20&%20THRee%20-foUr";
+
+    unsigned char *ptr = unescaped_string;
+    evhtp_unescape_string(&ptr, escaped_string, strlen(escaped_string));
+    printf("%s\n", ptr);
 
     return 0;
 }

@@ -415,6 +415,7 @@ struct evhtp_request {
     #define EVHTP_REQ_FLAG_ERROR     (1 << 4)
     uint16_t flags;
 
+    evhtp_callback_t *cb_t;
     evhtp_callback_cb cb;               /**< the function to call when fully processed */
     void            * cbarg;            /**< argument which is passed to the cb function */
 
@@ -1401,6 +1402,10 @@ EVHTP_EXPORT void evhtp_request_set_keepalive(evhtp_request_t * request, int val
  * @param num
  */
 EVHTP_EXPORT void evhtp_set_max_keepalive_requests(evhtp_t * htp, uint64_t num);
+
+
+EVHTP_EXPORT void * evhtp_callback_get_matchdata(struct evhtp_callback * cb);
+
 
 
 /*****************************************************************

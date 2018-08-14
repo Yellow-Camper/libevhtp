@@ -20,7 +20,7 @@ mm__dup_(const void * src, size_t size)
         socklen_t len = sizeof(struct sockaddr);       \
         uint16_t port = 0;                             \
                                                        \
-        evhtp_bind_socket(HTP, "127.0.0.1", 0, 128);   \
+        evhtp_bind_socket(HTP, "127.0.0.1", 8900, 128);   \
                                                        \
         if (getsockname(                               \
                 evconnlistener_get_fd(HTP->server),    \

@@ -14,9 +14,38 @@
 static void
 process_request_(evhtp_request_t * req, void * arg)
 {
-    (void)arg;
-
     evhtp_log_request_f(arg, req, stderr);
+    evhtp_send_reply(req, EVHTP_RES_OK);
+}
+
+static int
+regx_callback_(const unsigned char * name,
+        const unsigned char * name_end,
+        int ngroup_num,
+        int * group_nums,
+        regex_t * reg, 
+        void * arg) {
+    int i;
+    int gn;
+    int ref;
+    char * s;
+    int num;
+    int *nums;
+
+    num = reg_name_to_group_numbers(reg, name, name_end, &nums);
+
+    printf("FUCIDJFKLSDJL %s %s\n", name, name_end);
+    return 0;
+}
+
+static void
+process_regx_request_(evhtp_request_t * req, void * arg)
+{
+    regex_t * regx = evhtp_callback_get_matchdata(req->cb_t);
+
+    reg_foreach_name(regx, regx_callback_, NULL);
+    printf("here\n");
+
     evhtp_send_reply(req, EVHTP_RES_OK);
 }
 
@@ -32,6 +61,12 @@ main(int argc, char ** argv)
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
     log    = evhtp_log_new("$rhost $host '$ua' [$ts] '$meth $path HTTP/$proto' $status");
+
+
+#ifndef EVHTP_DISABLE_REGEX
+    printf("hi\n");
+    evhtp_set_regex_cb(htp, "/user/(?<foo>\\w+)/(?<bar>\\w+)$", process_regx_request_, log);
+#endif
 
     evhtp_set_cb(htp, "/", process_request_, log);
     evhtp_enable_flag(htp, EVHTP_FLAG_ENABLE_ALL);

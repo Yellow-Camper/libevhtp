@@ -23,7 +23,8 @@ struct reply_ {
  * will send the final chunked reply and free our struct reply_.
  */
 static evhtp_res
-http__send_chunk_(evhtp_connection_t * conn, void * arg) {
+http__send_chunk_(evhtp_connection_t * conn, void * arg)
+{
     struct reply_ * reply = (struct reply_ *)arg;
     char            buf[128];
     size_t          bytes_read;
@@ -69,6 +70,13 @@ http__send_chunk_(evhtp_connection_t * conn, void * arg) {
     return EVHTP_RES_OK;
 }
 
+static evhtp_res
+http__conn_fini_(struct evhtp_connection * c, void * arg)
+{
+    log_info("hi");
+    return EVHTP_RES_OK;
+}
+
 /* This function is called when a request has been fully received.
  *
  * This function assumes the `arg` value is the filename that was
@@ -82,7 +90,8 @@ http__send_chunk_(evhtp_connection_t * conn, void * arg) {
  * 5. start the chunked stream via `evhtp_send_reply_chunk_start`
  */
 static void
-http__callback_(evhtp_request_t * req, void * arg) {
+http__callback_(evhtp_request_t * req, void * arg)
+{
     const char    * filename = arg;
     FILE          * file_desc;
     struct reply_ * reply;
@@ -90,13 +99,13 @@ http__callback_(evhtp_request_t * req, void * arg) {
     evhtp_assert(arg != NULL);
 
     /* open up the file as passed to us via evhtp_set_gencb */
-    file_desc = fopen((const char *)arg, "r");
+    file_desc = fopen(filename, "r");
     evhtp_assert(file_desc != NULL);
 
     /* create our little internal reply structure which will
      * be used by `http__send_chunk_`
      */
-    reply     = mm__alloc_(struct reply_, {
+    reply = mm__alloc_(struct reply_, {
         req,
         file_desc,
         evbuffer_new()
@@ -108,8 +117,13 @@ http__callback_(evhtp_request_t * req, void * arg) {
      * all data has been written to the client.
      */
     evhtp_connection_set_hook(req->conn,
-                              evhtp_hook_on_write,
-                              http__send_chunk_, reply);
+        evhtp_hook_on_write,
+        http__send_chunk_, reply);
+
+    /* set a hook to be called when the client disconnects */
+    evhtp_connection_set_hook(req->conn,
+        evhtp_hook_on_connection_fini,
+        http__conn_fini_, NULL);
 
     /* we do not have to start sending data from the file from here -
      * this function will write data to the client, thus when finished,
@@ -119,7 +133,8 @@ http__callback_(evhtp_request_t * req, void * arg) {
 }
 
 int
-main(int argc, char ** argv) {
+main(int argc, char ** argv)
+{
     evhtp_t           * htp;
     struct event_base * evbase;
 

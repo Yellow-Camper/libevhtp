@@ -1,3 +1,19 @@
+v1.2.17-beta
+ o Fix cmake include dirs (b7df3fc Piotr Padlewski)
+ o Change case of oniguruma in package_deps (b8ff92b Piotr Padlewski)
+ o fix memory leak in evthr_free when compiled with EVHTP_THR_SHARED_PIPE (919e4ea t00416110)
+ o cleanups / added uncrustify configurations (d008f21 Nathan French)
+ o Feature/better thread distribution (#102) (1454b6c Nathan French)
+ o add content-length for client requests (fb1e594 Nathan French)
+ o add client buffer_out after headers (5c8640c Nathan French)
+ o added changelog release script (845c193 Nathan French)
+ o [unescape_string] do not set *out to NULL (reported by @ripulpatel) (606f3e3 Nathan French)
+ o http access-log API (a0a8641 Nathan French)
+ o fixed missing exported symbols for header_(new|find) (ec75536 Nathan French)
+ o access-log API finalization / cleanups and overhauls (5f74f32 Nathan French)
+ o evhtp_unescape_string tests (ae731f1 Nathan French)
+ o Added test of a on_connection_finished hook (5a17742 Nathan French)
+
 v1.2.17-alpha
  o use evhtp_safe_free everywhere (cbafca7 Nathan French)
  o free fix for test_query.c (77f20e6 Nathan French)

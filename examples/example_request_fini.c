@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../log.h"
 #include "./eutils.h"
 #include "internal.h"
 #include "evhtp/evhtp.h"

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-project(libevhtp VERSION "1.2.17.0")
+project(libevhtp VERSION "1.2.17.1")
 
 # For us YCM users.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -22,10 +22,13 @@ check_include_files(stdlib.h    HAVE_STDLIB_H)
 check_include_files(string.h    HAVE_STRING_H)
 check_include_files(stdint.h    HAVE_STDINT_H)
 check_include_files(errno.h     HAVE_ERRNO_H)
+check_include_files(signal.h    HAVE_SIGNAL_H)
 check_include_files(strings.h   HAVE_STRINGS_H)
 check_include_files(inttypes.h  HAVE_INTTYPES_H)
+check_include_files(stdbool.h   HAVE_STDBOOL_H)
 check_include_files(limits.h    HAVE_LIMITS_H)
-
+check_include_files(stddef.h    HAVE_STDDEF_H)
+check_include_files(ctype.h     HAVE_CTYPE_H)
 check_include_files(unistd.h    HAVE_UNISTD_H)
 check_include_files(stdarg.h    HAVE_STDARG_PROTOTYPES)
 check_include_files(sys/tree.h  HAVE_SYS_TREE)
@@ -47,15 +50,18 @@ check_c_compiler_flag(-fstack-protector-strong has_stack_protector)
 set(LIBEVHTP_SOURCE_FILES
     evhtp.c
     numtoa.c
-    parser.c)
+    parser.c
+    log.c)
 
 find_package(LibEvent REQUIRED)
 list(APPEND LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARIES})
+list(APPEND LIBEVHTP_EXTERNAL_INCLUDES ${LIBEVENT_INCLUDE_DIRS})
 list(APPEND package_deps LibEvent)
+
 set(evhtp_dir_headers
   "include/evhtp/evhtp.h"
   "include/evhtp/parser.h"
-  "include/evhtp/assert.h")
+  "include/evhtp/log.h")
 
 if(NOT EVHTP_DISABLE_SSL)
     find_package(OpenSSL)
@@ -81,7 +87,8 @@ if(NOT EVHTP_DISABLE_REGEX)
     find_package(Oniguruma)
     if(ONIGURUMA_FOUND)
         list(APPEND LIBEVHTP_EXTERNAL_LIBS ${ONIGURUMA_LIBRARIES})
-        list(APPEND package_deps Oniguruma)
+        list(APPEND LIBEVHTP_EXTERNAL_INCLUDES ${ONIGURUMA_INCLUDE_DIRS})
+        list(APPEND package_deps oniguruma)
     else()
         message(STATUS "${BoldRed}${CMAKE_BUILD_TYPE}ONIGURUMA NOT FOUND, DISABLING REGEX SUPPORT${ColourReset}")
         set(EVHTP_DISABLE_REGEX ON)
@@ -104,6 +111,7 @@ endif()
 
 add_library(evhtp ${LIBEVHTP_SOURCE_FILES})
 target_link_libraries(evhtp PUBLIC ${LIBEVHTP_EXTERNAL_LIBS})
+target_include_directories(evhtp PUBLIC ${LIBEVHTP_EXTERNAL_INCLUDES})
 
 target_compile_definitions(evhtp PUBLIC "PROJECT_VERSION=${PROJECT_VERSION}")
 if(has_stack_protector)

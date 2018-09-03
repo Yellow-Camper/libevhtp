@@ -3,7 +3,6 @@
  */
 
 #include <evhtp/config.h>
-#include <evhtp/assert.h>
 
 #ifndef __EVHTP__H__
 #define __EVHTP__H__
@@ -189,7 +188,7 @@ typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connect
 typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #endif
 
-#define EVHTP_VERSION           "1.2.17-alpha"
+#define EVHTP_VERSION           "1.2.17-beta"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
 #define EVHTP_VERSION_PATCH     17
@@ -1209,15 +1208,12 @@ EVHTP_EXPORT void evhtp_headers_add_header(evhtp_headers_t * headers, evhtp_head
  */
 EVHTP_EXPORT const char * evhtp_header_find(evhtp_headers_t * headers, const char * key);
 
-#define evhtp_header_find         evhtp_kv_find
 #define evhtp_headers_find_header evhtp_kvs_find_kv
 #define evhtp_headers_for_each    evhtp_kvs_for_each
-#define evhtp_header_new          evhtp_kv_new
 #define evhtp_header_free         evhtp_kv_free
 #define evhtp_headers_new         evhtp_kvs_new
 #define evhtp_headers_free        evhtp_kvs_free
 #define evhtp_header_rm_and_free  evhtp_kv_rm_and_free
-#define evhtp_headers_add_header  evhtp_kvs_add_kv
 #define evhtp_headers_add_headers evhtp_kvs_add_kvs
 #define evhtp_query_new           evhtp_kvs_new
 #define evhtp_query_free          evhtp_kvs_free

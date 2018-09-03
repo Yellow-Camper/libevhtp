@@ -17,6 +17,7 @@ BASE_FLAGS = [
     '-xc',
     '-I/usr/lib/',
     '-I/usr/include/',
+    '-I./include',
 ]
 
 SOURCE_EXTENSIONS = [

@@ -945,6 +945,26 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
 }         /* htp__callback_find_ */
 
 /**
+ * @brief Correctly frees the evhtp_path_t ptr that is passed in.
+ * @param path
+ */
+static void
+htp__path_free_(struct evhtp_path * path)
+{
+    if (evhtp_unlikely(path == NULL)) {
+        return;
+    }
+
+    evhtp_safe_free(path->full, htp__free_);
+    evhtp_safe_free(path->path, htp__free_);
+    evhtp_safe_free(path->file, htp__free_);
+    evhtp_safe_free(path->match_start, htp__free_);
+    evhtp_safe_free(path->match_end, htp__free_);
+
+    evhtp_safe_free(path, htp__free_);
+}
+
+/**
  * @brief parses the path and file from an input buffer
  *
  * @details in order to properly create a structure that can match
@@ -963,15 +983,19 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
 static int
 htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
 {
-    struct evhtp_path * req_path;
+    struct evhtp_path * req_path = NULL;
     const char        * data_end = (const char *)(data + len);
     char              * path     = NULL;
     char              * file     = NULL;
 
 
     req_path = htp__calloc_(1, sizeof(*req_path));
-    evhtp_alloc_assert(req_path);
 
+#ifndef NDEBUG
+    if (req_path == NULL) {
+        return -1;
+    }
+#endif
     *out     = NULL;
 
     if (evhtp_unlikely(len == 0)) {
@@ -979,16 +1003,25 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
          * odd situation here, no preceding "/", so just assume the path is "/"
          */
         path = htp__strdup_("/");
-        evhtp_alloc_assert(path);
+
+        if (evhtp_unlikely(path == NULL)) {
+            goto error;
+        }
     } else if (*data != '/') {
         /* request like GET stupid HTTP/1.0, treat stupid as the file, and
          * assume the path is "/"
          */
         path = htp__strdup_("/");
-        evhtp_alloc_assert(path);
+
+        if (evhtp_unlikely(path == NULL)) {
+            goto error;
+        }
 
         file = htp__strndup_(data, len);
-        evhtp_alloc_assert(file);
+
+        if (evhtp_unlikely(file == NULL)) {
+            goto error;
+        }
     } else {
         if (data[len - 1] != '/') {
             /*
@@ -1011,23 +1044,25 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
 
                     /* check for overflow */
                     if ((const char *)(data + path_len) > data_end) {
-                        evhtp_safe_free(req_path, htp__free_);
-
-                        return -1;
+                        goto error;
                     }
 
                     /* check for overflow */
                     if ((const char *)(&data[i + 1] + file_len) > data_end) {
-                        evhtp_safe_free(req_path, htp__free_);
-
-                        return -1;
+                        goto error;
                     }
 
                     path = htp__strndup_(data, path_len);
-                    evhtp_alloc_assert(path);
+
+                    if (evhtp_unlikely(path == NULL)) {
+                        goto error;
+                    }
 
                     file = htp__strndup_(&data[i + 1], file_len);
-                    evhtp_alloc_assert(file);
+
+                    if (evhtp_unlikely(file == NULL)) {
+                        goto error;
+                    }
 
                     break;
                 }
@@ -1036,17 +1071,26 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
             if (i == 0 && data[i] == '/' && !file && !path) {
                 /* drops here if the request is something like GET /foo */
                 path = htp__strdup_("/");
-                evhtp_alloc_assert(path);
+
+                if (evhtp_unlikely(path == NULL)) {
+                    goto error;
+                }
 
                 if (len > 1) {
                     file = htp__strndup_((const char *)(data + 1), len);
-                    evhtp_alloc_assert(file);
+
+                    if (evhtp_unlikely(file == NULL)) {
+                        goto error;
+                    }
                 }
             }
         } else {
             /* the last character is a "/", thus the request is just a path */
             path = htp__strndup_(data, len);
-            evhtp_alloc_assert(path);
+
+            if (evhtp_unlikely(path == NULL)) {
+                goto error;
+            }
         }
     }
 
@@ -1056,7 +1100,9 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
         req_path->full = htp__strdup_("/");
     }
 
-    evhtp_alloc_assert(req_path->full);
+    if (evhtp_unlikely(req_path->full == NULL)) {
+        goto error;
+    }
 
     req_path->path = path;
     req_path->file = file;
@@ -1064,27 +1110,14 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
     *out           = req_path;
 
     return 0;
+error:
+    evhtp_safe_free(path, htp__free_);
+    evhtp_safe_free(file, htp__free_);
+    evhtp_safe_free(req_path, htp__path_free_);
+
+    return -1;
 }     /* htp__path_new_ */
 
-/**
- * @brief Correctly frees the evhtp_path_t ptr that is passed in.
- * @param path
- */
-static void
-htp__path_free_(evhtp_path_t * path)
-{
-    if (evhtp_unlikely(path == NULL)) {
-        return;
-    }
-
-    evhtp_safe_free(path->full, htp__free_);
-    evhtp_safe_free(path->path, htp__free_);
-    evhtp_safe_free(path->file, htp__free_);
-    evhtp_safe_free(path->match_start, htp__free_);
-    evhtp_safe_free(path->match_end, htp__free_);
-
-    evhtp_safe_free(path, htp__free_);
-}
 
 /**
  * @brief create an authority structure

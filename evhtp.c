@@ -1437,10 +1437,18 @@ htp__request_parse_header_key_(htparser * p, const char * data, size_t len)
     key_s      = htp__malloc_(len + 1);
     evhtp_alloc_assert(key_s);
 
+    if (key_s == NULL) {
+        c->cr_status = EVHTP_RES_FATAL;
+
+        return -1;
+    }
+
     key_s[len] = '\0';
     memcpy(key_s, data, len);
 
     if ((hdr = evhtp_header_key_add(c->request->headers_in, key_s, 0)) == NULL) {
+        htp__free_(key_s);
+
         c->cr_status = EVHTP_RES_FATAL;
 
         return -1;
@@ -1976,7 +1984,11 @@ htp__request_parse_fini_(htparser * p)
         body           = (const char *)evbuffer_pullup(buf_in, body_len);
 
         uri->query_raw = htp__calloc_(body_len + 1, 1);
-        evhtp_alloc_assert(uri->query_raw);
+
+        if (evhtp_unlikely(uri->query_raw == NULL)) {
+            c->cr_status = EVHTP_RES_FATAL;
+            return -1;
+        }
 
         memcpy(uri->query_raw, body, body_len);
 

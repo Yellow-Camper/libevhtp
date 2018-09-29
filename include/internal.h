@@ -79,6 +79,7 @@ extern "C" {
             __log_args_color(M) "\n",             \
             __FILENAME__, __LINE__, ## __VA_ARGS__)
 
+#ifndef NDEBUG
 #define evhtp_assert(x)                                               \
     do {                                                              \
         if (evhtp_unlikely(!(x))) {                                   \
@@ -119,6 +120,12 @@ extern "C" {
             abort();                                \
         }                                           \
     } while (0)
+#else
+#define evhtp_assert(x)
+#define evhtp_alloc_assert(x)
+#define evhtp_assert_fmt(x)
+#define evhtp_errno_assert(x)
+#endif
 
 
 

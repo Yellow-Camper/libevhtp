@@ -3055,7 +3055,7 @@ evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char val_alloc
 {
     evhtp_header_t * header;
 
-    if (!headers || !val) {
+    if (evhtp_unlikely(headers == NULL || val == NULL)) {
         return NULL;
     }
 
@@ -3090,7 +3090,10 @@ evhtp_kvs_new(void)
     evhtp_kvs_t * kvs;
 
     kvs = htp__malloc_(sizeof(*kvs));
-    evhtp_alloc_assert(kvs);
+
+    if (evhtp_unlikely(kvs == NULL)) {
+        return NULL;
+    }
 
     TAILQ_INIT(kvs);
 
@@ -3104,7 +3107,10 @@ evhtp_kv_new(const char * key, const char * val,
     evhtp_kv_t * kv;
 
     kv           = htp__malloc_(sizeof(*kv));
-    evhtp_alloc_assert(kv);
+
+    if (evhtp_unlikely(kv == NULL)) {
+        return NULL;
+    }
 
     kv->k_heaped = key_alloc;
     kv->v_heaped = val_alloc;
@@ -3139,6 +3145,12 @@ evhtp_kv_new(const char * key, const char * val,
 
         if (val_alloc == 1) {
             char * s = htp__malloc_(kv->vlen + 1);
+
+            if (evhtp_unlikely(s == NULL)) {
+                evhtp_safe_free(kv, evhtp_kv_free);
+
+                return NULL;
+            }
 
             s[kv->vlen] = '\0';
             memcpy(s, val, kv->vlen);

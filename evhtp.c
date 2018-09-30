@@ -2678,10 +2678,18 @@ htp__connection_new_(evhtp_t * htp, evutil_socket_t sock, evhtp_type type)
     }
 
     connection = htp__calloc_(sizeof(*connection), 1);
-    evhtp_alloc_assert(connection);
+
+    if (evhtp_unlikely(connection == NULL)) {
+        return NULL;
+    }
 
     connection->scratch_buf = evbuffer_new();
-    evhtp_alloc_assert(connection->scratch_buf);
+
+    if (evhtp_unlikely(connection->scratch_buf == NULL)) {
+        evhtp_safe_free(connection->scratch_buf, htp__free_);
+
+        return NULL;
+    }
 
     if (htp != NULL) {
         connection->max_body_size = htp->max_body_size;
@@ -2692,7 +2700,12 @@ htp__connection_new_(evhtp_t * htp, evutil_socket_t sock, evhtp_type type)
     connection->htp    = htp;
     connection->type   = type;
     connection->parser = htparser_new();
-    evhtp_alloc_assert(connection->parser);
+
+    if (evhtp_unlikely(connection->parser == NULL)) {
+        evhtp_safe_free(connection, evhtp_connection_free);
+
+        return NULL;
+    }
 
     htparser_init(connection->parser, ptype);
     htparser_set_userdata(connection->parser, connection);

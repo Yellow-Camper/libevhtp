@@ -3457,10 +3457,21 @@ evhtp_parse_query_wflags(const char * query, const size_t len, const int flags)
     char * val_buf;
 
     key_buf = htp__malloc_(len + 1);
-    evhtp_alloc_assert(key_buf);
+
+    if (evhtp_unlikely(key_buf == NULL)) {
+        evhtp_safe_free(query_args, evhtp_query_free);
+
+        return NULL;
+    }
 
     val_buf = htp__malloc_(len + 1);
-    evhtp_alloc_assert(val_buf);
+
+    if (evhtp_unlikely(val_buf == NULL)) {
+        evhtp_safe_free(query_args, evhtp_query_free);
+        
+        return NULL;
+    }
+
 #endif
 
     for (i = 0; i < len; i++) {
@@ -4124,7 +4135,12 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
     evhtp_callback_t * hcb;
 
     hcb        = htp__calloc_(sizeof(*hcb), 1);
-    evhtp_alloc_assert(hcb);
+
+    if (evhtp_unlikely(hcb == NULL)) {
+        evhtp_safe_free(hcb, htp__free_);
+
+        return NULL;
+    }
 
     hcb->type  = type;
     hcb->cb    = cb;
@@ -4134,13 +4150,22 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
     switch (type) {
         case evhtp_callback_type_hash:
             hcb->val.path = htp__strdup_(path);
-            evhtp_alloc_assert(hcb->val.path);
-            break;
 
+            if (evhtp_unlikely(hcb->val.path == NULL)) {
+                evhtp_safe_free(hcb, evhtp_callback_free);
+
+                return NULL;
+            }
+            break;
 #ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             hcb->val.regex = htp__malloc_(sizeof(regex_t));
-            evhtp_alloc_assert(hcb->val.regex);
+
+            if (evhtp_unlikely(hcb->val.regex == NULL)) {
+                evhtp_safe_free(hcb, evhtp_callback_free);
+
+                return NULL;
+            }
 
             if (regcomp(hcb->val.regex, (char *)path, REG_EXTENDED) != 0) {
                 evhtp_safe_free(hcb->val.regex, htp__free_);
@@ -4153,7 +4178,13 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
 #endif
         case evhtp_callback_type_glob:
             hcb->val.glob = htp__strdup_(path);
-            evhtp_alloc_assert(hcb->val.glob);
+
+            if (evhtp_unlikely(hcb->val.glob == NULL)) {
+                evhtp_safe_free(hcb, evhtp_callback_free);
+
+                return NULL;
+            }
+
             break;
         default:
             evhtp_safe_free(hcb, htp__free_);

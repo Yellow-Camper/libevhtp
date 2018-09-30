@@ -2785,7 +2785,13 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
     log_debug("fd = %d, conn = %p", fd, connection);
 
     connection->saddr = htp__malloc_(sl);
-    evhtp_alloc_assert(connection->saddr);
+
+    if (evhtp_unlikely(connection->saddr == NULL)) {
+        /* should probably start doing error callbacks */
+        evhtp_safe_free(connection, evhtp_connection_free);
+        return;
+    }
+
 
     memcpy(connection->saddr, s, sl);
 

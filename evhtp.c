@@ -5130,7 +5130,12 @@ evhtp_add_alias(evhtp_t * evhtp, const char * name)
     log_debug("Adding %s to aliases", name);
 
     alias->alias = htp__strdup_(name);
-    evhtp_alloc_assert(alias->alias);
+
+    if (evhtp_unlikely(alias->alias == NULL)) {
+        evhtp_safe_free(alias, htp__free_);
+
+        return -1;
+    }
 
     TAILQ_INSERT_TAIL(&evhtp->aliases, alias, next);
 

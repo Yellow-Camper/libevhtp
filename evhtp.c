@@ -5181,7 +5181,9 @@ evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost)
         return -1;
     }
 
-    if (!(vhost->server_name = htp__strdup_(name))) {
+    vhost->server_name = htp__strdup_(name);
+
+    if (evhtp_unlikely(vhost->server_name == NULL)) {
         return -1;
     }
 

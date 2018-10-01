@@ -995,8 +995,9 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
     if (req_path == NULL) {
         return -1;
     }
+
 #endif
-    *out     = NULL;
+    *out = NULL;
 
     if (evhtp_unlikely(len == 0)) {
         /*
@@ -1117,7 +1118,6 @@ error:
 
     return -1;
 }     /* htp__path_new_ */
-
 
 /**
  * @brief create an authority structure
@@ -1434,7 +1434,7 @@ htp__request_parse_header_key_(htparser * p, const char * data, size_t len)
     char               * key_s;
     evhtp_header_t     * hdr;
 
-    key_s      = htp__malloc_(len + 1);
+    key_s = htp__malloc_(len + 1);
     evhtp_alloc_assert(key_s);
 
     if (key_s == NULL) {
@@ -2083,7 +2083,9 @@ check_proto:
                     evhtp_header_new("Connection", "close", 0, 0));
             }
 
-            if (!evhtp_header_find(request->headers_out, "Content-Length")) {
+            if (!evhtp_header_find(request->headers_out, "Content-Length") &&
+                /* cannot  have both chunked and content-length */
+                !(request->flags & EVHTP_REQ_FLAG_CHUNKED)) {
                 evhtp_headers_add_header(request->headers_out,
                     evhtp_header_new("Content-Length", "0", 0, 0));
             }
@@ -3106,7 +3108,7 @@ evhtp_kv_new(const char * key, const char * val,
 {
     evhtp_kv_t * kv;
 
-    kv           = htp__malloc_(sizeof(*kv));
+    kv = htp__malloc_(sizeof(*kv));
 
     if (evhtp_unlikely(kv == NULL)) {
         return NULL;
@@ -3468,7 +3470,7 @@ evhtp_parse_query_wflags(const char * query, const size_t len, const int flags)
 
     if (evhtp_unlikely(val_buf == NULL)) {
         evhtp_safe_free(query_args, evhtp_query_free);
-        
+
         return NULL;
     }
 
@@ -4134,7 +4136,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
 {
     evhtp_callback_t * hcb;
 
-    hcb        = htp__calloc_(sizeof(*hcb), 1);
+    hcb = htp__calloc_(sizeof(*hcb), 1);
 
     if (evhtp_unlikely(hcb == NULL)) {
         evhtp_safe_free(hcb, htp__free_);
@@ -4156,6 +4158,7 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
 
                 return NULL;
             }
+
             break;
 #ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:

@@ -2826,15 +2826,15 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
 
 #ifndef EVHTP_DISABLE_SSL
 #ifndef EVHTP_DISABLE_EVTHR
-static unsigned long
-htp__ssl_get_thread_id_(void)
+static void
+htp__ssl_get_thread_id_(CRYPTO_THREADID *id)
 {
 #ifndef WIN32
 
-    return (unsigned long)pthread_self();
+    CRYPTO_THREADID_set_numeric(id, (unsigned long)pthread_self());
 #else
 
-    return (unsigned long)(pthread_self().p);
+    CRYPTO_THREADID_set_numeric(id, (unsigned long)(pthread_self().p));
 #endif
 }
 
@@ -4694,7 +4694,7 @@ evhtp_ssl_use_threads(void)
         pthread_mutex_init(&(ssl_locks[i]), NULL);
     }
 
-    CRYPTO_set_id_callback(htp__ssl_get_thread_id_);
+    CRYPTO_THREADID_set_callback(htp__ssl_get_thread_id_);
     CRYPTO_set_locking_callback(htp__ssl_thread_lock_);
 
     return 0;

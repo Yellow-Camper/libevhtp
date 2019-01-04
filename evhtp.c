@@ -3428,6 +3428,7 @@ evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len)
         } /* switch */
     }
 
+    *out = optr;
     return 0;
 }         /* evhtp_unescape_string */
 

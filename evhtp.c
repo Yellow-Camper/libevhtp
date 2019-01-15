@@ -4713,10 +4713,11 @@ evhtp_ssl_use_threads(void)
 
 #if OPENSSL_VERSION_NUMBER < 0x10000000L
     CRYPTO_set_id_callback(htp__ssl_get_thread_id_);
-    CRYPTO_set_locking_callback(htp__ssl_thread_lock_);
 #else
     CRYPTO_THREADID_set_callback(htp__ssl_get_thread_id_);
 #endif
+
+    CRYPTO_set_locking_callback(htp__ssl_thread_lock_);
 
     return 0;
 }

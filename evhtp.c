@@ -2844,10 +2844,8 @@ htp__ssl_get_thread_id_(
 
 #ifndef WIN32
     tid = (unsigned long)pthread_self();
-    CRYPTO_THREADID_set_numeric(id, (unsigned long)pthread_self());
 #else
     tid = pthread_self().p;
-    CRYPTO_THREADID_set_numeric(id, (unsigned long)(pthread_self().p));
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= 0x10000000L

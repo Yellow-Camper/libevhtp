@@ -26,6 +26,7 @@
 
 #ifndef EVHTP_DISABLE_SSL
 #include <event2/bufferevent_ssl.h>
+#include <openssl/dh.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>

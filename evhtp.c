@@ -2827,6 +2827,7 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
 
 #ifndef EVHTP_DISABLE_SSL
 #ifndef EVHTP_DISABLE_EVTHR
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 static
 #if OPENSSL_VERSION_NUMBER >= 0x10000000L
 void
@@ -2853,6 +2854,8 @@ htp__ssl_get_thread_id_(
     CRYPTO_THREADID_set_numeric(id, tid);
 #else
     return tid;
+#endif
+
 #endif
 }
 
@@ -4692,6 +4695,7 @@ evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept_cb cb, void * arg)
 
 #ifndef EVHTP_DISABLE_SSL
 #ifndef EVHTP_DISABLE_EVTHR
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
 int
 evhtp_ssl_use_threads(void)
 {
@@ -4724,6 +4728,7 @@ evhtp_ssl_use_threads(void)
     return 0;
 }
 
+#endif
 #endif
 
 int

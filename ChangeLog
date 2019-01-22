@@ -1,5 +1,15 @@
-v1.2.17-beta
- o Fix cmake include dirs (b7df3fc Piotr Padlewski)
+v1.2.17
+ o [#111] assert frontends not compiled with -DNDEBUG (07d6f5f Nathan French)
+ o [#111] Remove asserts for alloc functions. (#112) (114bf53 Nathan French)
+ o [#108] do not include content-length with chunked (#113) (73255df Nathan French)
+ o [#114] Switch to using OpenSSL's thread API for 1.0.2 (c659caa Rosen Penev)
+ o [#119] allow out to report unescaped length (#119) (b2bc0b8 Derrick Lyndon Pallas)
+ o [#120] fix inclusion of config.h before internal.h (517256c Nathan French)
+ o [#114] update for older openssl compatability (c4abfa7 Nathan French)
+ o [#114] set locking callback fix (c63269a Nathan French)
+ o [PERF] use scatter/gather to construct HTTP reply header (c5e8dd0 Nathan French)
+ o [PERF] use scatter/gather for htp__create_headers_ (4191716 Nathan French)
+ o [#96]  Fix cmake include dirs (b7df3fc Piotr Padlewski)
  o Change case of oniguruma in package_deps (b8ff92b Piotr Padlewski)
  o fix memory leak in evthr_free when compiled with EVHTP_THR_SHARED_PIPE (919e4ea t00416110)
  o cleanups / added uncrustify configurations (d008f21 Nathan French)
@@ -13,8 +23,6 @@ v1.2.17-beta
  o access-log API finalization / cleanups and overhauls (5f74f32 Nathan French)
  o evhtp_unescape_string tests (ae731f1 Nathan French)
  o Added test of a on_connection_finished hook (5a17742 Nathan French)
-
-v1.2.17-alpha
  o use evhtp_safe_free everywhere (cbafca7 Nathan French)
  o free fix for test_query.c (77f20e6 Nathan French)
  o [#76] keep consistent member type of struct evthr (aceb557 Nathan French)

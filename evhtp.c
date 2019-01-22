@@ -29,6 +29,7 @@
 #include <limits.h>
 #include <event2/dns.h>
 
+#include "evhtp/config.h"
 #include "internal.h"
 #include "numtoa.h"
 #include "evhtp/evhtp.h"
@@ -945,6 +946,26 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
 }         /* htp__callback_find_ */
 
 /**
+ * @brief Correctly frees the evhtp_path_t ptr that is passed in.
+ * @param path
+ */
+static void
+htp__path_free_(struct evhtp_path * path)
+{
+    if (evhtp_unlikely(path == NULL)) {
+        return;
+    }
+
+    evhtp_safe_free(path->full, htp__free_);
+    evhtp_safe_free(path->path, htp__free_);
+    evhtp_safe_free(path->file, htp__free_);
+    evhtp_safe_free(path->match_start, htp__free_);
+    evhtp_safe_free(path->match_end, htp__free_);
+
+    evhtp_safe_free(path, htp__free_);
+}
+
+/**
  * @brief parses the path and file from an input buffer
  *
  * @details in order to properly create a structure that can match
@@ -963,32 +984,46 @@ htp__callback_find_(evhtp_callbacks_t * cbs,
 static int
 htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
 {
-    struct evhtp_path * req_path;
+    struct evhtp_path * req_path = NULL;
     const char        * data_end = (const char *)(data + len);
     char              * path     = NULL;
     char              * file     = NULL;
 
 
     req_path = htp__calloc_(1, sizeof(*req_path));
-    evhtp_alloc_assert(req_path);
 
-    *out     = NULL;
+#ifndef NDEBUG
+    if (req_path == NULL) {
+        return -1;
+    }
+
+#endif
+    *out = NULL;
 
     if (evhtp_unlikely(len == 0)) {
         /*
          * odd situation here, no preceding "/", so just assume the path is "/"
          */
         path = htp__strdup_("/");
-        evhtp_alloc_assert(path);
+
+        if (evhtp_unlikely(path == NULL)) {
+            goto error;
+        }
     } else if (*data != '/') {
         /* request like GET stupid HTTP/1.0, treat stupid as the file, and
          * assume the path is "/"
          */
         path = htp__strdup_("/");
-        evhtp_alloc_assert(path);
+
+        if (evhtp_unlikely(path == NULL)) {
+            goto error;
+        }
 
         file = htp__strndup_(data, len);
-        evhtp_alloc_assert(file);
+
+        if (evhtp_unlikely(file == NULL)) {
+            goto error;
+        }
     } else {
         if (data[len - 1] != '/') {
             /*
@@ -1011,23 +1046,25 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
 
                     /* check for overflow */
                     if ((const char *)(data + path_len) > data_end) {
-                        evhtp_safe_free(req_path, htp__free_);
-
-                        return -1;
+                        goto error;
                     }
 
                     /* check for overflow */
                     if ((const char *)(&data[i + 1] + file_len) > data_end) {
-                        evhtp_safe_free(req_path, htp__free_);
-
-                        return -1;
+                        goto error;
                     }
 
                     path = htp__strndup_(data, path_len);
-                    evhtp_alloc_assert(path);
+
+                    if (evhtp_unlikely(path == NULL)) {
+                        goto error;
+                    }
 
                     file = htp__strndup_(&data[i + 1], file_len);
-                    evhtp_alloc_assert(file);
+
+                    if (evhtp_unlikely(file == NULL)) {
+                        goto error;
+                    }
 
                     break;
                 }
@@ -1036,17 +1073,26 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
             if (i == 0 && data[i] == '/' && !file && !path) {
                 /* drops here if the request is something like GET /foo */
                 path = htp__strdup_("/");
-                evhtp_alloc_assert(path);
+
+                if (evhtp_unlikely(path == NULL)) {
+                    goto error;
+                }
 
                 if (len > 1) {
                     file = htp__strndup_((const char *)(data + 1), len);
-                    evhtp_alloc_assert(file);
+
+                    if (evhtp_unlikely(file == NULL)) {
+                        goto error;
+                    }
                 }
             }
         } else {
             /* the last character is a "/", thus the request is just a path */
             path = htp__strndup_(data, len);
-            evhtp_alloc_assert(path);
+
+            if (evhtp_unlikely(path == NULL)) {
+                goto error;
+            }
         }
     }
 
@@ -1056,7 +1102,9 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
         req_path->full = htp__strdup_("/");
     }
 
-    evhtp_alloc_assert(req_path->full);
+    if (evhtp_unlikely(req_path->full == NULL)) {
+        goto error;
+    }
 
     req_path->path = path;
     req_path->file = file;
@@ -1064,27 +1112,13 @@ htp__path_new_(evhtp_path_t ** out, const char * data, size_t len)
     *out           = req_path;
 
     return 0;
-}     /* htp__path_new_ */
-
-/**
- * @brief Correctly frees the evhtp_path_t ptr that is passed in.
- * @param path
- */
-static void
-htp__path_free_(evhtp_path_t * path)
-{
-    if (evhtp_unlikely(path == NULL)) {
-        return;
-    }
-
-    evhtp_safe_free(path->full, htp__free_);
-    evhtp_safe_free(path->path, htp__free_);
-    evhtp_safe_free(path->file, htp__free_);
-    evhtp_safe_free(path->match_start, htp__free_);
-    evhtp_safe_free(path->match_end, htp__free_);
-
+error:
     evhtp_safe_free(path, htp__free_);
-}
+    evhtp_safe_free(file, htp__free_);
+    evhtp_safe_free(req_path, htp__path_free_);
+
+    return -1;
+}     /* htp__path_new_ */
 
 /**
  * @brief create an authority structure
@@ -1401,13 +1435,21 @@ htp__request_parse_header_key_(htparser * p, const char * data, size_t len)
     char               * key_s;
     evhtp_header_t     * hdr;
 
-    key_s      = htp__malloc_(len + 1);
+    key_s = htp__malloc_(len + 1);
     evhtp_alloc_assert(key_s);
+
+    if (key_s == NULL) {
+        c->cr_status = EVHTP_RES_FATAL;
+
+        return -1;
+    }
 
     key_s[len] = '\0';
     memcpy(key_s, data, len);
 
     if ((hdr = evhtp_header_key_add(c->request->headers_in, key_s, 0)) == NULL) {
+        htp__free_(key_s);
+
         c->cr_status = EVHTP_RES_FATAL;
 
         return -1;
@@ -1943,7 +1985,11 @@ htp__request_parse_fini_(htparser * p)
         body           = (const char *)evbuffer_pullup(buf_in, body_len);
 
         uri->query_raw = htp__calloc_(body_len + 1, 1);
-        evhtp_alloc_assert(uri->query_raw);
+
+        if (evhtp_unlikely(uri->query_raw == NULL)) {
+            c->cr_status = EVHTP_RES_FATAL;
+            return -1;
+        }
 
         memcpy(uri->query_raw, body, body_len);
 
@@ -1970,13 +2016,22 @@ htp__request_parse_fini_(htparser * p)
 static int
 htp__create_headers_(evhtp_header_t * header, void * arg)
 {
-    struct evbuffer * buf = arg;
+    struct evbuffer     * buf = arg;
+    struct evbuffer_iovec iov[4];
 
-    evbuffer_expand(buf, header->klen + 2 + header->vlen + 2);
-    evbuffer_add(buf, header->key, header->klen);
-    evbuffer_add(buf, ": ", 2);
-    evbuffer_add(buf, header->val, header->vlen);
-    evbuffer_add(buf, "\r\n", 2);
+    iov[0].iov_base = header->key;
+    iov[0].iov_len  = header->klen;
+
+    iov[1].iov_base = ": ";
+    iov[1].iov_len  = 2;
+
+    iov[2].iov_base = header->val;
+    iov[2].iov_len  = header->vlen;
+
+    iov[3].iov_base = "\r\n";
+    iov[3].iov_len  = 2;
+
+    evbuffer_add_iovec(buf, iov, 4);
 
     return 0;
 }
@@ -2038,7 +2093,9 @@ check_proto:
                     evhtp_header_new("Connection", "close", 0, 0));
             }
 
-            if (!evhtp_header_find(request->headers_out, "Content-Length")) {
+            if (!evhtp_header_find(request->headers_out, "Content-Length") &&
+                /* cannot  have both chunked and content-length */
+                !(request->flags & EVHTP_REQ_FLAG_CHUNKED)) {
                 evhtp_headers_add_header(request->headers_out,
                     evhtp_header_new("Content-Length", "0", 0, 0));
             }
@@ -2077,19 +2134,53 @@ check_proto:
 
     evhtp_modp_u32toa((uint32_t)code, out_buf);
 
-    sres = snprintf(res_buf, sizeof(res_buf), "HTTP/%c.%c %s %s\r\n",
-        major, minor, out_buf, status_code_to_str(code));
+    /* create the initial reply status via scatter-gather io (note: this used to
+     * be a formatted write which led to some spurrious performance problems.
+     * This now uses iovec/scatter/gather to create the status reply portion
+     * of the header.
+     */
+    {
+        struct evbuffer_iovec iov[9];
+        const char          * status_str = status_code_to_str(code);
 
-    if (sres >= sizeof(res_buf) || sres < 0) {
-        /* failed to fit the whole thing in the res_buf, so just fallback to
-         * using evbuffer_add_printf().
-         */
-        evbuffer_add_printf(buf, "HTTP/%c.%c %d %s\r\n",
-            major, minor,
-            code, status_code_to_str(code));
-    } else {
-        /* copy the res_buf using evbuffer_add() instead of add_printf() */
-        evbuffer_add(buf, res_buf, sres);
+        /* data == "HTTP/" */
+        iov[0].iov_base = "HTTP/";
+        iov[0].iov_len  = 5;
+
+        /* data == "HTTP/X" */
+        iov[1].iov_base = (void *)&major;
+        iov[1].iov_len  = 1;
+
+        /* data == "HTTP/X." */
+        iov[2].iov_base = ".";
+        iov[2].iov_len  = 1;
+
+        /* data == "HTTP/X.X" */
+        iov[3].iov_base = (void *)&minor;
+        iov[3].iov_len  = 1;
+
+
+        /* data == "HTTP/X.X " */
+        iov[4].iov_base = " ";
+        iov[4].iov_len  = 1;
+
+        /* data == "HTTP/X.X YYY" */
+        iov[5].iov_base = out_buf;
+        iov[5].iov_len  = strlen(out_buf);
+
+        /* data == "HTTP/X.X YYY " */
+        iov[6].iov_base = " ";
+        iov[6].iov_len  = 1;
+
+        /* data == "HTTP/X.X YYY ZZZ" */
+        iov[7].iov_base = (void *)status_str;
+        iov[7].iov_len  = strlen(status_str);
+
+        /* data == "HTTP/X.X YYY ZZZ\r\n" */
+        iov[8].iov_base = "\r\n";
+        iov[8].iov_len  = 2;
+
+        evbuffer_add_iovec(buf, iov, 9);
     }
 
     evhtp_headers_for_each(request->headers_out, htp__create_headers_, buf);
@@ -2633,10 +2724,18 @@ htp__connection_new_(evhtp_t * htp, evutil_socket_t sock, evhtp_type type)
     }
 
     connection = htp__calloc_(sizeof(*connection), 1);
-    evhtp_alloc_assert(connection);
+
+    if (evhtp_unlikely(connection == NULL)) {
+        return NULL;
+    }
 
     connection->scratch_buf = evbuffer_new();
-    evhtp_alloc_assert(connection->scratch_buf);
+
+    if (evhtp_unlikely(connection->scratch_buf == NULL)) {
+        evhtp_safe_free(connection->scratch_buf, htp__free_);
+
+        return NULL;
+    }
 
     if (htp != NULL) {
         connection->max_body_size = htp->max_body_size;
@@ -2647,7 +2746,12 @@ htp__connection_new_(evhtp_t * htp, evutil_socket_t sock, evhtp_type type)
     connection->htp    = htp;
     connection->type   = type;
     connection->parser = htparser_new();
-    evhtp_alloc_assert(connection->parser);
+
+    if (evhtp_unlikely(connection->parser == NULL)) {
+        evhtp_safe_free(connection, evhtp_connection_free);
+
+        return NULL;
+    }
 
     htparser_init(connection->parser, ptype);
     htparser_set_userdata(connection->parser, connection);
@@ -2727,7 +2831,13 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
     log_debug("fd = %d, conn = %p", fd, connection);
 
     connection->saddr = htp__malloc_(sl);
-    evhtp_alloc_assert(connection->saddr);
+
+    if (evhtp_unlikely(connection->saddr == NULL)) {
+        /* should probably start doing error callbacks */
+        evhtp_safe_free(connection, evhtp_connection_free);
+        return;
+    }
+
 
     memcpy(connection->saddr, s, sl);
 
@@ -2760,15 +2870,32 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
 
 #ifndef EVHTP_DISABLE_SSL
 #ifndef EVHTP_DISABLE_EVTHR
-static unsigned long
-htp__ssl_get_thread_id_(void)
-{
-#ifndef WIN32
-
-    return (unsigned long)pthread_self();
+static
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L
+void
 #else
+unsigned long
+#endif
+htp__ssl_get_thread_id_(
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L
+    CRYPTO_THREADID * id
+#else
+    void
+#endif
+    )
+{
+    unsigned long tid;
 
-    return (unsigned long)(pthread_self().p);
+#ifndef WIN32
+    tid = (unsigned long)pthread_self();
+#else
+    tid = pthread_self().p;
+#endif
+
+#if OPENSSL_VERSION_NUMBER >= 0x10000000L
+    CRYPTO_THREADID_set_numeric(id, tid);
+#else
+    return tid;
 #endif
 }
 
@@ -2991,7 +3118,7 @@ evhtp_header_val_add(evhtp_headers_t * headers, const char * val, char val_alloc
 {
     evhtp_header_t * header;
 
-    if (!headers || !val) {
+    if (evhtp_unlikely(headers == NULL || val == NULL)) {
         return NULL;
     }
 
@@ -3026,7 +3153,10 @@ evhtp_kvs_new(void)
     evhtp_kvs_t * kvs;
 
     kvs = htp__malloc_(sizeof(*kvs));
-    evhtp_alloc_assert(kvs);
+
+    if (evhtp_unlikely(kvs == NULL)) {
+        return NULL;
+    }
 
     TAILQ_INIT(kvs);
 
@@ -3039,8 +3169,11 @@ evhtp_kv_new(const char * key, const char * val,
 {
     evhtp_kv_t * kv;
 
-    kv           = htp__malloc_(sizeof(*kv));
-    evhtp_alloc_assert(kv);
+    kv = htp__malloc_(sizeof(*kv));
+
+    if (evhtp_unlikely(kv == NULL)) {
+        return NULL;
+    }
 
     kv->k_heaped = key_alloc;
     kv->v_heaped = val_alloc;
@@ -3075,6 +3208,12 @@ evhtp_kv_new(const char * key, const char * val,
 
         if (val_alloc == 1) {
             char * s = htp__malloc_(kv->vlen + 1);
+
+            if (evhtp_unlikely(s == NULL)) {
+                evhtp_safe_free(kv, evhtp_kv_free);
+
+                return NULL;
+            }
 
             s[kv->vlen] = '\0';
             memcpy(s, val, kv->vlen);
@@ -3350,6 +3489,7 @@ evhtp_unescape_string(unsigned char ** out, unsigned char * str, size_t str_len)
         } /* switch */
     }
 
+    *out = optr;
     return 0;
 }         /* evhtp_unescape_string */
 
@@ -3381,10 +3521,21 @@ evhtp_parse_query_wflags(const char * query, const size_t len, const int flags)
     char * val_buf;
 
     key_buf = htp__malloc_(len + 1);
-    evhtp_alloc_assert(key_buf);
+
+    if (evhtp_unlikely(key_buf == NULL)) {
+        evhtp_safe_free(query_args, evhtp_query_free);
+
+        return NULL;
+    }
 
     val_buf = htp__malloc_(len + 1);
-    evhtp_alloc_assert(val_buf);
+
+    if (evhtp_unlikely(val_buf == NULL)) {
+        evhtp_safe_free(query_args, evhtp_query_free);
+
+        return NULL;
+    }
+
 #endif
 
     for (i = 0; i < len; i++) {
@@ -4047,8 +4198,13 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
 {
     evhtp_callback_t * hcb;
 
-    hcb        = htp__calloc_(sizeof(*hcb), 1);
-    evhtp_alloc_assert(hcb);
+    hcb = htp__calloc_(sizeof(*hcb), 1);
+
+    if (evhtp_unlikely(hcb == NULL)) {
+        evhtp_safe_free(hcb, htp__free_);
+
+        return NULL;
+    }
 
     hcb->type  = type;
     hcb->cb    = cb;
@@ -4058,13 +4214,23 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
     switch (type) {
         case evhtp_callback_type_hash:
             hcb->val.path = htp__strdup_(path);
-            evhtp_alloc_assert(hcb->val.path);
-            break;
 
+            if (evhtp_unlikely(hcb->val.path == NULL)) {
+                evhtp_safe_free(hcb, evhtp_callback_free);
+
+                return NULL;
+            }
+
+            break;
 #ifndef EVHTP_DISABLE_REGEX
         case evhtp_callback_type_regex:
             hcb->val.regex = htp__malloc_(sizeof(regex_t));
-            evhtp_alloc_assert(hcb->val.regex);
+
+            if (evhtp_unlikely(hcb->val.regex == NULL)) {
+                evhtp_safe_free(hcb, evhtp_callback_free);
+
+                return NULL;
+            }
 
             if (regcomp(hcb->val.regex, (char *)path, REG_EXTENDED) != 0) {
                 evhtp_safe_free(hcb->val.regex, htp__free_);
@@ -4077,7 +4243,13 @@ evhtp_callback_new(const char * path, evhtp_callback_type type, evhtp_callback_c
 #endif
         case evhtp_callback_type_glob:
             hcb->val.glob = htp__strdup_(path);
-            evhtp_alloc_assert(hcb->val.glob);
+
+            if (evhtp_unlikely(hcb->val.glob == NULL)) {
+                evhtp_safe_free(hcb, evhtp_callback_free);
+
+                return NULL;
+            }
+
             break;
         default:
             evhtp_safe_free(hcb, htp__free_);
@@ -4584,7 +4756,12 @@ evhtp_ssl_use_threads(void)
         pthread_mutex_init(&(ssl_locks[i]), NULL);
     }
 
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
     CRYPTO_set_id_callback(htp__ssl_get_thread_id_);
+#else
+    CRYPTO_THREADID_set_callback(htp__ssl_get_thread_id_);
+#endif
+
     CRYPTO_set_locking_callback(htp__ssl_thread_lock_);
 
     return 0;
@@ -5023,7 +5200,12 @@ evhtp_add_alias(evhtp_t * evhtp, const char * name)
     log_debug("Adding %s to aliases", name);
 
     alias->alias = htp__strdup_(name);
-    evhtp_alloc_assert(alias->alias);
+
+    if (evhtp_unlikely(alias->alias == NULL)) {
+        evhtp_safe_free(alias, htp__free_);
+
+        return -1;
+    }
 
     TAILQ_INSERT_TAIL(&evhtp->aliases, alias, next);
 
@@ -5069,7 +5251,9 @@ evhtp_add_vhost(evhtp_t * evhtp, const char * name, evhtp_t * vhost)
         return -1;
     }
 
-    if (!(vhost->server_name = htp__strdup_(name))) {
+    vhost->server_name = htp__strdup_(name);
+
+    if (evhtp_unlikely(vhost->server_name == NULL)) {
         return -1;
     }
 

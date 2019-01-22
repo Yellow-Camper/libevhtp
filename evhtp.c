@@ -2013,6 +2013,34 @@ htp__request_parse_fini_(htparser * p)
     return 0;
 } /* htp__request_parse_fini_ */
 
+static size_t
+htp__evbuffer_add_iovec_(struct evbuffer * buf, struct evbuffer_iovec * vec, int n_vec)
+{
+#if LIBEVENT_VERSION_NUMBER < 0x02010000
+    int    n;
+    size_t res;
+    size_t to_alloc;
+
+    res = to_alloc = 0;
+
+    for (n = 0; n < n_vec; n++) {
+        to_alloc += vec[n].iov_len;
+    }
+
+    evbuffer_expand(buf, to_alloc);
+
+    for (n = 0; n < n_vec; n++) {
+        evbuffer_add(buf, vec[n].iov_base, vec[n].iov_len);
+
+        res += vec[n].iov_len;
+    }
+
+    return res;
+#else
+    return evbuffer_add_iovec(buf, vec, n_vec);
+#endif
+}
+
 static int
 htp__create_headers_(evhtp_header_t * header, void * arg)
 {
@@ -2031,7 +2059,7 @@ htp__create_headers_(evhtp_header_t * header, void * arg)
     iov[3].iov_base = "\r\n";
     iov[3].iov_len  = 2;
 
-    evbuffer_add_iovec(buf, iov, 4);
+    htp__evbuffer_add_iovec_(buf, iov, 4);
 
     return 0;
 }
@@ -2180,7 +2208,7 @@ check_proto:
         iov[8].iov_base = "\r\n";
         iov[8].iov_len  = 2;
 
-        evbuffer_add_iovec(buf, iov, 9);
+        htp__evbuffer_add_iovec_(buf, iov, 9);
     }
 
     evhtp_headers_for_each(request->headers_out, htp__create_headers_, buf);

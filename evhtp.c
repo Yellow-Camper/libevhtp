@@ -2125,19 +2125,44 @@ check_proto:
 
     evhtp_modp_u32toa((uint32_t)code, out_buf);
 
-    sres = snprintf(res_buf, sizeof(res_buf), "HTTP/%c.%c %s %s\r\n",
-        major, minor, out_buf, status_code_to_str(code));
+    /* create the initial reply status via scatter-gather io (note: this used to
+     * be a formatted write which led to some spurrious performance problems.
+     * This now uses iovec/scatter/gather to create the status reply portion
+     * of the header.
+     */
+    {
+        struct evbuffer_iovec iov[9];
+        const char          * status_str = status_code_to_str(code);
 
-    if (sres >= sizeof(res_buf) || sres < 0) {
-        /* failed to fit the whole thing in the res_buf, so just fallback to
-         * using evbuffer_add_printf().
-         */
-        evbuffer_add_printf(buf, "HTTP/%c.%c %d %s\r\n",
-            major, minor,
-            code, status_code_to_str(code));
-    } else {
-        /* copy the res_buf using evbuffer_add() instead of add_printf() */
-        evbuffer_add(buf, res_buf, sres);
+        iov[0].iov_base = "HTTP/";
+        iov[0].iov_len  = 5;
+
+        iov[1].iov_base = (void *)&major;
+        iov[1].iov_len  = 1;
+
+        iov[2].iov_base = ".";
+        iov[2].iov_len  = 1;
+
+        iov[3].iov_base = (void *)&minor;
+        iov[3].iov_len  = 1;
+
+
+        iov[4].iov_base = " ";
+        iov[4].iov_len  = 1;
+
+        iov[5].iov_base = out_buf;
+        iov[5].iov_len  = strlen(out_buf);
+
+        iov[6].iov_base = " ";
+        iov[6].iov_len  = 1;
+
+        iov[7].iov_base = (void *)status_str;
+        iov[7].iov_len  = strlen(status_str);
+
+        iov[8].iov_base = "\r\n";
+        iov[8].iov_len  = 2;
+
+        evbuffer_add_iovec(buf, iov, 9);
     }
 
     evhtp_headers_for_each(request->headers_out, htp__create_headers_, buf);

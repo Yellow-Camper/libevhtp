@@ -10,6 +10,11 @@
 #include "evhtp/sslutils.h"
 #include "internal.h"
 
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define X509_get0_notBefore X509_get_notBefore
+#define X509_get0_notAfter X509_get_notAfter
+#endif
+
 unsigned char *
 htp_sslutil_subject_tostr(evhtp_ssl_t * ssl) {
     unsigned char * subj_str;
@@ -78,11 +83,11 @@ htp_sslutil_issuer_tostr(evhtp_ssl_t * ssl) {
 
 unsigned char *
 htp_sslutil_notbefore_tostr(evhtp_ssl_t * ssl) {
-    BIO           * bio;
-    X509          * cert;
-    ASN1_TIME     * time;
-    size_t          len;
-    unsigned char * time_str;
+    BIO             * bio;
+    X509            * cert;
+    const ASN1_TIME * time;
+    size_t            len;
+    unsigned char   * time_str;
 
     if (!ssl) {
         return NULL;
@@ -92,7 +97,7 @@ htp_sslutil_notbefore_tostr(evhtp_ssl_t * ssl) {
         return NULL;
     }
 
-    if (!(time = X509_get_notBefore(cert))) {
+    if (!(time = X509_get0_notBefore(cert))) {
         X509_free(cert);
         return NULL;
     }
@@ -128,11 +133,11 @@ htp_sslutil_notbefore_tostr(evhtp_ssl_t * ssl) {
 
 unsigned char *
 htp_sslutil_notafter_tostr(evhtp_ssl_t * ssl) {
-    BIO           * bio;
-    X509          * cert;
-    ASN1_TIME     * time;
-    size_t          len;
-    unsigned char * time_str;
+    BIO             * bio;
+    X509            * cert;
+    const ASN1_TIME * time;
+    size_t            len;
+    unsigned char   * time_str;
 
     if (!ssl) {
         return NULL;
@@ -142,7 +147,7 @@ htp_sslutil_notafter_tostr(evhtp_ssl_t * ssl) {
         return NULL;
     }
 
-    if (!(time = X509_get_notAfter(cert))) {
+    if (!(time = X509_get0_notAfter(cert))) {
         X509_free(cert);
         return NULL;
     }

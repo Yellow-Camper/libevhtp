@@ -2898,34 +2898,29 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
 
 #ifndef EVHTP_DISABLE_SSL
 #ifndef EVHTP_DISABLE_EVTHR
-static
-#if OPENSSL_VERSION_NUMBER >= 0x10000000L
-void
-#else
-unsigned long
-#endif
-htp__ssl_get_thread_id_(
-#if OPENSSL_VERSION_NUMBER >= 0x10000000L
-    CRYPTO_THREADID * id
-#else
-    void
-#endif
-    )
-{
-    unsigned long tid;
 
 #ifndef WIN32
-    tid = (unsigned long)pthread_self();
+#define _HTP_tid (unsigned long)pthread_self()
 #else
-    tid = pthread_self().p;
+#define _HTP_tid pthread_self().p
 #endif
 
-#if OPENSSL_VERSION_NUMBER >= 0x10000000L
-    CRYPTO_THREADID_set_numeric(id, tid);
-#else
-    return tid;
-#endif
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
+static unsigned long
+htp__ssl_get_thread_id_(void)
+{
+    return _HTP_tid;
 }
+
+#else
+
+static void
+htp__ssl_get_thread_id_(CRYPTO_THREADID * id)
+{
+    CRYPTO_THREADID_set_numeric(id, _HTP_tid);
+}
+
+#endif
 
 static void
 htp__ssl_thread_lock_(int mode, int type, const char * file, int line)

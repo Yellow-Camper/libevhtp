@@ -2044,20 +2044,13 @@ htp__evbuffer_add_iovec_(struct evbuffer * buf, struct evbuffer_iovec * vec, int
 static int
 htp__create_headers_(evhtp_header_t * header, void * arg)
 {
-    struct evbuffer     * buf = arg;
-    struct evbuffer_iovec iov[4];
-
-    iov[0].iov_base = header->key;
-    iov[0].iov_len  = header->klen;
-
-    iov[1].iov_base = ": ";
-    iov[1].iov_len  = 2;
-
-    iov[2].iov_base = header->val;
-    iov[2].iov_len  = header->vlen;
-
-    iov[3].iov_base = "\r\n";
-    iov[3].iov_len  = 2;
+    struct evbuffer     * buf    = arg;
+    struct evbuffer_iovec iov[4] = {
+        { header->key, header->klen },
+        { ": ",        2            },
+        { header->val, header->vlen },
+        { "\r\n",      2            }
+    };
 
     htp__evbuffer_add_iovec_(buf, iov, 4);
 
@@ -2168,45 +2161,18 @@ check_proto:
      * of the header.
      */
     {
-        struct evbuffer_iovec iov[9];
         const char          * status_str = status_code_to_str(code);
-
-        /* data == "HTTP/" */
-        iov[0].iov_base = "HTTP/";
-        iov[0].iov_len  = 5;
-
-        /* data == "HTTP/X" */
-        iov[1].iov_base = (void *)&major;
-        iov[1].iov_len  = 1;
-
-        /* data == "HTTP/X." */
-        iov[2].iov_base = ".";
-        iov[2].iov_len  = 1;
-
-        /* data == "HTTP/X.X" */
-        iov[3].iov_base = (void *)&minor;
-        iov[3].iov_len  = 1;
-
-
-        /* data == "HTTP/X.X " */
-        iov[4].iov_base = " ";
-        iov[4].iov_len  = 1;
-
-        /* data == "HTTP/X.X YYY" */
-        iov[5].iov_base = out_buf;
-        iov[5].iov_len  = strlen(out_buf);
-
-        /* data == "HTTP/X.X YYY " */
-        iov[6].iov_base = " ";
-        iov[6].iov_len  = 1;
-
-        /* data == "HTTP/X.X YYY ZZZ" */
-        iov[7].iov_base = (void *)status_str;
-        iov[7].iov_len  = strlen(status_str);
-
-        /* data == "HTTP/X.X YYY ZZZ\r\n" */
-        iov[8].iov_base = "\r\n";
-        iov[8].iov_len  = 2;
+        struct evbuffer_iovec iov[9]     = {
+            { "HTTP/1",           5                  }, /* data == "HTTP/" */
+            { (void *)&major,     1                  }, /* data == "HTTP/X */
+            { ".",                1                  }, /* data == "HTTP/X." */
+            { (void *)&minor,     1                  }, /* data == "HTTP/X.X" */
+            { " ",                1                  }, /* data == "HTTP/X.X " */
+            { out_buf,            strlen(out_buf)    }, /* data = "HTTP/X.X YYY" */
+            { " ",                1                  }, /* data = "HTTP/X.X YYY " */
+            { (void *)status_str, strlen(status_str) }, /* data = "HTTP/X.X YYY ZZZ" */
+            { "\r\n",             2                  }, /* data = "HTTP/X.X YYY ZZZ\r\n" */
+        };
 
         htp__evbuffer_add_iovec_(buf, iov, 9);
     }

@@ -1,11 +1,16 @@
 cmake_minimum_required(VERSION 3.1)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-project(libevhtp VERSION "1.2.17")
+include(HunterGate)
+HunterGate(
+    URL "https://github.com/ruslo/hunter/archive/v0.20.31.tar.gz"
+    SHA1 "65c8f2292566aedb2fe10e08e09c74dda8e5d07a"
+)
 
-# For us YCM users.
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+project(libevhtp VERSION 1.2.16)
 
 include(colors)
 include(options)
@@ -14,6 +19,7 @@ include(CheckIncludeFiles)
 include(CheckTypeSize)
 include(CheckCCompilerFlag)
 include(TestBigEndian)
+
 
 check_function_exists(strndup HAVE_STRNDUP)
 check_function_exists(strnlen HAVE_STRNLEN)
@@ -48,16 +54,21 @@ check_c_compiler_flag(-std=c99 has_c99)
 # the check, don't freak out.
 check_c_compiler_flag(-fstack-protector-strong has_stack_protector)
 
+# NOTE in as of ubuntu 14, this is enabled by default, so if you see it fail
+# the check, don't freak out.
+check_c_compiler_flag(-fstack-protector-strong has_stack_protector)
+
 set(LIBEVHTP_SOURCE_FILES
     evhtp.c
     numtoa.c
     parser.c
     log.c)
 
-find_package(LibEvent REQUIRED)
-list(APPEND LIBEVHTP_EXTERNAL_LIBS ${LIBEVENT_LIBRARIES})
-list(APPEND LIBEVHTP_EXTERNAL_INCLUDES ${LIBEVENT_INCLUDE_DIRS})
-list(APPEND package_deps LibEvent)
+hunter_add_package(Libevent)
+find_package(Libevent CONFIG REQUIRED)
+
+list(APPEND LIBEVHTP_EXTERNAL_LIBS Libevent::event_core Libevent::event_extra)
+list(APPEND package_deps Libevent)
 
 set(evhtp_dir_headers
   "include/evhtp/evhtp.h"
@@ -65,17 +76,16 @@ set(evhtp_dir_headers
   "include/evhtp/log.h")
 
 if(NOT EVHTP_DISABLE_SSL)
-    find_package(OpenSSL)
-    if(OPENSSL_FOUND)
-        list(APPEND LIBEVHTP_SOURCE_FILES sslutils.c)
-        list(APPEND LIBEVHTP_EXTERNAL_LIBS OpenSSL::SSL OpenSSL::Crypto)
-        list(APPEND package_deps OpenSSL)
-        list(APPEND evhtp_dir_headers "include/evhtp/sslutils.h")
-    endif()
+    hunter_add_package(OpenSSL)
+    find_package(OpenSSL REQUIRED)
+    list(APPEND LIBEVHTP_SOURCE_FILES sslutils.c)
+    list(APPEND LIBEVHTP_EXTERNAL_LIBS OpenSSL::SSL OpenSSL::Crypto)
+    list(APPEND package_deps OpenSSL)
+    list(APPEND evhtp_dir_headers "include/evhtp/sslutils.h")
 endif()
 
 if(NOT EVHTP_DISABLE_EVTHR)
-    find_package(Threads)
+    find_package(Threads REQUIRED)
     if(TARGET Threads::Threads)
         list(APPEND LIBEVHTP_SOURCE_FILES  thread.c)
         list(APPEND LIBEVHTP_EXTERNAL_LIBS Threads::Threads)
@@ -85,34 +95,14 @@ if(NOT EVHTP_DISABLE_EVTHR)
 endif()
 
 if(NOT EVHTP_DISABLE_REGEX)
-    find_package(Oniguruma)
-    if(ONIGURUMA_FOUND)
-        list(APPEND LIBEVHTP_EXTERNAL_LIBS ${ONIGURUMA_LIBRARIES})
-        list(APPEND LIBEVHTP_EXTERNAL_INCLUDES ${ONIGURUMA_INCLUDE_DIRS})
-        list(APPEND package_deps oniguruma)
-    else()
-        message(STATUS "${BoldRed}${CMAKE_BUILD_TYPE}ONIGURUMA NOT FOUND, DISABLING REGEX SUPPORT${ColourReset}")
-        set(EVHTP_DISABLE_REGEX ON)
-    endif()
-endif()
-
-if(EVHTP_ALLOCATOR STREQUAL "jemalloc")
-    find_package(jemalloc)
-    if(JEMALLOC_FOUND)
-        list(APPEND LIBEVHTP_EXTERNAL_LIBS jemalloc)
-        list(APPEND package_deps jemalloc)
-    endif()
-elseif(EVHTP_ALLOCATOR STREQUAL "tcmalloc")
-    find_package(tcmalloc)
-    if(TCMALLOC_FOUND)
-        list(APPEND LIBEVHTP_EXTERNAL_LIBS tcmalloc)
-        list(APPEND package_deps tcmalloc)
-    endif()
+    hunter_add_package(oniguruma)
+    find_package(oniguruma CONFIG REQUIRED)
+    list(APPEND LIBEVHTP_EXTERNAL_LIBS oniguruma::onig)
+    list(APPEND package_deps oniguruma)
 endif()
 
 add_library(evhtp ${LIBEVHTP_SOURCE_FILES})
 target_link_libraries(evhtp PUBLIC ${LIBEVHTP_EXTERNAL_LIBS})
-target_include_directories(evhtp PUBLIC ${LIBEVHTP_EXTERNAL_INCLUDES})
 
 target_compile_definitions(evhtp PUBLIC "PROJECT_VERSION=${PROJECT_VERSION}")
 if(has_stack_protector)
@@ -125,10 +115,6 @@ endif()
 
 if(has_c99)
     target_compile_definitions(evhtp PUBLIC EVHTP_HAS_C99)
-endif()
-
-if (HAVE_SYS_TYPES_H)
-    target_compile_definitions(evhtp PUBLIC EVHTP_HAS_SYS_TYPES)
 endif()
 
 if(NOT HAVE_SYS_TREE)
@@ -179,7 +165,7 @@ if(EVHTP_USE_DEFER_ACCEPT)
     target_compile_definitions(evhtp PUBLIC USE_DEFER_ACCEPT)
 endif()
 
-if(OPENSSL_FOUND AND APPLE)
+if(APPLE)
     # Darwin based hosts have deprecated normal openssl functions, which is
     # annoying to see warnings, for now, just ignore them.
     target_compile_options(evhtp PRIVATE -Wno-deprecated-declarations)
@@ -195,9 +181,7 @@ endif()
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/include/evhtp/config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h)
-
-list(APPEND evhtp_dir_headers
-    "${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h")
+list(APPEND evhtp_dir_headers "${CMAKE_CURRENT_BINARY_DIR}/include/evhtp/config.h")
 
 target_include_directories(evhtp PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>

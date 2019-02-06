@@ -3,6 +3,10 @@
 #include <ctype.h>
 #include <string.h>
 
+#ifdef EVHTP_HAS_SYS_TYPES
+#include <sys/types.h>
+#endif
+
 #include "internal.h"
 #include "evhtp/parser.h"
 #include "evhtp/config.h"

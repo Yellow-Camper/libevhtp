@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
-project(libevhtp VERSION "1.2.17")
+project(libevhtp VERSION "1.2.18")
 
 # For us YCM users.
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -34,6 +34,7 @@ check_include_files(stdarg.h    HAVE_STDARG_PROTOTYPES)
 check_include_files(sys/tree.h  HAVE_SYS_TREE)
 check_include_files(sys/queue.h HAVE_SYS_QUEUE)
 check_include_files(sys/un.h    HAVE_SYS_UN)
+check_include_files(sys/types.h HAVE_SYS_TYPES_H)
 
 check_type_size("int" SIZEOF_INT)
 check_type_size("long" SIZEOF_LONG)
@@ -124,6 +125,10 @@ endif()
 
 if(has_c99)
     target_compile_definitions(evhtp PUBLIC EVHTP_HAS_C99)
+endif()
+
+if (HAVE_SYS_TYPES_H)
+    target_compile_definitions(evhtp PUBLIC EVHTP_HAS_SYS_TYPES)
 endif()
 
 if(NOT HAVE_SYS_TREE)

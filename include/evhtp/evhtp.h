@@ -26,6 +26,7 @@
 
 #ifndef EVHTP_DISABLE_SSL
 #include <event2/bufferevent_ssl.h>
+#include <openssl/dh.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
@@ -188,10 +189,10 @@ typedef evhtp_ssl_sess_t * (* evhtp_ssl_scache_get)(evhtp_connection_t * connect
 typedef void * (* evhtp_ssl_scache_init)(evhtp_t *);
 #endif
 
-#define EVHTP_VERSION           "1.2.17"
+#define EVHTP_VERSION           "1.2.18"
 #define EVHTP_VERSION_MAJOR     1
 #define EVHTP_VERSION_MINOR     2
-#define EVHTP_VERSION_PATCH     17
+#define EVHTP_VERSION_PATCH     18
 
 #define evhtp_headers_iterator  evhtp_kvs_iterator
 

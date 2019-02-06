@@ -2013,25 +2013,46 @@ htp__request_parse_fini_(htparser * p)
     return 0;
 } /* htp__request_parse_fini_ */
 
+static size_t
+htp__evbuffer_add_iovec_(struct evbuffer * buf, struct evbuffer_iovec * vec, int n_vec)
+{
+#if LIBEVENT_VERSION_NUMBER < 0x02010000
+    int    n;
+    size_t res;
+    size_t to_alloc;
+
+    res = to_alloc = 0;
+
+    for (n = 0; n < n_vec; n++) {
+        to_alloc += vec[n].iov_len;
+    }
+
+    evbuffer_expand(buf, to_alloc);
+
+    for (n = 0; n < n_vec; n++) {
+        evbuffer_add(buf, vec[n].iov_base, vec[n].iov_len);
+
+        res += vec[n].iov_len;
+    }
+
+    return res;
+#else
+    return evbuffer_add_iovec(buf, vec, n_vec);
+#endif
+}
+
 static int
 htp__create_headers_(evhtp_header_t * header, void * arg)
 {
-    struct evbuffer     * buf = arg;
-    struct evbuffer_iovec iov[4];
+    struct evbuffer     * buf    = arg;
+    struct evbuffer_iovec iov[4] = {
+        { header->key, header->klen },
+        { ": ",        2            },
+        { header->val, header->vlen },
+        { "\r\n",      2            }
+    };
 
-    iov[0].iov_base = header->key;
-    iov[0].iov_len  = header->klen;
-
-    iov[1].iov_base = ": ";
-    iov[1].iov_len  = 2;
-
-    iov[2].iov_base = header->val;
-    iov[2].iov_len  = header->vlen;
-
-    iov[3].iov_base = "\r\n";
-    iov[3].iov_len  = 2;
-
-    evbuffer_add_iovec(buf, iov, 4);
+    htp__evbuffer_add_iovec_(buf, iov, 4);
 
     return 0;
 }
@@ -2140,47 +2161,20 @@ check_proto:
      * of the header.
      */
     {
-        struct evbuffer_iovec iov[9];
         const char          * status_str = status_code_to_str(code);
+        struct evbuffer_iovec iov[9]     = {
+            { "HTTP/1",           5                  }, /* data == "HTTP/" */
+            { (void *)&major,     1                  }, /* data == "HTTP/X */
+            { ".",                1                  }, /* data == "HTTP/X." */
+            { (void *)&minor,     1                  }, /* data == "HTTP/X.X" */
+            { " ",                1                  }, /* data == "HTTP/X.X " */
+            { out_buf,            strlen(out_buf)    }, /* data = "HTTP/X.X YYY" */
+            { " ",                1                  }, /* data = "HTTP/X.X YYY " */
+            { (void *)status_str, strlen(status_str) }, /* data = "HTTP/X.X YYY ZZZ" */
+            { "\r\n",             2                  }, /* data = "HTTP/X.X YYY ZZZ\r\n" */
+        };
 
-        /* data == "HTTP/" */
-        iov[0].iov_base = "HTTP/";
-        iov[0].iov_len  = 5;
-
-        /* data == "HTTP/X" */
-        iov[1].iov_base = (void *)&major;
-        iov[1].iov_len  = 1;
-
-        /* data == "HTTP/X." */
-        iov[2].iov_base = ".";
-        iov[2].iov_len  = 1;
-
-        /* data == "HTTP/X.X" */
-        iov[3].iov_base = (void *)&minor;
-        iov[3].iov_len  = 1;
-
-
-        /* data == "HTTP/X.X " */
-        iov[4].iov_base = " ";
-        iov[4].iov_len  = 1;
-
-        /* data == "HTTP/X.X YYY" */
-        iov[5].iov_base = out_buf;
-        iov[5].iov_len  = strlen(out_buf);
-
-        /* data == "HTTP/X.X YYY " */
-        iov[6].iov_base = " ";
-        iov[6].iov_len  = 1;
-
-        /* data == "HTTP/X.X YYY ZZZ" */
-        iov[7].iov_base = (void *)status_str;
-        iov[7].iov_len  = strlen(status_str);
-
-        /* data == "HTTP/X.X YYY ZZZ\r\n" */
-        iov[8].iov_base = "\r\n";
-        iov[8].iov_len  = 2;
-
-        evbuffer_add_iovec(buf, iov, 9);
+        htp__evbuffer_add_iovec_(buf, iov, 9);
     }
 
     evhtp_headers_for_each(request->headers_out, htp__create_headers_, buf);
@@ -2870,34 +2864,29 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
 
 #ifndef EVHTP_DISABLE_SSL
 #ifndef EVHTP_DISABLE_EVTHR
-static
-#if OPENSSL_VERSION_NUMBER >= 0x10000000L
-void
-#else
-unsigned long
-#endif
-htp__ssl_get_thread_id_(
-#if OPENSSL_VERSION_NUMBER >= 0x10000000L
-    CRYPTO_THREADID * id
-#else
-    void
-#endif
-    )
-{
-    unsigned long tid;
 
 #ifndef WIN32
-    tid = (unsigned long)pthread_self();
+#define _HTP_tid (unsigned long)pthread_self()
 #else
-    tid = pthread_self().p;
+#define _HTP_tid pthread_self().p
 #endif
 
-#if OPENSSL_VERSION_NUMBER >= 0x10000000L
-    CRYPTO_THREADID_set_numeric(id, tid);
-#else
-    return tid;
-#endif
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
+static unsigned long
+htp__ssl_get_thread_id_(void)
+{
+    return _HTP_tid;
 }
+
+#else
+
+static void
+htp__ssl_get_thread_id_(CRYPTO_THREADID * id)
+{
+    CRYPTO_THREADID_set_numeric(id, _HTP_tid);
+}
+
+#endif
 
 static void
 htp__ssl_thread_lock_(int mode, int type, const char * file, int line)

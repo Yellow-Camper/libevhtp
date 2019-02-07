@@ -4,6 +4,7 @@
  * @brief implementation file for libevhtp.
  */
 
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -12,6 +13,7 @@
 #include <strings.h>
 #include <inttypes.h>
 #include <stdbool.h>
+#include <sys/param.h> /* MIN/MAX macro */
 #ifndef WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -2013,32 +2015,38 @@ htp__request_parse_fini_(htparser * p)
     return 0;
 } /* htp__request_parse_fini_ */
 
-static size_t
+static int
 htp__evbuffer_add_iovec_(struct evbuffer * buf, struct evbuffer_iovec * vec, int n_vec)
 {
-#if LIBEVENT_VERSION_NUMBER < 0x02010000
     int    n;
-    size_t res;
     size_t to_alloc;
+    char * bufptr;
+    size_t to_copy;
 
-    res = to_alloc = 0;
+    to_alloc = 0;
 
     for (n = 0; n < n_vec; n++) {
         to_alloc += vec[n].iov_len;
     }
 
-    evbuffer_expand(buf, to_alloc);
+    char buffer[to_alloc];
 
-    for (n = 0; n < n_vec; n++) {
-        evbuffer_add(buf, vec[n].iov_base, vec[n].iov_len);
+    bufptr  = buffer;
+    to_copy = to_alloc;
 
-        res += vec[n].iov_len;
+    for (n = 0; n < n_vec; n++)
+    {
+        size_t copy = MIN(vec[n].iov_len, to_copy);
+
+        bufptr   = mempcpy(bufptr, vec[n].iov_base, copy);
+        to_copy -= copy;
+
+        if (evhtp_unlikely(to_copy == 0)) {
+            break;
+        }
     }
 
-    return res;
-#else
-    return evbuffer_add_iovec(buf, vec, n_vec);
-#endif
+    return evbuffer_add(buf, buffer, to_alloc);
 }
 
 static int

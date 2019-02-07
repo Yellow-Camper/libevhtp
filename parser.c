@@ -569,7 +569,7 @@ void
 htparser_init(htparser * p, htp_type type)
 {
     /* Do not memset entire string buffer. */
-    memset(p, 0, offsetof(htparser, buf));
+    //memset(p, 0, offsetof(htparser, buf));
     p->buf[0] = '\0';
     p->state  = s_start;
     p->error  = htparse_error_none;

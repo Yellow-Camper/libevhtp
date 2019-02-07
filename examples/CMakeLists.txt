@@ -13,8 +13,15 @@ add_executable(example_request_fini EXCLUDE_FROM_ALL example_request_fini.c)
 add_executable(example_basic EXCLUDE_FROM_ALL example_basic.c)
 
 if(NOT EVHTP_DISABLE_EVTHR)
-    #add_executable(example_locality EXCLUDE_FROM_ALL example_locality.c)
-    #target_link_libraries(example_locality evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+    if ("${CMAKE_SYSTEM}" MATCHES "Linux")
+        add_executable(example_locality EXCLUDE_FROM_ALL example_locality.c)
+        target_link_libraries(example_locality evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+        add_executable(reuse_thread_svr EXCLUDE_FROM_ALL reuse_thread_svr.c)
+        target_link_libraries(reuse_thread_svr evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})
+
+        add_dependencies(examples example_locality reuse_thread_svr)
+    endif()
    
 	add_executable(test_proxy EXCLUDE_FROM_ALL test_proxy.c)
 	target_link_libraries(test_proxy evhtp ${LIBEVHTP_EXTERNAL_LIBS} ${SYS_LIBS})

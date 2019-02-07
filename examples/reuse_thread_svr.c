@@ -16,6 +16,10 @@
 #include <evhtp/thread.h>
 #include <evhtp/evhtp.h>
 
+#ifndef SO_ATTACH_REUSEPORT_CBPF
+#define SO_ATTACH_REUSEPORT_CBPF 51
+#endif
+
 #define CPU__COUNT sysconf(_SC_NPROCESSORS_ONLN)
 
 static int _init    = 0;

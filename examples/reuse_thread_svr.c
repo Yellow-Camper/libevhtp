@@ -11,7 +11,6 @@
 
 #include <pthread.h>
 #include <sched.h>
-#include <linux/bpf.h>
 #include <linux/filter.h>
 
 #include <evhtp/thread.h>

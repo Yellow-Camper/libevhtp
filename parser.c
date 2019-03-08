@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <ctype.h>
@@ -1231,6 +1232,10 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
                         HTP_SET_BUF(ch);
                     } else {
+                        break;
+                    }
+
+                    if (evhtp_unlikely(i + 1 >= len)) {
                         break;
                     }
 

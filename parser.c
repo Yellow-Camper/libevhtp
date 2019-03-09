@@ -835,6 +835,10 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         HTP_SET_BUF(ch);
                     }
 
+                    if (evhtp_unlikely(i + 1 >= len)) {
+                        break;
+                    }
+
                     ch = data[++i];
                 } while (i < len);
 
@@ -1319,6 +1323,10 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         break;
                     }
 
+                    if (evhtp_unlikely(i + 1 >= len)) {
+                        break;
+                    }
+
                     ch = data[++i];
                 } while (i < len);
 
@@ -1731,6 +1739,10 @@ hdrline_start:
 
                     if (p->state != s_hdrline_hdr_key)
                     {
+                        break;
+                    }
+
+                    if (evhtp_unlikely(i + 1 >= len)) {
                         break;
                     }
 

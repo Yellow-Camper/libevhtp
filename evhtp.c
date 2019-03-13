@@ -4290,10 +4290,58 @@ evhtp_callback_free(evhtp_callback_t * callback)
 int
 evhtp_callbacks_add_callback(evhtp_callbacks_t * cbs, evhtp_callback_t * cb)
 {
+#ifdef EVHTP_SORT_CALLBACKS
+    evhtp_callback_t * callback;
+    size_t             cblen;
+
+    if (TAILQ_FIRST(cbs) == NULL) {
+        TAILQ_INSERT_TAIL(cbs, cb, next);
+
+        return 0;
+    }
+
+    switch (cb->type) {
+        case evhtp_callback_type_hash:
+            cblen = cb->len;
+            break;
+        case evhtp_callback_type_glob:
+            cblen = strlen(cb->val.glob);
+            break;
+        case evhtp_callback_type_regex:
+            cblen = 0;
+            break;
+        default:
+            cblen = 0;
+            break;
+    }
+
+    TAILQ_FOREACH(callback, cbs, next) {
+        size_t len = 0;
+
+        switch (callback->type) {
+            case evhtp_callback_type_hash:
+                len = callback->len;
+                break;
+            case evhtp_callback_type_regex:
+                len = 0;
+                break;
+            case evhtp_callback_type_glob:
+                len = strlen(callback->val.glob);
+                break;
+        }
+
+        if (cblen >= len) {
+            TAILQ_INSERT_BEFORE(callback, cb, next);
+
+            return 0;
+        }
+    }
+#endif
+
     TAILQ_INSERT_TAIL(cbs, cb, next);
 
     return 0;
-}
+} /* evhtp_callbacks_add_callback */
 
 static int
 htp__set_hook_(evhtp_hooks_t ** hooks, evhtp_hook_type type, evhtp_hook cb, void * arg)

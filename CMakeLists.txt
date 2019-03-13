@@ -123,6 +123,10 @@ if(EVHTP_THR_SHARED_PIPE)
     target_compile_definitions(evhtp PUBLIC EVTHR_SHARED_PIPE)
 endif()
 
+if (EVHTP_SORT_CALLBACKS)
+    target_compile_definitions(evhtp PUBLIC EVHTP_SORT_CALLBACKS)
+endif()
+
 if(has_c99)
     target_compile_definitions(evhtp PUBLIC EVHTP_HAS_C99)
 endif()

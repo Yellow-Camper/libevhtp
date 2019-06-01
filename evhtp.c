@@ -2871,7 +2871,7 @@ htp__accept_cb_(struct evconnlistener * serv, int fd, struct sockaddr * s, int s
 }     /* htp__accept_cb_ */
 
 #ifndef EVHTP_DISABLE_SSL
-#ifndef EVHTP_DISABLE_EVTHR
+#if !defined(EVHTP_DISABLE_EVTHR) && (OPENSSL_VERSION_NUMBER < 0x10100000L)
 
 #ifndef WIN32
 #define _HTP_tid (unsigned long)pthread_self()
@@ -4583,7 +4583,7 @@ htp__use_threads_(evhtp_t * htp,
     htp->thread_init_cb = init_cb;
     htp->thread_exit_cb = exit_cb;
 
-#ifndef EVHTP_DISABLE_SSL
+#if !defined(EVHTP_DISABLE_EVTHR) && (OPENSSL_VERSION_NUMBER < 0x10100000L)
     evhtp_ssl_use_threads();
 #endif
 
@@ -4731,7 +4731,7 @@ evhtp_set_post_accept_cb(evhtp_t * htp, evhtp_post_accept_cb cb, void * arg)
 }
 
 #ifndef EVHTP_DISABLE_SSL
-#ifndef EVHTP_DISABLE_EVTHR
+#if !defined(EVHTP_DISABLE_EVTHR) && (OPENSSL_VERSION_NUMBER < 0x10100000L)
 int
 evhtp_ssl_use_threads(void)
 {

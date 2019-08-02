@@ -779,7 +779,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                 p->port_offset      = NULL;
                 p->path_offset      = NULL;
                 p->args_offset      = NULL;
-
+                p->buf_idx          = 0;
 
                 res = hook_on_msg_begin_run(p, hooks);
 

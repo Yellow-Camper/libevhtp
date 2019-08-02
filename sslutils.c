@@ -11,8 +11,8 @@
 #include "internal.h"
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-#define X509_get0_notBefore X509_get_notBefore
-#define X509_get0_notAfter X509_get_notAfter
+#define X509_get0_notBefore(x) X509_get_notBefore(x)
+#define X509_get0_notAfter(x) X509_get_notAfter(x)
 #endif
 
 unsigned char *

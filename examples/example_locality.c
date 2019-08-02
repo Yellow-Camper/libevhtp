@@ -11,11 +11,14 @@
 
 #include <pthread.h>
 #include <sched.h>
-#include <linux/bpf.h>
 #include <linux/filter.h>
 
 #include <evhtp/thread.h>
 #include <evhtp/evhtp.h>
+
+#ifndef SO_ATTACH_REUSEPORT_CBPF
+#define SO_ATTACH_REUSEPORT_CBPF 51
+#endif
 
 #define CPU__COUNT sysconf(_SC_NPROCESSORS_ONLN)
 

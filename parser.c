@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <ctype.h>
@@ -569,7 +570,7 @@ void
 htparser_init(htparser * p, htp_type type)
 {
     /* Do not memset entire string buffer. */
-    memset(p, 0, offsetof(htparser, buf));
+    //memset(p, 0, offsetof(htparser, buf));
     p->buf[0] = '\0';
     p->state  = s_start;
     p->error  = htparse_error_none;
@@ -832,6 +833,10 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         }
 
                         HTP_SET_BUF(ch);
+                    }
+
+                    if (evhtp_unlikely(i + 1 >= len)) {
+                        break;
                     }
 
                     ch = data[++i];
@@ -1234,6 +1239,10 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         break;
                     }
 
+                    if (evhtp_unlikely(i + 1 >= len)) {
+                        break;
+                    }
+
                     ch = data[++i];
                 } while (i < len);
 
@@ -1311,6 +1320,10 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                     if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
                         HTP_SET_BUF(ch);
                     } else {
+                        break;
+                    }
+
+                    if (evhtp_unlikely(i + 1 >= len)) {
                         break;
                     }
 
@@ -1726,6 +1739,10 @@ hdrline_start:
 
                     if (p->state != s_hdrline_hdr_key)
                     {
+                        break;
+                    }
+
+                    if (evhtp_unlikely(i + 1 >= len)) {
                         break;
                     }
 

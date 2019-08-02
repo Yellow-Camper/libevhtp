@@ -52,7 +52,7 @@ main(int argc, char ** argv)
     evhtp_request_t    * request;
 
     evbase  = event_base_new();
-    conn    = evhtp_connection_new(evbase, "75.126.169.52", 80);
+    conn    = evhtp_connection_new(evbase, "104.27.150.225", 80);
     request = evhtp_request_new(request_cb, evbase);
 
     evhtp_request_set_hook(request, evhtp_hook_on_read, print_data, evbase);

@@ -1,4 +1,14 @@
-v1.2.17
+v1.2.18
+ o Add htp__evbuffer_add_iovec_ helper for libevent < 2.1 (8991567 Nathan French)
+ o [#122] Fix compilation without deprecated OpenSSL 1.1 APIs (78e8e41 Rosen Penev)
+ o [#122] Reorganize OpenSSL < 1.0.0 compatibility for greater readability. (8e543fe Rosen Penev)
+ o [#123] add missing include <sys/types.h> for ssize_t (6a74ec7 maxice8)
+ o [#123] include sys/types only if EVHTP_HAS_SYS_TYPES is set (0839f8e Nathan French)
+ o [#122] cleanup for ssl locking changes (7d0fd5d Nathan French)
+ o better get0_notBefore ssl defs (8ae5cdd Nathan French)
+ o cleanup / optimization for iovec operations (874a225 Nathan French)
+
+v1.2.17 (alpha/beta)
  o [#111] assert frontends not compiled with -DNDEBUG (07d6f5f Nathan French)
  o [#111] Remove asserts for alloc functions. (#112) (114bf53 Nathan French)
  o [#108] do not include content-length with chunked (#113) (73255df Nathan French)

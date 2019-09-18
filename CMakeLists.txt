@@ -14,6 +14,7 @@ include(CheckIncludeFiles)
 include(CheckTypeSize)
 include(CheckCCompilerFlag)
 include(TestBigEndian)
+include(GNUInstallDirs)
 
 check_function_exists(strndup HAVE_STRNDUP)
 check_function_exists(strnlen HAVE_STRNLEN)

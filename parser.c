@@ -1230,7 +1230,8 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 res = 0;
 
-                do {
+                for (; i < len - 1; i++, ch = data[i]) {
+
                     log_debug("[%p] s_check_uri", p);
 
                     if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
@@ -1239,12 +1240,7 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
                         break;
                     }
 
-                    if (evhtp_unlikely(i + 1 >= len)) {
-                        break;
-                    }
-
-                    ch = data[++i];
-                } while (i < len);
+                }
 
                 switch (ch) {
                     case ' ':
@@ -1316,19 +1312,13 @@ htparser_run(htparser * p, htparse_hooks * hooks, const char * data, size_t len)
 
                 res = 0;
 
-                do {
+                for (; i < len - 1; i++, ch = data[i]) {
                     if (usual[ch >> 5] & (1 << (ch & 0x1f))) {
                         HTP_SET_BUF(ch);
                     } else {
                         break;
                     }
-
-                    if (evhtp_unlikely(i + 1 >= len)) {
-                        break;
-                    }
-
-                    ch = data[++i];
-                } while (i < len);
+                }
 
                 switch (ch) {
                     case ' ':

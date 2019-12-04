@@ -8,9 +8,9 @@
 #include <sys/types.h>
 #endif
 
+#include "evhtp/config.h"
 #include "internal.h"
 #include "evhtp/parser.h"
-#include "evhtp/config.h"
 
 #if '\n' != '\x0a' || 'A' != 65
 #error "You have somehow found a non-ASCII host. We can't build here."
@@ -36,6 +36,7 @@ enum parser_flags {
     parser_flag_connection_keep_alive = (1 << 1),
     parser_flag_connection_close      = (1 << 2),
     parser_flag_trailing              = (1 << 3),
+    parser_flag_have_content_length   = (1 << 4),
 };
 
 enum parser_state {
@@ -1814,6 +1815,7 @@ hdrline_start:
                                     p->error = htparse_error_too_big;
                                     return i + 1;
                                 }
+                                p->flags |= parser_flag_have_content_length;
 
                                 break;
                             case eval_hdr_val_connection:
@@ -2028,8 +2030,22 @@ hdrline_start:
                             p->state = s_body_read;
                         } else if (p->content_len == 0)
                         {
-                            res      = hook_on_msg_complete_run(p, hooks);
-                            p->state = s_start;
+                            if (p->flags & parser_flag_have_content_length)
+                            {
+                                res      = hook_on_msg_complete_run(p, hooks);
+                                p->state = s_start;
+                            }else{
+                                if(i + 1 < len)
+                                {
+                                    p->content_len = len - i - 1;
+                                    p->state = s_body_read;
+                                }
+                                else
+                                {
+                                    res      = hook_on_msg_complete_run(p, hooks);
+                                    p->state = s_start;
+                                }
+                            }
                         } else {
                             p->state = s_hdrline_done;
                         }
@@ -2072,8 +2088,23 @@ hdrline_start:
                     i--;
                 } else if (p->content_len == 0)
                 {
-                    res      = hook_on_msg_complete_run(p, hooks);
-                    p->state = s_start;
+                    if (p->flags & parser_flag_have_content_length)
+                    {
+                        res      = hook_on_msg_complete_run(p, hooks);
+                        p->state = s_start;
+                    }else{
+                        if(i < len)
+                        {
+                            p->content_len = len - i;
+                            p->state = s_body_read;
+							i--;
+                        }
+                        else
+                        {
+                            res      = hook_on_msg_complete_run(p, hooks);
+                            p->state = s_start;
+                        }
+                    }
                 }
 
                 if (res)

@@ -576,6 +576,7 @@ htparser_init(htparser * p, htp_type type)
     p->error  = htparse_error_none;
     p->method = htp_method_UNKNOWN;
     p->type   = type;
+    p->buf_idx= 0;
 }
 
 htparser *

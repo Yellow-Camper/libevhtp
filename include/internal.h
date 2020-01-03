@@ -18,7 +18,7 @@ extern "C" {
 #       define evhtp_unlikely(x)       (x)
 #endif
 
-#ifndef mempcpy
+#if defined __APPLE__
 #       define mempcpy(...)  memcpy(__VA_ARGS__)
 #endif
 

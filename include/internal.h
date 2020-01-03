@@ -18,6 +18,10 @@ extern "C" {
 #       define evhtp_unlikely(x)       (x)
 #endif
 
+#ifndef mempcpy
+#       define mempcpy(...)  memcpy(__VA_ARGS__)
+#endif
+
 #ifndef TAILQ_FOREACH_SAFE
 #define TAILQ_FOREACH_SAFE(var, head, field, tvar)        \
     for ((var) = TAILQ_FIRST((head));                     \

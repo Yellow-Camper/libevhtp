@@ -2,7 +2,7 @@
  * How to exploit the wonders of libevhtp's threading model to avoid using
  * libevent's locking API.
  *
- * In this example we use Redis's Async API (Libhiredis) store and retr the following
+ * In this example we use Redis's Async API (Libhiredis) store and retry the following
  * information for a request:
  *
  * Total requests seen.

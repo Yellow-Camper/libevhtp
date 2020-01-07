@@ -5421,6 +5421,9 @@ evhtp_connection_new_dns(struct event_base * evbase, struct evdns_base * dns_bas
     } else {
         struct sockaddr_in  sin4;
         struct sockaddr_in6 sin6;
+#ifndef NO_SYS_UN
+        struct sockaddr_un  sun;
+#endif
         struct sockaddr   * sin;
         int                 salen;
 
@@ -5434,6 +5437,16 @@ evhtp_connection_new_dns(struct event_base * evbase, struct evdns_base * dns_bas
             sin6.sin6_port   = htons(port);
             sin = (struct sockaddr *)&sin6;
             salen = sizeof(sin6);
+        } else if (strlen(addr) > 5 && strncmp("unix:", addr, 5) == 0) {
+#ifndef NO_SYS_UN
+            sun.sun_family = AF_UNIX;
+            strncpy(sun.sun_path, addr+5, sizeof(sun.sun_path));
+            sin = (struct sockaddr *)&sun;
+            salen = sizeof(sun);
+#else
+            evhtp_safe_free(conn, evhtp_connection_free);
+            return NULL;
+#endif
         } else {
             /* Not a valid IP. */
             evhtp_safe_free(conn, evhtp_connection_free);

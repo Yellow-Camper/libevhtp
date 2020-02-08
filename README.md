@@ -30,6 +30,9 @@
 * cmake -G "MSYS Makefiles" -DCMAKE_INCLUDE_PATH=/mingw/include -DCMAKE_LIBRARY_PATH=/mingw/lib -DCMAKE_INSTALL_PREFIX=/mingw  .
 * make
 
+## For vcpkg (Linux & Mac)
+If you are using [vcpkg](https://github.com/Microsoft/vcpkg) on your project for external dependencies, then you can use the [libevhtp](https://github.com/microsoft/vcpkg/tree/master/ports/libevhtp) package. Please see the vcpkg project for any issues regarding the packaging.
+
 ## Performance stuff
 
 While we never documented any benchmark publically,

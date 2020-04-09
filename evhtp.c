@@ -13,8 +13,8 @@
 #include <strings.h>
 #include <inttypes.h>
 #include <stdbool.h>
-#include <sys/param.h> /* MIN/MAX macro */
 #ifndef WIN32
+#include <sys/param.h> /* MIN/MAX macro */
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -36,6 +36,10 @@
 #include "numtoa.h"
 #include "evhtp/evhtp.h"
 
+/* `MIN' is not defined on Windows and mingw */
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
 /**
  * @brief structure containing a single callback and configuration
  *

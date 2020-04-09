@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#endif
 
 static void *
 mm__dup_(const void * src, size_t size)

@@ -4,10 +4,14 @@
 #include <stdint.h>
 #include <errno.h>
 #include <assert.h>
+#ifdef _WIN32
+#include <time.h>
+#include <winsock2.h>
+#else
 #include <sys/time.h>
 #include <arpa/inet.h>
 #include <sys/queue.h>
-
+#endif
 #include "evhtp/evhtp.h"
 #include "evhtp/log.h"
 

@@ -33,6 +33,7 @@ extern "C" {
 #define clean_errno() \
     (errno == 0 ? "None" : strerror(errno))
 
+#ifndef _MSC_VER
 #define __log_debug_color(X)           "[\x1b[1;36m" X "\x1b[0;39m]"
 #define __log_error_color(X)           "[\x1b[1;31m" X "\x1b[0;39m]"
 #define __log_warn_color(X)            "[\x1b[1;33m" X "\x1b[0;39m]"
@@ -40,7 +41,15 @@ extern "C" {
 #define __log_func_color(X)            "\x1b[33m" X "\x1b[39m"
 #define __log_args_color(X)            "\x1b[94m"  X "\x1b[39m"
 #define __log_errno_color(X)           "\x1b[35m" X "\x1b[39m"
-
+#else
+#define __log_debug_color(X)            X
+#define __log_error_color(X)            X
+#define __log_warn_color(X)             X
+#define __log_info_color(X)             X
+#define __log_func_color(X)             X
+#define __log_args_color(X)             X
+#define __log_errno_color(X)            X
+#endif
 
 #if !defined(EVHTP_DEBUG)
 /* compile with all debug messages removed */
@@ -127,8 +136,21 @@ extern "C" {
 #define evhtp_errno_assert(x)
 #endif
 
+#ifdef _MSC_VER
+#define strcasecmp stricmp
+#define strncasecmp strnicmp
 
+/* On MSVC, ssize_t is SSIZE_T */
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
+#ifdef NO_STRNLEN
+size_t strnlen(const char * s, size_t maxlen)
+#endif
+#ifdef NO_STRNDUP
+char * strndup(const char * s, size_t n);
+#endif
 
 #ifdef __cplusplus
 }

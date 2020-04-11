@@ -29,9 +29,14 @@ request__callback_(evhtp_request_t * req, void * arg) {
 
 int
 main(int argc, char ** argv) {
+    int                 res;
     struct event_base * evbase;
     evhtp_callback_t  * req_callback;
     evhtp_t           * htp;
+#ifdef _WIN32
+    WSADATA             wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
 
     evbase       = event_base_new();
     evhtp_alloc_assert(evbase);
@@ -59,5 +64,9 @@ main(int argc, char ** argv) {
              GENCHAR(), GENCHAR(), GENCHAR());
 
 
-    return event_base_loop(evbase, 0);
+    res = event_base_loop(evbase, 0);
+#ifdef _WIN32
+    WSACleanup();
+#endif
+    return res;
 }

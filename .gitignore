@@ -10,3 +10,5 @@ build/*
 !build/.gitkeep
 cmake-build-debug
 .idea
+.vscode/
+.DS_Store

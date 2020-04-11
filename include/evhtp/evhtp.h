@@ -607,8 +607,8 @@ EVHTP_EXPORT int evhtp_ssl_init(evhtp_t * htp, evhtp_ssl_cfg_t * ssl_cfg);
  *
  * @param htp
  */
-EVHTP_EXPORT void evhtp_disable_100_continue(evhtp_t * htp)
-DEPRECATED("evhtp_disable_100 will soon be deprecated, use htp->flags instead");
+DEPRECATED("evhtp_disable_100 will soon be deprecated, use htp->flags instead")
+EVHTP_EXPORT void evhtp_disable_100_continue(evhtp_t * htp);
 
 /**
  * @brief creates a lock around callbacks and hooks, allowing for threaded
@@ -858,8 +858,8 @@ EVHTP_EXPORT int evhtp_bind_sockaddr(evhtp_t * htp, struct sockaddr *,
  *
  * @return
  */
-EVHTP_EXPORT int evhtp_use_threads(evhtp_t *, evhtp_thread_init_cb, int nthreads, void *)
-DEPRECATED("will take on the syntax of evhtp_use_threads_wexit");
+DEPRECATED("will take on the syntax of evhtp_use_threads_wexit")
+EVHTP_EXPORT int evhtp_use_threads(evhtp_t *, evhtp_thread_init_cb, int nthreads, void *);
 
 /**
  * @brief Temporary function which will be renamed evhtp_use_threads in the
@@ -1125,7 +1125,7 @@ EVHTP_EXPORT int evhtp_kvs_for_each(evhtp_kvs_t * kvs, evhtp_kvs_iterator cb, vo
  *
  * @return evhtp_query_t * on success, NULL on error
  */
-EVHTP_EXPORT evhtp_query_t * evhtp_parse_query_wflags(const char * query, size_t len, int flags);
+EVHTP_EXPORT evhtp_query_t * evhtp_parse_query_wflags(const char * query, const size_t len, const int flags);
 
 /**
  * @brief Parses the query portion of the uri into a set of key/values in a

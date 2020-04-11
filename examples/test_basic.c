@@ -36,8 +36,14 @@ issue161cb(evhtp_request_t * req, void * a) {
 
 int
 main(int argc, char ** argv) {
-    evbase_t * evbase = event_base_new();
-    evhtp_t  * htp    = evhtp_new(evbase, NULL);
+    evbase_t * evbase;
+    evhtp_t  * htp;
+#ifdef _WIN32
+    WSADATA    wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
+    evbase = event_base_new();
+    htp    = evhtp_new(evbase, NULL);
 
     evhtp_set_cb(htp, "/simple/", testcb, "simple");
     evhtp_set_cb(htp, "/1/ping", testcb, "one");
@@ -53,6 +59,9 @@ main(int argc, char ** argv) {
     evhtp_unbind_socket(htp);
     evhtp_safe_free(htp, evhtp_free);
     evhtp_safe_free(evbase, event_base_free);
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 }

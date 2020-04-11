@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
@@ -7,6 +6,7 @@
 #include <signal.h>
 #include <inttypes.h>
 #include <event2/event.h>
+#include <getopt.h>
 
 #include "internal.h"
 #include "evhtp/evhtp.h"
@@ -542,6 +542,10 @@ main(int argc, char ** argv) {
     evhtp_callback_t * cb_11  = NULL;
     evhtp_callback_t * cb_12  = NULL;
 
+#ifdef _WIN32
+    WSADATA            wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
     if (parse_args(argc, argv) < 0) {
         exit(1);
     }
@@ -676,6 +680,9 @@ main(int argc, char ** argv) {
 
     evhtp_safe_free(htp, evhtp_free);
     evhtp_safe_free(evbase, event_base_free);
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 } /* main */

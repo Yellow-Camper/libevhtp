@@ -186,9 +186,9 @@ if(OPENSSL_FOUND AND APPLE)
 endif()
 
 if(WIN32)
-    target_compile_definitions(evhtp PUBLIC WIN32)
-    find_library(LIB_WS32 ws2_32)
-    list(APPEND SYS_LIBS ${LIB_WS32})
+    target_compile_definitions(evhtp PUBLIC WIN32 _CRT_SECURE_NO_WARNINGS)
+    target_link_libraries(evhtp PUBLIC ws2_32 iphlpapi)
+    list(APPEND SYS_LIBS ws2_32 iphlpapi)
 endif()
 
 configure_file(

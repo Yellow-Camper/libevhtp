@@ -225,6 +225,10 @@ int
 main(int argc, char ** argv)
 {
     int i;
+#ifdef _WIN32
+    WSADATA wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
 
     #define PARSE_QUERY_TEST(tests, flags) do {                                          \
             printf("- " # tests "\n");                                                   \
@@ -246,6 +250,9 @@ main(int argc, char ** argv)
     unsigned char *ptr = unescaped_string;
     evhtp_unescape_string(&ptr, escaped_string, strlen(escaped_string));
     printf("%s\n", ptr);
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 }

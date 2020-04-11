@@ -10,7 +10,6 @@
 #include <stdint.h>
 #include <errno.h>
 #include <signal.h>
-#include <strings.h>
 #include <inttypes.h>
 #include <stdbool.h>
 #ifndef WIN32
@@ -333,7 +332,7 @@ evhtp_set_mem_functions(void *(*mallocfn_)(size_t len),
     realloc_ = reallocfn_;
     free_    = freefn_;
 
-    return event_set_mem_functions(malloc_, realloc_, free_);
+    event_set_mem_functions(malloc_, realloc_, free_);
 #endif
 }
 
@@ -470,7 +469,7 @@ static int             ssl_locks_initialized = 0;
  * @return length of string
  *
  */
-static size_t
+size_t
 strnlen(const char * s, size_t maxlen)
 {
     const char * e;
@@ -495,7 +494,7 @@ strnlen(const char * s, size_t maxlen)
  * @return length limited string duplicate or NULL if fail
  *
  */
-static char *
+char *
 strndup(const char * s, size_t n)
 {
     size_t len = strnlen(s, n);
@@ -2023,6 +2022,7 @@ static int
 htp__evbuffer_add_iovec_(struct evbuffer * buf, struct evbuffer_iovec * vec, int n_vec)
 {
     int    n;
+    int    res;
     size_t to_alloc;
     char * bufptr;
     size_t to_copy;
@@ -2033,7 +2033,15 @@ htp__evbuffer_add_iovec_(struct evbuffer * buf, struct evbuffer_iovec * vec, int
         to_alloc += vec[n].iov_len;
     }
 
+#ifdef _MSC_VER
+    char *buffer;
+    buffer = htp__malloc_(to_alloc * sizeof(char));
+    if (evhtp_unlikely(buffer == NULL)) {
+        return -1;
+    }
+#else
     char buffer[to_alloc];
+#endif
 
     bufptr  = buffer;
     to_copy = to_alloc;
@@ -2042,7 +2050,8 @@ htp__evbuffer_add_iovec_(struct evbuffer * buf, struct evbuffer_iovec * vec, int
     {
         size_t copy = MIN(vec[n].iov_len, to_copy);
 
-        bufptr   = mempcpy(bufptr, vec[n].iov_base, copy);
+        memcpy(bufptr, vec[n].iov_base, copy);
+        bufptr  += copy;
         to_copy -= copy;
 
         if (evhtp_unlikely(to_copy == 0)) {
@@ -2050,7 +2059,11 @@ htp__evbuffer_add_iovec_(struct evbuffer * buf, struct evbuffer_iovec * vec, int
         }
     }
 
-    return evbuffer_add(buf, buffer, to_alloc);
+    res = evbuffer_add(buf, buffer, to_alloc);
+#ifdef _MSV_VER
+    htp__free_(buffer);
+#endif
+    return res;
 }
 
 static int
@@ -3328,7 +3341,7 @@ evhtp_header_find(evhtp_headers_t * headers, const char * key)
 void
 evhtp_headers_add_header(evhtp_headers_t * headers, evhtp_header_t * header)
 {
-    return evhtp_kvs_add_kv(headers, header);
+    evhtp_kvs_add_kv(headers, header);
 }
 
 evhtp_header_t *

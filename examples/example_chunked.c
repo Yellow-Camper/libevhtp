@@ -137,6 +137,10 @@ main(int argc, char ** argv)
 {
     evhtp_t           * htp;
     struct event_base * evbase;
+#ifdef _WIN32
+    WSADATA             wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
 
     if (argc < 2) {
         printf("Usage: %s <file>\n", argv[0]);
@@ -158,7 +162,9 @@ main(int argc, char ** argv)
     log_info("curl http://127.0.0.1:%d/", bind__sock_port0_(htp));
 
     event_base_loop(evbase, 0);
-
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 }

@@ -25,6 +25,10 @@ main(int argc, char ** argv) {
     evhtp_t           * htp_v6;
     evhtp_t           * htp_v4;
     int                 rc;
+#ifdef _WIN32
+    WSADATA             wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
 
     evbase = event_base_new();
     evhtp_alloc_assert(evbase);
@@ -45,6 +49,9 @@ main(int argc, char ** argv) {
     evhtp_errno_assert(rc != -1);
 
     event_base_loop(evbase, 0);
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 } /* main */

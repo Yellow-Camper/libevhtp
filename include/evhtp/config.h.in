@@ -8,6 +8,8 @@ extern "C" {
 #ifndef EVHTP_EXPORT
 # if (defined __GNUC__ && __GNUC__ >= 4) || defined __INTEL_COMPILER || defined __clang__
 #  define EVHTP_EXPORT __attribute__ ((visibility("default")))
+# elif defined(_MSC_VER)
+#  define EVHTP_EXPORT __declspec(dllexport)
 # else
 #  define EVHTP_EXPORT
 # endif

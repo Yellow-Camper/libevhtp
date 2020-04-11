@@ -146,6 +146,10 @@ main(int argc, char ** argv)
     struct event_base * evbase;
     struct event      * dummy_ev;
     evthr_pool_t      * workers;
+#ifdef _WIN32
+    WSADATA             wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
 
     evbase   = event_base_new();
     dummy_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
@@ -160,6 +164,9 @@ main(int argc, char ** argv)
 
     evthr_pool_start(workers);
     event_base_loop(evbase, 0);
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 }

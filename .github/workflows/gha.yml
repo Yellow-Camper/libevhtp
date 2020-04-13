@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths-ignore:
+      - '**.md'
+      - 'ChangeLog*'
+      - 'LICENSE'
+  push:
+    paths-ignore:
+      - '**.md'
+      - 'ChangeLog*'
+      - 'LICENSE'
+
+jobs:
+  linux-cmake:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-18.04]
+        EVHTP_MATRIX:
+          - Debug
+
+    steps:
+      - uses: actions/checkout@v2.0.0
+      - name: Cache Build
+        uses: actions/cache@v1.1.0
+        with:
+          path: build
+          key: ${{ matrix.os }}-cmake-${{ matrix.EVHTP_MATRIX }}
+
+      - name: Install Dependes
+        run: |
+          sudo apt install libevent-dev libonig-dev
+
+      - name: Build And Test
+        shell: bash
+        run: |
+          if [ "${{ matrix.EVHTP_MATRIX }}" == "Debug" ]; then
+            EVHTP_CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=Debug"
+          fi
+
+          mkdir -p build
+          cd build
+          echo [cmake]: cmake .. $EVHTP_CMAKE_OPTIONS
+          cmake .. $EVHTP_CMAKE_OPTIONS
+          cmake --build .
+         
+      - uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: ${{ matrix.os }}-cmake-${{ matrix.EVHTP_MATRIX }}-build
+          path: build
+
+  windows-mingw:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        EVHTP_MATRIX:
+          - Debug
+
+    steps:
+      - uses: actions/checkout@v2.0.0
+
+      - name: Cache MinGW
+        id: cache-mingw-cmake
+        uses: actions/cache@v1.1.2
+        with:
+          path: D:\a\_temp\msys
+          key: windows-mingw-cmake
+
+      - name: Cache Build
+        uses: actions/cache@v1.1.2
+        with:
+          path: build
+          key: mingw-cmake-${{ matrix.EVHTP_MATRIX }}
+
+      - uses: numworks/setup-msys2@v1
+        if: steps.cache-mingw-cmake.outputs.cache-hit != 'true'
+        with:
+          msystem: MINGW64
+
+      - name: Install Dependes
+        if: steps.cache-mingw-cmake.outputs.cache-hit != 'true'
+        run: |
+          msys2do pacman -S --noconfirm mingw-w64-x86_64-gcc mingw-w64-x86_64-libevent mingw-w64-x86_64-oniguruma
+      - name: Build And Test
+        shell: powershell
+        run: |
+          if ( "${{ matrix.EVHTP_MATRIX }}" -ne "Debug" ) {
+            $EVHTP_CMAKE_OPTIONS="-DCMAKE_BUILD_TYPE=Debug"
+          }
+          $env:PATH="D:\a\_temp\msys\msys64\mingw64\bin;D:\a\_temp\msys\msys64;$env:PATH"
+          mkdir build -ea 0
+          cd build
+          cmake .. -G "MSYS Makefiles" $EVHTP_CMAKE_OPTIONS -DCMAKE_C_FLAGS=-w
+          cmake --build .
+      - uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: mingw-${{ matrix.EVHTP_MATRIX }}-build
+          path: build

@@ -1,11 +1,11 @@
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <errno.h>
 #include <signal.h>
 #include <inttypes.h>
+#include <getopt.h>
 
 #include "internal.h"
 #include "evhtp/evhtp.h"
@@ -81,8 +81,15 @@ main(int argc, char ** argv)
     {
         struct event_base * evbase;
         evhtp_t           * htp;
+#ifdef _MSC_VER
+        char              * payload;
+#else
         char                payload[payload_sz];
-
+#endif
+#ifdef _WIN32
+        WSADATA     wsaData;
+        (void)WSAStartup(0x0202, &wsaData);
+#endif
         evbase = event_base_new();
         evhtp_alloc_assert(evbase);
 
@@ -106,10 +113,16 @@ main(int argc, char ** argv)
             evhtp_enable_flag(htp, EVHTP_FLAG_ENABLE_REUSEPORT);
         }
 
+#ifdef _MSC_VER
+        payload = (char *)malloc(payload_sz * sizeof(char));
+#endif
         memset(payload, 0x42, payload_sz);
 
         evhtp_assert(evhtp_set_cb(htp, "/data", response_cb, payload));
 
+#ifdef _MSC_VER
+        free(payload);
+#endif
 #ifndef EVHTP_DISABLE_EVTHR
         if (num_threads > 0)
         {
@@ -119,6 +132,9 @@ main(int argc, char ** argv)
 
         evhtp_errno_assert(evhtp_bind_socket(htp, baddr, bport, backlog) >= 0);
         event_base_loop(evbase, 0);
+#ifdef _WIN32
+        WSACleanup();
+#endif
     }
 
 

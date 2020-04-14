@@ -45,6 +45,7 @@ on_request_user_register(evhtp_request_t * req, void * _)
 #define upm_eoff   uri->path->matched_eoff
 #define upm_soff   uri->path->matched_soff
 
+#ifndef EVHTP_DISABLE_REGEX
 static void
 on_request_user_index(evhtp_request_t * req, void * _)
 {
@@ -58,6 +59,7 @@ on_request_user_index(evhtp_request_t * req, void * _)
 
     return evhtp_send_reply(req, EVHTP_RES_400);
 }
+#endif
 
 static void
 dummy_eventcb_(int sock, short which, void * args)
@@ -106,7 +108,9 @@ htp_worker_init_(evthr_t * thread, void * args)
         return;
     }
 
+#ifndef EVHTP_DISABLE_REGEX
     evhtp_set_regex_cb(htp, "^/user/([^/]+)", on_request_user_index, NULL);
+#endif
     evhtp_set_cb(htp, "/user", on_request_user_register, NULL);
     evhtp_set_cb(htp, "/", on_request_index, NULL);
 
@@ -142,6 +146,10 @@ main(int argc, char ** argv)
     struct event_base * evbase;
     struct event      * dummy_ev;
     evthr_pool_t      * workers;
+#ifdef _WIN32
+    WSADATA             wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
 
     evbase   = event_base_new();
     dummy_ev = event_new(evbase, -1, EV_READ | EV_PERSIST,
@@ -156,6 +164,9 @@ main(int argc, char ** argv)
 
     evthr_pool_start(workers);
     event_base_loop(evbase, 0);
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 }

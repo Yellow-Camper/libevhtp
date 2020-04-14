@@ -50,6 +50,10 @@ main(int argc, char ** argv)
     evbase_t           * evbase;
     evhtp_connection_t * conn;
     evhtp_request_t    * request;
+#ifdef _WIN32
+    WSADATA              wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
 
     evbase  = event_base_new();
     conn    = evhtp_connection_new(evbase, "104.27.150.225", 80);
@@ -72,6 +76,9 @@ main(int argc, char ** argv)
     event_base_loop(evbase, 0);
 
     evhtp_safe_free(evbase, event_base_free);
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 }

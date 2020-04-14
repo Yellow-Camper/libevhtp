@@ -87,9 +87,14 @@ http_pause__callback_(evhtp_request_t * req, void * arg) {
 
 int
 main(int argc, char ** argv) {
+    int                 res;
     evhtp_t           * htp;
     struct event_base * evbase;
     struct timeval      timeo = { 10, 0 };
+#ifdef _WIN32
+    WSADATA             wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
 
     evbase = event_base_new();
     evhtp_alloc_assert(evbase);
@@ -106,5 +111,9 @@ main(int argc, char ** argv) {
     log_info("response delayed for 10s: "
              "curl http://127.0.0.1:%d/", bind__sock_port0_(htp));
 
-    return event_base_loop(evbase, 0);
+    res = event_base_loop(evbase, 0);
+#ifdef _WIN32
+    WSACleanup();
+#endif
+    return res;
 }

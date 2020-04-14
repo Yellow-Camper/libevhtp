@@ -4,10 +4,15 @@
 #include <stdint.h>
 #include <errno.h>
 #include <assert.h>
+#ifdef _WIN32
+#include <time.h>
+#include <winsock2.h>
+#else
 #include <sys/time.h>
 #include <arpa/inet.h>
 #include <sys/queue.h>
-
+#endif
+#include "internal.h"
 #include "evhtp/evhtp.h"
 #include "evhtp/log.h"
 
@@ -232,6 +237,7 @@ evhtp_log_request_f(void * format_p, evhtp_request_t * request, FILE * fp)
     struct tm             * tm;
     struct sockaddr_in    * sin;
     char                    tmp[64];
+    time_t                  sec;
 
     TAILQ_FOREACH(op, format, next) {
         const char * logstr = NULL;
@@ -255,8 +261,8 @@ evhtp_log_request_f(void * format_p, evhtp_request_t * request, FILE * fp)
                 break;
             case HTP_LOG_OP_TIMESTAMP:
                 event_base_gettimeofday_cached(request->conn->evbase, &tv);
-
-                tm     = localtime(&tv.tv_sec);
+                sec    = tv.tv_sec;
+                tm     = localtime(&sec);
                 strftime(tmp, sizeof(tmp), "%d/%b/%Y:%X %z", tm);
                 logstr = tmp;
 
@@ -278,7 +284,7 @@ evhtp_log_request_f(void * format_p, evhtp_request_t * request, FILE * fp)
                 continue;
             case HTP_LOG_OP_HOST:
                 logstr =
-                    request->htp->server_name ? : evhtp_header_find(request->headers_in, "host");
+                    request->htp->server_name ? request->htp->server_name : evhtp_header_find(request->headers_in, "host");
 
                 break;
             case HTP_LOG_OP_PROTO:
@@ -293,7 +299,7 @@ evhtp_log_request_f(void * format_p, evhtp_request_t * request, FILE * fp)
                 break;
         } /* switch */
 
-        fputs(logstr ? : "-", fp);
+        fputs(logstr ? logstr : "-", fp);
     }
 
     fputc('\n', fp);

@@ -13,10 +13,18 @@ testcb(evhtp_request_t * req, void * a) {
 
 int
 main(int argc, char ** argv) {
-    evbase_t * evbase = event_base_new();
-    evhtp_t  * evhtp  = evhtp_new(evbase, NULL);
-    evhtp_t  * v1     = evhtp_new(evbase, NULL);
-    evhtp_t  * v2     = evhtp_new(evbase, NULL);
+    evbase_t    * evbase;
+    evhtp_t     * evhtp;
+    evhtp_t     * v1;
+    evhtp_t     * v2;
+#ifdef _WIN32
+    WSADATA       wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
+    evbase = event_base_new();
+    evhtp  = evhtp_new(evbase, NULL);
+    v1     = evhtp_new(evbase, NULL);
+    v2     = evhtp_new(evbase, NULL);
 
     evhtp_set_cb(v1, "/host1", NULL, "host1.com");
     evhtp_set_cb(v2, "/localhost", testcb, "localhost");
@@ -49,6 +57,9 @@ main(int argc, char ** argv) {
     evhtp_safe_free(v1, evhtp_free);
     evhtp_safe_free(evhtp, evhtp_free);
     evhtp_safe_free(evbase, event_base_free);
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 }

@@ -5,7 +5,6 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <getopt.h>
 
 #include "internal.h"
@@ -58,6 +57,10 @@ main(int argc, char ** argv) {
     int                  long_index     = 0;
     int                  res;
 
+#ifdef _WIN32
+    WSADATA              wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
     static struct option long_options[] = {
         { "cert", required_argument, 0, OPTARG_CERT },
         { "key",  required_argument, 0, OPTARG_KEY  },
@@ -67,7 +70,7 @@ main(int argc, char ** argv) {
         { NULL,   0,                 0, 0           }
     };
 
-    while ((opt = getopt_long_only(argc, argv, "", long_options, &long_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "", long_options, &long_index)) != -1) {
         switch (opt) {
             case 'h':
                 printf("Usage: %s\n"
@@ -130,7 +133,7 @@ main(int argc, char ** argv) {
 
     /* create a new connection to the server */
     conn = evhtp_connection_ssl_new(evbase,
-                                    addr ? : "127.0.0.1",
+                                    addr ? addr : "127.0.0.1",
                                     port, ctx);
     evhtp_assert(conn != NULL);
 
@@ -160,6 +163,9 @@ main(int argc, char ** argv) {
         free(key);
         free(addr);
     }
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 #else

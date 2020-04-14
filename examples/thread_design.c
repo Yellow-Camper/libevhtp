@@ -269,6 +269,10 @@ main(int argc, char ** argv) {
     evbase_t          * evbase;
     evhtp_t           * evhtp;
     struct app_parent * app_p;
+#ifdef _WIN32
+    WSADATA             wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
 
     evbase            = event_base_new();
     evhtp             = evhtp_new(evbase, NULL);
@@ -284,6 +288,9 @@ main(int argc, char ** argv) {
     evhtp_bind_socket(evhtp, "127.0.0.1", 9090, 1024);
 
     event_base_loop(evbase, 0);
+#ifdef _WIN32
+    WSACleanup();
+#endif
 
     return 0;
 }

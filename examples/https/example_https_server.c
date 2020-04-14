@@ -5,7 +5,6 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <getopt.h>
 
 #include "internal.h"
@@ -128,7 +127,7 @@ parse__ssl_opts_(int argc, char ** argv) {
         { NULL,               0,                 0, 0                       }
     };
 
-    while ((opt = getopt_long_only(argc, argv, "", long_options, &long_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "", long_options, &long_index)) != -1) {
         switch (opt) {
             case 'h':
                 printf(help, argv[0]);
@@ -240,6 +239,10 @@ main(int argc, char ** argv) {
     evhtp_t           * htp;
     struct event_base * evbase;
 
+#ifdef _WIN32
+    WSADATA             wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
     evbase = event_base_new();
     evhtp_alloc_assert(evbase);
 
@@ -253,6 +256,9 @@ main(int argc, char ** argv) {
     log_info("curl https://127.0.0.1:4443/");
 
     event_base_loop(evbase, 0);
+#ifdef _WIN32
+    WSACleanup();
+#endif
     return 0;
 #else
     log_error("Not compiled with SSL support, go away");

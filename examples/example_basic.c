@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <errno.h>
 #include <evhtp.h>
-#include <unistd.h>
 
 #include "./eutils.h"
 #include "internal.h"
@@ -28,7 +27,10 @@ main(int argc, char ** argv)
     struct event_base * evbase;
     struct evhtp      * htp;
     void              * log;
-
+#ifdef _WIN32
+    WSADATA             wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
     evbase = event_base_new();
     htp    = evhtp_new(evbase, NULL);
     log    = evhtp_log_new("$rhost $host '$ua' [$ts] '$meth $path HTTP/$proto' $status");
@@ -44,5 +46,9 @@ main(int argc, char ** argv)
     log_info("Basic server, run: curl http://127.0.0.1:%d/",
             bind__sock_port0_(htp));
     event_base_loop(evbase, 0);
+#ifdef _WIN32
+    WSACleanup();
+#endif
+
     return 0;
 }

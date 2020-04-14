@@ -98,10 +98,15 @@ init_thread_cb(evhtp_t * htp, evthr_t * thr, void * arg) {
 
 int
 main(int argc, char ** argv) {
-    struct event *ev_sigterm;
-    evbase_t    * evbase  = event_base_new();
-    evhtp_t     * evhtp   = evhtp_new(evbase, NULL);
-
+    struct event * ev_sigterm;
+    evbase_t     * evbase;
+    evhtp_t      * evhtp;
+#ifdef _WIN32
+    WSADATA        wsaData;
+    (void)WSAStartup(0x0202, &wsaData);
+#endif
+    evbase  = event_base_new();
+    evhtp   = evhtp_new(evbase, NULL);
     evhtp_set_gencb(evhtp, frontend_cb, NULL);
 
 #if 0
@@ -124,6 +129,10 @@ main(int argc, char ** argv) {
     event_base_loop(evbase, 0);
 
     printf("Clean exit\n");
+#ifdef _WIN32
+    WSACleanup();
+#endif
+
     return 0;
 }
 

@@ -110,7 +110,13 @@ elseif(EVHTP_ALLOCATOR STREQUAL "tcmalloc")
     endif()
 endif()
 
-add_library(evhtp ${LIBEVHTP_SOURCE_FILES})
+if(NOT EVHTP_BUILD_SHARED)
+    add_library(evhtp ${LIBEVHTP_SOURCE_FILES})
+else()
+    add_library(evhtp SHARED ${LIBEVHTP_SOURCE_FILES})
+    target_link_options(evhtp PUBLIC "-Wl,-z,now")
+endif()
+
 target_link_libraries(evhtp PUBLIC ${LIBEVHTP_EXTERNAL_LIBS})
 target_include_directories(evhtp PUBLIC ${LIBEVHTP_EXTERNAL_INCLUDES})
 

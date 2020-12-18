@@ -9,7 +9,10 @@ find_package(Oniguruma)
 option (EVHTP_DISABLE_REGEX "Disable regex support"        OFF)
 
 # -DEVHTP_DEBUG=ON
-option (EVHTP_DEBUG         "Enable verbose debug logging"     OFF)
+option (EVHTP_DEBUG         "Enable verbose debug logging" OFF)
+
+# -DEVHTP_BUILD_SHARED=ON
+option (EVHTP_BUILD_SHARED  "Build shared libraries"       OFF)
 
 # can be overwritten by new set_alloc functions
 set(EVHTP_ALLOCATOR CACHE STRING "Allocator library")

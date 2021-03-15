@@ -5527,6 +5527,103 @@ evhtp_connection_ssl_new(struct event_base * evbase,
     return conn;
 }         /* evhtp_connection_ssl_new */
 
+#define ssl_sk_connect_hostname_ bufferevent_socket_connect_hostname
+
+evhtp_connection_t *
+evhtp_connection_ssl_new_dns(struct event_base  * evbase,
+                             struct evdns_base  * dns_base,
+                             const char         * addr,
+                             uint16_t             port,
+                             evhtp_ssl_ctx_t    * ctx)
+{
+    evhtp_connection_t * conn;
+    int                  err;
+    const char         * errstr;
+
+    log_debug("Enter");
+    evhtp_assert(evbase != NULL);
+
+    if (!(conn = htp__connection_new_(NULL, -1, evhtp_type_client))) {
+        return NULL;
+    }
+
+    conn->evbase = evbase;
+    errstr       = NULL;
+
+    do {
+        if ((conn->ssl = SSL_new(ctx)) == NULL) {
+            errstr = "unable to allocate SSL context";
+            break;
+        }
+
+        if ((conn->bev = ssl_sk_new_(evbase, -1, conn->ssl,
+                 BUFFEREVENT_SSL_CONNECTING,
+                 BEV_OPT_CLOSE_ON_FREE)) == NULL) {
+            errstr = "unable to allocate bev context";
+            break;
+        }
+
+        if (bufferevent_enable(conn->bev, EV_READ) == -1) {
+            errstr = "unable to enable reading";
+            break;
+        }
+
+        bufferevent_setcb(conn->bev, NULL, NULL,
+            htp__connection_eventcb_, conn);
+
+
+        if (dns_base != NULL) {
+            if (ssl_sk_connect_hostname_(conn->bev, dns_base,
+                AF_UNSPEC, addr, port)) {
+                errstr = "ssl_sk_connect_hostname_ failure";
+                break;
+            }
+        } else {
+            struct sockaddr_in  sin4;
+            struct sockaddr_in6 sin6;
+            struct sockaddr   * sin;
+            int                 salen;
+
+            if (inet_pton(AF_INET, addr, &sin4.sin_addr)) {
+                sin4.sin_family = AF_INET;
+                sin4.sin_port   = htons(port);
+                sin = (struct sockaddr *)&sin4;
+                salen           = sizeof(sin4);
+            } else if (inet_pton(AF_INET6, addr, &sin6.sin6_addr)) {
+                sin6.sin6_family = AF_INET6;
+                sin6.sin6_port   = htons(port);
+                sin = (struct sockaddr *)&sin6;
+                salen = sizeof(sin6);
+            } else {
+                /* Not a valid IP. */
+                evhtp_safe_free(conn, evhtp_connection_free);
+                return NULL;
+            }
+
+            // don't forget to put the hostname,
+            // before starting the connection
+            // it's easier, but not always suitable
+            // SSL_set_tlsext_host_name(ssl, addr);
+
+            if (ssl_sk_connect_(conn->bev,
+                                (struct sockaddr *)&sin,
+                    sizeof(sin)) == -1) {
+                errstr = "sk_connect_ failure";
+                break;
+            }
+        }
+    } while (0);
+
+    if (errstr != NULL) {
+        log_error("%s", errstr);
+
+        evhtp_safe_free(conn, evhtp_connection_free);
+
+        return NULL;
+    }
+
+    return conn;
+}         /* evhtp_connection_ssl_new_dns */
 #endif
 
 

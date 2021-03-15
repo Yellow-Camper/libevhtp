@@ -1426,6 +1426,10 @@ evhtp_connection_new(struct event_base * evbase, const char * addr, uint16_t por
 EVHTP_EXPORT evhtp_connection_t * evhtp_connection_ssl_new(
     struct event_base * evbase,
     const char * addr, uint16_t port, evhtp_ssl_ctx_t * ctx);
+
+EVHTP_EXPORT evhtp_connection_t * evhtp_connection_ssl_new_dns(
+    struct event_base * evbase, struct evdns_base * dns_base,
+    const char * addr, uint16_t port, evhtp_ssl_ctx_t * ctx);
 #endif
 
 
